@@ -1,0 +1,59 @@
+# Documentation
+
+Start with the [project introduction](../README.md),
+[CLI design](design/crt_cli.md), and
+[development guide](guides/development.md).
+Current work is in [TODO](../TODO.md); completed work is in
+[HISTORY](../HISTORY.md). [AGENTS.md](../AGENTS.md) defines development rules.
+
+## Architecture and Policy
+
+- [CRT-CLI: Development Environment and Source-first Ports](design/crt_cli.md):
+  product boundaries, installation layout, environment/recipe/project contracts,
+  and D0-D7 dependency order. This repository owns subsequent CLI design.
+
+Producer-owned contracts remain in the CRT repository at the adopted baseline:
+
+- [SDK Development Contract](https://github.com/webos21/crt/blob/d21430ddeb59aea76cf6abd58c15a69f55cfda52/docs/design/sdk_development_contract.md).
+- [CRT Studio boundary](https://github.com/webos21/crt/blob/d21430ddeb59aea76cf6abd58c15a69f55cfda52/docs/design/crt_studio.md).
+
+## Development and Usage Guides
+
+- [Development and Bootstrap Guide](guides/development.md): how to approach the
+  initial implementation, record SDK/tool inputs, and document real commands.
+  There is no executable installation/build quick start yet.
+
+## Acceptance Contracts and Evidence
+
+- [D0/D1 Bootstrap Acceptance](acceptance/bootstrap_acceptance.md): SDK-only
+  CLI consumption, minimal runtime and Windows host-environment gates, and
+  the evidence format. Planned criteria are not passing results.
+
+## Document Ownership
+
+| Document | Owns | Does not own |
+| --- | --- | --- |
+| Root README | User-facing purpose, maturity, navigation | Detailed roadmap, per-host measurements |
+| AGENTS | Contributor/agent rules and boundaries | Running work status |
+| TODO | Concise In Progress and Planned steps | Completed investigation logs |
+| HISTORY | Dated completed changes and why they were made | Future work queue |
+| `docs/design/` | Architecture, contracts, decisions, dependency order | Duplicate completion checklist |
+| `docs/guides/` | Actual setup/build/use/reproduction procedures | Claims of unimplemented commands |
+| `docs/acceptance/` | Acceptance requirements, measured evidence, limitations | General user introduction |
+
+Write documentation in English. Update the owning document and link to it
+rather than restating the same status in multiple places. Each completed
+increment moves its detailed outcome to HISTORY and applicable acceptance;
+remove it from TODO, except brief checked prerequisites needed for an active
+sequence. Keep unsuccessful attempts separate from accepted evidence.
+
+Do not routinely create/update STATUS; it is an explicitly requested snapshot,
+not another work queue. Add reference, release, or monthly-history directories
+only when actual content needs them. A later history archive must preserve
+decisions, reproduction entry points, limitations, and original Git references.
+
+The local CLI design is adopted from a pinned CRT cross-repository baseline,
+not a live mirror. Coordinate future shared SDK contract changes explicitly.
+Keep CRT ABI/runtime measurements in CRT acceptance and link their original
+evidence. Keep CLI installation/port/project results here; later Studio UX
+results belong to Studio.
