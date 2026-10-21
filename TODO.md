@@ -34,6 +34,9 @@ build configuration, or runtime acceptance is implemented yet. See
   generators from target artifacts and record producer-side contract gaps.
 - [ ] Define initial SDK/host/target identity, lock and JSON-result contracts
   with focused fixtures, without assuming new SDK schemas already exist.
+- [ ] Populate the [compatibility adoption record](docs/compatibility.md) with
+  actual candidate identities and case evidence; the documentation review is
+  not a validated SDK/CLI/Studio combination.
 - [ ] Define the minimal CRT-native CLI and bootstrap runtime closure,
   including the HTTP/TLS/trust choice and Windows loader behavior.
 - [ ] After contract review, establish the minimal SDK-only CMake/Ninja/CTest
@@ -50,6 +53,9 @@ These are future increments, not implemented features.
   bundle; define doctor/env/shell and per-child environments.
 - [ ] Verify actual CRT mksh/toybox/awk/make, SDK-free CLI execution, paths,
   private DLL resolution, and bounded owned-process cleanup.
+- [ ] Pass [D1-07 HTTPS bootstrap](docs/acceptance/bootstrap_acceptance.md#sdk-free-https-bootstrap-gate)
+  with only the shipped CLI runtime/trust inputs; exercise invalid trust and
+  tampered metadata/artifacts without SDK/global DLL fallback.
 
 ### D2 - Safe SDK Management
 
@@ -90,9 +96,15 @@ These are future increments, not implemented features.
 
 - [ ] Stabilize the public CLI/JSON/debug-tool contract for the separate
   Studio frontend; coordinate only consumer-driven generic CRT API changes.
+  D7 formally approves exercised combinations; it does not block SDK-only S0
+  PoCs or earlier live experiments using actually implemented capabilities.
 
 ### Deferred Beyond the Initial Workflow
 
 Trusted binary caches, optional recipe-registry separation, SDK delta-component
 archives, additional architectures/cross pairs, and IDE/plugin services require
 separate scope and evidence. Do not make them prerequisites for D0-D3.
+
+Plan lightweight cross-repository contract/reference checks after concrete
+metadata/fixtures exist; use the [manual review procedure](docs/compatibility.md#shared-change-review)
+now rather than adding another full-build CI path.

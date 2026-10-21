@@ -355,6 +355,11 @@ then update consumer locks; do not assume atomic cross-repository merges.
 Isolate experimental APIs through opt-in/versioning and prevent runtime
 dependencies on CLI implementation.
 
+Use the [compatibility/adoption record](../compatibility.md) to separate original
+design provenance, adopted SDK/host-tool contracts, CLI wire capabilities, and
+combinations actually exercised by Studio. Apply its shared-change review
+links; no proposed v1 label is evidence of an implemented or tested schema.
+
 Fast CI covers parsers/resolvers/fixtures/SDK contracts; integration consumes
 selected existing artifacts; full replay verifies native hosts, paths, and
 failure recovery at milestones. Do not duplicate a full WebKit build for
@@ -383,6 +388,13 @@ completion checklist. Each repository's TODO/acceptance owns actual status.
 D0 snapshots may start with manually installed existing SDKs. Unfinished D1/D2
 work does not block runtime development or recipe-schema fixtures. Conversely,
 D3 acceptance must not substitute Git Bash for an actual CRT host environment.
+
+D7 formalizes approved Studio combinations; it does not gate all Studio S0
+work. SDK-only UI PoCs and labeled protocol fixtures can proceed early. Live
+project build/run experiments require actual D5 capabilities, and robust
+job/cancellation/package integration needs the applicable D6 contracts. JSON
+drafts start in D0; D6 stabilizes them. Gate each feature on real command/schema
+support and evidence, not on a tranche number or an unfinished placeholder.
 
 Use small increments within each stage: contract, implementation, bounded test,
 native replay, then documentation. Record host failures, unsupported

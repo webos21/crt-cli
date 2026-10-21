@@ -9,6 +9,27 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-10-21
+
+### Connect producer contracts, bootstrap acceptance and Studio adoption
+
+Reviewed CRT `a23a173`, CLI `a76d8ad` and Studio `d3793e3` against the supplied
+cross-repository assessment. Added [Contract Compatibility and Adoption](docs/compatibility.md)
+with exact review revisions, independent existing manifest/recipe formats,
+draft/unassigned contract versions and evidence requirements. The original
+design provenance remains pinned; no runtime combination is approved.
+
+Added D1-07 SDK-free HTTPS metadata/artifact verification, shipped-runtime and
+trust rejection cases; D2 still owns SDK installation transactions. Clarified
+that JSON drafts begin in D0, D6 stabilizes automation, and formal D7 approval
+does not block SDK-only Studio S0 or real earlier capability experiments.
+Updated TODO, index, design and agent rules to use the adoption record and
+producer-owned shared-change procedure. Automated checks remain planned.
+This is documentation work only: CLI sources/build targets and native
+bootstrap acceptance are still absent, with runtime ledgers left Not run.
+Documentation validation checks local links/anchors, English text, fences,
+conflict markers and whitespace; external URLs were not network-validated.
+
 ## 2026-10-20
 
 ### Establish the documentation layout and initial work queue

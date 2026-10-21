@@ -38,6 +38,40 @@ this document is not a claim that those later features are implemented.
 | D1-04 Paths and collisions | Real spaced/Unicode path execution, preserved symlinks/aliases, colliding tool/DLL names, and immutable input inventories |
 | D1-05 Child lifecycle | Bounded configure-like child creation, exit reporting and owned-process cleanup; cancellation claims match actual PAL support |
 | D1-06 Failure behavior | Missing tools/Developer Mode, wrong host/target, incomplete/corrupt runtime bundle, and interrupted selection fail clearly and preserve the previous usable installation |
+| D1-07 HTTPS bootstrap | Actual metadata verification and artifact download on an SDK-free clean host using only the shipped CRT-native CLI runtime and explicit trust inputs; positive and rejection cases below |
+
+### SDK-free HTTPS Bootstrap Gate
+
+This is a future gate, **Not run**, not an SDK installer already implemented
+in D1. A minimal fetch/verify path may be exercised before D2 transactions;
+D2 still owns SDK extraction, installation, selection and rollback acceptance.
+Agree the HTTP/TLS stack, trust store and metadata-authentication policy in D0.
+Do not assume signing exists or treat an archive checksum as publisher identity.
+
+For each initial native host pair, record:
+
+- A clean host (or explicitly controlled equivalent) without a development SDK,
+  producer source/build tree, globally installed CRT runtime or injected SDK
+  paths. Extract the CLI bundle using OS facilities; record its file/runtime
+  inventory and initial loader resolution, especially Windows DLLs.
+- A real HTTPS metadata fetch, verification under the declared trust/publisher
+  policy, and artifact download with expected size/digest. Identify the URL or
+  controlled HTTPS endpoint, metadata bytes, trust inputs and resulting digest;
+  redact credentials. The CLI must use its shipped CRT-built download stack,
+  not host curl, Git Bash, or a development SDK's DLLs.
+- Bounded negative cases: missing/wrong trust inputs, invalid/expired server
+  certificate, tampered metadata against the declared verification policy,
+  artifact size/digest mismatch, and interrupted download. Fail closed without
+  disabling certificate verification or publishing a failed candidate; retain
+  any previous usable CLI/selection and do not modify project locks.
+- External native tools or interpreters, if actually required, declared by
+  identity/role. Downloading metadata must not implicitly require CRT host
+  build tools or target SDK libraries. Host-tool/rootfs acceptance is D1-02,
+  not proof of HTTPS bootstrap.
+
+Fixtures alone do not close D1-07. Record per-host runtime results and link
+the exact combination in the [adoption record](../compatibility.md); absence
+of an agreed trust/authentication contract is a prerequisite gap, not a pass.
 
 Test absent prerequisites through controlled fixtures or an appropriate host;
 do not toggle Developer Mode or global security settings merely to manufacture

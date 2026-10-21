@@ -39,6 +39,13 @@ Track later adopted contract changes explicitly rather than silently following
 CRT main. Never infer that proposed commands, schemas, bundles, or public
 releases already exist.
 
+Use [Contract Compatibility and Adoption](docs/compatibility.md) for shared
+owner/version/capability changes and exact producer/consumer combinations.
+Follow its [shared-change review procedure](docs/compatibility.md#shared-change-review),
+check immutable baseline references and TODO-to-acceptance links, and distinguish
+proposals/fixtures from implemented commands and native evidence. Do not invent
+v1 schemas or approve combinations solely because design text agrees.
+
 During initial setup, do not invent build targets, presets, test commands, or
 completed milestones. Establish and document actual entry points as the
 implementation grows. Creating this file does not authorize implementation of

@@ -11,6 +11,9 @@ Current work is in [TODO](../TODO.md); completed work is in
 - [CRT-CLI: Development Environment and Source-first Ports](design/crt_cli.md):
   product boundaries, installation layout, environment/recipe/project contracts,
   and D0-D7 dependency order. This repository owns subsequent CLI design.
+- [Contract Compatibility and Adoption](compatibility.md): independent existing
+  formats vs proposed contracts, exact baseline/adoption records and shared
+  review links. No runtime combination is approved yet.
 
 Producer-owned contracts remain in the CRT repository at the adopted baseline:
 
@@ -40,6 +43,7 @@ Producer-owned contracts remain in the CRT repository at the adopted baseline:
 | `docs/design/` | Architecture, contracts, decisions, dependency order | Duplicate completion checklist |
 | `docs/guides/` | Actual setup/build/use/reproduction procedures | Claims of unimplemented commands |
 | `docs/acceptance/` | Acceptance requirements, measured evidence, limitations | General user introduction |
+| `docs/compatibility.md` | Contract adoption and links to exercised combinations | Duplicate SDK/CLI/Studio measurement logs |
 
 Write documentation in English. Update the owning document and link to it
 rather than restating the same status in multiple places. Each completed
