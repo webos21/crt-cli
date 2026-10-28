@@ -1,0 +1,45 @@
+{
+  "manifest_format": 0,
+  "package": {
+    "name": "crt-cli",
+    "version": "0.1.0-dev"
+  },
+  "sdk": {
+    "profile": "dev",
+    "version": "v0.4.0-cli.20261028",
+    "target": "native",
+    "storage": "shared-immutable"
+  },
+  "include_dirs": [
+    "src/main"
+  ],
+  "application": {
+    "name": "crt-cli",
+    "sources": [
+      "src/main/main.cpp",
+      "src/main/bootstrap.cpp",
+      "src/main/core.cpp",
+      "src/main/process.cpp",
+      "src/main/toolchain.cpp",
+      "src/main/project.cpp"
+    ],
+    "sdk_libraries": [
+      "curl",
+      "mbedtls",
+      "mbedx509",
+      "mbedcrypto",
+      "z"
+    ]
+  },
+  "tests": [
+    {
+      "name": "native-test",
+      "timeout_seconds": 600,
+      "sources": [
+        "src/test/native_test.cpp",
+        "src/main/core.cpp",
+        "src/main/process.cpp"
+      ]
+    }
+  ]
+}
