@@ -5,10 +5,13 @@ The initial text was adopted from the [cross-repository CRT design](https://gith
 at CRT revision `d21430ddeb59aea76cf6abd58c15a69f55cfda52`.
 That pinned document records the integration baseline; do not maintain two
 independently edited mirrors. Record subsequent CLI decisions here and coordinate
-SDK-boundary changes with the producer.
+SDK-boundary changes with the producer. The
+[current native-provider review](../compatibility.md#committed-source-checkpoint-2026-10-29)
+records the later producer contract and matching CLI implementation commits.
 
-The commands, project/lock schemas, and Host Tools Bundle below are
-implementation targets, not existing CLI features. The [SDK Development Contract](https://github.com/webos21/crt/blob/d21430ddeb59aea76cf6abd58c15a69f55cfda52/docs/design/sdk_development_contract.md)
+The full workflow, stable project/lock schemas and Host Tools Bundle remain
+implementation targets. The bounded native bootstrap is described in the
+[implemented contract](../reference/bootstrap_contract.md). The [SDK Development Contract](https://github.com/webos21/crt/blob/d21430ddeb59aea76cf6abd58c15a69f55cfda52/docs/design/sdk_development_contract.md)
 owns producer boundaries; [CRT Studio](https://github.com/webos21/crt/blob/d21430ddeb59aea76cf6abd58c15a69f55cfda52/docs/design/crt_studio.md)
 owns the future GUI design. Current work belongs in [TODO](../../TODO.md),
 completed work in [HISTORY](../../HISTORY.md), and measured bootstrap evidence
@@ -21,13 +24,13 @@ C++ runtime. The intended application workflow is shown below; command syntax
 is a v1 draft.
 
 ```sh
-crt sdk install --profile cxx
-crt doctor
-crt new hello --template cxx
+crt-cli sdk install --profile cxx
+crt-cli doctor
+crt-cli new hello --language cxx
 cd hello
-crt add zlib
-crt build
-crt run
+crt-cli add zlib
+crt-cli build
+crt-cli run
 ```
 
 The Rust reference concerns the **toolchain-selection, project-declaration,
@@ -53,7 +56,7 @@ port, and an IDE plugin marketplace.
 ```text
 CLI / CI / AI / external IDE / future Studio
                  |
-        crt commands + versioned JSON contract
+        crt-cli commands + versioned JSON contract
                  |
   SDK resolver / environment resolver / project runner
                  |
@@ -68,57 +71,56 @@ process execution, cancellation, and result collection. Do not reimplement
 compile/link flags, startup order, or the Windows exception ABI in individual
 commands. Logs must expose actual tools, argv, and environment selections.
 
-Product sources target CRT-native C/C++. If an initial execution adapter calls
-the SDK's existing Python port driver, declare Python as a requirement.
-Do not hide it or immediately introduce a second, incompatible recipe engine.
+Product sources target CRT-native C/C++. The owner selected a native JSON
+manifest-driven builder on 2026-10-28: no CMake, Python or shell dependency in
+CLI control/self-build or generated app build/test/run. Driver logic moves inside
+the CLI; SDK-owned declarative policy retains ABI/startup/link ownership.
+Upstream configure/make ports may still need explicitly selected CRT shell/tools;
+the native recipe engine must preserve reviewed producer semantics.
 
 ### Initial Repository and Template Contract
 
-D0 first reviews the source/module layout and build/test entry points, before
-implementing the minimal CLI. The repository and generated C++ projects share
-the public project contract: manifest/lock, source/tests and CMake delegating
-to the installed SDK toolchain. CLI-specific modules may grow or move; the
-whole source tree need not remain identical to a minimal generated template.
-Template versions/migrations and regression tests preserve existing projects;
-CLI self-upgrade does not rewrite them implicitly.
-
-An illustrative initial shape follows; it is not an existing or frozen layout:
+The owner selected the following initial structure. Modules may evolve; the CLI
+and generated applications share the native project/build contract.
 
 ```text
 crt-cli/
-  crt.toml
-  crt.lock
-  CMakeLists.txt
-  src/
-  tests/
+  crt.json                   experimental JSON project declaration
+  crt.lock                   exact project inputs; no promoted root pin yet
+  src/main/main.cpp          command dispatch
+  src/main/{core,process,toolchain,project,bootstrap}.cpp
+  src/test/native_test.cpp   C/C++ tests, built through the same backend
+  third_party/               pinned unmodified JSON/SHA headers + licenses
+  tools/bootstrap_host.cpp   temporary stage-zero native seed; never shipped
   docs/
-  .crt/          generated project SDK/dependency binding or installation
-  build/         generated build output
+  .crt/                      ignored machine-local project binding
+  out/                       ignored native build output/receipts
 ```
 
-Decide module responsibilities for commands, SDK/ports/projects, process jobs,
-diagnostics and updates during D0; do not require all modules to be implemented
-before bootstrap. Manifest/lock contracts are still drafts. Generated SDKs,
-views and build outputs are reproducible inputs/outputs outside tracked source.
-The first build uses ordinary external CMake against the Dev SDK. Once the
-CLI implements new/build/run/test, exercise its own project and a fresh template
-through those same public commands rather than a private bootstrap exemption.
+`new` creates `src/main/main.cpp`, a separate source/header pair, and a C/C++
+test in `src/test/` (or `.c` equivalents with `--language c`). Source lists,
+include directories and test targets are explicit JSON fields, not shell commands.
+The initial schema is format 0; see the [implemented contract](../reference/bootstrap_contract.md).
+A temporary hosted C++ seed uses the same native backend to build the first
+CRT-native CLI. Subsequent self-build/tests use `crt-cli`, with no seed/runtime
+launcher exemption in the distributed product. LLVM remains an external tool.
+Template migrations and regressions preserve existing projects; CLI upgrades do
+not rewrite sources or project pins implicitly.
 
 ### Single-Executable Distribution Goal
 
 The intended CLI distribution is one native executable per supported host,
 with non-OS CRT/C++/HTTP/TLS dependencies linked into it. This replaces the
-earlier minimal-dynamic-bundle default as the product goal; native feasibility
-is not yet established. Declared OS/PAL libraries/frameworks remain permitted.
+earlier minimal-dynamic-bundle default as the product goal. Linux feasibility
+is recorded; macOS/Windows native proof remains pending. OS/PAL dependencies remain permitted.
 LLVM, project SDKs, CRT host tools and port-build interpreters are separate
 development assets, not required merely to start the CLI control commands.
 
 D0 checks linking/imports and minimal execution; D1 verifies SDK-free execution,
 diagnostics and the actual HTTPS stack. A sidecar CRT runtime cannot silently
 count as a successful one-file result. Record a limitation and review the
-contract if a native target cannot meet it. TLS trust inputs, embedded/extracted
-data, notices, optional launchers and temporary update helpers require the
-explicit decisions below; they are not exemptions assumed by implementation.
+contract if a native target cannot meet it. The selected data/helper rules are
+below; trust provisioning, notices and exact update activation still need evidence.
 
 ## 3. CRT_HOME and Immutable Installations
 
@@ -137,7 +139,7 @@ must not be required.
 
 ```text
 CRT_HOME/
-  bin/                         optional stable launcher only
+  bin/                         optional stable executable entry/reference
   cli/<cli-version>-<digest>/   CLI executable + agreed resource/metadata policy
   host/<host-tuple>/<tools-id>/ manifest + existing rootfs-relative layout
   toolchains/<toolchain-id>/    external LLVM/OS SDK paths, versions, fingerprints
@@ -157,16 +159,17 @@ CRT_HOME/
 This is a logical target layout, not an instruction to rearrange existing SDK
 internals. In particular, do not assume `crt-toolchain.cmake` lives in a new
 `cmake/` directory.
-The SDK subtree illustrates the shared-store option; the default SDK storage
-backend is now an explicit D0/D2 decision, not fixed by this diagram.
+The SDK subtree is the selected shared immutable storage model. Its installer
+and stable on-disk schema remain D2 work, not an implementation assumed here.
 
 SDKs, host tools, CLI versions, and ports have independent installation
 identities and lifetimes. Updates install a new directory and atomically change
 a selection pointer. Never overwrite an in-use executable, runtime DLL, or SDK.
 Removing an SDK must not remove the CLI itself. Initial bootstrap must also
 work through OS archive extraction and direct CLI execution from a version
-directory. A future stable launcher needs its own first-run/update validation.
-Its compatibility with the one-executable goal must be decided before adoption.
+directory. Stable selection must not introduce a permanent auxiliary executable.
+The selected policy allows bounded temporary
+update helpers and previous-version retention are allowed.
 
 Installation proceeds through TLS/origin verification, digest checks, safe
 temporary extraction, inventory/ABI validation, and atomic publication on the
@@ -193,21 +196,15 @@ select existing verified stage archives or the implemented Dev profile; a new
 profile name is not a new producer stage/schema. Arbitrary delta-component SDK
 assembly remains deferred until ownership/ABI/license/inventory rules exist.
 
-Separate the project's selection contract from physical storage. Two backends
-are under review:
+The owner selected shared immutable SDK payloads with project-specific exact
+references on 2026-10-28. A project binding must never follow a moving global
+default. Handoff/export/isolated-test copies remain available; a general
+project-local installer is not selected or implemented.
 
-- Project-local: install the SDK payload under a generated project directory,
-  such as `.crt/sdk/<target>/<sdk-id>/`, reusing a shared download cache.
-- Shared immutable: retain SDK payloads by exact identity in the shared store
-  and give the project a fixed selection/view, never a moving global default.
-
-Both must preserve project isolation and explicit lock updates. The first is
-simple to inspect but duplicates installed bytes; the second reduces duplicate
-payloads but requires validated reference/alias, immutability and GC behavior.
-The physical backend and its default remain undecided. Example `.crt` paths
-are not a stable wire contract. Backend changes must not change SDK identity
-or silently migrate locks. Keep project manifests/locks in version control;
-generated SDK/view/port/build data is recreatable and excluded.
+Shared payloads require validated immutability, reference/alias and GC behavior.
+Example `.crt` paths are not a stable wire contract. Backend changes must not
+change SDK identity or silently migrate locks. Keep project manifests/locks
+in version control; generated SDK/view/port/build data is recreatable and excluded.
 
 Cargo-style manifest/lock workflows, project toolchain selection and shared
 caches are useful models; they do not require Cargo's physical layout or a
@@ -224,7 +221,7 @@ host or report runtime success based only on cross compilation.
 | --- | --- | --- |
 | `control` | SDK/registry fetch, selection, checks | CLI-private runtime; no accidental selection of another SDK's DLLs through PATH |
 | `port-build` | configure/make and approved generators | CRT mksh/toybox/awk/make, pinned SDK wrappers and port dependencies |
-| `app-build` | Project CMake/Ninja | SDK toolchain and project dependency view; no automatic host header/library discovery |
+| `app-build` | Native manifest -> LLVM argv | SDK toolchain and project dependency view; no automatic host header/library discovery |
 | `app-run` | Applications/workers | Application runtime closure only; no build tools or unrestricted package-store PATH |
 
 Do not modify system PATH, registry settings, or user shell configuration by
@@ -241,13 +238,13 @@ the SDK root through adapters/contract tests before separating host tools.
 Two environment variables alone do not prove cross-host separation works.
 
 Distinguish the Windows shell's guest PATH, `/system/bin:/bin:/usr/bin`, from
-native Clang/CMake paths. Delegate approved native-tool invocation to the
+native LLVM paths. Delegate approved native-tool invocation to the
 existing bridge and preserve paths containing spaces or Korean characters in
 actual argv. Pin exact environment construction to an SDK contract version.
 
 The environment/project scopes of `doctor` must diagnose host/target identity,
-Developer Mode and symlinks, LLVM/LLD/OS SDK, CMake/Ninja, required
-Python/Perl/pkg-config/generators,
+Developer Mode and symlinks, LLVM/LLD/OS SDK and explicitly declared
+port-build generators,
 tool runtime DLLs, recipe applet requirements, and actual CRT compile/link/run
 probes. It must not automatically install OS SDKs/compilers or change security
 settings.
@@ -334,26 +331,11 @@ the same link/runtime closure.
 
 ## 6. Project Manifest, Lock, and Build/Run/Package
 
-`crt.toml` expresses user intent; `crt.lock` records exact resolution.
-The following conceptual future-schema example does not replace existing
-port JSON syntax.
-
-```toml
-[package]
-name = "hello"
-version = "0.1.0"
-
-[sdk]
-profile = "cxx"
-channel = "integration"
-target = "native"
-
-[dependencies]
-zlib = "1.3.1"
-
-[build]
-system = "cmake"
-```
+`crt.json` expresses user intent; `crt.lock` records exact resolution. The
+current format-0 C/C++ declaration is documented in the
+[implemented contract](../reference/bootstrap_contract.md). Dependency/registry,
+locked/offline and package semantics below remain planned extensions; their
+presence in this design does not make them current commands.
 
 Locks record schema, normalized host/target, SDK archive/content digests and
 source commit, registry revision, every port's source/recipe/variant/build key,
@@ -369,11 +351,11 @@ Only explicit update operations change the lock. SDK updates do not
 automatically migrate existing project locks.
 
 Project views expose only selected store entries without modifying SDKs.
-Generated CMake import targets/pkg-config metadata express transitive links,
-static-library ordering, and runtime files. Reuse existing upper imports and
-examples without assuming every stable public target name already exists.
-Do not add host `/usr/lib` as a fallback. Delegate CMake configuration to the
-installed SDK's `crt-toolchain.cmake`.
+Native dependency metadata must express transitive links, static archive ordering
+and runtime files. The compiler module executes SDK-owned argument templates
+directly, including startup objects and Windows exception ABI policy. Existing
+SDK wrappers/CMake entry points remain producer/legacy consumers; native projects
+do not require them. Do not add host `/usr/lib` as a fallback.
 
 `new`, `add`, `remove`, and `update` show their change scope and preserve
 original manifests/locks on failure. Remove changes project declarations;
@@ -385,9 +367,10 @@ versioned template. Its initial shape is reviewed in D0; full project commands
 and self-build/template parity are validated in D5. Source-module layout may
 evolve while the public build contract remains compatible.
 
-SDK acquisition timing is not yet fixed: creation-time acquisition, explicit
-installation, or first configure/build are alternatives to review. Define the
-network/change scope, failure boundary and diagnostics before implementation.
+SDK acquisition occurs on first configure/build; `new` creates sources without
+downloading an SDK (owner decision, 2026-10-28). Explicit installation may
+prepopulate the store. Define network/change scope, failure boundaries and
+diagnostics before implementing those commands.
 An SDK requirement does not imply a project-local payload or a download on
 every invocation. Honor exact locked inputs and offline behavior; preserve
 existing sources/locks and never silently use a different globally selected SDK.
@@ -413,9 +396,9 @@ initial implementation does not support; do not provide successful placeholders.
 | `env`, `shell` | Display a computed profile or run a shell in that environment |
 | `cache clean` | Reference-aware cache cleanup |
 
-These command groups are planned. The executable prefix remains drafted as
-`crt` in examples; choosing `crt` versus `crt-cli` is an open product decision.
-Repository naming is not an executable rename or a second command contract.
+The executable prefix is `crt-cli` (owner decision, 2026-10-28). Most command
+groups remain planned; only the bounded bootstrap subset in the development
+guide is implemented. There is no implicit `crt` alias.
 
 Use `new` as the primary project-creation command. The earlier `create` name
 may be a compatibility alias, not a separate feature. `install <port>` prepares
@@ -455,8 +438,9 @@ gate.
 - Project: manifest/lock compatibility, exact SDK/profile/capabilities and port
   identities, selected paths and readiness for the requested build/run action.
 
-Decide scope syntax and stable results in D0; the earlier `doctor --bootstrap`
-example is a draft, not an implemented flag. Diagnose by default without
+The initial implemented scope is `doctor --bootstrap`, described in the
+[bootstrap contract](../reference/bootstrap_contract.md). Full self/environment/project
+scopes remain later work. Diagnose by default without
 installing tools, changing security settings or rewriting locks. A self-check
 on an SDK-free machine must not fail merely because an unrelated project
 compiler is absent. Candidate self-checks participate in upgrade validation;
@@ -536,7 +520,7 @@ completion checklist. Each repository's TODO/acceptance owns actual status.
 | D2 SDK management/self-upgrade | Immutable SDK/profile artifacts and contract metadata | Project SDK storage/selection and verified CLI self-upgrade transactions | Three-host installs, candidate health/activation/recovery and unchanged project pins |
 | D3 First source port | Existing zlib recipe/tests and packaged driver contract | Fetch/verify/build/test/store adapter | Windows CRT mksh/make static/shared zlib link/run; SDK/source roots unchanged |
 | D4 Dependencies/cache/lock | Review SQLite/libpng and host-generator/target-dependency roles | Resolver, variants/build keys, local cache, project views | SQLite and libpng->zlib; rerun/recovery/ABI-mixing rejection; three-native-OS replay |
-| D5 Application workflow | Improve SDK-only CMake/runtime/public imports | new/add/configure/build/run, layer-specific templates | External C/C++ and supported GFX/Media/UI/Web apps run; Web worker/ABI checks |
+| D5 Application workflow | Extend native compiler/runtime/dependency contracts | new/add/configure/build/run, layer-specific templates | External C/C++ and supported GFX/Media/UI/Web apps run; Web worker/ABI checks |
 | D6 Deployment/automation stability | Runtime closure and notices/source contracts | test/package, locked/offline/cancel, versioned JSON | App runs without SDK/store/build roots; CI/AI controls workflow through commands; repeated child-process acceptance |
 | D7 Studio integration | Consumer-driven generic UI/input/PAL gaps | CLI compatibility and debug-adapter contracts | A thin [Studio](https://github.com/webos21/crt/blob/d21430ddeb59aea76cf6abd58c15a69f55cfda52/docs/design/crt_studio.md) frontend uses the same workflow |
 
@@ -558,25 +542,24 @@ assume every upstream port already works on all three OSes.
 
 ## 10. Decisions for the First Implementation
 
-- Executable prefix: keep the current `crt` draft or adopt `crt-cli` consistently.
-- Detailed single-file criterion: declared OS dependencies, trust/notices/data,
-  backups, permanent launcher and temporary update-helper policy.
-- Default SDK storage: project-local payload plus shared download cache, or
-  shared immutable payload plus exact project binding; validate supported modes.
-- SDK acquisition timing and failure boundary: `new`, explicit install, or
-  first configure/build; specify locked/offline behavior.
-- Development-contract sidecar location/schema, public CMake targets, and
-  runtime-closure query format.
-- Bootstrap CLI HTTP/TLS stack, trust store, and exact minimal runtime files.
-- Existing driver/rootfs adapter boundary separating Host Tools from target SDKs.
-- Registry snapshot authentication/promotion, recipe-execution trust policy,
-  project/lock schemas, and exit codes.
-- Per-OS atomic publication, launcher/CLI self-update, usage references, and GC.
+Owner decisions recorded on 2026-10-28:
 
-The single-executable goal, per-project SDK isolation and upgrade/doctor
-capabilities are adopted planning directions. The choices above remain open
-review deliverables, not defaults silently selected by this documentation.
-The initial directory tree and command/schema details remain provisional.
-These are D0-D2 review deliverables, not an open-ended feature backlog.
-Writing this design does not authorize repository creation, external
-publication, implementation start, or public release.
+| Surface | Selected policy |
+| --- | --- |
+| Executable | `crt-cli`, matching the repository; no implicit `crt` alias |
+| Distribution | One shipped executable; declared OS dependencies, cache/certificate data, previous versions and temporary update helpers allowed; no permanent auxiliary launcher |
+| SDK storage | Shared immutable payloads with project-specific exact references |
+| Acquisition | First configure/build acquires a missing SDK; `new` only creates sources |
+
+These are product policies, not claims that the installer/updater exists.
+The following mechanisms still require concrete contracts and tests:
+
+- General SDK development-contract location/schema, public imports and runtime query.
+- TLS trust provisioning, metadata authentication, notices and exact update-helper activation.
+- Host-tools/rootfs adapter, registry/recipe trust, final project/lock schemas.
+- Per-OS activation/recovery, usage references and GC.
+
+The initial module layout may evolve. The implemented bootstrap input/result
+contracts and host-side experimental format-0 fixtures are documented separately;
+they are not SDK Build Contract v1 or a promoted project lock. Later D1-D7
+commands and public releases still require their own implementation and evidence.

@@ -9,7 +9,77 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-10-29
+
+### Commit the native builder and reconcile producer/consumer documentation
+
+Committed the native implementation as `1270695ee8e1ab53b661c4540af859cb2463d840`. Its 19
+recorded code/config/import inputs match the accepted Linux export; the original
+SDK, binary, source-export and failed-attempt identities remain unchanged.
+Recorded CRT exporter/contract revision `17de3510c37cdb07e3c5c98583b22ebe4e1463ec` separately from the
+`64b447b` SDK build baseline in the compatibility ledger. This is source
+reconciliation, not a new build, promoted lock or public release.
+
+Aligned README/TODO, current `new --language` examples, native bootstrap guide,
+contract/reference/index and partial lifecycle evidence. Full macOS/Windows,
+installer, upgrade and shipping gates remain open. Rechecked documentation
+links/fences, dependency/exporter/binary hashes and version/bootstrap doctor;
+retained the prior native assertion/core-test results at their original date.
+Imported license bytes remain exact, including upstream whitespace. STATUS
+remains unchanged. Details are in
+[source reconciliation](docs/acceptance/bootstrap_acceptance.md#committed-source-reconciliation-2026-10-29).
+
 ## 2026-10-28
+
+### Replace the CMake prototype with a native JSON compiler backend
+
+Applied the owner's subsequent choices: `crt.json`, separate native modules in
+`src/main/`, and C/C++ tests in `src/test/`. The CLI directly executes LLVM argv
+for its own manifest and generated multi-source C/C++ projects. Python, shell,
+CMake/Ninja and SDK wrappers are absent from the app/control/self-build path.
+A disposable hosted C++ seed shares the backend and is never shipped. SDK ABI,
+startup and link order remain producer-owned through a separately pinned
+experimental policy captured from installed wrappers.
+
+Native filesystem validation found the producer's Linux getdents64 type-offset
+bug. CRT fix `64b447b` and a fresh clean-source Dev SDK resolve it without a
+scanner workaround, old-artifact mutation, host runtime substitution or upstream
+patching. Earlier build/tool/timeout/probe attempts remain retained separately.
+
+Linux isolated native self-build, C/C++ fixtures and 429 assertions pass with
+interpreters/build generators and producer trees unavailable. The self-built
+binary matches the seed-built bytes, has no ELF DT_NEEDED/RPATH and runs bare
+with only the declared OS loader mapped. Original SDK/provider inventories and
+19 non-Markdown source inputs were rechecked. Exact hashes, commands and limits
+belong to [native acceptance](docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-linuxx86_64-2026-10-28).
+The repository lock remains unresolved. No full D1/D5/D6, other-host replay,
+SDK acquisition/updater, authenticated CLI integrity or public release is claimed.
+
+### Retained checkpoint: first Linux bootstrap through SDK wrappers/CMake
+
+Recorded the owner's four decisions: crt-cli naming, shared immutable SDK
+references, first-configure/build acquisition and single-executable policy with
+OS/data/cache/certificate/previous-version/temporary-helper allowances and no
+permanent launcher. Established the initial source/tools/tests/CMake layout,
+actual help/version/bootstrap doctor, result/input records and experimental
+format-0 project/lock fixtures. The root lock remains unresolved; no stable
+project resolver or promoted SDK pin is claimed.
+
+The existing clean Dev SDK is consumed through a separately extracted handoff
+and its public wrappers. Configure verifies the exact SDK content before
+loading the toolchain; build rechecks it. SDK-owned static/exception/RTTI/hosted
+controls resolve the initial exception-default failure without CRT ABI changes.
+Actual Linux source/SDK-hidden and Unicode relocation replay passes, including
+seven specific configure rejections and actual ELF/mapped-image evidence.
+Harness/tool-selection failures and prior attempts remain identified separately.
+
+The binary is a local development result, not a public release: full HTTPS,
+trusted self-integrity, installer/new/upgrade and macOS/Windows replay remain
+open. Numerical results, hashes, source snapshot, commands and limits belong to
+[bootstrap acceptance](docs/acceptance/bootstrap_acceptance.md#linuxx86_64-d0-bootstrap-2026-10-28).
+The [implemented contract](docs/reference/bootstrap_contract.md) separates
+actual commands/formats from the remaining design. No full CRT/WebKit rebuild
+or source/runtime SDK relabeling was required.
 
 ### Define initial structure, single-executable and project lifecycle goals
 

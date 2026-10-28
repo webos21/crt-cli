@@ -63,6 +63,10 @@ publication. No new lock/schema version or local-install command is introduced.
 
 ### Product Planning Clarification (2026-10-28)
 
+This checkpoint precedes the owner choices and native experiment below;
+the [later record](#owner-decisions-and-linux-bootstrap-2026-10-28) supersedes
+its pending-choice/runtime status without changing the original review baseline.
+
 The same working-tree review adds early initial-layout decisions, a
 single-executable distribution goal, CLI self-upgrade, scoped doctor and
 project-specific SDK version/profile selection. The prior dynamic-bundle
@@ -85,7 +89,96 @@ this plan. [Bootstrap](acceptance/bootstrap_acceptance.md) and
 runtime/adoption results remain Not run. Original pinned baselines above are
 unchanged and this update selects no actual SDK/CLI artifact combination.
 
+## Owner Decisions and Linux Bootstrap (2026-10-28)
+
+The owner selected `crt-cli`, shared immutable SDK payloads with exact project
+references, first-configure/build acquisition (source-only new), and one shipped
+executable allowing OS dependencies/data/certificates/cache/previous versions/
+temporary helpers but no permanent launcher. Storage/acquisition/updater are
+still planned mechanisms, not capabilities inferred from this decision.
+
+This is the retained CMake checkpoint, superseded for active development by
+the native JSON builder record below.
+
+Local experiment `linux-d0-20261028` is **Pass for native Linux D0 only** and
+**not promoted**. Original evidence and artifact identities are owned by
+[Linux bootstrap acceptance](acceptance/bootstrap_acceptance.md#linuxx86_64-d0-bootstrap-2026-10-28).
+It consumes clean producer SDK `3741ea515f129483efa631c6d2663d27de9ebc62`, Dev
+profile at the rehearsal version, with exact archive/content hashes in that
+record. CLI execution uses the exported dirty source based on
+`cfd27bb5c21f95c056cf4567216c03cd32f7d44f`, snapshot
+`b07b2ed65ac4918a6a3ea56747a8ebbe7ef44d74975cc71cb92bace8883a9e7c`.
+No clean-source compile or matching public-release version is inferred.
+
+Implemented subset: help/version/doctor --bootstrap, CLI-owned bootstrap SDK
+input/result format 1, and host-side experimental manifest/lock format 0.
+These are not general SDK development-contract v1, native project resolution
+or adopted stable lock formats. `crt.lock` remains unresolved; CMake consumes
+an explicitly fingerprinted local SDK handoff. Inspector support is currently
+native, known-clean Dev input only, not arbitrary Full/dirty/legacy profiles.
+
+Two CTest suites, actual argument/contract/configure rejection cases,
+source/SDK-hidden replay and bare-image import/mapping evidence pass. The
+compiled input and program bytes are identified in the original receipts.
+Executable authentication and actual CLI HTTPS are not verified; D1-07,
+macOS/Windows replay, installer/new/updater and formal promotion/adoption remain
+open. Older source-asset filename variants remain a producer promotion gate;
+this experiment does not substitute a different asset under a recipe.
+
+## Native Manifest/Driver Experiment (2026-10-28)
+
+**Pass, native Linux/x86_64 only; unpromoted.** The owner superseded the initial
+CMake/Python prototype with `crt.json`, internal compiler-driver modules and
+C/C++ `src/main`/`src/test`. The native app/control/self-build path invokes LLVM
+argv directly and has no Python/shell/CMake/Ninja prerequisite. SDK production
+keeps its own existing tools; optional upstream configure/make ports are separate.
+
+The earlier clean SDK exposed the getdents64 type defect. Producer fix
+`64b447ba40ef339a65ca009adeda80530a83689c` is used by a fresh clean local Dev SDK
+`v0.4.0-cli.20261028`, with separately hashed experimental native provider format 0.
+CLI base is `cfd27bb` plus source export
+`5c5416312a73e0d7b2f8eec7bd94ab00d4db5e971cea1919a4ac83f6cd9ffe66`.
+Exact SDK/archive/provider/binary hashes, owner fix, commands, failed attempts,
+429 native assertions, SDK/source-hidden replay and import/maps audit are in
+[native bootstrap acceptance](acceptance/bootstrap_acceptance.md#native-json-builder-on-linuxx86_64-2026-10-28).
+The hosted seed and native self-build yield identical bytes in this experiment.
+
+Bounded new/configure/build/test/run now exist with explicit local inputs.
+Format-0 JSON locks distinguish unresolved from local-experiment; no stable or
+promoted root pin is adopted. Automatic acquisition/store installation, self-upgrade,
+CLI HTTPS, complete host-tool runtime attestation and macOS/Windows replay remain
+open. These are not SDK Build Contract v1 or general D5/D6 completion claims.
+
+## Committed Source Checkpoint (2026-10-29)
+
+The source commits for the native Linux experiment are now explicit:
+
+| Role | Commit / meaning |
+| --- | --- |
+| CRT runtime and SDK build baseline | `64b447ba40ef339a65ca009adeda80530a83689c`; unchanged clean local Dev SDK |
+| CRT exporter/contract documentation | `17de3510c37cdb07e3c5c98583b22ebe4e1463ec`; includes the runtime fix and experimental exporter |
+| CLI implementation | `1270695ee8e1ab53b661c4540af859cb2463d840`; native modules, manifest/lock, tests and pinned dependency headers |
+
+The [producer contract](https://github.com/webos21/crt/blob/17de3510c37cdb07e3c5c98583b22ebe4e1463ec/docs/design/sdk_development_contract.md#experimental-native-compiler-provider-2026-10-28)
+and [exporter](https://github.com/webos21/crt/blob/17de3510c37cdb07e3c5c98583b22ebe4e1463ec/tools/export_cli_toolchain.py)
+are reviewed at that immutable source revision. This supplements the original
+`d21430d` design baseline; it does not replace historical provenance.
+All 19 non-Markdown inputs in the original receipt match the CLI implementation
+commit. The exporter bytes match its recorded SHA-256. Execution still belongs
+to the 2026-10-28 exported source/candidate; no later clean-build replay, new SDK
+identity or acceptance of a changed artifact is inferred from committing files.
+
+Documentation cleanup follows the implementation commit. It preserves original
+receipts, failed attempts and the unresolved repository lock. No new code was
+needed in this consolidation; version/bootstrap doctor was checked again using
+the byte-identical review executable. Complete macOS/Windows/lifecycle gates
+remain open, and repository pushes do not promote or publish SDK/CLI releases.
+
 ## Contract Inventory
+
+This is the original pinned review inventory. The implemented bootstrap-only
+formats and current local result are identified above; they do not assign
+versions/support to the full proposed command/job/project contracts below.
 
 Versions below are independent. A proposed first version is not an implemented
 schema, compatibility guarantee, or public release.
@@ -110,10 +203,10 @@ that later artifacts retain these versions.
 
 ## Adoption and Exercised Combinations
 
-There is **no approved runtime combination yet**. CLI D0/D1 and Studio S0/S1
-remain **Not run**; see their owning acceptance ledgers. No SDK/host-tool
-candidate, CLI executable, or Studio executable was selected or run during this
-documentation review. Design consistency is not runtime compatibility.
+There is **no promoted production combination yet**. The identified Linux D0
+local experiment above passes; macOS/Windows D0, complete D1 and Studio S0/S1
+remain Not run. Use the owning acceptance ledgers for scope, not a general
+claim that the SDK/CLI/Studio product combination is compatible.
 
 Add a combination record only with these fields and links to original evidence:
 

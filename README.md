@@ -1,8 +1,7 @@
 # CRT-CLI
 
 CRT-CLI is a CRT-native development-environment manager for building C and C++
-applications on Linux, Windows, and macOS. Examples currently use `crt`;
-choosing `crt` versus `crt-cli` remains an early product decision.
+applications on Linux, Windows, and macOS. Its executable is `crt-cli`.
 
 It aims to make [CRT](https://github.com/webos21/crt)'s Bionic-compatible runtime
 and staged SDKs easier to use: select an SDK, create a project, add libraries,
@@ -11,21 +10,28 @@ objects, sysroots, special compiler flags, or runtime search paths.
 
 ## Project Maturity
 
-This repository is in the design/bootstrap phase. It contains project guidance,
-designs, and a work queue, but no CLI executable, build system, installer, or
-published CLI package yet. Commands below illustrate the intended experience;
-they are not an installation guide or working commands for this repository.
+The Linux/x86_64 bootstrap consumes a produced Dev SDK. Its native C++ builder
+reads `crt.json` and invokes LLVM directly. `new` creates separate C/C++ files
+under `src/main/` and `src/test/`; bounded configure/build/test/run and bootstrap
+doctor are implemented. CMake, Python and shell are excluded from this app path.
+The SDK installer, dependency resolver, self-upgrade, macOS/Windows native replay
+and public release remain pending.
+
+See the [build guide](docs/guides/development.md#build-and-test-the-bootstrap)
+and [implemented contract](docs/reference/bootstrap_contract.md) for actual
+entry points and limitations. Bootstrap doctor reports integrity as not verified
+and HTTPS as not run; it is not complete installation/project health acceptance.
 
 ## Intended Experience
 
 ```sh
-crt sdk install --profile cxx
-crt doctor
-crt new hello --template cxx
+crt-cli sdk install --profile cxx
+crt-cli doctor
+crt-cli new hello --language cxx
 cd hello
-crt add zlib
-crt build
-crt run
+crt-cli add zlib
+crt-cli build
+crt-cli run
 ```
 
 - **Choose an SDK:** use the existing CRT stage appropriate for C, C++,
@@ -38,11 +44,15 @@ crt run
   without silently replacing tools or changing the system PATH.
 
 The CLI itself is intended to use CRT and ship as one executable per supported
-host, able to start before a development SDK is installed. Native feasibility
-and the precise resource/helper policy still require validation. Planned
+host, able to start before a development SDK is installed. Full three-host validation remains pending. The selected policy allows OS
+dependencies, data/cache/certificates, previous versions and temporary update
+helpers; no permanent auxiliary launcher is used. Planned
 `upgrade` updates the CLI itself; `doctor` distinguishes self, environment and
 project health. Projects pin their own SDK version/profile independently of
-CLI updates. SDK storage and acquisition defaults remain under review.
+CLI updates. SDK payloads use shared immutable storage with exact project references;
+first configure/build acquires a missing SDK, while new only creates sources.
+Automatic acquisition and shared-store installation remain planned; the current
+experiment selects a local SDK and separately hashed compiler policy explicitly.
 CRT Studio is a later, separate native IDE built on this CLI workflow.
 
 ## Platforms and Requirements

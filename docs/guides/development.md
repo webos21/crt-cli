@@ -1,7 +1,7 @@
 # Development and Bootstrap Guide
 
 This guide describes the initial development process. It is not an installer
-guide and does not imply that the proposed `crt` commands exist.
+guide. The implemented subset and the intended full workflow are distinct.
 
 ## Before Making Changes
 
@@ -12,10 +12,47 @@ guide and does not imply that the proposed `crt` commands exist.
 3. Choose one authorized, bounded increment. Record its active scope in TODO
    before moving on; do not treat the entire roadmap as implementation approval.
 
-The repository currently contains documentation only: no `CMakeLists.txt`,
-presets, implementation, or test runner has been established. Do not advertise
-`cmake --build`, CTest, or CLI commands as verified entry points yet. Add the
-actual configuration/build/test commands here when those entry points exist.
+The native JSON bootstrap replaces the initial CMake prototype. The
+[implemented contract](../reference/bootstrap_contract.md) owns formats and scope;
+[acceptance](../acceptance/bootstrap_acceptance.md) owns per-host outcomes.
+
+## Build and Test the Bootstrap
+
+Use native LLVM and a produced Dev SDK plus its separately hashed experimental
+compiler policy. No CMake, Python, shell or network dependency is needed by the
+CLI build/test path. A temporary hosted C++ seed builds the first CRT-native CLI:
+
+```text
+clang++ -std=c++17 -O1 -fuse-ld=lld --ld-path=/absolute/ld.lld tools/bootstrap_host.cpp src/main/core.cpp src/main/process.cpp src/main/toolchain.cpp src/main/project.cpp -o /absolute/native-seed
+/absolute/native-seed configure --project /absolute/crt-cli --sdk-root /absolute/handoff/dev --sdk-contract /absolute/handoff/native-toolchain-v0.json --contract-sha256 <exact-provider-sha256> --cc /absolute/clang --cxx /absolute/clang++ --linker /absolute/ld.lld
+/absolute/native-seed build --project /absolute/crt-cli
+/absolute/crt-cli/out/native/crt-cli test --project /absolute/crt-cli --json
+/absolute/crt-cli/out/native/crt-cli doctor --bootstrap --json
+```
+
+These are separate argv invocations, not a shell script. Supply actual absolute
+paths and preserve the `ld.lld` driver name even when it is a symlink to `lld`.
+The seed is a disposable build-host tool using host C++; the resulting CLI links
+CRT/C++/HTTP/TLS statically and must pass its own import/runtime audit. The seed
+is never shipped and subsequent self-build/test uses the CRT-native CLI.
+
+CRT supplies the policy using `tools/export_cli_toolchain.py --sdk-root <dev>
+--output <fresh-provider.json>`. That producer migration tool still uses the old
+wrappers/Python/shell; do not count it as a CLI consumer dependency or a public
+SDK schema. Retain the producer source, export tool hash, immutable SDK inventory
+and provider digest separately. Do not overwrite an accepted candidate.
+
+For generated projects, run `crt-cli new /absolute/hello --language cxx`, select
+the same local SDK explicitly with configure, then run test/build/run with
+`--project /absolute/hello`. New only generates sources. Missing SDK selection
+currently fails clearly; automatic acquisition remains planned.
+
+Fresh isolated Linux replay must export sources and SDK outside producer trees,
+hide producer/original inputs, make Python/shell/CMake/Ninja executables unavailable,
+trace actual execve calls and run native self-build/tests. Bare-binary checks then
+hide the relocated SDK/source/output as well. Keep logs, exact argv, source/export
+hashes, ELF imports, mapped images and unchanged inventories. Linux evidence does
+not grant macOS/Windows acceptance. The previous CMake receipts remain historical.
 
 ## Bootstrap Planning Order
 
@@ -28,9 +65,11 @@ the compatibility boundary, not an identical frozen source tree.
 
 Single-executable distribution is the target. D0 records actual CRT/C++/HTTP/TLS
 link/import feasibility; D1 exercises SDK-free self-diagnosis and real HTTPS.
-The command prefix, precise resource/helper policy, physical SDK storage default
-and acquisition timing remain review decisions. Do not silently choose them
-or claim a sidecar runtime satisfies the one-file goal.
+The owner selected crt-cli, shared immutable SDKs with project references,
+first-configure/build acquisition and no permanent launcher on 2026-10-28.
+Cache/certificate data, previous versions and temporary update helpers are
+allowed; their exact trust/activation mechanisms still require validation.
+A sidecar CRT runtime does not satisfy the one-file goal.
 
 Project SDK version/profile/target/content selection is independent of storage
 and CLI upgrades. Record the actual backend and build mode separately from
@@ -45,8 +84,8 @@ The first implementation must identify real inputs, not placeholders:
   archive/content digests, manifest, and actual public wrapper/toolchain paths.
 - Execution host identity and the CRT shell/tools/rootfs available for it,
   including aliases, DLL/runtime dependencies, and declared generators.
-- External LLVM/LLD, CMake/Ninja, OS/vendor SDK, and any required
-  Python/Perl/pkg-config: selected paths, versions/content identities, and roles.
+- External LLVM/LLD and OS/vendor SDK; optional port-build generators:
+  selected paths, versions/content identities, and roles.
 - Missing SDK consumer contracts or host/target separation that require a
   producer-side change, rather than a local wrapper workaround.
 
@@ -86,8 +125,8 @@ those trees can be made unavailable during consumer validation.
    Record archive size/hash when packaged, a content inventory/digest, actual
    profile/manifest formats and the producer verification receipt. A directory
    path, version string or `main` reference alone is not a candidate identity.
-3. Build the bounded CLI increment with only that candidate's public wrappers,
-   toolchain, headers, libraries and declared resources. Record the CLI snapshot
+3. Build the bounded CLI increment with only that candidate's public compiler policy,
+   headers, libraries and declared resources. Record the CLI snapshot
    and exact commands when implementation supplies real entry points. Do not
    link loose CRT build objects, include private headers, or add the producer
    source with CMake. Initial manual handoff does not require a D2 installer.
@@ -104,7 +143,8 @@ Record results under [D0 acceptance](../acceptance/bootstrap_acceptance.md#local
 and link the exact experiment in [compatibility](../compatibility.md#local-candidates-and-promotion).
 Local candidate evidence may establish a bounded development result without
 public release or promotion. It is not an adopted production lock or automatic
-release qualification. No CLI experiment has been run by writing this guide.
+release qualification. Actual local experiment results belong to acceptance; reading the guide
+alone does not grant a pass.
 
 For coordinated publication, merge/validate the producer and promote an exact
 retrievable SDK artifact, then replay the CLI against that actual artifact,
@@ -119,15 +159,15 @@ against a manually installed immutable SDK; implementing the SDK downloader is
 not required just to build the first CLI. Define the consumer/identity/result
 contracts and minimal runtime closure before growing command implementations.
 
-Establish a minimal CRT-native C/C++ project with the installed SDK's CMake
-toolchain. Add focused tests and real entry-point documentation with that work.
+Build the CRT-native C/C++ CLI through the native manifest/compiler policy. Add
+focused tests and real entry-point documentation with that work.
 Do not independently reconstruct freestanding/startup/link flags, vendor the
 producer, or pull the entire UI/Web stack into the minimal bootstrap CLI.
 
 Before source-first port acceptance, validate the actual CRT mksh/toybox/awk/
-make environment. An initial adapter may call the installed versioned Python
-port driver, with Python declared as a host prerequisite. Do not reimplement
-recipe semantics or replace JSON recipes with a TOML DSL as an initial shortcut.
+make environment. The future native executor must preserve the reviewed JSON
+recipe semantics and regression results without a Python prerequisite; optional
+upstream shell/make requirements must remain explicit.
 
 ## Validation and Evidence
 
@@ -136,8 +176,8 @@ SDK-only and runtime-closure validation. Separate fixtures, compile/link tests,
 native execution, and cross compilation. A failed or skipped test is not a
 passing native result.
 
-Configuration/wiring changes need a fresh build directory or fresh CMake
-configuration. Documentation-only changes need link/anchor, formatting,
+Configuration/wiring changes need a fresh native source export and build output.
+Documentation-only changes need link/anchor, formatting,
 fence, and consistency checks, not a full CRT/WebKit build. Keep generated
 build/download/store data outside tracked source and use bounded logs.
 

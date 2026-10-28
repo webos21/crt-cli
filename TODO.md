@@ -24,26 +24,28 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
 
 ### D0 - SDK Consumer Contracts and Bootstrap Definition
 
-Current focus: contracts and bootstrap planning. No CLI source, executable,
-build configuration, or runtime acceptance is implemented yet. See
+Current focus: Linux native bootstrap evidence and remaining native-pair replay.
+The native JSON builder replaces the initial CMake prototype. Bootstrap and
+bounded new/configure/build/test/run pass on Linux without Python/shell;
+SDK installation, general dependency workflows and self-upgrade remain planned. See
 [D0/D1 acceptance](docs/acceptance/bootstrap_acceptance.md).
 Develop together with CRT Tranche 1 in one authorized local session, using the
 [local Dev SDK candidate loop](docs/guides/development.md#local-dev-sdk-candidate-loop).
 Public SDK release is not a prerequisite; CLI consumption stays SDK-only.
 
-- [ ] **D0.1** Review command naming, one-executable/resources/helpers, project SDK
-  storage and acquisition timing; [open decisions](docs/design/crt_cli.md#10-decisions-for-the-first-implementation)
-  must not become implicit implementation defaults.
-- [ ] **D0.2** Define the initial evolving source/module/template contract and
-  SDK-only CMake/Ninja/CTest entry points before implementing the minimal CLI.
-- [ ] **D0.3** Copy/extract an identified Dev SDK outside producer trees; record
+- [x] **D0.1** Record owner choices: crt-cli, shared immutable SDK references,
+  first-build acquisition and one-executable/data/temporary-helper policy.
+- [x] **D0.2** Define the initial evolving source/module/template contract and
+  SDK-only native manifest/driver entry points, src/main modules and C/C++ src/test.
+- [x] **D0.3** Copy/extract the Linux Dev SDK outside producer trees; record
   producer/CLI snapshots, hashes, host/target/tools and public wrapper/import/rootfs inputs.
-- [ ] **D0.4** Define SDK identity/capability, lock and JSON fixtures; distinguish
-  content profiles from build modes and existing formats from proposed schemas.
+- [x] **D0.4** Implement bootstrap SDK/result records and experimental format-0
+  manifest/lock inputs; the general SDK/project contracts remain distinct.
 - [ ] **D0.5** Implement bounded help/version/bootstrap diagnosis and check
   single-executable link feasibility for the chosen CRT/C++/HTTP/TLS stack.
+  Linux passes; native macOS/arm64 and Windows/x64 replay remains.
 - [ ] **D0.6** Validate relocated build/run/imports with producer trees unavailable;
-  feed gaps to CRT and retest each candidate on the initial native pairs.
+  Linux passes; replay the other initial native pairs against their own SDKs.
 - [ ] **D0.7** Link exact candidate/case evidence in [compatibility](docs/compatibility.md),
   resolve asset coherence with CRT and adopt final pins only after producer promotion.
 
@@ -70,15 +72,15 @@ These are future increments, not implemented features.
   verification, transactions, interrupted-install recovery, and explicit updates.
 - [ ] Replay installation failures and path/tool collisions on the three
   initial native host pairs; never migrate project locks implicitly.
-- [ ] Decide/validate project-local versus shared immutable SDK storage and
-  cache behavior; version/profile/target/content pins remain project-specific.
+- [ ] Implement/validate shared immutable SDK storage and project references;
+  version/profile/target/content pins remain project-specific.
 - [ ] Implement verified CLI self-upgrade with candidate health checks,
   OS-specific activation, interruption/rollback and unchanged project SDK/port pins
   ([lifecycle gates](docs/acceptance/lifecycle_acceptance.md)).
 
 ### D3 - First Source-built Port
 
-- [ ] Reuse the existing JSON zlib recipe/driver through a versioned adapter;
+- [ ] Implement native execution of the reviewed JSON zlib recipe contract;
   fetch/verify/build/test and publish into a separate immutable port store.
 - [ ] Require Windows CRT-shell/make static/shared link/run evidence and
   unchanged SDK/source inputs before accepting the first port.
@@ -92,11 +94,11 @@ These are future increments, not implemented features.
 
 ### D5 - Application Workflow
 
-- [ ] Connect new/add/configure/build/run to SDK-only CMake imports and
-  selected dependencies; expand templates from C/C++ to supported upper stages.
+- [ ] Extend the bounded native new/configure/build/test/run to dependency
+  resolution and upper stages; app workflows must not require Python, shell or CMake.
 - [ ] Validate external consumers, runtime closures, and Web worker layout
   without producer-private headers or build-tree inputs.
-- [ ] Validate the chosen new-project SDK acquisition timing, generated layout,
+- [ ] Validate first-configure/build SDK acquisition, source-only new, generated layout,
   locked/offline failures and CLI self-build/template parity; keep layout evolution explicit.
 
 ### D6 - Packaging and Automation

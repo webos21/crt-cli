@@ -13,9 +13,13 @@ Current work is in [TODO](../TODO.md); completed work is in
   and D0-D7 dependency order. This repository owns subsequent CLI design.
 - [Contract Compatibility and Adoption](compatibility.md): independent existing
   formats vs proposed contracts, exact baseline/adoption records and shared
-  review links. No runtime combination is approved yet.
+  review links. Local Linux bootstrap evidence exists; no promoted production
+  SDK/CLI/Studio combination is approved yet.
 
-Producer-owned contracts remain in the CRT repository at the adopted baseline:
+The initial producer-owned design baseline remains pinned below. The later
+[committed native-provider review](compatibility.md#committed-source-checkpoint-2026-10-29)
+records the exporter/contract and CLI implementation revisions independently
+from the SDK build baseline:
 
 - [SDK Development Contract](https://github.com/webos21/crt/blob/d21430ddeb59aea76cf6abd58c15a69f55cfda52/docs/design/sdk_development_contract.md).
 - [CRT Studio boundary](https://github.com/webos21/crt/blob/d21430ddeb59aea76cf6abd58c15a69f55cfda52/docs/design/crt_studio.md).
@@ -25,7 +29,8 @@ Producer-owned contracts remain in the CRT repository at the adopted baseline:
 - [Development and Bootstrap Guide](guides/development.md): how to approach the
   initial implementation, [test local unreleased Dev SDK candidates](guides/development.md#local-dev-sdk-candidate-loop),
   record SDK/tool inputs, and document real commands.
-  There is no executable installation/build quick start yet.
+  [Linux bootstrap build/test entry points](guides/development.md#build-and-test-the-bootstrap)
+  now exist; the full installer/project workflow remains planned.
 
 ## Acceptance Contracts and Evidence
 
@@ -35,7 +40,10 @@ Producer-owned contracts remain in the CRT repository at the adopted baseline:
   the evidence format. Planned criteria are not passing results.
 - [CLI Lifecycle Acceptance](acceptance/lifecycle_acceptance.md): future
   self-upgrade/activation/recovery, per-project SDK/new, scoped doctor and
-  shipping-artifact gates. All cases remain Not run.
+  shipping-artifact gates. Complete lifecycle gates remain Not run; partial
+  project-generation/self-build evidence is linked to native D0 acceptance.
+- [Implemented Bootstrap Contract](reference/bootstrap_contract.md): SDK input
+  and command/result formats, experimental project fixtures and actual limits.
 
 ## Document Ownership
 

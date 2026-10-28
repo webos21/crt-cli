@@ -4,16 +4,18 @@ This record owns future CLI self-upgrade, project SDK/creation, scoped
 diagnostics and distribution gates. Policy belongs to the
 [CLI design](../design/crt_cli.md), order to [TODO](../../TODO.md), and initial
 SDK-only/single-executable/HTTPS bootstrap to
-[D0/D1 acceptance](bootstrap_acceptance.md). These criteria are **Not run**;
-there is no CLI implementation or release acceptance in this document.
+[D0/D1 acceptance](bootstrap_acceptance.md). These complete lifecycle gates are **Not run**; the bounded Linux D0
+implementation and its partial project evidence belong to bootstrap acceptance.
+No release lifecycle is accepted here.
 
 ## Prerequisite Decisions
 
-Review [the open product decisions](../design/crt_cli.md#10-decisions-for-the-first-implementation):
-executable prefix, precise single-file/resource/helper definition, default
-project SDK storage and acquisition timing. Actual CLI/SDK formats and trust
-mechanisms must be identified, not inferred from draft names. Record a
-prerequisite gap instead of silently choosing a default or granting a pass.
+The owner choices in [product decisions](../design/crt_cli.md#10-decisions-for-the-first-implementation)
+are recorded: crt-cli, shared immutable references, first-build acquisition,
+and one executable with declared OS/data/temporary-helper allowances and no
+permanent launcher. Exact trust/provisioning/activation mechanisms still need
+implementation and evidence. Actual CLI/SDK formats must be identified; record
+remaining prerequisite gaps instead of inferring installer support or a pass.
 
 ## D2 - CLI Self-Upgrade
 
@@ -45,10 +47,10 @@ global security settings to make a gate pass.
 | PR-06 ABI and modes | One validated SDK combination per build target; ports bind SDK/target/tool identities; SDK content profiles remain separate from Debug/Release build modes |
 | PR-07 Self-build/template parity | Once new/build/run/test exist, the CLI's own project and a fresh generated project use the same public SDK/build contract; internal module evolution has no private exemption |
 
-SDK payload copies under a project and shared immutable payloads with project
-bindings are alternative backends under review. Paths such as `.crt/sdk` are
-illustrative, not implemented schemas. Do not mark both modes supported from
-testing only one. Begin with validated cumulative SDK stage/Dev artifacts;
+Shared immutable payloads with exact project references are the selected
+default. Handoff/export copies do not establish a second project-local
+installer. Paths such as `.crt/sdk` remain illustrative, not implemented schemas.
+Begin with validated cumulative SDK stage/Dev artifacts;
 arbitrary component assembly is a separate producer contract.
 
 ## D6 - Distribution and Diagnostics
@@ -72,6 +74,10 @@ and outcomes. Link actual experiments/adoption in
 [compatibility](../compatibility.md). Preserve original failed and known-good
 identities; new code or a changed merge artifact requires new evidence.
 
-All UP/PR/PK cases are **Not run**. No candidate, supported backend, command
-implementation, runtime combination or public release is approved here.
+All complete UP/PR/PK cases are **Not run**. The
+[native Linux D0 experiment](bootstrap_acceptance.md#native-json-builder-on-linuxx86_64-2026-10-28)
+exercises source-only C/C++ generation, existing-destination rejection and
+self-build/template parity. Those results supply partial PR-04/PR-07 evidence;
+they do not close template-versioning, installer, multi-SDK or three-host gates.
+No production combination or public release is approved here.
 Fixture/compile-only/skipped cases cannot close native lifecycle gates.

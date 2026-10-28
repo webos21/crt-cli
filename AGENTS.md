@@ -3,7 +3,7 @@
 ## Mission
 
 Build `crt-cli`, a CRT-native development-environment manager for Linux,
-Windows, and macOS. Examples currently use the draft command prefix `crt`.
+Windows, and macOS. Its executable name is `crt-cli`.
 
 The CLI makes CRT application development reproducible without requiring users
 to assemble startup objects, freestanding flags, sysroots, runtime link order,
@@ -11,8 +11,7 @@ or worker/DLL search paths manually. It manages SDKs, host tools, source-built
 ports, project creation, build/run/test/package workflows, and diagnostics.
 
 The intended product is written in CRT-native C/C++ with a C++17 baseline.
-Choosing `crt` versus `crt-cli` remains an explicit product decision; keep
-draft examples consistent until review.
+The owner selected `crt-cli` on 2026-10-28; there is no implicit `crt` alias.
 Rust/Cargo and Homebrew are references for user experience and package models,
 not requirements to implement the CLI in Rust/Go or use the host C/C++ runtime.
 CRT Studio is a later, separate GUI consumer of the CLI's public contract.
@@ -75,30 +74,40 @@ the entire roadmap, creation of other repositories, or publication.
 
 ## Language, Build, and Runtime Contract
 
-Use CMake, Ninja by default, and CTest for project-owned tests. Product code
+Use the native manifest-driven builder (`crt.json`, experimental format 0) and
+C/C++ tests under `src/test/`. Keep `main.cpp` as command dispatch; implement
+project, SDK/compiler and process behavior in separate `src/main/` modules.
+Do not require CMake, Ninja, Python or a shell for CLI self-build, control commands
+or generated application build/test/run. Product code
 must build against CRT, not host glibc/libSystem/MSVCRT or host C++ libraries
 as substitute standard runtimes. SDK-declared OS/PAL boundaries remain allowed.
 Do not add a required Go/Rust product implementation without an explicit
 architecture decision.
 
 Delegate compiler flags, startup selection, sysroot, compiler-rt, link order,
-and static/shared runtime policy to the selected SDK's wrappers and
-`crt-toolchain.cmake`. Do not copy `crt0.c` into projects or independently
+and static/shared runtime policy to the selected SDK's declarative native
+compiler policy. The CLI implements
+the driver and directly invokes LLVM with argv; it must not execute the old
+`crt-cc`/`crt-c++` shell wrappers in the native app path. Do not copy `crt0.c`
+into projects or independently
 hardcode the SDK's low-level flags in command handlers. Preserve Windows CRT
 DWARF/Itanium/libunwind ABI policy; do not mix MSVC/GNU C++ runtimes.
 
-Clang/LLD, CMake/Ninja, OS/vendor SDKs, and declared generators may be external
+Clang/LLD, OS/vendor SDKs, and explicitly declared port generators may be external
 native host tools. Record and validate their identities. They are distinct
 from CRT target libraries and are not implicitly bundled into SDKs or apps.
-If an initial adapter invokes the installed SDK's Python port driver, declare
-the Python requirement and pin that driver contract. Do not hide the
-dependency or immediately duplicate its recipe semantics.
+Python remains an SDK-producer implementation detail, not a CLI prerequisite.
+A native recipe engine must preserve producer JSON semantics and regression
+fixtures. Upstream configure/make ports may require explicitly selected CRT
+shell/tools; that optional port environment is separate from native app builds.
 
 Build the CLI against a pinned SDK. Single-executable distribution is the
 product goal: link non-OS CRT/C++/HTTP/TLS dependencies into the CLI and verify
 actual native imports/execution. A dynamic runtime bundle is not the default
 fallback or proof of this goal. Agree resource/trust/notices and helper/launcher
 exceptions explicitly; record unsupported results without claiming a pass.
+The selected policy allows declared OS dependencies, cache/certificate data,
+previous versions and temporary update helpers, but no permanent launcher.
 The bootstrap CLI must run on a machine without a development SDK.
 Do not require the complete UI/Web stack merely to install SDKs or fetch ports.
 Validate CRT-built HTTP/TLS dependencies and trust configuration explicitly.
@@ -121,10 +130,12 @@ Verify actual capabilities instead of inferring them from a profile name.
 Maintain independent, versioned areas for CLI runtimes, host tools, SDKs,
 toolchain records, registry snapshots, source caches, jobs, and port stores.
 Follow the design's `CRT_HOME` layout without rearranging SDK internals.
-Each project locks its own SDK version/profile/target/content identity. The
-default physical storage backend and acquisition timing remain review decisions;
-project-local copies and shared immutable bindings must provide the same
-selection/isolation contract. SDK content profiles are separate from build modes.
+Each project locks its own SDK version/profile/target/content identity. Use
+shared immutable SDK payloads and project-specific exact references. First
+configure/build acquires a missing SDK; `new` generates sources without SDK
+download. Installer/resolver behavior remains D2/D5 work. SDK content profiles
+are separate from build modes; handoff/test copies do not implement a second
+storage mode.
 Support user-selected locations and real paths containing spaces and Unicode.
 
 - `control`: CLI-private runtime for selection, fetch, and diagnostics.
@@ -182,7 +193,7 @@ are not public application port packages. Start with zlib, then
 `sqlite-amalgamation` and libpng; OpenAL Soft/SDL3 are later candidates, not
 assumed accepted ports.
 
-`crt.toml` describes project intent; `crt.lock` records exact resolved inputs.
+`crt.json` describes project intent; `crt.lock` records exact resolved inputs.
 Their schemas are design work until implemented and tested. Pin concrete SDK,
 registry, source, recipe, variant, dependency, and tool identities; a version,
 channel, branch, or `latest` alone is not sufficient. `--locked` forbids
@@ -250,7 +261,8 @@ For each requested increment:
 3. Implement against installed SDKs without producer-private inputs.
 4. Run applicable tests, document evidence/limits, then proceed to the next step.
 
-Use fresh CMake configuration for wiring changes; stale caches are not proof.
+Use a fresh native source export/output for build-wiring changes; stale output
+is not proof.
 Document real build/test commands once they exist. Parser/resolver/transaction
 fixtures belong in fast tests; actual artifact consumers and native replay are
 separate gates. Documentation-only changes do not require a full WebKit build.
