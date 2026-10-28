@@ -23,14 +23,19 @@ Producer-owned contracts remain in the CRT repository at the adopted baseline:
 ## Development and Usage Guides
 
 - [Development and Bootstrap Guide](guides/development.md): how to approach the
-  initial implementation, record SDK/tool inputs, and document real commands.
+  initial implementation, [test local unreleased Dev SDK candidates](guides/development.md#local-dev-sdk-candidate-loop),
+  record SDK/tool inputs, and document real commands.
   There is no executable installation/build quick start yet.
 
 ## Acceptance Contracts and Evidence
 
 - [D0/D1 Bootstrap Acceptance](acceptance/bootstrap_acceptance.md): SDK-only
-  CLI consumption, minimal runtime and Windows host-environment gates, and
+  CLI consumption, initial layout/decisions, single-executable feasibility,
+  SDK-free self-doctor/HTTPS and Windows host-environment gates, and
   the evidence format. Planned criteria are not passing results.
+- [CLI Lifecycle Acceptance](acceptance/lifecycle_acceptance.md): future
+  self-upgrade/activation/recovery, per-project SDK/new, scoped doctor and
+  shipping-artifact gates. All cases remain Not run.
 
 ## Document Ownership
 

@@ -1,7 +1,8 @@
 # CRT-CLI
 
 CRT-CLI is a CRT-native development-environment manager for building C and C++
-applications on Linux, Windows, and macOS. Its intended command name is `crt`.
+applications on Linux, Windows, and macOS. Examples currently use `crt`;
+choosing `crt` versus `crt-cli` remains an early product decision.
 
 It aims to make [CRT](https://github.com/webos21/crt)'s Bionic-compatible runtime
 and staged SDKs easier to use: select an SDK, create a project, add libraries,
@@ -36,8 +37,12 @@ crt run
 - **Keep environments separate:** manage CRT host tools and runtime dependencies
   without silently replacing tools or changing the system PATH.
 
-The CLI itself is intended to use CRT, with a bootstrap package containing its
-minimal runtime so it can run before a development SDK is installed.
+The CLI itself is intended to use CRT and ship as one executable per supported
+host, able to start before a development SDK is installed. Native feasibility
+and the precise resource/helper policy still require validation. Planned
+`upgrade` updates the CLI itself; `doctor` distinguishes self, environment and
+project health. Projects pin their own SDK version/profile independently of
+CLI updates. SDK storage and acquisition defaults remain under review.
 CRT Studio is a later, separate native IDE built on this CLI workflow.
 
 ## Platforms and Requirements

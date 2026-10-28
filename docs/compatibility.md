@@ -23,6 +23,68 @@ this review snapshot identifies a downloaded/validated SDK or a runnable
 CLI/Studio combination. Record later contract adoption explicitly; never
 silently follow `main` as an artifact identity.
 
+## Local Candidate Workflow Review (2026-10-28)
+
+Reviewed CRT `3c7f43747872de099eb627c51a0376befb40506b` (plus its existing
+uncommitted numbered TODO plan) and CLI
+`5fcdc995d231fe2f9dbab4292000a81e0b4fce93` before this working-tree documentation
+update. The original design/review revisions above remain unchanged. This
+review defines a development workflow; these revisions are not SDK artifact
+locks, a schema implementation or an exercised runtime combination.
+
+CRT owns local Dev SDK production, public interfaces and technical verification;
+CLI owns the independent consumer and this candidate/adoption record. The
+[producer assembly evidence](https://github.com/webos21/crt/blob/3c7f43747872de099eb627c51a0376befb40506b/docs/acceptance/release_qualification.md)
+and [SDK split evidence](https://github.com/webos21/crt/blob/3c7f43747872de099eb627c51a0376befb40506b/docs/acceptance/sdk_split_acceptance.md)
+do not grant CLI D0/D1 acceptance. The producer's implemented Dev packaging
+profile is distinct from the proposed general SDK development contract.
+
+### Local Candidates and Promotion
+
+A candidate can be built/verified locally without a public SDK release. One
+authorized session may work on both repositories; follow the
+[handoff procedure](guides/development.md#local-dev-sdk-candidate-loop).
+The CLI consumes a copied/extracted SDK outside producer trees. Access to CRT
+source/build results for diagnosis does not make them consumer build inputs.
+
+Record an actual local experiment with the combination fields below and links
+to [D0 case evidence](acceptance/bootstrap_acceptance.md#local-candidate-boundary),
+explicitly identifying its local/unpromoted state. Development results may be
+Pass/Fail/Not run for a bounded case; they do not silently enter the approved
+combination or promoted-lock set. Capture changed artifacts under new identities
+and preserve failed records. No candidate or CLI execution is selected by this
+documentation update; the runtime ledger remains Not run.
+
+SDK/CLI versions and publication times are independent. Before final consumer
+lock adoption/public CLI delivery, validate/promote the producer, replay against
+the actual promoted SDK and adopt that exact artifact identity. Local candidate
+success does not validate a different merge/release artifact, nor authorize
+publication. No new lock/schema version or local-install command is introduced.
+
+### Product Planning Clarification (2026-10-28)
+
+The same working-tree review adds early initial-layout decisions, a
+single-executable distribution goal, CLI self-upgrade, scoped doctor and
+project-specific SDK version/profile selection. The prior dynamic-bundle
+default is replaced as a product goal, not invalidated as historical producer
+evidence. Source/module directories may evolve while the public project/build
+contract remains the same as generated projects.
+
+| Planned surface | Owner and review boundary |
+| --- | --- |
+| CLI executable/resources | CLI; CRT supplies link/runtime contracts; native one-file and SDK-free HTTPS proof required |
+| CLI upgrade/doctor | CLI; explicit self/environment/project scopes and verified candidate activation/recovery; no project-pin mutation |
+| Project SDK binding/new | CLI; exact SDK/profile/target/capability/content identities, with producer artifact/ABI rules retained |
+| Physical storage/acquisition | CLI decision pending: project-local versus shared immutable payload; new/install/first-build timing not selected |
+
+The executable prefix and detailed data/launcher/helper policy also remain
+[open decisions](design/crt_cli.md#10-decisions-for-the-first-implementation).
+No new schema version, backend support or implemented command is assigned by
+this plan. [Bootstrap](acceptance/bootstrap_acceptance.md) and
+[lifecycle](acceptance/lifecycle_acceptance.md) criteria are future gates; all
+runtime/adoption results remain Not run. Original pinned baselines above are
+unchanged and this update selects no actual SDK/CLI artifact combination.
+
 ## Contract Inventory
 
 Versions below are independent. A proposed first version is not an implemented
@@ -61,6 +123,8 @@ Add a combination record only with these fields and links to original evidence:
   options/capabilities; build host, host-tools and external-toolchain identities.
 - Adopted development/host-tool/recipe/CLI schema versions, or explicit
   draft/unavailable status; implemented command/capability subset consumed.
+- Actual CLI distribution/resource/helper policy and project SDK storage mode;
+  keep SDK content profile, build mode and physical backend distinct.
 - Original case IDs/evidence for fixtures, consumer build/link, native runtime,
   SDK-free HTTPS bootstrap, and Studio live integration as applicable.
 - Outcome per scope/host: **Pass**, **Fail**, **Not run**, **Skipped** with

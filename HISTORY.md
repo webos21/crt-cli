@@ -9,6 +9,58 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-10-28
+
+### Define initial structure, single-executable and project lifecycle goals
+
+Reordered D0 with explicit D0.1-D0.7 items aligned to CRT Tranche 1.1-1.7:
+product/initial source-layout review precedes SDK handoff, fixtures and minimal
+CLI implementation. The generated-project/public build contract is shared;
+internal module directories may evolve without a private self-build exemption.
+
+Adopted single-executable distribution as a goal, replacing the prior dynamic
+bundle default without retroactively changing producer evidence. Defined
+self/environment/project doctor, planned verified CLI self-upgrade with
+candidate health/activation/recovery, and project-specific SDK version/profile
+pins independent of physical storage and build modes. Command naming, detailed
+resources/helpers, storage default and new/install/first-build acquisition timing
+remain explicit review decisions rather than selected implementation defaults.
+
+Added [lifecycle acceptance](docs/acceptance/lifecycle_acceptance.md) for future
+upgrade/project/package gates, extended bootstrap criteria without renumbering
+existing case IDs, and linked the compatibility record, guide, index, README
+and contributor rules. The reviewed baseline commits remain those in the
+existing local workflow review, with these additional working-tree documents.
+No product sources/build targets, command execution, runtime pass, lock adoption
+or public release were introduced.
+Documentation checks cover 226 local paths/anchors across the 14 changed/new
+producer/consumer Markdown files, fences, numbering and whitespace. Original
+bootstrap case IDs/Not run ledgers and both STATUS files are preserved; remote
+URLs were not network-validated.
+
+### Define joint development using local unreleased Dev SDK candidates
+
+Coordinated CRT Tranche 1 and CLI D0 planning: one authorized session can
+develop both local repositories before a public Dev SDK release. The producer
+creates/verifies a candidate; CLI consumes its immutable copied/extracted public
+SDK outside producer source/build trees. The development guide owns the
+handoff/fix/rebuild/retest procedure; D0 acceptance owns source-tree-unavailable
+validation and exact source/build/artifact identities. Failed candidates remain
+separate from rebuilt ones and from final promoted-lock adoption.
+
+Recorded the pre-change repository baselines and ownership in
+[compatibility](docs/compatibility.md#local-candidate-workflow-review-2026-10-28),
+preserving original design provenance and the Not run runtime ledgers. Updated
+TODO, contributor guidance, design and the documentation index. SDK/CLI versions
+and public-release times remain independent; promote/revalidate the producer
+artifact before final CLI pin adoption and public delivery. No CLI source,
+build entry point, candidate test, artifact promotion or public release was
+performed by this documentation change.
+Documentation checks pass for 123 local paths/anchors across the changed
+producer/consumer documents, fences, numbering, review revisions and whitespace;
+STATUS and the Not run runtime ledger are unchanged. Remote URLs were not
+network-validated.
+
 ## 2026-10-21
 
 ### Connect producer contracts, bootstrap acceptance and Studio adoption

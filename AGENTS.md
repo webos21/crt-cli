@@ -3,7 +3,7 @@
 ## Mission
 
 Build `crt-cli`, a CRT-native development-environment manager for Linux,
-Windows, and macOS. Its user-facing executable is `crt`.
+Windows, and macOS. Examples currently use the draft command prefix `crt`.
 
 The CLI makes CRT application development reproducible without requiring users
 to assemble startup objects, freestanding flags, sysroots, runtime link order,
@@ -11,6 +11,8 @@ or worker/DLL search paths manually. It manages SDKs, host tools, source-built
 ports, project creation, build/run/test/package workflows, and diagnostics.
 
 The intended product is written in CRT-native C/C++ with a C++17 baseline.
+Choosing `crt` versus `crt-cli` remains an explicit product decision; keep
+draft examples consistent until review.
 Rust/Cargo and Homebrew are references for user experience and package models,
 not requirements to implement the CLI in Rust/Go or use the host C/C++ runtime.
 CRT Studio is a later, separate GUI consumer of the CLI's public contract.
@@ -61,6 +63,10 @@ the entire roadmap, creation of other repositories, or publication.
 - Depend on public, installed SDK artifacts with exact identities. Do not
   vendor CRT source, include private headers, reference sibling build trees,
   or add `add_subdirectory(../crt)` as a shortcut.
+- Public SDK interfaces do not require a public SDK release. A locally produced
+  Dev SDK may be copied/extracted into an immutable handoff outside the producer
+  checkout/build tree and tested with exact provenance; follow the
+  [local candidate procedure](docs/guides/development.md#local-dev-sdk-candidate-loop).
 - CRT runtime/SDK production must not require CLI sources. CLI bootstrap uses
   an already produced SDK; optional product assembly is a separate step.
 - A CRT/PAL failure calls for a minimal reproducer and a linked producer-side
@@ -88,8 +94,12 @@ If an initial adapter invokes the installed SDK's Python port driver, declare
 the Python requirement and pin that driver contract. Do not hide the
 dependency or immediately duplicate its recipe semantics.
 
-Build the CLI against a pinned SDK and distribute its minimal runtime closure
-with it. The bootstrap CLI must run on a machine without a development SDK.
+Build the CLI against a pinned SDK. Single-executable distribution is the
+product goal: link non-OS CRT/C++/HTTP/TLS dependencies into the CLI and verify
+actual native imports/execution. A dynamic runtime bundle is not the default
+fallback or proof of this goal. Agree resource/trust/notices and helper/launcher
+exceptions explicitly; record unsupported results without claiming a pass.
+The bootstrap CLI must run on a machine without a development SDK.
 Do not require the complete UI/Web stack merely to install SDKs or fetch ports.
 Validate CRT-built HTTP/TLS dependencies and trust configuration explicitly.
 Windows imported DLLs must resolve at initial process load, not through an
@@ -111,6 +121,10 @@ Verify actual capabilities instead of inferring them from a profile name.
 Maintain independent, versioned areas for CLI runtimes, host tools, SDKs,
 toolchain records, registry snapshots, source caches, jobs, and port stores.
 Follow the design's `CRT_HOME` layout without rearranging SDK internals.
+Each project locks its own SDK version/profile/target/content identity. The
+default physical storage backend and acquisition timing remain review decisions;
+project-local copies and shared immutable bindings must provide the same
+selection/isolation contract. SDK content profiles are separate from build modes.
 Support user-selected locations and real paths containing spaces and Unicode.
 
 - `control`: CLI-private runtime for selection, fetch, and diagnostics.
@@ -221,6 +235,13 @@ CRT-native CLI first, then the Windows environment/bootstrap, safe SDK
 management, first source port, dependency/cache/lock handling, application
 workflows, deployment/automation, and finally Studio integration. Do not expand
 into IDE work or a registry service while these foundations remain unproven.
+
+Review the initial source/module/template and public build contract before
+minimal CLI implementation. Internal layout may evolve without private SDK
+inputs. Plan self/environment/project doctor separately; self-upgrade must
+verify/stage/diagnose/activate/recover without changing project SDK/port locks.
+Use the [lifecycle acceptance](docs/acceptance/lifecycle_acceptance.md) for those
+future gates; planned commands and directory examples are not implementations.
 
 For each requested increment:
 

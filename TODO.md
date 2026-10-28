@@ -27,20 +27,25 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
 Current focus: contracts and bootstrap planning. No CLI source, executable,
 build configuration, or runtime acceptance is implemented yet. See
 [D0/D1 acceptance](docs/acceptance/bootstrap_acceptance.md).
+Develop together with CRT Tranche 1 in one authorized local session, using the
+[local Dev SDK candidate loop](docs/guides/development.md#local-dev-sdk-candidate-loop).
+Public SDK release is not a prerequisite; CLI consumption stays SDK-only.
 
-- [ ] Select and record actual immutable SDK/host-tool candidates, external
-  toolchain identities, and public entry points for the first native build.
-- [ ] Inventory SDK wrapper/import/rootfs behavior; separate host tools and
-  generators from target artifacts and record producer-side contract gaps.
-- [ ] Define initial SDK/host/target identity, lock and JSON-result contracts
-  with focused fixtures, without assuming new SDK schemas already exist.
-- [ ] Populate the [compatibility adoption record](docs/compatibility.md) with
-  actual candidate identities and case evidence; the documentation review is
-  not a validated SDK/CLI/Studio combination.
-- [ ] Define the minimal CRT-native CLI and bootstrap runtime closure,
-  including the HTTP/TLS/trust choice and Windows loader behavior.
-- [ ] After contract review, establish the minimal SDK-only CMake/Ninja/CTest
-  entry points and actual CLI build/run evidence; document real commands.
+- [ ] **D0.1** Review command naming, one-executable/resources/helpers, project SDK
+  storage and acquisition timing; [open decisions](docs/design/crt_cli.md#10-decisions-for-the-first-implementation)
+  must not become implicit implementation defaults.
+- [ ] **D0.2** Define the initial evolving source/module/template contract and
+  SDK-only CMake/Ninja/CTest entry points before implementing the minimal CLI.
+- [ ] **D0.3** Copy/extract an identified Dev SDK outside producer trees; record
+  producer/CLI snapshots, hashes, host/target/tools and public wrapper/import/rootfs inputs.
+- [ ] **D0.4** Define SDK identity/capability, lock and JSON fixtures; distinguish
+  content profiles from build modes and existing formats from proposed schemas.
+- [ ] **D0.5** Implement bounded help/version/bootstrap diagnosis and check
+  single-executable link feasibility for the chosen CRT/C++/HTTP/TLS stack.
+- [ ] **D0.6** Validate relocated build/run/imports with producer trees unavailable;
+  feed gaps to CRT and retest each candidate on the initial native pairs.
+- [ ] **D0.7** Link exact candidate/case evidence in [compatibility](docs/compatibility.md),
+  resolve asset coherence with CRT and adopt final pins only after producer promotion.
 
 ## Planned
 
@@ -49,8 +54,10 @@ These are future increments, not implemented features.
 
 ### D1 - Windows Host Environment and CLI Bootstrap
 
-- [ ] Consume/validate the CRT host-tools/rootfs contract and a minimal CLI
-  bundle; define doctor/env/shell and per-child environments.
+- [ ] Validate the single CLI executable and self-doctor without a Dev SDK;
+  settle trust/data/notices/helper policy and inspect actual OS/runtime imports.
+- [ ] Consume/validate the separate CRT host-tools/rootfs contract; define
+  environment/project diagnosis, env/shell and per-child environments.
 - [ ] Verify actual CRT mksh/toybox/awk/make, SDK-free CLI execution, paths,
   private DLL resolution, and bounded owned-process cleanup.
 - [ ] Pass [D1-07 HTTPS bootstrap](docs/acceptance/bootstrap_acceptance.md#sdk-free-https-bootstrap-gate)
@@ -63,6 +70,11 @@ These are future increments, not implemented features.
   verification, transactions, interrupted-install recovery, and explicit updates.
 - [ ] Replay installation failures and path/tool collisions on the three
   initial native host pairs; never migrate project locks implicitly.
+- [ ] Decide/validate project-local versus shared immutable SDK storage and
+  cache behavior; version/profile/target/content pins remain project-specific.
+- [ ] Implement verified CLI self-upgrade with candidate health checks,
+  OS-specific activation, interruption/rollback and unchanged project SDK/port pins
+  ([lifecycle gates](docs/acceptance/lifecycle_acceptance.md)).
 
 ### D3 - First Source-built Port
 
@@ -84,6 +96,8 @@ These are future increments, not implemented features.
   selected dependencies; expand templates from C/C++ to supported upper stages.
 - [ ] Validate external consumers, runtime closures, and Web worker layout
   without producer-private headers or build-tree inputs.
+- [ ] Validate the chosen new-project SDK acquisition timing, generated layout,
+  locked/offline failures and CLI self-build/template parity; keep layout evolution explicit.
 
 ### D6 - Packaging and Automation
 
@@ -91,6 +105,10 @@ These are future increments, not implemented features.
   locked/offline behavior, and explicit recovery/cleanup.
 - [ ] Validate CLI/app packages without development SDK/build/store roots;
   preserve notices/source obligations and declared OS prerequisites.
+- [ ] Replay the CLI one-executable, scoped doctor and self-upgrade/recovery gates
+  on the actual release artifact; application packages retain their own runtime closures.
+- [ ] Coordinate public SDK/CLI delivery: verify the promoted producer artifact,
+  adopt its exact pin, then publish the CLI; retain independent product versions.
 
 ### D7 - Studio Integration
 
