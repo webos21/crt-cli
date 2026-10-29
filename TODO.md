@@ -26,8 +26,10 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
 
 Current focus: PAL-only native contract, typed build targets and SDK-owned
 JSON/SHA-2, followed by Linux/Windows replay of that new contract and candidate coherence.
-Temporary: each host's final executable is committed under `bin/<os>/` (see `bin/README.md`);
-macOS and Windows are present, the Linux binary remains to be built on its host.
+Temporary: each host's final executable is committed under `bin/` (`macos`, `linux-x64`,
+`linux-arm64`, `win-x64`, `win-arm64`; see `bin/README.md`). macOS, Linux/x86_64 and Windows/x64 are present;
+`linux-arm64` and `win-arm64` remain to be built on their hosts. Local SDK/tool inputs live in the ignored `.sdk.json`.
+Bootstrap loop goal: a changed SDK plus an already built `crt-cli` produce a new `crt-cli`, which then rebuilds and tests itself.
 The native JSON builder replaces the initial CMake prototype. Bootstrap and
 bounded new/configure/build/test/run pass on Linux and macOS without Python/shell;
 SDK installation, general dependency workflows and self-upgrade remain planned. See

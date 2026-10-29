@@ -582,7 +582,7 @@ archive is correctly reused.
 
 The resulting macOS/arm64 binary is committed as `bin/macos/crt-cli`: SHA-256
 `152b027f053fa7150dc7a3170ee361fd9615e2f305a915d45bef984576a5a55b`, 2,983,112 bytes,
-imports only `libSystem`. `bin/linux` and `bin/windows` are pending their native hosts.
+imports only `libSystem`. `bin/linux-x64`, `bin/linux-arm64`, `bin/win-x64` and `bin/win-arm64` are pending their native hosts.
 These binaries are local test aids built against a dirty local Development SDK, not
 releases; see `bin/README.md`.
 

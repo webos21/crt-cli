@@ -190,7 +190,7 @@ Reply create(const std::vector<std::string>& args) {
     fs::create_directories(root / "src/main"); fs::create_directories(root / "src/test"); fs::create_directories(root / "include");
     write_text(root / "crt.json", manifest.dump(2) + "\n");
     write_text(root / "crt.lock", Json{{"lock_format", 0}, {"state", "unresolved"}}.dump(2) + "\n");
-    write_text(root / ".gitignore", "/out/\n/.crt/\n");
+    write_text(root / ".gitignore", "/out/\n/.crt/\n/.sdk.json\n");
     write_text(root / "include/greeting.h", "#pragma once\nconst char* greeting(void);\n");
     write_text(root / ("src/main/greeting." + suffix), "#include <greeting.h>\nconst char* greeting(void) { return \"Hello from CRT\"; }\n");
     if (type == "executable") write_text(root / ("src/main/main." + suffix), "#include <greeting.h>\n#include <stdio.h>\nint main(void) { puts(greeting()); return 0; }\n");
@@ -205,7 +205,7 @@ Reply workflow(const std::vector<std::string>& args) {
     require(args[0] == "configure" || args[0] == "build" || args[0] == "test" || args[0] == "run", "unsupported command or arguments");
     fs::path root = fs::current_path();
     std::map<std::string, std::string> options;
-    const std::set<std::string> configure_options{"--sdk-root", "--sdk-id", "--sdk-contract", "--contract-sha256", "--cc", "--cxx", "--linker", "--ar", "--allow-dirty-sdk"};
+    const std::set<std::string> configure_options{"--sdk-root", "--sdk-id", "--sdk-contract", "--contract-sha256", "--cc", "--cxx", "--linker", "--ar", "--allow-dirty-sdk", "--sdk-config"};
     for (size_t i = 1; i < args.size(); i += 2) {
         require(i + 1 < args.size() && (args[i] == "--project" || (args[0] != "configure" && args[i] == "--target") ||
             (args[0] == "configure" && configure_options.count(args[i]))), "unsupported/missing workflow option");
@@ -214,8 +214,16 @@ Reply workflow(const std::vector<std::string>& args) {
     if (options.count("--project")) root = options.at("--project");
     root = fs::canonical(root);
     auto manifest = project(root);
-    bool explicit_selection = args[0] == "configure" && options.size() > options.count("--project");
-    auto toolchain = explicit_selection ? Toolchain::configure(options) : Toolchain::load(root);
+    // Configure inputs: the local `.sdk.json` (or --sdk-config) supplies defaults, explicit flags override per key.
+    std::map<std::string, std::string> requested;
+    if (args[0] == "configure") {
+        fs::path config = options.count("--sdk-config") ? fs::path(options.at("--sdk-config")) : root / ".sdk.json";
+        if (options.count("--sdk-config") || fs::exists(config)) requested = Toolchain::read_sdk_config(config);
+        if (options.count("--sdk-root") || options.count("--sdk-id")) requested.erase("--sdk-root"), requested.erase("--sdk-id");
+        for (const auto& option : options) if (option.first != "--project" && option.first != "--sdk-config") requested[option.first] = option.second;
+    }
+    bool explicit_selection = !requested.empty();
+    auto toolchain = explicit_selection ? Toolchain::configure(requested) : Toolchain::load(root);
     match_request(manifest, toolchain);
     Builder builder(root, inside(root, "out/native"), manifest, toolchain);
     if (args[0] == "configure") {

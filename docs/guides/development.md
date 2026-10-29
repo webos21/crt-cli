@@ -31,6 +31,15 @@ old host-C++ seed command is obsolete. With an already produced native seed:
 /absolute/crt-cli/out/native/crt-cli doctor --bootstrap --json
 ```
 
+To avoid repeating those flags, keep them in an ignored `/absolute/crt-cli/.sdk.json`
+([format](../reference/bootstrap_contract.md#local-sdkjson)). A CLI that already
+supports it then needs only `crt-cli configure --project /absolute/crt-cli`; the
+seed that predates it still needs the explicit flags once. The goal of the
+bootstrap loop is: a changed SDK plus an already built `crt-cli` produce a new
+`crt-cli`, even when the change follows a CRT contract change, and the result
+rebuilds and tests itself. Until the SDK installer exists (D2), `.sdk.json`
+points at a local handoff via `sdk_root`; `$HOME/.crt/sdks` is not populated.
+
 These are separate argv invocations, not a shell script. Supply actual absolute
 paths and preserve the `ld.lld` driver name even when it is a symlink to `lld`.
 The seed and resulting CLI both link CRT/C++/HTTP/TLS statically and must pass

@@ -112,6 +112,28 @@ unless `--allow-dirty-sdk true` is explicitly selected; that choice and the true
 dirty provenance are locked. It is an unpromoted local experiment, never a clean
 release claim. The repository lock remains unresolved.
 
+### Local `.sdk.json`
+
+`.sdk.json` (ignored by git, also in the `.gitignore` written by `new`) records
+this machine's SDK handoff and host tools so `configure` needs no flags. It is
+local state, never a lock and never committed. Format 0 is a flat JSON object:
+
+| Key | Meaning |
+| --- | --- |
+| `format` | must be `0` |
+| `sdk_root` / `sdk_id` | absolute handoff path, or an id under the SDK store (mutually exclusive) |
+| `sdk_contract`, `contract_sha256` | provider JSON path and its exact SHA-256 |
+| `cc`, `cxx`, `linker`, `ar` | absolute external tool paths (the `ld.lld` name is preserved) |
+| `allow_dirty_sdk` | boolean; `true` only for an unpromoted local experiment |
+| `seed`, `origin` | informational strings (the previous CLI executable, where the values came from); `configure` ignores them |
+
+`configure` reads `<project>/.sdk.json`, or the file named by `--sdk-config
+<path>`, as defaults. Explicit flags override per key, and `--sdk-root` /
+`--sdk-id` replace the file's SDK selection instead of conflicting with it.
+Unknown keys, relative tool paths and a wrong provider digest are rejected. The
+file only supplies inputs: everything is still verified and the resulting
+identities are written to the project lock.
+
 ## Producer-owned Native Policy
 
 CRT exports `crt.experimental.native-toolchain`, **format 1**, from installed
