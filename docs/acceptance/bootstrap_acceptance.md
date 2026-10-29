@@ -557,3 +557,32 @@ Gaps found and fixed by this replay (earlier attempts retained as `replay`,
 Open: Linux/Windows replay of this revised contract, actual CLI HTTPS, full D1,
 upgrades and promotion.
 
+## Incremental Build Cache and Committed Binary (2026-10-29)
+
+`crt-cli build` keeps intermediate objects, archives and dependency files in the
+ignored `out/native/` and reuses them. Each compile, archive and link step stores
+`<output>.key` (a hash of the exact command line plus the SDK/tool identity, and the
+content hash of every input outside the SDK) and, for compiles, `<output>.d` written
+with `-MD -MF`. A step is skipped only when the output exists, the command hash is
+equal and every recorded input hash still matches; SDK and compiler-resource files
+are covered by the already verified SDK/tool identity instead of being re-hashed.
+The build reply reports `cache.executed` and `cache.reused`; skipped steps are not
+listed in `commands`.
+
+Replay `replay-r7` (same Seatbelt policy as above, evidence
+`out/cli-contract-20261029/replay-r7/` in the CRT checkout): the SDK-only
+self-build after deleting objects compiles from source (cold: 7 executed, 0
+reused), an unchanged rebuild reuses everything (warm: 0 executed, 7 reused), and
+the native tests (including per-variant checks that an unchanged rebuild reuses all
+outputs, an edited source recompiles and relinks, and an edited header recompiles
+its dependents) pass. Bare help/version/doctor and the single-import audit pass. An
+earlier run (`replay-r6`) failed only because the header check demanded a relink
+after a comment-only edit; the compiled object is byte-identical then, so the
+archive is correctly reused.
+
+The resulting macOS/arm64 binary is committed as `bin/macos/crt-cli`: SHA-256
+`152b027f053fa7150dc7a3170ee361fd9615e2f305a915d45bef984576a5a55b`, 2,983,112 bytes,
+imports only `libSystem`. `bin/linux` and `bin/windows` are pending their native hosts.
+These binaries are local test aids built against a dirty local Development SDK, not
+releases; see `bin/README.md`.
+

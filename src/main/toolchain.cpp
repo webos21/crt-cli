@@ -10,6 +10,43 @@ void replace(std::string& value, const std::string& from, const std::string& to)
     size_t pos = 0;
     while ((pos = value.find(from, pos)) != std::string::npos) { value.replace(pos, from.size(), to); pos += to.size(); }
 }
+
+bool under(const fs::path& path, const fs::path& directory) {
+    auto text = path.lexically_normal().generic_string(), prefix = directory.lexically_normal().generic_string();
+    if (!prefix.empty() && prefix.back() != '/') prefix += '/';
+    return text.compare(0, prefix.size(), prefix) == 0;
+}
+// Makefile-style dependency file as written by -MD: "target: dep dep \\\n dep", with "\\ ", "\\#" and "$$" escapes.
+std::vector<std::string> parse_depfile(const std::string& text) {
+    std::vector<std::string> tokens;
+    std::string current;
+    bool open = false;
+    auto finish = [&] { if (open) tokens.push_back(current); current.clear(); open = false; };
+    for (size_t i = 0; i < text.size(); ++i) {
+        char c = text[i];
+        if (c == '\\' && i + 1 < text.size() && (text[i + 1] == '\n' || (text[i + 1] == '\r' && i + 2 < text.size() && text[i + 2] == '\n'))) {
+            finish();
+            i += text[i + 1] == '\r' ? 2 : 1;
+        } else if (c == '\\' && i + 1 < text.size() && (text[i + 1] == ' ' || text[i + 1] == '#')) { current += text[++i]; open = true; }
+        else if (c == '$' && i + 1 < text.size() && text[i + 1] == '$') { current += '$'; ++i; open = true; }
+        else if (c == ' ' || c == '\t' || c == '\n' || c == '\r') finish();
+        else { current += c; open = true; }
+    }
+    finish();
+    if (!tokens.empty()) tokens.erase(tokens.begin()); // the "target:" token
+    return tokens;
+}
+bool unchanged(const fs::path& key_file, const fs::path& output, const std::string& command) {
+    if (!fs::is_regular_file(output) || !fs::is_regular_file(key_file)) return false;
+    try {
+        auto key = read_json(key_file);
+        if (key.at("command") != command) return false;
+        for (const auto& item : key.at("inputs").items()) {
+            if (!fs::is_regular_file(item.key()) || file_sha256(item.key()) != item.value()) return false;
+        }
+        return true;
+    } catch (const std::exception&) { return false; }
+}
 Json inspect_sdk(const fs::path& sdk, const Json& contract, bool allow_dirty) {
     require(contract.at("schema") == "crt.experimental.native-toolchain" && contract.at("format") == 1, "unsupported native toolchain contract");
     require(contract.at("target") == native_target() && contract.at("policy") == "native-targets-exceptions-rtti", "unsupported target/policy");
@@ -76,7 +113,7 @@ Toolchain Toolchain::load(const fs::path& root) {
     require(result.selection == lock.at("selection"), "locked SDK/toolchain identity mismatch");
     return result;
 }
-void Toolchain::invoke(const std::string& operation, bool cpp, const std::vector<std::string>& inputs, const fs::path& output, const std::vector<std::string>& extra, const std::vector<std::string>& libraries, Json& commands, const std::string& mode) const {
+bool Toolchain::invoke(const std::string& operation, bool cpp, const std::vector<std::string>& inputs, const fs::path& output, const std::vector<std::string>& extra, const std::vector<std::string>& libraries, Json& commands, const std::string& mode) const {
     std::vector<std::string> argv{(operation == "archive" ? archiver : cpp ? cxx : cc).string()};
     const auto& recipe = contract.at("modes").at(mode);
     for (const auto& value : recipe.at(operation == "archive" ? "archive" : operation + (cpp ? "_cxx" : "_c"))) {
@@ -97,9 +134,30 @@ void Toolchain::invoke(const std::string& operation, bool cpp, const std::vector
         }
     }
     if (operation == "link") argv.push_back("--ld-path=" + linker.string());
-    commands.push_back(argv);
-    auto child = execute(argv);
+    // The reuse key covers the command line, the selected SDK/tool identity and the content of every input outside the SDK.
+    auto key_file = fs::path(output.string() + ".key"), depfile = fs::path(output.string() + ".d");
+    std::string command = sha256(selection.dump() + std::string(1, '\0') + [&] { std::string joined; for (const auto& arg : argv) joined += arg + '\0'; return joined; }());
+    require(!fs::is_symlink(key_file) && !fs::is_symlink(depfile), "build cache files must not be symlinks");
+    if (unchanged(key_file, output, command)) return false;
+    fs::remove(output);
+    fs::remove(key_file);
+    fs::remove(depfile);
+    auto run = argv;
+    if (operation == "compile") run.insert(run.begin() + 1, {"-MD", "-MF", depfile.string()});
+    commands.push_back(run);
+    auto child = execute(run);
     require(child.exit_code == 0, "compiler/linker failed (exit " + std::to_string(child.exit_code) + ")");
     require(fs::is_regular_file(output), "compiler did not produce output");
+    std::vector<std::string> dependencies = inputs;
+    if (operation == "compile") dependencies = parse_depfile(read_text(depfile));
+    else dependencies.insert(dependencies.end(), libraries.begin(), libraries.end());
+    Json recorded = Json::object();
+    for (const auto& dependency : dependencies) {
+        fs::path path = fs::absolute(dependency);
+        if (under(path, sdk) || under(path, resource)) continue; // covered by the verified SDK/tool identity
+        recorded[path.string()] = file_sha256(path);
+    }
+    write_text(key_file, Json{{"command", command}, {"inputs", recorded}}.dump(2) + "\n");
+    return true;
 }
 }

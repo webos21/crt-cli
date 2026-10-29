@@ -26,6 +26,8 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
 
 Current focus: PAL-only native contract, typed build targets and SDK-owned
 JSON/SHA-2, followed by Linux/Windows replay of that new contract and candidate coherence.
+Temporary: each host's final executable is committed under `bin/<os>/` (see `bin/README.md`);
+macOS is present, Linux and Windows binaries remain to be built on their hosts.
 The native JSON builder replaces the initial CMake prototype. Bootstrap and
 bounded new/configure/build/test/run pass on Linux and macOS without Python/shell;
 SDK installation, general dependency workflows and self-upgrade remain planned. See

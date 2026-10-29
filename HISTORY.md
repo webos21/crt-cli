@@ -11,6 +11,14 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-10-29
 
+### Reuse intermediate build outputs and commit host binaries
+
+Builds keep objects, archives and `-MD` dependency files under the ignored
+`out/native/` and skip steps whose command, SDK/tool identity and input content are
+unchanged. The macOS/arm64 executable is committed under `bin/macos/` for hands-on
+testing (Linux and Windows pending). See
+[acceptance](docs/acceptance/bootstrap_acceptance.md#incremental-build-cache-and-committed-binary-2026-10-29).
+
 ### Remove host macros from the CLI and add typed build targets
 
 CLI code now reaches platform information, native-executable detection, the

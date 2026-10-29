@@ -37,6 +37,7 @@ std::string mode(const Json& target) {
 struct Builder {
     fs::path root, build;
     Json manifest, consumer_options, commands = Json::array(), artifacts = Json::object();
+    size_t executed = 0, reused = 0;
     const Toolchain& toolchain;
     std::map<std::string, Json> targets;
     std::map<std::string, fs::path> outputs;
@@ -119,7 +120,6 @@ struct Builder {
         }
         auto destination = output(name);
         require(!fs::is_symlink(build / destination.filename()), "build output must not be a symlink");
-        fs::remove(destination);
         std::vector<std::string> objects, libraries;
         std::set<std::string> seen;
         for (const auto& source : target.at("sources")) {
@@ -140,13 +140,13 @@ struct Builder {
                 require(text.rfind("-U", 0) == 0, "unsupported SDK consumer option");
                 flags.push_back(text);
             }
-            toolchain.invoke("compile", is_cpp, {file.string()}, object, flags, {}, commands, mode(target));
+            (toolchain.invoke("compile", is_cpp, {file.string()}, object, flags, {}, commands, mode(target)) ? executed : reused)++;
             objects.push_back(object.string());
         }
         std::set<std::string> linked;
         dependencies(target, linkage(target), libraries, linked);
         sdk_libraries(target, linkage(target), libraries);
-        toolchain.invoke(kind(target) == "static-library" ? "archive" : "link", uses_cpp, objects, destination, {}, libraries, commands, mode(target));
+        (toolchain.invoke(kind(target) == "static-library" ? "archive" : "link", uses_cpp, objects, destination, {}, libraries, commands, mode(target)) ? executed : reused)++;
         outputs[name] = destination;
         cpp[name] = uses_cpp;
         visiting.erase(name);
@@ -251,7 +251,7 @@ Reply workflow(const std::vector<std::string>& args) {
         outcomes.push_back({{"exit_code", child.exit_code}, {"timed_out", child.timed_out}, {"stdout_truncated", child.output_truncated}});
         code = child.exit_code ? 1 : 0;
     }
-    Json receipt{{"selection", selection}, {"commands", builder.commands}, {"outcomes", outcomes}, {"artifacts", builder.artifacts}};
+    Json receipt{{"selection", selection}, {"commands", builder.commands}, {"cache", {{"executed", builder.executed}, {"reused", builder.reused}}}, {"outcomes", outcomes}, {"artifacts", builder.artifacts}};
     if (!primary.empty() && builder.outputs.count(primary)) {
         receipt["executable"] = builder.output(primary).string();
         receipt["executable_sha256"] = file_sha256(builder.output(primary));

@@ -132,6 +132,23 @@ int main(int argc, char** argv) {
                 auto built = invoke(cli, {"build", "--project", root.string(), "--target", root.filename().string()});
                 auto artifact = built.at("artifacts").at(root.filename().string());
                 check(artifact.at("kind") == type && fs::file_size(artifact.at("path").get<std::string>()) > 0, "typed target artifact");
+                auto again = invoke(cli, {"build", "--project", root.string(), "--target", root.filename().string()});
+                check(again.at("cache").at("executed") == 0 && again.at("cache").at("reused") > 0 && again.at("commands").empty(), "unchanged rebuild reuses every output");
+                auto declared = read_json(root / "crt.json").at("targets").at(0).at("sources").at(0).get<std::string>();
+                auto edited = root / declared;
+                auto before_edit = read_text(edited);
+                write_text(edited, before_edit + "\n/* cache probe */\n");
+                auto changed = invoke(cli, {"build", "--project", root.string(), "--target", root.filename().string()});
+                check(changed.at("cache").at("executed") >= 2 && !changed.at("commands").empty(), "edited source recompiles and relinks");
+                write_text(edited, before_edit);
+                invoke(cli, {"build", "--project", root.string(), "--target", root.filename().string()});
+                auto header = root / "include/greeting.h";
+                auto header_text = read_text(header);
+                write_text(header, header_text + "\n/* header probe */\n");
+                auto header_changed = invoke(cli, {"build", "--project", root.string(), "--target", root.filename().string()});
+                // A comment leaves the object bytes unchanged, so the archive/link step may legitimately be reused.
+                check(header_changed.at("cache").at("executed") >= 1 && !header_changed.at("commands").empty(), "edited header recompiles its dependents");
+                write_text(header, header_text);
                 auto tested = invoke(cli, {"test", "--project", root.string()});
                 check(tested.at("outcomes").at(0).at("exit_code") == 0, "typed target link/run consumer");
                 if (std::string(type) != "executable") invoke(cli, {"run", "--project", root.string()}, false);
