@@ -23,7 +23,12 @@ fs::path sdk_store_root();
 fs::path inside(const fs::path& root, const std::string& relative);
 void require(bool condition, const std::string& message);
 void native_executable(const fs::path& path);
-ProcessResult execute(const std::vector<std::string>& argv, unsigned timeout_seconds = 180, bool relay = true);
+// host_tool marks an external native program (compiler, linker, archiver): on Windows CRT's posix_spawn only redirects
+// stdio for a non-CRT child when told so (CRT_SPAWN_NATIVE_WINDOWS); CRT-built children need no hint.
+// runtime_path lists directories the child's dynamic images are loaded from. Only Windows needs it (no RPATH there, and the
+// per-child PATH is otherwise empty); the other hosts resolve the SDK runtime through the linked image itself.
+ProcessResult execute(const std::vector<std::string>& argv, unsigned timeout_seconds = 180, bool relay = true, bool host_tool = false,
+                      const std::vector<std::string>& runtime_path = {});
 int print_reply(const Reply& reply, bool json);
 Reply workflow(const std::vector<std::string>& args);
 Reply bootstrap_doctor();

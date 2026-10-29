@@ -21,8 +21,10 @@
       "src/main/core.cpp",
       "src/main/process.cpp",
       "src/main/toolchain.cpp",
-      "src/main/project.cpp"
+      "src/main/project.cpp",
+      "src/main/http.cpp"
     ],
+    "sdk_consumer_option_sources": ["src/main/http.cpp"],
     "sdk_libraries": [
       "curl",
       "mbedtls",
@@ -34,7 +36,7 @@
   "tests": [
     {
       "name": "native-test",
-      "timeout_seconds": 1800,
+      "timeout_seconds": 3600,
       "sources": [
         "src/test/native_test.cpp",
         "src/main/core.cpp",

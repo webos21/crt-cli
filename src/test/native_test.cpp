@@ -1,4 +1,5 @@
 #include <crtcli/core.h>
+#include <crt/platform.h>
 #include <cstdio>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -38,11 +39,18 @@ int main(int argc, char** argv) {
         check(fs::path(doctor.at("sdk_store").get<std::string>()).filename() == "sdks", "common SDK store basename");
         for (const auto& args : std::vector<std::vector<std::string>>{{"upgrade"}, {"doctor"}, {"--version", "extra"}, {"--json"}, {"new"}, {"build", "--bad"}, {"configure", "--project"}})
             invoke(cli, args, false);
-        char temporary[] = "/tmp/crt-cli-native-XXXXXX";
-        auto location = mkdtemp(temporary);
+        // The temporary root comes from the environment (TMPDIR, then TEMP); a literal /tmp does not exist everywhere.
+        const char* temporary_root = std::getenv("TMPDIR") ? std::getenv("TMPDIR") : std::getenv("TEMP") ? std::getenv("TEMP") : "/tmp";
+        std::string temporary = (fs::path(temporary_root) / "crt-cli-native-XXXXXX").string();
+        auto location = mkdtemp(temporary.data());
         require(location != nullptr, "mkdtemp failed");
         fixture = fs::path(location);
-        auto hostile = fixture / "space 한글 @ ; $(touch never-execute)";
+        // Windows narrow paths are ANSI code-page bytes and the imported libc++ rejects non-ASCII narrow<->wide conversion
+        // ("locale not supported"), so the Hangul part of the hostile name is exercised on the other hosts only. The Windows
+        // loader also splits its DLL search path at ';', so a program importing a DLL beside it cannot start from a directory
+        // whose name contains one: the semicolon is exercised on the other hosts only.
+        const bool windows_host = std::string(crt_get_platform_info()->os) == "windows";
+        auto hostile = fixture / (windows_host ? "space @ $(touch never-execute)" : "space 한글 @ ; $(touch never-execute)");
         fs::create_directories(hostile);
         write_text(fixture / "duplicate.json", "{\"x\":1,\"x\":2}");
         bool rejected = false;
@@ -137,7 +145,8 @@ int main(int argc, char** argv) {
                 auto declared = read_json(root / "crt.json").at("targets").at(0).at("sources").at(0).get<std::string>();
                 auto edited = root / declared;
                 auto before_edit = read_text(edited);
-                write_text(edited, before_edit + "\n/* cache probe */\n");
+                // A real definition, not a comment: a target that emits no source checksum would keep the object bytes unchanged.
+                write_text(edited, before_edit + "\nint crt_cli_cache_probe(void) { return 7; }\n");
                 auto changed = invoke(cli, {"build", "--project", root.string(), "--target", root.filename().string()});
                 check(changed.at("cache").at("executed") >= 2 && !changed.at("commands").empty(), "edited source recompiles and relinks");
                 write_text(edited, before_edit);

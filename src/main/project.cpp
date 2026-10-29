@@ -135,7 +135,12 @@ struct Builder {
             std::vector<std::string> flags{is_cpp ? "-std=c++17" : "-std=c99", "-O1", "-g", "-I" + (build / "generated").string()};
             for (const auto& dir : manifest.value("include_dirs", Json::array())) flags.push_back("-I" + inside(root, dir).string());
             for (const auto& dir : target.value("include_dirs", Json::array())) flags.push_back("-I" + inside(root, dir).string());
+            // The SDK's consumer options (Windows: -U_WIN32 ... so the curl headers take their POSIX branch) change how libc++
+            // sees the target, so they apply only to the translation units that declare they need them, never to <filesystem> users.
+            bool wants_options = false;
+            for (const auto& listed : target.value("sdk_consumer_option_sources", Json::array())) wants_options |= listed == source;
             for (const auto& option : consumer_options) {
+                if (!wants_options) break;
                 auto text = option.get<std::string>();
                 require(text.rfind("-U", 0) == 0, "unsupported SDK consumer option");
                 flags.push_back(text);
@@ -234,6 +239,8 @@ Reply workflow(const std::vector<std::string>& args) {
     if (args[0] == "run" || (args[0] == "build" && options.count("--target"))) builder.build_one(chosen);
     else for (const auto& target : list) builder.build_one(target.at("name"));
     Json outcomes = Json::array(); int code = 0;
+    // The SDK's runtime images (Windows DLLs live in bin/ and lib/) for programs linked against its shared runtime.
+    const std::vector<std::string> runtime_path{(toolchain.sdk / "bin").string(), (toolchain.sdk / "lib").string()};
     if (args[0] == "test") {
         require(manifest.contains("tests") && !manifest.at("tests").empty(), "project declares no tests");
         for (const auto& target : manifest.at("tests")) {
@@ -241,13 +248,13 @@ Reply workflow(const std::vector<std::string>& args) {
             auto test = builder.build_one(target.at("name"));
             unsigned timeout = target.value("timeout_seconds", 180u);
             require(timeout >= 1 && timeout <= 3600, "test timeout_seconds must be between 1 and 3600");
-            auto child = execute({test.string(), primary.empty() ? "" : builder.output(primary).string(), root.string()}, timeout);
+            auto child = execute({test.string(), primary.empty() ? "" : builder.output(primary).string(), root.string()}, timeout, true, false, runtime_path);
             outcomes.push_back({{"name", target.at("name")}, {"exit_code", child.exit_code}, {"timed_out", child.timed_out}, {"stdout_truncated", child.output_truncated}});
             if (child.exit_code) code = 1;
         }
         require(!outcomes.empty(), "unknown test target");
     } else if (args[0] == "run") {
-        auto child = execute({builder.output(chosen).string()});
+        auto child = execute({builder.output(chosen).string()}, 180, true, false, runtime_path);
         outcomes.push_back({{"exit_code", child.exit_code}, {"timed_out", child.timed_out}, {"stdout_truncated", child.output_truncated}});
         code = child.exit_code ? 1 : 0;
     }
@@ -256,7 +263,7 @@ Reply workflow(const std::vector<std::string>& args) {
         receipt["executable"] = builder.output(primary).string();
         receipt["executable_sha256"] = file_sha256(builder.output(primary));
     }
-    write_text(build / "last-build.json", receipt.dump(2) + "\n");
+    write_text(build / "last-build.json", receipt.dump(2, ' ', false, Json::error_handler_t::replace) + "\n");
     return {code, args[0], receipt, code ? "child workflow failed" : args[0] + " completed"};
 }
 }

@@ -2,9 +2,7 @@
 #include <crtcli/core.h>
 #include <crt/platform.h>
 #include <crt/dl.h>
-#include <curl/curl.h>
-#include <mbedtls/ssl.h>
-#include <mbedtls/version.h>
+#include <crtcli/http.h>
 #include <zlib.h>
 #include <cstdio>
 #include <cstring>
@@ -45,13 +43,7 @@ Reply bootstrap_doctor() {
     bool zlib = compress2(compressed, &compressed_size, input, sizeof(input), Z_DEFAULT_COMPRESSION) == Z_OK;
     zlib = zlib && uncompress(restored, &restored_size, compressed, compressed_size) == Z_OK;
     zlib = zlib && restored_size == sizeof(input) && std::memcmp(restored, input, sizeof(input)) == 0;
-    bool curl = curl_global_init(CURL_GLOBAL_DEFAULT) == CURLE_OK;
-    const curl_version_info_data* http = curl ? curl_version_info(CURLVERSION_NOW) : nullptr;
-    bool tls = http && (http->features & CURL_VERSION_SSL) && http->ssl_version
-               && std::strstr(http->ssl_version, "mbedTLS") && mbedtls_version_get_number() != 0;
-    mbedtls_ssl_context context;
-    mbedtls_ssl_init(&context); mbedtls_ssl_free(&context);
-    if (curl) curl_global_cleanup();
+    bool tls = http_tls_probe();
     bool ok = cxx && local_cxx_allocation && zlib && tls;
     Json data{{"scope", "bootstrap"}, {"target", {{"os", CRT_CLI_TARGET_OS}, {"arch", CRT_CLI_TARGET_ARCH}}},
               {"sdk_build_input", {{"version", CRT_CLI_SDK_VERSION}, {"source_commit", CRT_CLI_SDK_COMMIT}, {"content_sha256", CRT_CLI_SDK_CONTENT}}},

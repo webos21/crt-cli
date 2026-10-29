@@ -1,21 +1,24 @@
 #include <crtcli/core.h>
 #include <crt/platform.h>
 #include <mbedtls/sha256.h>
+#include <cerrno>
 #include <cstdio>
+#include <fcntl.h>
 #include <fstream>
 #include <set>
 #include <algorithm>
+#include <unistd.h>
 namespace crtcli {
 void require(bool condition, const std::string& message) { if (!condition) throw Error(message); }
 std::string read_text(const fs::path& path) {
-    std::ifstream input(path, std::ios::binary);
+    std::ifstream input(path.string(), std::ios::binary);
     require(bool(input), "cannot read: " + path.string());
     std::string result((std::istreambuf_iterator<char>(input)), {});
     require(!input.bad(), "read failed: " + path.string());
     return result;
 }
 void write_text(const fs::path& path, const std::string& value) {
-    std::ofstream output(path, std::ios::binary | std::ios::trunc);
+    std::ofstream output(path.string(), std::ios::binary | std::ios::trunc);
     require(bool(output), "cannot write: " + path.string());
     output.write(value.data(), value.size());
     output.close();
@@ -46,20 +49,27 @@ std::string sha256(const std::string& bytes) {
     return hex_digest(digest);
 }
 std::string file_sha256(const fs::path& path) {
-    std::ifstream input(path, std::ios::binary);
-    require(bool(input), "cannot hash: " + path.string());
+    // Descriptor reads, not stdio: CRT's fread copies byte by byte (about 70 MB/s on Windows), while read() runs at memory speed,
+    // and the SDK identity check hashes hundreds of MB on every invocation.
+    int descriptor = open(path.string().c_str(), O_RDONLY);
+    require(descriptor >= 0, "cannot hash: " + path.string());
     mbedtls_sha256_context hash;
     mbedtls_sha256_init(&hash);
     int error = mbedtls_sha256_starts(&hash, 0);
-    char buffer[65536];
-    while (input && error == 0) {
-        input.read(buffer, sizeof(buffer));
-        error = mbedtls_sha256_update(&hash, reinterpret_cast<const unsigned char*>(buffer), input.gcount());
+    static thread_local std::vector<unsigned char> buffer(1 << 20);
+    bool failed = false;
+    for (;;) {
+        ssize_t count = read(descriptor, buffer.data(), buffer.size());
+        if (count == 0) break;
+        if (count < 0) { if (errno == EINTR) continue; failed = true; break; }
+        error = mbedtls_sha256_update(&hash, buffer.data(), static_cast<size_t>(count));
+        if (error != 0) break;
     }
+    close(descriptor);
     unsigned char digest[32];
-    if (error == 0) error = mbedtls_sha256_finish(&hash, digest);
+    if (error == 0 && !failed) error = mbedtls_sha256_finish(&hash, digest);
     mbedtls_sha256_free(&hash);
-    require(!input.bad() && error == 0, "hash read failed: " + path.string());
+    require(!failed && error == 0, "hash read failed: " + path.string());
     return hex_digest(digest);
 }
 fs::path inside(const fs::path& root, const std::string& relative) {
@@ -103,7 +113,7 @@ void native_executable(const fs::path& path) {
 }
 int print_reply(const Reply& reply, bool json) {
     if (json) std::printf("%s\n", Json{{"schema", "crt-cli.bootstrap-result"}, {"format", 1},
-        {"command", reply.command}, {"ok", reply.code == 0}, {"data", reply.data}}.dump().c_str());
+        {"command", reply.command}, {"ok", reply.code == 0}, {"data", reply.data}}.dump(-1, ' ', false, Json::error_handler_t::replace).c_str());
     else std::fprintf(reply.code ? stderr : stdout, "%s\n", reply.message.c_str());
     return reply.code;
 }

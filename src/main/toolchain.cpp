@@ -1,4 +1,5 @@
 #include <crtcli/toolchain.h>
+#include <chrono>
 namespace crtcli {
 namespace {
 std::string selected(const std::map<std::string, std::string>& options, const std::string& name) {
@@ -35,6 +36,20 @@ std::vector<std::string> parse_depfile(const std::string& text) {
     finish();
     if (!tokens.empty()) tokens.erase(tokens.begin()); // the "target:" token
     return tokens;
+}
+// A running executable cannot be deleted or overwritten on Windows (the CLI rebuilding itself) but it can be renamed:
+// move it aside under a unique name and remove the leftovers of earlier builds once nothing uses them.
+void retire_output(const fs::path& output) {
+    std::error_code ignored;
+    const std::string prefix = output.filename().string() + ".old-";
+    for (const auto& entry : fs::directory_iterator(output.parent_path(), ignored))
+        if (entry.path().filename().string().compare(0, prefix.size(), prefix) == 0) fs::remove(entry.path(), ignored);
+    std::error_code error;
+    fs::remove(output, error);
+    if (!error) return;
+    auto aside = fs::path(output.string() + ".old-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+    fs::rename(output, aside, error);
+    require(!error, "cannot replace build output (in use?): " + output.string());
 }
 bool unchanged(const fs::path& key_file, const fs::path& output, const std::string& command) {
     if (!fs::is_regular_file(output) || !fs::is_regular_file(key_file)) return false;
@@ -90,7 +105,7 @@ Toolchain Toolchain::configure(const std::map<std::string, std::string>& options
     result.linker = fs::absolute(selected(options, "--linker")).lexically_normal();
     result.archiver = fs::absolute(selected(options, "--ar")).lexically_normal();
     for (const auto& tool : {result.cc, result.cxx, result.linker, result.archiver}) native_executable(tool);
-    auto query = execute({result.cxx.string(), "-print-resource-dir"}, 10, false);
+    auto query = execute({result.cxx.string(), "-print-resource-dir"}, 10, false, true);
     require(query.exit_code == 0, "Clang resource directory query failed");
     while (!query.output.empty() && (query.output.back() == '\n' || query.output.back() == '\r')) query.output.pop_back();
     result.resource = fs::canonical(query.output);
@@ -139,13 +154,13 @@ bool Toolchain::invoke(const std::string& operation, bool cpp, const std::vector
     std::string command = sha256(selection.dump() + std::string(1, '\0') + [&] { std::string joined; for (const auto& arg : argv) joined += arg + '\0'; return joined; }());
     require(!fs::is_symlink(key_file) && !fs::is_symlink(depfile), "build cache files must not be symlinks");
     if (unchanged(key_file, output, command)) return false;
-    fs::remove(output);
+    retire_output(output);
     fs::remove(key_file);
     fs::remove(depfile);
     auto run = argv;
     if (operation == "compile") run.insert(run.begin() + 1, {"-MD", "-MF", depfile.string()});
     commands.push_back(run);
-    auto child = execute(run);
+    auto child = execute(run, 180, true, true);
     require(child.exit_code == 0, "compiler/linker failed (exit " + std::to_string(child.exit_code) + ")");
     require(fs::is_regular_file(output), "compiler did not produce output");
     std::vector<std::string> dependencies = inputs;
