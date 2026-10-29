@@ -27,7 +27,7 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
 Current focus: PAL-only native contract, typed build targets and SDK-owned
 JSON/SHA-2, followed by Linux/Windows replay of that new contract and candidate coherence.
 Temporary: each host's final executable is committed under `bin/<os>/` (see `bin/README.md`);
-macOS is present, Linux and Windows binaries remain to be built on their hosts.
+macOS and Windows are present, the Linux binary remains to be built on its host.
 The native JSON builder replaces the initial CMake prototype. Bootstrap and
 bounded new/configure/build/test/run pass on Linux and macOS without Python/shell;
 SDK installation, general dependency workflows and self-upgrade remain planned. See
@@ -46,9 +46,9 @@ Public SDK release is not a prerequisite; CLI consumption stays SDK-only.
   manifest/lock inputs; the general SDK/project contracts remain distinct.
 - [ ] **D0.5** Implement bounded help/version/bootstrap diagnosis and check
   single-executable link feasibility for the chosen CRT/C++/HTTP/TLS stack.
-  Linux and macOS/arm64 pass; native Windows/x64 replay remains.
+  Linux, macOS/arm64 and Windows/x64 pass (local, unpromoted); the changed sources still need a Linux/macOS replay.
 - [ ] **D0.6** Validate relocated build/run/imports with producer trees unavailable;
-  Linux and macOS/arm64 pass; Windows/x64 remains;
+  Linux, macOS/arm64 and Windows/x64 pass ([Windows evidence](docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-windowsx64-2026-10-29));
   [macOS evidence](docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-macosarm64-2026-10-29).
 - [ ] **D0.7** Link exact candidate/case evidence in [compatibility](docs/compatibility.md),
   resolve asset coherence with CRT and adopt final pins only after producer promotion.

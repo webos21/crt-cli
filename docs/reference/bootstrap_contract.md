@@ -33,6 +33,15 @@ is obsolete because it cannot provide the public CRT PAL boundary. No seed or
 permanent launcher is distributed. Optional configure/make port environments
 remain distinct from native application builds.
 
+## Windows Host Behaviour (2026-10-29)
+
+Process creation is `posix_spawn` on every host. External native tools (compiler, linker, archiver) are marked as host tools
+so CRT's Windows PAL redirects their stdio (`CRT_SPAWN_NATIVE_WINDOWS`); CRT-built children are not. `test`/`run` give a
+child `PATH=<sdk>/bin;<sdk>/lib` on Windows only. A target may list `sdk_consumer_option_sources`: the SDK profile's
+`consumer_compile_options` (Windows: `-U_WIN32 ...` for the curl headers) apply only to those sources and must stay away from
+translation units that use `<filesystem>`. A running executable that the build must replace is renamed aside
+(`<name>.old-<n>`, removed on the next build). Output, receipts and replies replace invalid UTF-8 from OS text.
+
 ## Project and Target Declaration
 
 New projects use `manifest_format: 1`:

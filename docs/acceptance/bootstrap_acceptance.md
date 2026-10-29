@@ -586,3 +586,118 @@ imports only `libSystem`. `bin/linux` and `bin/windows` are pending their native
 These binaries are local test aids built against a dirty local Development SDK, not
 releases; see `bin/README.md`.
 
+## Native JSON Builder on Windows/x64 (2026-10-29)
+
+**Pass, local/unpromoted D0 replay.** This is Windows' bounded counterpart to the Linux and macOS records, run with the
+revised PAL-only contract (platform queries, SDK JSON/SHA-2 ports, typed targets, incremental cache). It closes D0.5/D0.6
+for Windows/x64 only for the source delta below. Installation, general dependencies, actual CLI HTTPS, authenticated
+integrity and self-upgrade remain unimplemented/unverified. The Linux and macOS records were **not** rerun with the changed
+sources (see Limits).
+
+### Exact Inputs
+
+A native Dev SDK was produced from a clean detached CRT worktree at `d054a665612fc6b0008e5de5bdc40eb85688a4c8`
+(`C:/Users/Lee/cw/crt`, under the user profile) with `-DCRT_RELEASE_TAG=v0.4.0-cli.20261029`:
+`crt-development-sdk-test` and `crt-c-test` pass (**166/166**, one fresh configure), and the ordinary Dev consumer passes its
+static and shared HTTPS/inflate/trust cases. Producer/base/compile commits all equal `d054a66`, flags clean. No libc/PAL
+source change was needed to produce it; the findings below are consumer-side adaptations plus producer follow-ups.
+The version is local, not a Git tag or release; no archive was cut — the verified `dist/dev` directory is the handoff.
+
+| Input | Identity |
+| --- | --- |
+| Producer SDK | `dist/dev`, 2,711 file/symlink entries, 375 MB |
+| Driver inventory SHA-256 | `8dd1a4b1fd181f7e74bf6fb9f6f113054f252d433960c3bd71fe2f768c2076ae` |
+| Provider SHA-256 | `652fd5f0c8165e8cd5a53fe698e4fdadac73d2e5e86ef692bc3d31e2caa3556a` |
+| CLI base | `265105a51e4a17767419c237e33a73f3936d6a53` plus the local Windows delta (uncommitted) |
+| Exported source SHA-256 | `a1f7dbe4bd460b3953ecdf02830512e950a07ba0a34d93049636ba4816142f04` (LF text, `bin/` excluded) |
+| Host / tools | Windows 11 x64, LLVM/Clang 22.1.8 (`clang`, `clang++`, `ld.lld`, `llvm-ar`), Windows SDK 10.0.28000.0 `um/x64` |
+
+The provider is the same experimental `crt.experimental.native-toolchain` format 0, now exportable for `windows/x86_64`:
+artifact suffixes `.exe`/`.a`/`.dll`, `external_os_sdk` = the Windows SDK import-library directory (like macOS' Xcode SDK),
+captured wrapper argv from `crt-cc.cmd`/`crt-c++.cmd`. The SDK inventory is sorted component-wise and case-sensitively so the
+same SDK hashes identically on every host (Python's own `Path` order is case-insensitive on Windows).
+
+### Isolated Native Workflow
+
+CRT's producer-side driver `tools/replay_cli_contract_windows.py` builds a disposable CRT-hosted seed from the provider's argv;
+the seed configures, builds and self-builds the CLI, which then runs its native integration suite. Every consumer process runs
+under the restricted token of `crt_windows_external` (the producer worktree, original SDK, CRT and CLI checkouts are not
+readable through the per-run SID; the work root is protected for that SID only), with `PATH` empty, stdio redirected to logs
+and a job object recording **every process the run starts** (`crt_windows_trace`). Windows has no per-executable launch denial
+without changing the ACLs of installed tools, so this OS-recorded inventory plays the part of Linux' execve trace and macOS'
+exec policy: **373 process records over 20 commands**, images `clang`, `clang++`, `ld.lld`, `llvm-ar`, the seed/CLI, the
+generated test/application executables, the native-visibility probe and the OS console host `conhost.exe`;
+**none** of cmd/PowerShell/Python/CMake/Ninja/make/sh/bash/mksh/perl/`crt-cc.cmd`. A process that exits before it can be
+opened would be recorded with an unknown image and fail the run; none did. This is accounting, not a sandbox.
+The bare phase runs under a second unregistered SID granted only its own copy of the CLI: the native probe confirms **seven
+roots inaccessible** (CRT checkout, CLI checkout, original SDK, producer worktree, exported source, relocated SDK, provider).
+
+Results (all exit 0): provider export, probe build, seven seed compiles and link, `configure`, `build`, `self-build` (cache
+deleted first: **8 executed, 0 reused**), `cached-build` (**0 executed, 8 reused**), the native suite
+(**714 assertions pass**), and `--help`/`--version`/`doctor --bootstrap` from one copied executable with source, SDK and provider
+unreadable. The suite covers C/C++ generation, multi-source configure/build/test/run, the six typed variants (static and
+shared library, executable with shared runtime), cache reuse/invalidation, JSON errors, duplicate keys, bad pins/formats/
+targets/provenance, traversal, existing destinations, lock preservation, timeout (124), a 10 MiB stdout producer (capped at
+8 MiB), shell metacharacters kept literal, and the installed-SDK copy under `<home>/.crt/sdks`. The count is higher than Linux'
+429 and macOS' 576 because the suite grew; those hosts were not rerun.
+
+### One Executable and Runtime Audit
+
+| Observation | Result |
+| --- | --- |
+| Bare CLI | PE x64, 16,654,848 bytes (built `-O1 -g`, DWARF included) |
+| SHA-256 | `8ab2912d1b55537d89ecf99747dc8a51067aa4e764eb09261752c43049e6c6e9` |
+| Imports | `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll` only; no CRT/C++ DLL, no `PATH` dependency |
+| Doctor | C++ exceptions/allocation ownership, zlib and HTTP/Mbed TLS initialization pass |
+| CLI HTTPS / authenticated integrity | `not_run` / `not_verified` |
+
+The SDK inventories (original and relocated) are unchanged after the run; the work root is under `%TEMP%` with spaces.
+
+### Findings Fixed In This Pass
+
+Found by running the contract on Windows, each isolated with a minimal reproducer before the fix. "CLI" changes are in the
+uncommitted delta and apply to every host.
+
+| Finding | Cause | Fix |
+| --- | --- | --- |
+| `fork()` fails (`EAGAIN`, `stack commit failed`) | CRT's Windows memory-copy fork needs the executable to opt in to a self-relaunch (only mksh and the CRT tests do) | CLI `execute()` uses `posix_spawn` on all hosts (dup2/close file actions, `SETPGROUP`, `SIGKILL`) |
+| Compiler stdout not captured | `posix_spawn` redirects stdio of a non-CRT child only when `CRT_SPAWN_NATIVE_WINDOWS` is set | CLI marks external host tools (`host_tool`) and passes the hint to them only |
+| `std::filesystem` link error with the Dev profile's `-U_WIN32 ...` | The curl-driven consumer options flip libc++'s path type to POSIX while the library is built Windows-flavoured | The CLI applies SDK consumer options only to sources listed in `sdk_consumer_option_sources` (`http.cpp`, no `<filesystem>`); producer follow-up below |
+| `ifstream(fs::path)` does not compile | libc++ has no wchar_t stream constructors for the Windows path | streams open `path.string()` |
+| "SDK content mismatch" | exporter inventory order was case-insensitive | exporter sorts component-wise, case-sensitively |
+| Self-build: "Access is denied" | a running `.exe` cannot be deleted or overwritten | `retire_output()` renames it aside under a unique name and removes earlier leftovers |
+| Flood test short of 8 MiB | a Windows pipe buffers far more than one bounded drain | drain until empty after the child exits |
+| 31 s per CLI call | CRT `fread` copies byte by byte (about 70 MB/s; `read()` runs at 5 GB/s) and the SDK identity check hashes 375 MB per call | `file_sha256` uses `open`/`read`; producer follow-up below |
+| Shared-runtime program cannot start (`0xC0000135`) | Windows has no RPATH and the child `PATH` is empty | `test`/`run` give the child `PATH=<sdk>/bin;<sdk>/lib` (Windows only; per child, nothing global) |
+| Replay edit probe passes vacuously | a trailing comment leaves a no-checksum object unchanged | the test appends a real definition |
+| Non-ASCII message aborts JSON output | OS error text arrives in the ANSI code page | reply and receipt dumps replace invalid UTF-8 |
+| `/tmp` fixtures, `;` in a directory name | no `/tmp`; the loader splits its DLL search path at `;` | tests use `TMPDIR`/`TEMP`; the Windows hostile name omits `;` and Hangul |
+
+### Producer Follow-ups (not fixed here)
+
+- **Unicode paths.** Windows narrow strings are ANSI code-page bytes (`argv`, `path.string()`), the imported libc++ throws
+  `locale not supported` on a non-ASCII `std::filesystem` operation, and `u8string()` is the only correct UTF-8 spelling. The
+  requirement for real paths with Unicode is **not met on Windows**; this replay uses spaces only.
+- **`consumer_compile_options`.** `-U_WIN32` is a per-library workaround for the curl headers and is unsafe for `<filesystem>`;
+  the profile should scope it per library or CRT should make the curl headers usable without it.
+- **`fread`/`fwrite` performance** (byte loop in `libc/src/stdio.c`) on every host.
+- **Process groups.** `kill(-pgid)` returns `ENOSYS`; a timeout on Windows terminates only the direct child (descendants of a
+  compiler can outlive it). Tracked in CRT's Windows process-signals item.
+- **Unified native-child handling.** The `CRT_SPAWN_NATIVE_WINDOWS` hint is a manual launcher contract; automatic detection
+  of non-CRT children would remove a per-caller obligation.
+- **SDK identity cost.** Hashing the whole SDK on every call is correct but slow on Windows; any stat-based shortcut changes
+  the security meaning and needs an explicit policy decision.
+
+### Evidence, Failures And Limits
+
+Producer evidence root: `out/cli-windows-20261029/` in the CRT checkout (git-ignored): `run_sdk.py`/`sdk-status.json` and the
+producer logs, `replay-r1` ... `replay-r17` (r17 is the pass; each earlier attempt stopped at one finding above and is retained),
+and in `replay-r17/` `commands.json` (exact argv and the process inventory per command), `result.json`, stdout/stderr per step
+and `inputs.json`. The producer worktree is `C:/Users/Lee/cw/crt`. A first SDK attempt failed because the producer checkout was
+edited during the build and the stage-source step refuses a dirty tree; it is retained as
+`out/cli-windows-20261029-attempt1-dirty-worktree/`. Final `result.json` SHA-256: `ed373d1e825e255f960ee07cfaca6378f80f3412e4abbf888bf2dbc9b57df708`.
+
+Limits: Windows/x64 only; ASCII/space paths; the changed CLI sources were **not** rerun on Linux or macOS (the `posix_spawn`
+runner, `file_sha256`, `retire_output`, split `http.cpp`, `sdk_consumer_option_sources` and the test edits affect every host
+and need a replay there); CLI HTTPS, installer/store, general dependencies, upgrades and promotion are open; the process
+inventory is accounting rather than denial. No public release or production lock is adopted.

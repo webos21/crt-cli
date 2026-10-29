@@ -11,6 +11,17 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-10-29
 
+### Run the native contract on Windows/x64 and make the sources portable to it
+
+The revised PAL-only contract now builds, self-builds and passes its native suite (714 assertions) on Windows/x64 against a
+clean local Dev SDK candidate, with the OS-recorded process inventory standing in for execve tracing, and the bare CLI imports
+only `kernel32` and one API-set DLL. The replay found twelve consumer-side defects (fork opt-in, native-child stdio hint,
+libc++ path type vs the curl consumer options, wchar stream constructors, inventory order, self-overwrite of a running exe,
+pipe drain, `fread` cost, child `PATH` for shared runtimes, vacuous edit probe, non-UTF-8 OS text, `/tmp` and `;` fixtures); the
+CLI `execute()` is now `posix_spawn` on every host. Unicode paths remain a producer gap. Linux/macOS replays of the changed
+sources are still to do. See
+[Windows acceptance](docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-windowsx64-2026-10-29).
+
 ### Reuse intermediate build outputs and commit host binaries
 
 Builds keep objects, archives and `-MD` dependency files under the ignored

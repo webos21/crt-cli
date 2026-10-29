@@ -228,10 +228,24 @@ Existing CRT acceptance does not automatically satisfy these new consumer gates.
 When a candidate is selected, record its actual formats rather than assuming
 that later artifacts retain these versions.
 
+## Windows Native Candidate Review (2026-10-29)
+
+**Local D0 Pass, unpromoted.** Clean CRT SDK build baseline `d054a665612fc6b0008e5de5bdc40eb85688a4c8` (detached worktree,
+`v0.4.0-cli.20261029`, `crt-c-test` 166/166), CLI `265105a51e4a17767419c237e33a73f3936d6a53` plus the exact local Windows
+delta (source fingerprint in the
+[Windows record](acceptance/bootstrap_acceptance.md#native-json-builder-on-windowsx64-2026-10-29)), Studio unchanged. Provider
+format 0 gains a `windows/x86_64` target with `.exe`/`.dll` artifacts and `external_os_sdk` set to the Windows SDK import-library
+directory; SDK manifest/profile format 1 is unchanged and the SDK inventory order is now defined component-wise and
+case-sensitively. CRT owns the Windows wrappers, startup and the provider; the CLI owns `posix_spawn` execution, the
+native-child hint for external tools, per-child runtime `PATH` and the `sdk_consumer_option_sources` project key
+(experimental format 0 addition). The changed CLI sources are **not** replayed on Linux/macOS; those records remain valid only
+for their original sources. Open producer items (Unicode paths, per-library consumer options, `fread` cost, process groups)
+are listed in the Windows record. No promoted combination is adopted.
+
 ## Adoption and Exercised Combinations
 
 There is **no promoted production combination yet**. The identified Linux D0
-local experiment above passes; macOS/Windows D0, complete D1 and Studio S0/S1
+local experiment above passes; the macOS and Windows/x64 local D0 replays pass (changed sources still to replay on Linux/macOS), complete D1 and Studio S0/S1
 remain Not run. Use the owning acceptance ledgers for scope, not a general
 claim that the SDK/CLI/Studio product combination is compatible.
 

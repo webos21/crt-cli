@@ -97,6 +97,24 @@ The [macOS evidence](../acceptance/bootstrap_acceptance.md#native-json-builder-o
 records policies, failed attempts and actual commands; it does not claim a
 macOS execve trace or Linux mount-namespace semantics.
 
+On native Windows, CRT supplies the counterpart driver. It needs the Windows SDK import-library directory in
+`CRT_WINDOWS_SDK_LIBPATH` and real LLVM tools (`clang`, `clang++`, `ld.lld`, `llvm-ar`):
+
+```powershell
+python C:/absolute/crt/tools/replay_cli_contract_windows.py `
+  --cli-source C:/absolute/crt-cli --sdk-root C:/absolute/handoff/dev `
+  --hidden C:/absolute/producer-worktree --output C:/absolute/evidence `
+  --clang "C:/Program Files/LLVM/bin/clang.exe" --clangxx "C:/Program Files/LLVM/bin/clang++.exe" `
+  --linker "C:/Program Files/LLVM/bin/ld.lld.exe" --ar "C:/Program Files/LLVM/bin/llvm-ar.exe"
+```
+
+It runs every consumer process under a restricted token (producer trees unreadable through the per-run SID, `PATH` empty,
+stdio redirected) and records the executables each run starts through a job object: accounting, not denial. The bare phase
+uses a second SID that sees only its own copy of the CLI. Keep the producer worktree under the user profile (a path that
+public Users grants can read cannot be hidden this way) and use short, ASCII work paths: Windows narrow paths are ANSI
+bytes and the imported libc++ rejects non-ASCII narrow/wide conversion today. Treat a directory name containing `;` as
+unsupported for programs that import a DLL beside them.
+
 ## Bootstrap Planning Order
 
 Start D0 with [product decisions](../design/crt_cli.md#10-decisions-for-the-first-implementation)
