@@ -1,4 +1,5 @@
 #include <crtcli/toolchain.h>
+#include <set>
 namespace crtcli {
 namespace {
 std::string selected(const std::map<std::string, std::string>& options, const std::string& name) {
@@ -71,6 +72,35 @@ Json inspect_sdk(const fs::path& sdk, const Json& contract, bool allow_dirty) {
     require(profile.at("tls_trust").at("mode") == "explicit-ca-file", "unsupported TLS trust policy");
     return {{"profile", "dev"}, {"target", contract.at("target")}, {"version", profile.at("version")}, {"producer_source_commit", commit}, {"sdk_content_sha256", contract.at("sdk_content_sha256")}, {"provenance", contract.at("provenance")}, {"allow_dirty_sdk", allow_dirty}};
 }
+}
+std::map<std::string, std::string> Toolchain::read_sdk_config(const fs::path& file) {
+    require(fs::is_regular_file(file), "SDK config is not a regular file: " + file.string());
+    const std::map<std::string, std::string> roles{{"sdk_root", "--sdk-root"}, {"sdk_id", "--sdk-id"}, {"sdk_contract", "--sdk-contract"}, {"contract_sha256", "--contract-sha256"},
+        {"cc", "--cc"}, {"cxx", "--cxx"}, {"linker", "--linker"}, {"ar", "--ar"}};
+    const std::set<std::string> absolute_paths{"sdk_root", "sdk_contract", "cc", "cxx", "linker", "ar"};
+    auto config = read_json(file);
+    require(config.is_object() && config.contains("format") && config.at("format") == 0, "unsupported SDK config format (expected 0)");
+    std::map<std::string, std::string> options;
+    for (const auto& item : config.items()) {
+        const auto& key = item.key();
+        if (key == "format") continue;
+        if (key == "seed" || key == "origin") { // informational: not a configure input
+            require(item.value().is_string(), "SDK config " + key + " must be a string");
+            continue;
+        }
+        if (key == "allow_dirty_sdk") {
+            require(item.value().is_boolean(), "SDK config allow_dirty_sdk must be a boolean");
+            if (item.value().get<bool>()) options["--allow-dirty-sdk"] = "true";
+            continue;
+        }
+        auto role = roles.find(key);
+        require(role != roles.end(), "unknown SDK config key: " + key);
+        require(item.value().is_string() && !item.value().get<std::string>().empty(), "SDK config " + key + " must be a non-empty string");
+        auto value = item.value().get<std::string>();
+        require(!absolute_paths.count(key) || fs::path(value).is_absolute(), "SDK config " + key + " must be an absolute path");
+        options[role->second] = value;
+    }
+    return options;
 }
 Toolchain Toolchain::configure(const std::map<std::string, std::string>& options) {
     Toolchain result;

@@ -11,6 +11,17 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-10-29
 
+### Add the local `.sdk.json` and verify the Linux/x86_64 bootstrap loop
+
+`configure` reads defaults from an ignored `<project>/.sdk.json` (or `--sdk-config`);
+explicit flags override per key ([format](docs/reference/bootstrap_contract.md#local-sdkjson)).
+The Linux values came from CRT's passing `replay-l4` handoff (CRT `d054a66` Dev SDK,
+dirty, unpromoted). Loop on Linux/x86_64: the earlier seed built the current sources
+(stage1), stage1 rebuilt them from a clean `out/native` (stage2) with a byte-identical
+SHA-256, a cold build ran 7 steps and an unchanged rebuild reused 7, and the native tests
+pass (660 checks). `bin/` is split into `macos`, `linux-x64`, `linux-arm64`, `win-x64`,
+`win-arm64`; the Linux/x86_64 binary is placed under `bin/linux-x64/` (ELF imports and hidden-SDK bare run checked, not an execve replay).
+
 ### Reuse intermediate build outputs and commit host binaries
 
 Builds keep objects, archives and `-MD` dependency files under the ignored

@@ -169,6 +169,38 @@ int main(int argc, char** argv) {
                 write_text(root / "crt.json", manifest.dump());
             }
         }
+        // The local, uncommitted .sdk.json supplies configure defaults; explicit flags override it per key.
+        Json sdk_config{{"format", 0}, {"origin", "native test"}, {"seed", "/not/used/by/configure"}, {"sdk_root", local.at("sdk_root")}, {"sdk_contract", local.at("sdk_contract")},
+            {"contract_sha256", lock.at("selection").at("contract_sha256")}, {"cc", local.at("cc")}, {"cxx", local.at("cxx")}, {"linker", local.at("linker")}, {"ar", local.at("ar")},
+            {"allow_dirty_sdk", lock.at("selection").value("allow_dirty_sdk", false)}};
+        auto config_root = hostile / "config-project";
+        invoke(cli, {"new", config_root.string()});
+        write_text(config_root / ".sdk.json", sdk_config.dump(2));
+        check(read_text(config_root / ".gitignore").find("/.sdk.json") != std::string::npos, "generated project ignores .sdk.json");
+        auto from_config = invoke(cli, {"configure", "--project", config_root.string()});
+        check(from_config.at("selection") == lock.at("selection"), "configure defaults come from .sdk.json");
+        invoke(cli, {"test", "--project", config_root.string()});
+        invoke(cli, {"configure", "--project", config_root.string(), "--contract-sha256", std::string(64, '0')}, false);
+        auto elsewhere = fixture / "elsewhere.sdk.json";
+        write_text(elsewhere, sdk_config.dump());
+        fs::remove(config_root / ".sdk.json");
+        invoke(cli, {"configure", "--project", config_root.string()}); // no config: the existing binding is re-verified
+        auto unbound_root = hostile / "unbound-project";
+        invoke(cli, {"new", unbound_root.string()});
+        invoke(cli, {"configure", "--project", unbound_root.string()}, false); // neither .sdk.json nor flags nor binding
+        auto from_path = invoke(cli, {"configure", "--project", config_root.string(), "--sdk-config", elsewhere.string()});
+        check(from_path.at("selection") == lock.at("selection"), "--sdk-config selects another file");
+        for (const auto& change : {"format", "unknown", "relative", "typed", "hash"}) {
+            auto bad = sdk_config;
+            if (std::string(change) == "format") bad["format"] = 99;
+            else if (std::string(change) == "unknown") bad["sdk_roots"] = "/x";
+            else if (std::string(change) == "relative") bad["cc"] = "clang";
+            else if (std::string(change) == "typed") bad["allow_dirty_sdk"] = "true";
+            else bad["contract_sha256"] = std::string(64, '0');
+            write_text(elsewhere, bad.dump());
+            invoke(cli, {"configure", "--project", config_root.string(), "--sdk-config", elsewhere.string()}, false);
+        }
+        invoke(cli, {"configure", "--project", config_root.string(), "--sdk-config", (fixture / "missing.sdk.json").string()}, false);
         // The SDK store is a user-home contract, not an OS-specific data root.
         auto home = hostile / "User Home";
         const std::string old_home = std::getenv("HOME") ? std::getenv("HOME") : "";
@@ -185,6 +217,10 @@ int main(int argc, char** argv) {
         invoke(cli, configure); invoke(cli, {"test", "--project", root.string()});
         check(fs::path(read_json(root / ".crt/local.json").at("sdk_root").get<std::string>()) == fs::canonical(installed), "SDK selected under common store");
         configure[4] = "../escape"; invoke(cli, configure, false);
+        // A flag-selected store id replaces the SDK root named by .sdk.json instead of conflicting with it.
+        write_text(root / ".sdk.json", sdk_config.dump());
+        invoke(cli, {"configure", "--project", root.string(), "--sdk-id", "local-candidate"});
+        check(fs::path(read_json(root / ".crt/local.json").at("sdk_root").get<std::string>()) == fs::canonical(installed), "--sdk-id overrides .sdk.json sdk_root");
         if (old_home.empty()) unsetenv("HOME"); else setenv("HOME", old_home.c_str(), 1);
         if (old_profile.empty()) unsetenv("USERPROFILE"); else setenv("USERPROFILE", old_profile.c_str(), 1);
         check(!fs::exists(hostile / "never-execute"), "shell metacharacters stay literal");
