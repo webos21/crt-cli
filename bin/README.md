@@ -12,7 +12,7 @@ release artifacts.
 | macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `152b027f053fa7150dc7a3170ee361fd9615e2f305a915d45bef984576a5a55b` (2,983,112 bytes) |
 | Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `cfc41532e6a582982dcd19831d0e6dcf7919be7d189558821845e257432fe1d5` (10,804,200 bytes) |
 | Linux/aarch64 | `bin/linux-arm64/crt-cli` | pending: build on a Linux/aarch64 host |
-| Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `8ab2912d1b55537d89ecf99747dc8a51067aa4e764eb09261752c43049e6c6e9` (16,654,848 bytes, built `-O1 -g`) |
+| Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `183e1e6c7f60cfc823ca0e4e260ff913b252798b5b0d0daebe82c9f3a7529806` (16,883,200 bytes, built `-O1 -g`) |
 | Windows/arm64 | `bin/win-arm64/crt-cli.exe` | pending: build on a Windows/arm64 host |
 
 macOS ships only arm64, so it keeps the single `bin/macos/` directory. Linux and

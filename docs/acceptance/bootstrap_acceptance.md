@@ -701,3 +701,15 @@ Limits: Windows/x64 only; ASCII/space paths; the changed CLI sources were **not*
 runner, `file_sha256`, `retire_output`, split `http.cpp`, `sdk_consumer_option_sources` and the test edits affect every host
 and need a replay there); CLI HTTPS, installer/store, general dependencies, upgrades and promotion are open; the process
 inventory is accounting rather than denial. No public release or production lock is adopted.
+
+### Merged-source Replay (2026-10-29)
+
+After merging the Linux/x86_64 work (`.sdk.json` inputs, `b99d74c`) into the Windows delta, the same driver was rerun on the
+merged tree against the same SDK and provider: **pass**, **748 native assertions** (the Linux additions included), cold build 8
+executed / 0 reused, warm 0 / 8, 402 process records with no forbidden image, bare help/version/doctor with source, SDK and
+provider unreadable, imports `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll` only. Exported source SHA-256
+`58ce650ce66a02b532d20c81c6b9b5f03e5a70ae99517234a22051924d2eca61`; `result.json` SHA-256
+`8d3cfeaee8a7bb66560f679cb698ac112f64cb9481a782e58589f98c36683896` (evidence `out/cli-windows-20261029/replay-r18-merged/` in the CRT
+checkout). The committed `bin/win-x64/crt-cli.exe` is this replay's bare executable: SHA-256
+`183e1e6c7f60cfc823ca0e4e260ff913b252798b5b0d0daebe82c9f3a7529806`, 16,883,200 bytes. The 714-assertion, `8ab2912d...` r17 record above
+stays as the first pass on the pre-merge sources.
