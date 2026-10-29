@@ -174,6 +174,33 @@ needed in this consolidation; version/bootstrap doctor was checked again using
 the byte-identical review executable. Complete macOS/Windows/lifecycle gates
 remain open, and repository pushes do not promote or publish SDK/CLI releases.
 
+## macOS Native Candidate Review (2026-10-29)
+
+**Local D0 Pass, unpromoted.** Reviewed clean CRT SDK build baseline
+`17de3510c37cdb07e3c5c98583b22ebe4e1463ec`, CLI
+`0f14ed3bee6b6512a6969b6118dcbd82c1c564b7` plus its exact exported macOS patch,
+and unchanged Studio `27548e1c6d29b5a63d7eb6adce8aaf47b2f5d807`.
+The [native macOS record](acceptance/bootstrap_acceptance.md#native-json-builder-on-macosarm64-2026-10-29)
+owns SDK/archive/provider/exporter/source and bare-binary hashes, 474 assertions,
+actual OS isolation, imports/maps, failed attempts and limits. The older Linux
+experiment and accepted input identities remain unchanged.
+
+CRT owns the macOS provider's explicit vendor SDK and Bionic runtime/startup
+flags; CLI owns native host/format inspection, POSIX process execution and the
+local project binding. Provider format 0 adds a macOS target and host-bound
+`external_os_sdk` field; existing SDK manifest/profile format 1 is unchanged.
+The SDK's copied bytes are not modified. Any later provider or SDK requires a
+new exact identity/pin; no promoted root lock is adopted here. The unresolved
+repository request is now `*`, while resolved projects still pin the selected
+version/content/tool identities and reject version mismatch.
+
+The bootstrap result remains experimental format 1, with additive allocation-
+ownership evidence; this is not general SDK Build Contract v1 or stable D6
+automation. SDK-free help/version/doctor is exercised, not complete D1 HTTPS,
+installer, package/updater or Studio integration. Windows replay and clean
+producer promotion/consumer adoption remain open. No public release or
+cross-repository merge/lock update is authorized by this local candidate.
+
 ## Contract Inventory
 
 This is the original pinned review inventory. The implemented bootstrap-only

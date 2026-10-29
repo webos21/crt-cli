@@ -1,5 +1,5 @@
-// Temporary hosted seed; never distributed or used as a product launcher.
-#include "../src/main/core.h"
+// Temporary CRT-native seed; never distributed or used as a product launcher.
+#include <crtcli/core.h>
 int main(int argc, char** argv) {
     using namespace crtcli;
     try { return print_reply(workflow(std::vector<std::string>(argv + 1, argv + argc)), true); }

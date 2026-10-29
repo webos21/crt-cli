@@ -11,6 +11,39 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-10-29
 
+### Remove host macros from the CLI and add typed build targets
+
+CLI code now reaches platform information, native-executable detection, the
+user home and loaded images through CRT PAL APIs instead of `__linux__`/
+`__APPLE__`, `/proc/self/maps` or dyld. Headers moved to `include/`, `crt-cli new`
+creates `include/`, SDKs install under `$USER_HOME/.crt/sdks` on all hosts, the
+vendored JSON/SHA-2 sources are replaced by Development-SDK ports, and targets
+may be executables, static or shared libraries. macOS replay:
+[PAL-only contract](docs/acceptance/bootstrap_acceptance.md#pal-only-native-contract-on-macosarm64-2026-10-29-revised).
+
+### Replay native bootstrap on macOS/arm64
+
+Added bounded macOS native-target/Mach-O inspection, reused the CRT POSIX child
+backend and made generated target metadata follow the selected SDK. CRT's
+separately hashed provider supplies the native Xcode OS SDK/link policy; CLI
+still executes LLVM argv directly, without wrappers/Python/shell/CMake/Ninja.
+The unresolved self-project request no longer fixes a Linux-candidate SDK
+version, while configured locks and version-mismatch rejection remain exact.
+
+The external SDK-only self-build and 474 native assertions pass, including
+C/C++ generation/workflows, hostile paths, exit-7 failures, timeout and bounded
+stdout. OS-enforced probes deny producer trees and interpreted/build tools;
+bare help/version/doctor additionally pass without SDK/source/compiler access.
+Mach-O directly imports only libSystem and has no RPATH. Public dyld maps and
+dladdr-based allocation ownership distinguish OS-loaded C++ images from the
+CLI's own static runtime. SDK inventories and original unresolved lock remain
+unchanged; earlier failing attempts are retained, not relabeled.
+
+Only the macOS D0 sub-gates are closed. Windows, actual CLI HTTPS, full D1,
+installation/upgrades, complete external tool attestation and promotion remain
+open. Both STATUS files are unchanged. Exact inputs, results and raw evidence:
+[macOS acceptance](docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-macosarm64-2026-10-29).
+
 ### Commit the native builder and reconcile producer/consumer documentation
 
 Committed the native implementation as `1270695ee8e1ab53b661c4540af859cb2463d840`. Its 19

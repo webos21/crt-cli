@@ -24,9 +24,10 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
 
 ### D0 - SDK Consumer Contracts and Bootstrap Definition
 
-Current focus: Linux native bootstrap evidence and remaining native-pair replay.
+Current focus: PAL-only native contract, typed build targets and SDK-owned
+JSON/SHA-2, followed by Linux/Windows replay of that new contract and candidate coherence.
 The native JSON builder replaces the initial CMake prototype. Bootstrap and
-bounded new/configure/build/test/run pass on Linux without Python/shell;
+bounded new/configure/build/test/run pass on Linux and macOS without Python/shell;
 SDK installation, general dependency workflows and self-upgrade remain planned. See
 [D0/D1 acceptance](docs/acceptance/bootstrap_acceptance.md).
 Develop together with CRT Tranche 1 in one authorized local session, using the
@@ -43,9 +44,10 @@ Public SDK release is not a prerequisite; CLI consumption stays SDK-only.
   manifest/lock inputs; the general SDK/project contracts remain distinct.
 - [ ] **D0.5** Implement bounded help/version/bootstrap diagnosis and check
   single-executable link feasibility for the chosen CRT/C++/HTTP/TLS stack.
-  Linux passes; native macOS/arm64 and Windows/x64 replay remains.
+  Linux and macOS/arm64 pass; native Windows/x64 replay remains.
 - [ ] **D0.6** Validate relocated build/run/imports with producer trees unavailable;
-  Linux passes; replay the other initial native pairs against their own SDKs.
+  Linux and macOS/arm64 pass; Windows/x64 remains;
+  [macOS evidence](docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-macosarm64-2026-10-29).
 - [ ] **D0.7** Link exact candidate/case evidence in [compatibility](docs/compatibility.md),
   resolve asset coherence with CRT and adopt final pins only after producer promotion.
 

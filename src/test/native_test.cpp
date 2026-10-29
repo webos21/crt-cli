@@ -1,7 +1,8 @@
-#include "core.h"
+#include <crtcli/core.h>
 #include <cstdio>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <cstdlib>
 using namespace crtcli;
 namespace {
 size_t checks = 0;
@@ -30,8 +31,11 @@ int main(int argc, char** argv) {
         check(sha256("abc") == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", "SHA256 vector");
         invoke(cli, {"--help"}); invoke(cli, {"--version"});
         auto doctor = invoke(cli, {"doctor", "--bootstrap"});
+        check(doctor.at("checks").at("cxx_allocation_owner") == "pass", "CLI owns its C++ allocation functions");
         check(doctor.at("checks").at("executable_integrity") == "not_verified", "honest integrity result");
         check(doctor.at("checks").at("https_network") == "not_run", "honest network result");
+        check(doctor.at("runtime_maps").at("status") == "collected", "PAL image enumeration");
+        check(fs::path(doctor.at("sdk_store").get<std::string>()).filename() == "sdks", "common SDK store basename");
         for (const auto& args : std::vector<std::vector<std::string>>{{"upgrade"}, {"doctor"}, {"--version", "extra"}, {"--json"}, {"new"}, {"build", "--bad"}, {"configure", "--project"}})
             invoke(cli, args, false);
         char temporary[] = "/tmp/crt-cli-native-XXXXXX";
@@ -56,9 +60,12 @@ int main(int argc, char** argv) {
             check(created.at("sdk_acquired") == false && !fs::exists(root / ".crt") && !fs::exists(root / "out"), "source-only creation");
             std::string suffix = std::string(language) == "c" ? "c" : "cpp";
             check(fs::exists(root / ("src/test/greeting_test." + suffix)) && fs::exists(root / ("src/main/greeting." + suffix)), "native multi-source scaffold");
+            check(fs::is_regular_file(root / "include/greeting.h") && !fs::exists(root / "src/main/greeting.h"), "headers belong to include");
             invoke(cli, {"new", root.string()}, false);
             invoke(cli, {"build", "--project", root.string()}, false);
             std::vector<std::string> configure{"configure", "--project", root.string(), "--sdk-root", local.at("sdk_root"), "--sdk-contract", local.at("sdk_contract"), "--contract-sha256", lock.at("selection").at("contract_sha256"), "--cc", local.at("cc"), "--cxx", local.at("cxx"), "--linker", local.at("linker")};
+            configure.insert(configure.end(), {"--ar", local.at("ar")});
+            if (lock.at("selection").value("allow_dirty_sdk", false)) configure.insert(configure.end(), {"--allow-dirty-sdk", "true"});
             auto wrong = configure; wrong[8] = std::string(64, '0');
             invoke(cli, wrong, false);
             auto configured = invoke(cli, configure);
@@ -68,7 +75,7 @@ int main(int argc, char** argv) {
                 for (const auto& change : {"format", "target", "producer"}) {
                     auto bad = provider;
                     if (std::string(change) == "format") bad["format"] = 99;
-                    else if (std::string(change) == "target") bad["target"]["arch"] = "aarch64";
+                    else if (std::string(change) == "target") bad["target"]["arch"] = provider.at("target").at("arch") == "aarch64" ? "x86_64" : "aarch64";
                     else bad["producer_source_commit"] = std::string(40, '0');
                     auto path = fixture / "bad-provider.json";
                     write_text(path, bad.dump());
@@ -90,7 +97,7 @@ int main(int argc, char** argv) {
             check(tested.at("outcomes").size() == 1 && tested.at("outcomes").at(0).at("exit_code") == 0, "generated native test passes");
             invoke(cli, {"run", "--project", root.string()});
             for (const auto& command : tested.at("commands")) {
-                check(command.at(0) == local.at("cc") || command.at(0) == local.at("cxx"), "only direct native compiler roles");
+                check(command.at(0) == local.at("cc") || command.at(0) == local.at("cxx") || command.at(0) == local.at("ar"), "only direct native compiler/archive roles");
                 for (const auto& arg : command) check(arg.get<std::string>().find("tools/crt-") == std::string::npos, "no SDK wrappers");
             }
             auto test_source = root / ("src/test/greeting_test." + suffix);
@@ -104,13 +111,65 @@ int main(int argc, char** argv) {
             write_text(root / "crt.json", broken.dump()); invoke(cli, {"build", "--project", root.string()}, false);
             broken = manifest; broken["sdk"]["profile"] = "full";
             write_text(root / "crt.json", broken.dump()); invoke(cli, {"build", "--project", root.string()}, false);
-            broken = manifest; broken["application"]["sources"] = {"../outside.c"};
+            broken = manifest; broken["sdk"]["version"] = "not-the-selected-sdk";
+            write_text(root / "crt.json", broken.dump()); invoke(cli, {"build", "--project", root.string()}, false);
+            broken = manifest; broken["targets"][0]["sources"] = {"../outside.c"};
             write_text(root / "crt.json", broken.dump()); invoke(cli, {"build", "--project", root.string()}, false);
             write_text(root / "crt.json", manifest.dump());
             auto bad_lock = read_json(root / "crt.lock"); bad_lock["selection"]["sdk_content_sha256"] = std::string(64, '0');
             write_text(root / "crt.lock", bad_lock.dump()); invoke(cli, {"build", "--project", root.string()}, false);
             check(read_json(root / "crt.lock") == bad_lock, "failed build preserves lock");
         }
+        for (const auto& language : {"c", "cxx"}) {
+            for (const auto& type : {"static-library", "shared-library", "executable"}) {
+                auto root = hostile / (std::string("variant-") + language + "-" + type);
+                std::vector<std::string> create{"new", root.string(), "--language", language, "--kind", type};
+                if (std::string(type) == "executable") create.insert(create.end(), {"--runtime-linkage", "shared"});
+                invoke(cli, create);
+                fs::create_directories(root / ".crt");
+                write_text(root / ".crt/local.json", local.dump());
+                write_text(root / "crt.lock", lock.dump());
+                auto built = invoke(cli, {"build", "--project", root.string(), "--target", root.filename().string()});
+                auto artifact = built.at("artifacts").at(root.filename().string());
+                check(artifact.at("kind") == type && fs::file_size(artifact.at("path").get<std::string>()) > 0, "typed target artifact");
+                auto tested = invoke(cli, {"test", "--project", root.string()});
+                check(tested.at("outcomes").at(0).at("exit_code") == 0, "typed target link/run consumer");
+                if (std::string(type) != "executable") invoke(cli, {"run", "--project", root.string()}, false);
+                else invoke(cli, {"run", "--project", root.string(), "--target", root.filename().string()});
+                invoke(cli, {"build", "--project", root.string(), "--target", "missing"}, false);
+                auto manifest = read_json(root / "crt.json");
+                auto bad = manifest;
+                bad["targets"][0]["kind"] = "not-a-kind";
+                write_text(root / "crt.json", bad.dump()); invoke(cli, {"build", "--project", root.string()}, false);
+                if (std::string(type) == "static-library") {
+                    bad = manifest;
+                    auto second = bad["targets"][0]; second["name"] = "cycle";
+                    second["dependencies"] = {root.filename().string()};
+                    bad["targets"][0]["dependencies"] = {"cycle"};
+                    bad["targets"].push_back(second);
+                    write_text(root / "crt.json", bad.dump()); invoke(cli, {"build", "--project", root.string()}, false);
+                }
+                write_text(root / "crt.json", manifest.dump());
+            }
+        }
+        // The SDK store is a user-home contract, not an OS-specific data root.
+        auto home = hostile / "User Home";
+        const std::string old_home = std::getenv("HOME") ? std::getenv("HOME") : "";
+        const std::string old_profile = std::getenv("USERPROFILE") ? std::getenv("USERPROFILE") : "";
+        setenv("HOME", home.string().c_str(), 1); setenv("USERPROFILE", home.string().c_str(), 1);
+        check(sdk_store_root() == home / ".crt/sdks", "identical user-home SDK location");
+        auto installed = sdk_store_root() / "local-candidate";
+        fs::create_directories(installed.parent_path());
+        fs::copy(fs::path(local.at("sdk_root").get<std::string>()), installed, fs::copy_options::recursive | fs::copy_options::copy_symlinks);
+        auto root = hostile / "store-project";
+        invoke(cli, {"new", root.string()});
+        std::vector<std::string> configure{"configure", "--project", root.string(), "--sdk-id", "local-candidate", "--sdk-contract", local.at("sdk_contract"), "--contract-sha256", lock.at("selection").at("contract_sha256"), "--cc", local.at("cc"), "--cxx", local.at("cxx"), "--linker", local.at("linker"), "--ar", local.at("ar")};
+        if (lock.at("selection").value("allow_dirty_sdk", false)) configure.insert(configure.end(), {"--allow-dirty-sdk", "true"});
+        invoke(cli, configure); invoke(cli, {"test", "--project", root.string()});
+        check(fs::path(read_json(root / ".crt/local.json").at("sdk_root").get<std::string>()) == fs::canonical(installed), "SDK selected under common store");
+        configure[4] = "../escape"; invoke(cli, configure, false);
+        if (old_home.empty()) unsetenv("HOME"); else setenv("HOME", old_home.c_str(), 1);
+        if (old_profile.empty()) unsetenv("USERPROFILE"); else setenv("USERPROFILE", old_profile.c_str(), 1);
         check(!fs::exists(hostile / "never-execute"), "shell metacharacters stay literal");
         fs::remove_all(fixture);
         std::printf("native tests: %zu checks passed\n", checks);

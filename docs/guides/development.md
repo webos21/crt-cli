@@ -20,11 +20,12 @@ The native JSON bootstrap replaces the initial CMake prototype. The
 
 Use native LLVM and a produced Dev SDK plus its separately hashed experimental
 compiler policy. No CMake, Python, shell or network dependency is needed by the
-CLI build/test path. A temporary hosted C++ seed builds the first CRT-native CLI:
+CLI build/test path. The first seed must now also use CRT: PAL queries and
+JSON/SHA-2 come from the SDK, not host libraries or CLI-vendored headers. The
+old host-C++ seed command is obsolete. With an already produced native seed:
 
 ```text
-clang++ -std=c++17 -O1 -fuse-ld=lld --ld-path=/absolute/ld.lld tools/bootstrap_host.cpp src/main/core.cpp src/main/process.cpp src/main/toolchain.cpp src/main/project.cpp -o /absolute/native-seed
-/absolute/native-seed configure --project /absolute/crt-cli --sdk-root /absolute/handoff/dev --sdk-contract /absolute/handoff/native-toolchain-v0.json --contract-sha256 <exact-provider-sha256> --cc /absolute/clang --cxx /absolute/clang++ --linker /absolute/ld.lld
+/absolute/native-seed configure --project /absolute/crt-cli --sdk-root /absolute/handoff/dev --sdk-contract /absolute/handoff/native-toolchain-v1.json --contract-sha256 <exact-provider-sha256> --cc /absolute/clang --cxx /absolute/clang++ --linker /absolute/ld.lld --ar /absolute/llvm-ar
 /absolute/native-seed build --project /absolute/crt-cli
 /absolute/crt-cli/out/native/crt-cli test --project /absolute/crt-cli --json
 /absolute/crt-cli/out/native/crt-cli doctor --bootstrap --json
@@ -32,9 +33,32 @@ clang++ -std=c++17 -O1 -fuse-ld=lld --ld-path=/absolute/ld.lld tools/bootstrap_h
 
 These are separate argv invocations, not a shell script. Supply actual absolute
 paths and preserve the `ld.lld` driver name even when it is a symlink to `lld`.
-The seed is a disposable build-host tool using host C++; the resulting CLI links
-CRT/C++/HTTP/TLS statically and must pass its own import/runtime audit. The seed
-is never shipped and subsequent self-build/test uses the CRT-native CLI.
+The seed and resulting CLI both link CRT/C++/HTTP/TLS statically and must pass
+import/runtime audits. The seed is never shipped. Uncommitted SDK candidates
+require explicit `--allow-dirty-sdk true`; this is recorded in the local lock,
+not relabeled as a clean release. Sources and library bytes must still match
+the exact provider inventory and provenance.
+
+For native macOS, CRT supplies a producer-side acceptance driver that builds
+the initial CRT-native seed from provider argv, then runs native self-build,
+tests and bare-binary checks under Seatbelt:
+
+```sh
+python3 /absolute/crt/tools/replay_cli_contract_macos.py \
+  --cli-source /absolute/crt-cli --sdk-root /absolute/handoff/dev \
+  --output /absolute/evidence \
+  --clang /absolute/XcodeToolchain/usr/bin/clang \
+  --clangxx /absolute/XcodeToolchain/usr/bin/clang++ \
+  --linker /absolute/XcodeToolchain/usr/bin/ld \
+  --ar /absolute/XcodeToolchain/usr/bin/ar
+```
+
+That Python process is a build-host test orchestrator outside the product
+sandbox, not a CLI prerequisite. All CLI/generated build commands remain
+native argv. Select actual Xcode tools (`xcrun -f <tool>` before isolation),
+not `/usr/bin` discovery launchers or an assumed installed LLD. The producer
+captures explicit vendor `-isysroot` while retaining CRT standard headers;
+never add host include paths to CLI manifests.
 
 CRT supplies the policy using `tools/export_cli_toolchain.py --sdk-root <dev>
 --output <fresh-provider.json>`. That producer migration tool still uses the old
@@ -47,12 +71,31 @@ the same local SDK explicitly with configure, then run test/build/run with
 `--project /absolute/hello`. New only generates sources. Missing SDK selection
 currently fails clearly; automatic acquisition remains planned.
 
+New creates `include/greeting.h`, source and test directories. Add
+`--kind static-library` or `--kind shared-library` for library templates, or
+`--runtime-linkage shared` for a dynamically linked executable. Multiple
+targets/dependencies are declared in `crt.json`; use `build --target <name>`.
+The CLI itself still uses the single-executable policy. Installed SDK selection
+can use `configure --sdk-id <id>` under `$USER_HOME/.crt/sdks`; an explicit
+`--sdk-root` remains available for a local handoff, not an installer.
+
 Fresh isolated Linux replay must export sources and SDK outside producer trees,
 hide producer/original inputs, make Python/shell/CMake/Ninja executables unavailable,
 trace actual execve calls and run native self-build/tests. Bare-binary checks then
 hide the relocated SDK/source/output as well. Keep logs, exact argv, source/export
 hashes, ELF imports, mapped images and unchanged inventories. Linux evidence does
 not grant macOS/Windows acceptance. The previous CMake receipts remain historical.
+
+On macOS, use a native Seatbelt file/exec policy instead of Linux bubblewrap.
+The accepted replay denies producer-tree reads, permits only selected native
+tools/CLI/generated executables, and probes actual failures of shell, Python,
+CMake, Ninja, make and SDK-wrapper execution. The bare replay additionally denies
+the relocated SDK, project, provider and compiler/linker execution. Emit literal
+UTF-8 policy paths: JSON `\u` escapes do not represent Unicode SBPL paths.
+This is OS-enforced denial, not merely a filtered PATH or renamed directory.
+The [macOS evidence](../acceptance/bootstrap_acceptance.md#native-json-builder-on-macosarm64-2026-10-29)
+records policies, failed attempts and actual commands; it does not claim a
+macOS execve trace or Linux mount-namespace semantics.
 
 ## Bootstrap Planning Order
 

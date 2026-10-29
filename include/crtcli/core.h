@@ -1,5 +1,5 @@
 #pragma once
-#include "../../third_party/json/json.hpp"
+#include <nlohmann/json.hpp>
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -18,6 +18,8 @@ Json read_json(const fs::path& path);
 std::string sha256(const std::string& bytes);
 std::string file_sha256(const fs::path& path);
 Json inventory(const fs::path& root);
+Json native_target();
+fs::path sdk_store_root();
 fs::path inside(const fs::path& root, const std::string& relative);
 void require(bool condition, const std::string& message);
 void native_executable(const fs::path& path);

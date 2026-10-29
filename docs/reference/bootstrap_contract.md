@@ -1,110 +1,147 @@
 # Implemented Native Bootstrap Contract
 
-This is an experimental Linux/x86_64 contract, not SDK Build Contract v1 or a
-promoted release. The owner replaced the initial CMake prototype on 2026-10-28.
-Its dated evidence remains in [acceptance](../acceptance/bootstrap_acceptance.md).
+Experimental contract, not SDK Build Contract v1 or a promoted release. Native
+policy export currently supports Linux/x86_64 and macOS/arm64; Windows replay
+is still pending. Earlier format-0 evidence remains historical in
+[acceptance](../acceptance/bootstrap_acceptance.md).
 
 ## Modules and Dependencies
 
-`src/main/main.cpp` dispatches commands. `project.cpp` reads declarations and
-creates/builds projects; `toolchain.cpp` verifies inputs and expands SDK policy;
-`process.cpp` executes native argv with a private environment and timeout;
-`core.cpp` supplies JSON, hashing and filesystem operations; `bootstrap.cpp`
-checks CRT C++/zlib/curl/Mbed TLS. Tests are C++ in `src/test/`.
+`src/main/` contains command dispatch, project/target builds, toolchain selection,
+PAL process execution, filesystem/hash operations and bootstrap diagnosis.
+Project-owned headers live under `include/crtcli/`, not `src/main/`.
+`src/test/` contains C++ regression tests. Generated projects have `include/`,
+`src/main/` and `src/test/`; source paths are explicit, not globbed.
 
-LLVM Clang/LLD and an identified Dev SDK are explicit app-build prerequisites.
-CMake, Ninja, Python, shell scripts and SDK compiler wrappers are not invoked
-by CLI self-build or native project configure/build/test/run. The temporary
-hosted C++ `tools/bootstrap_host.cpp` seed shares the backend and builds the
-first CRT-native CLI. It is not shipped, a launcher, or a runtime dependency.
-Upstream configure/make ports may need explicitly selected CRT shell/tools;
-that future port environment is separate from this native app backend.
+The CLI consumes public CRT/POSIX APIs, not host-specific preprocessor branches,
+dyld declarations or `/proc` parsing. CRT's `crt/platform.h` supplies native
+target information, executable screening and user-home lookup; `crt/dl.h`
+enumerates real loaded images without fabricating ELF structures on Mach-O/PE.
+These are documented CRT extensions, not functions attributed to Bionic.
 
-Pinned unmodified nlohmann/json and PicoSHA2 headers, provenance/hashes and
-licenses are under `third_party/`. No dependencies are fetched during a CLI
-build. Distribution must retain their licenses with the SDK/runtime notices.
+JSON and SHA-2 are SDK dependencies: `nlohmann/json.hpp` and Mbed TLS SHA-256
+replace the old CLI-owned nlohmann/PicoSHA2 copies. The Dev SDK also provides
+embedded C cJSON and SHA-224/384/512. Source pins, notices and static/shared
+evidence belong to CRT recipes and SDK metadata. The CLI does not fetch these
+dependencies during its build, and redistribution still requires their notices.
 
-## Project Declaration and Exact Inputs
+LLVM and a selected SDK are app-build prerequisites. Command handlers invoke
+native compiler/linker/archiver argv; they do not execute Python, shell, CMake,
+Ninja or SDK wrappers. A producer-side seed/replay may use Python to expand the
+same policy and build a **CRT-native** first CLI. The old host-C++ seed command
+is obsolete because it cannot provide the public CRT PAL boundary. No seed or
+permanent launcher is distributed. Optional configure/make port environments
+remain distinct from native application builds.
 
-`crt.json` uses `manifest_format: 0`:
+## Project and Target Declaration
+
+New projects use `manifest_format: 1`:
 
 ```json
 {
-  "manifest_format": 0,
+  "manifest_format": 1,
   "package": {"name": "hello", "version": "0.1.0"},
   "sdk": {"profile": "dev", "version": "*", "target": "native", "storage": "shared-immutable"},
-  "include_dirs": ["src/main"],
-  "application": {"name": "hello", "sources": ["src/main/main.cpp", "src/main/greeting.cpp"]},
-  "tests": [{"name": "greeting-test", "sources": ["src/test/greeting_test.cpp", "src/main/greeting.cpp"]}]
+  "include_dirs": ["include"],
+  "targets": [
+    {"name": "greeting", "kind": "static-library", "sources": ["src/main/greeting.cpp"]},
+    {"name": "hello", "kind": "executable", "runtime_linkage": "static",
+     "sources": ["src/main/main.cpp"], "dependencies": ["greeting"]}
+  ],
+  "tests": [{"name": "greeting-test", "sources": ["src/test/greeting_test.cpp"], "dependencies": ["greeting"]}]
 }
 ```
 
-Use `.c` sources for C99 or `.cpp`/`.cc`/`.cxx` for C++17. Explicit source and
-include paths must stay inside the project, including resolved symlinks. Optional
-`sdk_libraries` names select static archives from the selected SDK. Source files
-are compiled individually; test targets have their own main. Optional test `timeout_seconds` is bounded
-from 1 to 3600 (default 180; the CLI integration suite selects 600). This first backend
-rebuilds targets and has no incremental/header-dependency cache or general
-library/dependency graph. Build optimization is currently fixed at O1 with debug
-information; content profiles are not build modes.
+`kind` is `executable` (default), `static-library` or `shared-library`.
+`runtime_linkage` selects `static` or `shared`, independently of the CLI product's
+single-executable distribution policy. Executables default to static CRT;
+shared libraries require shared CRT. Static libraries are PIC archives, with
+their final runtime selected by the consumer. Executable consumers of direct
+or transitive shared-library dependencies must select shared CRT to avoid a
+second runtime instance. Artifact names/startup/PIC/link flags come from the SDK
+provider, not OS branches in the CLI. Native LLVM/platform `ar` is explicitly
+selected and hashed; compiler drivers own linking.
 
-`new` generates sources and an unresolved format-0 JSON `crt.lock`; it creates
-no SDK binding/download. Explicit local `configure` validates the SDK and writes
-`state: local-experiment` plus exact selection into the lock. Absolute SDK/tool
-paths live in ignored `.crt/local.json`. The lock pins version/profile/target,
-producer source, full SDK inventory, provider-contract hash and LLVM/linker/resource
-hashes. Every build verifies these bytes before invoking selected compiler tools.
-The repository's checked-in lock remains unresolved: no production pin is adopted.
-Automatic first-build SDK acquisition, installer/store/GC, `--locked`/`--offline`,
-registry/dependency resolution and lock migration remain D2/D4/D5 work.
+`dependencies` names project library targets. The driver builds them in
+dependency order, rejects cycles/unknown/executable dependencies and propagates
+C++ link requirements. SDK library names use `sdk_libraries`; optional
+`sdk_library_linkage` selects static/shared artifacts declared by the provider,
+defaulting to target runtime linkage. Static archives do not embed dependency
+libraries: executable/shared consumers resolve their transitive dependencies.
 
-## Producer-owned Compiler Policy
+Use `.c` for C99, `.cpp`/`.cc`/`.cxx` for C++17. Source/include paths must remain
+inside the project after resolving symlinks; output symlinks are rejected.
+Target names are unique across build/test targets. Legacy format-0 `application`
+declarations are read for migration; `application` and `targets` cannot coexist.
+The driver rebuilds requested targets without incremental/header-dependency
+caching. Optimization remains O1 with debug info, separate from SDK profiles.
+Tests have an executable main and a bounded `timeout_seconds` (1..3600).
 
-CRT's `tools/export_cli_toolchain.py` is an SDK-producer migration tool. It
-captures actual installed wrapper argv for C/C++ compilation and static hosted
-linking with exceptions/RTTI. Python/shell are required only by this existing
-producer-side export, not by the CLI or application build path. CRT runtime/SDK
-production remains CMake-based and does not depend on CLI source.
+`build --target <name>` builds one target and its dependencies; plain build
+builds all declared targets. `test --target <test-name>` selects a test.
+`run --target <name>` requires an executable; libraries cannot be run.
+Without a run target, the first executable declaration is selected.
 
-The separately hashed `crt.experimental.native-toolchain`, format 0, binds a
-complete read-only SDK inventory and clean matching format-1 manifest/Dev
-packaging provenance. Commands contain typed argv slots for SDK/compiler-resource
-roots, sources, objects, output, application flags and SDK libraries. ABI,
-startup objects, runtime archive order and freestanding boundaries remain
-producer-owned; the CLI supplies execution rather than copying those policies
-into command handlers. This narrow variant supports native Linux/x86_64 only.
-Existing SDK wrappers/CMake entry points remain available to other consumers.
+## SDK Store and Exact Inputs
 
-The provider stays beside the immutable SDK, not inside an older artifact.
-Changing either yields a new input identity; exporter hash and wrapper bytes are
-recorded. SDK content identity is SHA-256 of compact UTF-8 JSON (`ensure_ascii`
-false, no separator whitespace) of sorted `[relative_path, kind, value]` arrays:
-`file` values are file SHA-256, `symlink` values are literal targets. Directories
-are excluded; symlinks must resolve inside the SDK. The earlier CMake fingerprint
-uses a different algorithm and is retained under its original identity.
-Contract/content hashes are local pinning, not publisher authentication.
+Every host uses `$USER_HOME/.crt/sdks/<sdk-id>/` as the default SDK installation
+root. CRT PAL resolves the home (`HOME` on Unix, `USERPROFILE` on Windows).
+There is no XDG/AppData/Application Support default for SDKs. The driver never
+falls back to its working directory if home is unavailable.
 
-## Commands, Results and Limits
+`configure --sdk-id <relative-id>` selects an existing SDK under that root and
+rejects traversal/escaping symlinks. `--sdk-root` selects an explicit local
+handoff instead; the two options are mutually exclusive. Download, verified
+extraction, atomic installation and GC remain D2 work: selecting a test copy
+does not implement an installer.
 
-Current commands: `--help`, `--version`, `doctor --bootstrap`,
-`new <directory> [--language c|cxx]`, `configure`, `build`, `test`, `run`.
-Use `--project <directory>` for an existing project. First local configure also
-requires `--sdk-root`, `--sdk-contract`, `--contract-sha256`, `--cc`, `--cxx`,
-`--linker`; subsequent workflows use the project binding.
+`new` writes sources and an unresolved format-0 `crt.lock` without acquiring an
+SDK. Explicit configure writes `state: local-experiment` with exact version,
+profile, target, provenance, full SDK inventory, provider hash and tool/resource
+hashes. Absolute paths stay in ignored `.crt/local.json`. A dirty SDK is rejected
+unless `--allow-dirty-sdk true` is explicitly selected; that choice and the true
+dirty provenance are locked. It is an unpromoted local experiment, never a clean
+release claim. The repository lock remains unresolved.
 
-`--json` occurs once and emits one final `crt-cli.bootstrap-result`, format 1,
-with command/ok/data. Child stdout is captured/relayed to stderr, keeping JSON
-stdout parseable. Exit 0 means success, 1 an input/build/runtime/test failure,
-2 an unsupported top-level command. Child exit/signal/timeout outcomes remain
-in test/run results. Linux execution uses native ELF paths, direct execve argv,
-a private PATH and no inherited loader/compiler injection variables. Child
-stdout capture/relay is bounded at 8 MiB and reports truncation in test/run
-outcomes. Each child
-has a timeout and owned process group; broader interactive cancellation and
-three-host process-tree behavior remain D6 acceptance.
+## Producer-owned Native Policy
 
-`out/native/last-build.json` records selection, compiler/linker argv and outcomes.
-Bootstrap doctor verifies C++ exceptions, zlib and linked HTTP/TLS initialization;
-actual HTTPS is `not_run` and authenticated executable integrity `not_verified`.
-Self-upgrade/package/install and general environment/project doctor are not
-implemented; unsupported commands fail. No public release is authorized.
+CRT exports `crt.experimental.native-toolchain`, **format 1**, from installed
+SDK wrappers. The exporter is producer tooling, not a CLI runtime dependency.
+Format-0 providers are rejected rather than implicitly migrated. The Dev SDK
+must declare `crt-platform-queries-1` and `json-sha2-1` capabilities.
+
+The provider binds the full SDK inventory and packaging provenance; `modes`
+contains C/C++ compile/link argv for `executable-static`, `executable-shared`,
+`static-library` and `shared-library`, with a native archive argv for archives.
+Typed slots carry SDK/resource roots, source, objects, output/name, project
+include/compile options and selected libraries. The producer owns ABI, startup,
+runtime ordering, PIC and artifact naming. Every workflow checks exact selected
+bytes before executing external tools. Local hashes are pinning, not publisher
+authentication or complete attestation of the vendor SDK/tool runtime.
+
+On macOS the provider records an explicit external vendor SDK and `-isysroot`
+for libSystem/linker lookup while retaining `-nostdinc`/`-nostdinc++` and CRT
+headers. It is not permission to add host standard headers or a host C++ runtime.
+
+## Commands and Results
+
+`new <dir> [--language c|cxx] [--kind executable|static-library|shared-library]
+[--runtime-linkage static|shared]` creates sources only. Existing commands are
+`--help`, `--version`, `doctor --bootstrap`, `configure`, `build`, `test`, `run`.
+Configure requires SDK selection, provider path/hash, `--cc`, `--cxx`, `--linker`
+and `--ar`. Subsequent commands use the locked local binding.
+
+`--json` emits one `crt-cli.bootstrap-result`, format 1, with command/ok/data.
+Child stdout is bounded at 8 MiB and relayed to stderr; result JSON remains
+parseable. Private child environments preserve only explicit user-home/temp/OS
+root variables plus fixed PATH/locale, not loader/compiler injection variables.
+Timeouts own a process group and retain child exit/signal/truncation outcomes.
+Broader Windows and interactive cancellation acceptance remains open.
+
+`out/native/last-build.json` records target kinds/linkage, artifact hashes,
+compiler/archive/link argv and outcomes. Bootstrap doctor checks C++ exceptions,
+local new/delete ownership through public `dladdr`, compression and HTTP/TLS
+initialization, and reports the PAL SDK store/image list. Actual HTTPS is still
+`not_run`, authenticated executable integrity `not_verified`. SDK installation,
+self-upgrade, general package resolution/deployment and public release are not
+implemented by this contract increment.

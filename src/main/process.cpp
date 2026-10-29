@@ -1,4 +1,4 @@
-#include "core.h"
+#include <crtcli/core.h>
 #include <cerrno>
 #include <cstdio>
 #include <unistd.h>
@@ -6,17 +6,21 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <fcntl.h>
+#include <cstdlib>
 namespace crtcli {
 ProcessResult execute(const std::vector<std::string>& argv, unsigned timeout_seconds, bool relay) {
     require(!argv.empty(), "empty process argv");
     native_executable(argv.front());
-#if defined(__linux__)
     // Allocate before fork; use only PAL/POSIX calls in the child before execve.
     std::vector<char*> raw;
     for (const auto& arg : argv) raw.push_back(const_cast<char*>(arg.c_str()));
     raw.push_back(nullptr);
-    char path[] = "PATH=/nonexistent", locale[] = "LC_ALL=C";
-    char* environment[] = {path, locale, nullptr};
+    std::vector<std::string> values{"PATH=/nonexistent", "LC_ALL=C"};
+    for (const auto& key : {"HOME", "USERPROFILE", "TMPDIR", "SystemRoot"})
+        if (const char* value = std::getenv(key)) values.push_back(std::string(key) + "=" + value);
+    std::vector<char*> environment;
+    for (auto& value : values) environment.push_back(value.data());
+    environment.push_back(nullptr);
     int descriptors[2];
     require(pipe(descriptors) == 0, "cannot create process output pipe");
     fcntl(descriptors[0], F_SETFD, FD_CLOEXEC);
@@ -27,7 +31,7 @@ ProcessResult execute(const std::vector<std::string>& argv, unsigned timeout_sec
     if (pid == 0) {
         if (setpgid(0, 0) != 0 || dup2(descriptors[1], STDOUT_FILENO) < 0) _exit(126);
         close(descriptors[0]); close(descriptors[1]);
-        execve(raw[0], raw.data(), environment);
+        execve(raw[0], raw.data(), environment.data());
         _exit(127);
     }
     close(descriptors[1]);
@@ -69,8 +73,5 @@ ProcessResult execute(const std::vector<std::string>& argv, unsigned timeout_sec
     if (truncated && relay) std::fprintf(stderr, "[child stdout truncated at 8 MiB]\n");
     int code = timeout ? 124 : WIFEXITED(status) ? WEXITSTATUS(status) : 128 + WTERMSIG(status);
     return {code, timeout, output, truncated};
-#else
-    throw Error("process backend currently supports Linux native replay only");
-#endif
 }
 }

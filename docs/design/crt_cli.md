@@ -90,7 +90,8 @@ crt-cli/
   src/main/main.cpp          command dispatch
   src/main/{core,process,toolchain,project,bootstrap}.cpp
   src/test/native_test.cpp   C/C++ tests, built through the same backend
-  third_party/               pinned unmodified JSON/SHA headers + licenses
+  include/crtcli/             project-owned module headers
+  third_party/                dependency-ownership note; JSON/SHA come from SDK
   tools/bootstrap_host.cpp   temporary stage-zero native seed; never shipped
   docs/
   .crt/                      ignored machine-local project binding
@@ -129,13 +130,13 @@ installation is not the initial default.
 
 | Host | Default data root |
 | --- | --- |
-| Windows | `%LOCALAPPDATA%/CRT` |
-| Linux | `$XDG_DATA_HOME/crt`, otherwise `~/.local/share/crt` |
-| macOS | `~/Library/Application Support/CRT` |
+| Windows | `$USER_HOME/.crt` (`USERPROFILE` through CRT PAL) |
+| Linux | `$USER_HOME/.crt` (`HOME` through CRT PAL) |
+| macOS | `$USER_HOME/.crt` (`HOME` through CRT PAL) |
 
-Allow a `CRT_HOME` override. Linux configuration/cache data may use separate
-XDG locations while retaining the same identity rules. A space-free home path
-must not be required.
+The owner fixed SDK installations at `$USER_HOME/.crt/sdks` on every host on
+2026-10-29, superseding the earlier per-OS root proposal. Overrides for other
+CLI/cache data remain future design. A space-free home path is not required.
 
 ```text
 CRT_HOME/
@@ -143,7 +144,7 @@ CRT_HOME/
   cli/<cli-version>-<digest>/   CLI executable + agreed resource/metadata policy
   host/<host-tuple>/<tools-id>/ manifest + existing rootfs-relative layout
   toolchains/<toolchain-id>/    external LLVM/OS SDK paths, versions, fingerprints
-  sdk/<release>/<target>/<sdk-content-id>/
+  sdks/<sdk-id>/
                                manifest.json, include/, lib/, bin/, system/,
                                libexec/, tools/, share/, crt-toolchain.cmake
   ports/store/<build-key>/      include/, lib/, bin/, manifest, notices, evidence

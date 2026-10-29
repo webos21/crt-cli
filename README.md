@@ -10,11 +10,11 @@ objects, sysroots, special compiler flags, or runtime search paths.
 
 ## Project Maturity
 
-The Linux/x86_64 bootstrap consumes a produced Dev SDK. Its native C++ builder
+The Linux/x86_64 and macOS/arm64 bootstraps consume a produced Dev SDK. The native C++ builder
 reads `crt.json` and invokes LLVM directly. `new` creates separate C/C++ files
-under `src/main/` and `src/test/`; bounded configure/build/test/run and bootstrap
+under `src/main/` and `src/test/`, with headers in `include/`; bounded configure/build/test/run and bootstrap
 doctor are implemented. CMake, Python and shell are excluded from this app path.
-The SDK installer, dependency resolver, self-upgrade, macOS/Windows native replay
+The SDK installer, dependency resolver, self-upgrade, Windows native replay
 and public release remain pending.
 
 See the [build guide](docs/guides/development.md#build-and-test-the-bootstrap)
@@ -53,6 +53,10 @@ CLI updates. SDK payloads use shared immutable storage with exact project refere
 first configure/build acquires a missing SDK, while new only creates sources.
 Automatic acquisition and shared-store installation remain planned; the current
 experiment selects a local SDK and separately hashed compiler policy explicitly.
+The default SDK store is `$USER_HOME/.crt/sdks` on all hosts. Native project
+targets distinguish executables, static libraries and shared libraries, with
+static/shared runtime linkage; the CLI's own one-executable goal does not
+restrict the applications it builds. JSON and SHA-2 are supplied by the Dev SDK.
 CRT Studio is a later, separate native IDE built on this CLI workflow.
 
 ## Platforms and Requirements

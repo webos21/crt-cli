@@ -1,5 +1,6 @@
-#include "core.h"
-#include "../../third_party/picosha2/picosha2.h"
+#include <crtcli/core.h>
+#include <crt/platform.h>
+#include <mbedtls/sha256.h>
 #include <cstdio>
 #include <fstream>
 #include <set>
@@ -31,16 +32,35 @@ Json read_json(const fs::path& path) {
     };
     return Json::parse(read_text(path), check);
 }
-std::string sha256(const std::string& bytes) { return picosha2::hash256_hex_string(bytes); }
+namespace {
+std::string hex_digest(const unsigned char* digest) {
+    const char hex[] = "0123456789abcdef";
+    std::string result;
+    for (size_t i = 0; i < 32; ++i) { result += hex[digest[i] >> 4]; result += hex[digest[i] & 15]; }
+    return result;
+}
+}
+std::string sha256(const std::string& bytes) {
+    unsigned char digest[32];
+    require(mbedtls_sha256(reinterpret_cast<const unsigned char*>(bytes.data()), bytes.size(), digest, 0) == 0, "SHA256 failed");
+    return hex_digest(digest);
+}
 std::string file_sha256(const fs::path& path) {
     std::ifstream input(path, std::ios::binary);
     require(bool(input), "cannot hash: " + path.string());
-    picosha2::hash256_one_by_one hash;
+    mbedtls_sha256_context hash;
+    mbedtls_sha256_init(&hash);
+    int error = mbedtls_sha256_starts(&hash, 0);
     char buffer[65536];
-    while (input) { input.read(buffer, sizeof(buffer)); hash.process(buffer, buffer + input.gcount()); }
-    require(!input.bad(), "hash read failed: " + path.string());
-    hash.finish();
-    return picosha2::get_hash_hex_string(hash);
+    while (input && error == 0) {
+        input.read(buffer, sizeof(buffer));
+        error = mbedtls_sha256_update(&hash, reinterpret_cast<const unsigned char*>(buffer), input.gcount());
+    }
+    unsigned char digest[32];
+    if (error == 0) error = mbedtls_sha256_finish(&hash, digest);
+    mbedtls_sha256_free(&hash);
+    require(!input.bad() && error == 0, "hash read failed: " + path.string());
+    return hex_digest(digest);
 }
 fs::path inside(const fs::path& root, const std::string& relative) {
     fs::path value(relative);
@@ -68,16 +88,18 @@ Json inventory(const fs::path& root) {
     }
     return result;
 }
+Json native_target() {
+    const auto* platform = crt_get_platform_info();
+    return {{"os", platform->os}, {"arch", platform->arch}};
+}
+fs::path sdk_store_root() {
+    std::vector<char> home(65536);
+    require(crt_get_user_home(home.data(), home.size()) == 0, "PAL user home is unavailable");
+    return fs::path(home.data()) / ".crt/sdks";
+}
 void native_executable(const fs::path& path) {
     require(path.is_absolute() && fs::is_regular_file(path), "external tool must be an absolute native executable: " + path.string());
-    std::ifstream input(path, std::ios::binary);
-    char magic[4] = {};
-    input.read(magic, 4);
-#if defined(__linux__)
-    require(std::string(magic, 4) == std::string("\177ELF", 4), "script/interpreter tool is unsupported: " + path.string());
-#else
-    throw Error("native tool execution is currently verified on Linux only");
-#endif
+    require(crt_is_native_executable(path.string().c_str()) == 1, "script/interpreter or non-native tool is unsupported: " + path.string());
 }
 int print_reply(const Reply& reply, bool json) {
     if (json) std::printf("%s\n", Json{{"schema", "crt-cli.bootstrap-result"}, {"format", 1},

@@ -149,7 +149,7 @@ it does not grant other-host replay or complete D1.
 | --- | --- | --- | --- |
 | Windows/x64 | Not run | Not run | Native bootstrap/loader replay pending |
 | Linux/x86_64 | Pass, local candidate | Not run as a complete stage | D0-01..08 and bounded SDK-free bootstrap below; actual HTTPS/host-tool gates remain |
-| macOS/arm64 | Not run | Not run | Native bootstrap/loader replay pending |
+| macOS/arm64 | Pass, local candidate | Bounded SDK-free execution only; complete D1 remains open | Native JSON builder replay below |
 
 Update this ledger from actual executions, with detailed case records and
 limitations. WSL development checks are labeled as such; they do not silently
@@ -379,3 +379,181 @@ The original `result.json` and its SHA-256 are unchanged. Consolidation rechecke
 source/dependency/exporter/binary hashes, local documentation links, version
 and bootstrap doctor. The 429-assertion/144-core-test results remain dated
 2026-10-28; no repeated full build or new native-host pass is claimed.
+
+## Native JSON Builder on macOS/arm64 (2026-10-29)
+
+**Pass, local/unpromoted D0 replay.** This closes macOS's bounded counterpart to
+the Linux native-builder record, not Windows or full D1/D5/D6. Installation,
+general dependencies, actual CLI HTTPS, authenticated integrity and self-upgrade
+remain unimplemented/unverified.
+
+### Exact Inputs
+
+Before editing producer tools, produced a native Dev SDK from clean CRT
+`17de3510c37cdb07e3c5c98583b22ebe4e1463ec`:
+
+```sh
+cmake --fresh --preset macos-host-ninja-debug -DCRT_RELEASE_TAG=v0.4.0-cli.20261029
+cmake --build --preset macos-host-ninja-debug --target crt-development-sdk-test --parallel 4
+ctest --preset macos-host-ninja-debug
+```
+
+This incrementally updates the existing core/imported-C++ build after fresh
+configuration, then builds fresh static/shared zlib/Mbed TLS/curl. The ordinary
+Dev consumer passes eight HTTPS/inflate/trust cases; CTest passes **143/143**.
+Producer/base/compile commits all equal `17de3510...`, with clean flags. No
+libc/PAL/stdlib source or public ABI fix was needed. The version is local,
+not a Git tag or public release.
+
+The complete SDK is copied outside both repositories to
+`/private/tmp/crt-cli-macos-20261029.GyTATl/SDK space 한글/dev`; final CLI source
+is `source-r2` under that work root. No producer-private headers or loose build
+objects are consumer inputs.
+
+| Input | Identity |
+| --- | --- |
+| Dev archive | `crt-v0.4.0-cli.20261029-macos-aarch64-dev.tar.xz`, 6,358,772 bytes |
+| Archive SHA-256 | `f29e2e0c3a825fdd99745b124bc9665b6c39c9e9d92e3009c0a9a1a650c0c7b4` |
+| Provider SDK content | `669cfcc9d25e8949bb6420c140168214f8439744295bc194a17d33e7ca53766e`, 2,570 file/symlink entries |
+| Provider SHA-256 | `b950a94613e0b657a04e6a521ca942bb4742b6c05aaa72004661a0dfbd94e112` |
+| Exporter SHA-256 | `70f4dbea7d31faba74eceebdc15a4cbcd618e56bdb80867133dc38d3a34dfff9` |
+| CLI base | `0f14ed3bee6b6512a6969b6118dcbd82c1c564b7` plus local macOS source delta |
+| Exported patch SHA-256 | `750266772bfddddc2f33d46e1734b04238caca7ad8b2265f78145742dc51d98d` |
+| Source-export inventory SHA-256 | `b7b20691b0cd11fb8a333374e7097eb1588ba1183da91caac5d616a91853ed0f` |
+
+The provider captures installed wrapper argv with explicit `-isysroot` and
+`external_os_sdk`. Native tools are real Xcode Clang 21 and Apple ld 1166.2;
+LLD is not installed/accepted here. The vendor SDK supplies linker/libSystem
+discovery, not host target headers: `-nostdinc`, `-nostdinc++`, public CRT include
+paths and static archive order remain intact. Complete external OS SDK/tool
+runtime attestation remains open. Provider/project/lock format 0, bootstrap
+result format 1 and SDK manifest/Dev profile format 1 retain their distinct roles.
+
+### Isolated Native Workflows
+
+A disposable hosted C++ seed builds the CRT-native CLI, which then self-builds
+and drives its native integration suite. Parent Python orchestration stays
+outside the product policy; the seed and native visibility helper are not
+shipped product dependencies. Seatbelt denies reads/writes of both original
+repositories, including CRT build outputs, and all process execution except
+selected native tools, CLI and generated test/application paths. Network is
+denied and `PATH=/nonexistent`. The helper confirms **two roots/two known files
+inaccessible and 11 forbidden tools unexecutable**, including shell, Python,
+CMake/Ninja/make/env and SDK wrappers. This is OS enforcement, not PATH filtering;
+no macOS execve trace/count or Linux mount-namespace semantics are claimed.
+
+Final suite: **474 assertions pass**, covering native C/C++ generation,
+multi-source configure/build/test/run, JSON errors, duplicate keys, bad pins/
+formats/targets/provenance, script compilers, incomplete SDK, profile/version
+mismatch, traversal, existing destinations and lock preservation. Real C/C++
+exit-7 test failures remain structured failures. A sleeping child times out with
+124; a 10 MiB stdout producer completes with an 8 MiB/truncation result. Spaces,
+Korean, `@` and shell metacharacters stay literal. The count differs from Linux's
+earlier 429 because of new ownership/version checks and platform argument counts;
+Linux was not rerun here.
+
+The unresolved repository SDK request is now `*`, not a Linux-candidate version.
+Explicit configure still locks the exact selected version/content/tool bytes.
+The original repository lock remains unresolved; no existing project pin changes.
+
+### One Executable and Runtime Audit
+
+The bare policy additionally hides the exported source, SDK and provider and
+denies compiler/linker execution. Its helper confirms **four roots/four files
+inaccessible and 13 forbidden tools unexecutable**. Help, version and bootstrap
+doctor pass from one copied executable:
+
+| Observation | Result |
+| --- | --- |
+| Bare CLI | Mach-O arm64, 2,923,800 bytes |
+| SHA-256 | `a1c23c4d86048306153094044fd77f8e2207d2480923201d0cd2914bc7422db7` |
+| Direct dylib imports | `/usr/lib/libSystem.B.dylib` only |
+| LC_RPATH | None |
+| CRT-owned undefined host bindings | None; existing binding audit passes |
+| Allocator | CLI defines malloc; actual dladdr(new/delete) resolves both to this executable |
+| Doctor | C++ exceptions/allocation ownership, zlib and HTTP/Mbed TLS initialization pass |
+| CLI HTTPS / authenticated integrity | `not_run` / `not_verified` |
+
+Public dyld introspection records Apple's libc++/libc++abi and other system
+images after exception handling; they are not hidden or labeled CRT payloads.
+They are not direct product imports: the CLI supplies its C++/`__cxa_throw`
+definitions, has no CRT/C++ dylib dependency, passes the binding audit and owns
+its allocation functions. Darwin libSystem unwinding remains the SDK's existing
+OS boundary. This is bounded runtime evidence, not complete host-image attestation
+or a new binding-audit exception.
+
+Seed-built/self-built Mach-O bytes differ. All section hashes match; only N_OSO
+object timestamps, derived LC_UUID and code-signature bytes differ. The comparison
+normalizes those fields in memory only; accepted binaries/SDKs are not rewritten.
+No byte-reproducibility claim is inferred from Linux's earlier equal-byte result.
+
+### Failures, Evidence and Limits
+
+The initial direct Xcode seed lacked explicit vendor SDK lookup; a launcher
+variant attempted an unlisted xcodebuild path. Explicit OS SDK arguments and
+real Clang/ld resolve this without permitting interpreted build tools. A bare
+visibility probe also correctly failed when JSON `\u` escapes did not match the
+Korean SDK path in SBPL. Literal UTF-8 fixes the policy, not the probe. CRT's
+shared external-SDK driver has the same correction and passes eight cases with
+the original Korean-path SDK inaccessible.
+
+Producer evidence root: `out/cli-macos-20261029/`. It retains configure/build/
+core-test logs, `handoff.json`, archive, `provider-identity-apple.json`,
+`source-identity-r2.json`, `cli-source-r2.patch`, `commands.json`, `replay-final.log`,
+`native-*.stdout/stderr`, `bare-*.stdout/stderr`, `binary-audit.json`,
+`self-build-comparison.json`, `result.json` and `sdk-external-utf8/`. External work
+retains the policies/probes and final `source-r2`; earlier source/failed attempts
+remain separate. Original/handoff SDK inventories and 19 non-Markdown source/
+config/import inputs are unchanged. Both STATUS files are untouched. The producer
+tooling suite passes **147/154**, seven conditional skips. Hosted GitHub CI and
+other-host native replay are Not run here.
+
+`post-run-review.json` rechecks all 19 current non-Markdown inputs, exporter,
+SDK inventory and selected binary against these receipts. Final `result.json`
+SHA-256: `a219001a5e16babf032fa301a91089e1dc1e19339983893a7148465a2ff8c983`.
+
+Windows D0, arbitrary/cross/other-profile providers, full D1 HTTPS/trust, complete
+tool attestation, installer/store, upgrades, packaging and formal promotion remain
+open. No public SDK/CLI release or production lock is adopted.
+
+## PAL-only Native Contract on macOS/arm64 (2026-10-29, revised)
+
+**Pass, local/unpromoted replay of the revised initial contract.** The first macOS
+pass above showed that the CLI used host macros and direct dyld/procfs calls. The
+revision moves those queries behind CRT (`<crt/platform.h>`, `<crt/dl.h>`), puts
+CLI headers under `include/`, drops the vendored JSON/SHA-2 sources in favor of
+Development-SDK ports (nlohmann/json, cJSON, Mbed TLS SHA-2), adds typed
+build targets (executable, static-library, shared-library; static/shared
+runtime linkage) and selects `$USER_HOME/.crt/sdks` on every host. The CLI
+source has no `__linux__`/`__APPLE__`/`_WIN32`/`CRT_TARGET_OS_*` use; the
+replay driver rejects such source and `src/main/*.h`.
+
+Producer: local modified CRT tree on `17de351` (Development SDK, dirty
+provenance explicitly allowed by `--allow-dirty-sdk`); driver
+`tools/replay_cli_contract_macos.py` (Seatbelt: network and producer/CLI trees
+denied, only the declared compiler, linker, `ar`/`ranlib` executable). Evidence:
+`out/cli-contract-20261029/replay-r5/` in the CRT checkout. SDK inventory
+SHA-256 `8466f99f09c3ba72d9813886954e0fc452bd43e5be872cfe6a7441dd38b05deb`,
+provider `8f31c90042f60a24c20b455a3c5f49c1e7095c76d966de54055fc0fa12d28f25`,
+CLI source `6bcc01a6954e696bfa35cfaa57eb56052d8f8152a1e505e42b7b80e1bc9acbc3`,
+binary `b21aa0b55f480108a33c3ddb14ff68837b7810168645dba85732b62acaedc8b7`
+(2,964,952 bytes, imports only `/usr/lib/libSystem.B.dylib`, no RPATH).
+Results: seed build, SDK-only self-build, **576** native checks (C and C++
+projects, the six typed variants, hostile paths, installed-SDK copy under
+`<home>/.crt/sdks`), and help/version/doctor with SDK, source and compilers
+denied. The SDK inventory is unchanged.
+
+Gaps found and fixed by this replay (earlier attempts retained as `replay`,
+`replay-r2` ... `replay-r4`):
+
+- `sendfile` returned `ENOSYS` on macOS/Windows while libc++'s
+  `filesystem::copy_file` selects it whenever `<sys/sendfile.h>` exists and does
+  not fall back, so the SDK installer copy threw. CRT now emulates `sendfile`
+  with `pread`/`read` plus `write` (`libc/tests/sendfile_test.c`).
+- The sandbox policy omitted `ranlib`, which `ar` runs itself; the native test
+  budget (`crt.json`, 600 s) was too small for the typed-target matrix on this
+  host and is now 1800 s.
+
+Open: Linux/Windows replay of this revised contract, actual CLI HTTPS, full D1,
+upgrades and promotion.
+

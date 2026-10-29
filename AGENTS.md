@@ -129,7 +129,10 @@ Verify actual capabilities instead of inferring them from a profile name.
 
 Maintain independent, versioned areas for CLI runtimes, host tools, SDKs,
 toolchain records, registry snapshots, source caches, jobs, and port stores.
-Follow the design's `CRT_HOME` layout without rearranging SDK internals.
+Use `$USER_HOME/.crt/sdks` for default SDK installation on every host, resolving
+home through CRT PAL. Do not use XDG/AppData/Application Support defaults for
+SDKs or rearrange SDK internals. Minimize consumer OS macros; put missing
+platform queries in CRT's public PAL rather than duplicating host APIs here.
 Each project locks its own SDK version/profile/target/content identity. Use
 shared immutable SDK payloads and project-specific exact references. First
 configure/build acquires a missing SDK; `new` generates sources without SDK

@@ -1,5 +1,7 @@
 #include "bootstrap_config.h"
-#include "core.h"
+#include <crtcli/core.h>
+#include <crt/platform.h>
+#include <crt/dl.h>
 #include <curl/curl.h>
 #include <mbedtls/ssl.h>
 #include <mbedtls/version.h>
@@ -10,43 +12,18 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <cstdint>
+#include <dlfcn.h>
+#include <new>
 
 namespace {
-std::string quote(const std::string& value) {
-    std::string result = "\"";
-    const char hex[] = "0123456789abcdef";
-    for (unsigned char c : value) {
-        if (c == '"' || c == '\\') { result += '\\'; result += static_cast<char>(c); }
-        else if (c < 32) {
-            result += "\\u00"; result += hex[c >> 4]; result += hex[c & 15];
-        } else result += static_cast<char>(c);
-    }
-    return result + '"';
-}
-
-std::string runtime_maps() {
-#if defined(__linux__)
-    FILE* stream = std::fopen("/proc/self/maps", "r");
-    if (!stream) return "{\"status\":\"unavailable\",\"images\":[]}";
+crtcli::Json runtime_maps() {
     std::set<std::string> images;
-    char line[8192];
-    while (std::fgets(line, sizeof(line), stream)) {
-        const char* path = std::strchr(line, '/');
-        if (path) {
-            std::string name(path);
-            while (!name.empty() && (name.back() == '\n' || name.back() == '\r')) name.pop_back();
-            images.insert(name);
-        }
-    }
-    bool complete = !std::ferror(stream);
-    std::fclose(stream);
-    std::string data = "{\"status\":" + quote(complete ? "collected" : "unavailable") + ",\"images\":[";
-    bool first = true;
-    for (const auto& image : images) { if (!first) data += ','; data += quote(image); first = false; }
-    return data + "]}";
-#else
-    return "{\"status\":\"not_implemented\",\"images\":[]}";
-#endif
+    int status = crt_dl_iterate_images([](const crt_dl_image* image, size_t, void* data) {
+        try { static_cast<std::set<std::string>*>(data)->insert(image->path); return 0; }
+        catch (...) { return 1; }
+    }, &images);
+    return {{"status", status == 0 && !images.empty() ? "collected" : "unavailable"}, {"images", images}};
 }
 
 } // namespace
@@ -55,6 +32,13 @@ Reply bootstrap_doctor() {
     bool cxx = false;
     try { throw std::runtime_error("CRT bootstrap"); }
     catch (const std::exception& error) { cxx = std::strcmp(error.what(), "CRT bootstrap") == 0; }
+    Dl_info image{}, allocation{}, deallocation{};
+    auto allocate = static_cast<void* (*)(size_t)>(&::operator new);
+    auto deallocate = static_cast<void (*)(void*)>(&::operator delete);
+    bool local_cxx_allocation = dladdr(reinterpret_cast<const void*>(&bootstrap_doctor), &image) &&
+        dladdr(reinterpret_cast<const void*>(allocate), &allocation) &&
+        dladdr(reinterpret_cast<const void*>(deallocate), &deallocation) &&
+        image.dli_fbase == allocation.dli_fbase && image.dli_fbase == deallocation.dli_fbase;
     const unsigned char input[] = "crt-cli-bootstrap";
     unsigned char compressed[128] = {}, restored[128] = {};
     uLongf compressed_size = sizeof(compressed), restored_size = sizeof(restored);
@@ -68,11 +52,14 @@ Reply bootstrap_doctor() {
     mbedtls_ssl_context context;
     mbedtls_ssl_init(&context); mbedtls_ssl_free(&context);
     if (curl) curl_global_cleanup();
-    bool ok = cxx && zlib && tls;
+    bool ok = cxx && local_cxx_allocation && zlib && tls;
     Json data{{"scope", "bootstrap"}, {"target", {{"os", CRT_CLI_TARGET_OS}, {"arch", CRT_CLI_TARGET_ARCH}}},
               {"sdk_build_input", {{"version", CRT_CLI_SDK_VERSION}, {"source_commit", CRT_CLI_SDK_COMMIT}, {"content_sha256", CRT_CLI_SDK_CONTENT}}},
-              {"checks", {{"cxx_runtime", cxx ? "pass" : "fail"}, {"zlib", zlib ? "pass" : "fail"}, {"http_tls_linkage", tls ? "pass" : "fail"}, {"executable_integrity", "not_verified"}, {"https_network", "not_run"}}},
-              {"runtime_maps", Json::parse(runtime_maps())}};
+              {"checks", {{"cxx_runtime", cxx ? "pass" : "fail"}, {"cxx_allocation_owner", local_cxx_allocation ? "pass" : "fail"}, {"zlib", zlib ? "pass" : "fail"}, {"http_tls_linkage", tls ? "pass" : "fail"}, {"executable_integrity", "not_verified"}, {"https_network", "not_run"}}},
+              {"allocation_images", {{"executable", image.dli_fname ? image.dli_fname : ""},
+                  {"new", allocation.dli_fname ? allocation.dli_fname : ""}, {"delete", deallocation.dli_fname ? deallocation.dli_fname : ""}}},
+              {"sdk_store", sdk_store_root().string()},
+              {"runtime_maps", runtime_maps()}};
     return {ok ? 0 : 1, "doctor", data, ok ? "bootstrap C++/zlib/HTTP/TLS pass; integrity not verified; HTTPS not run" : "bootstrap checks failed"};
 }
 }
