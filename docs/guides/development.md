@@ -95,6 +95,24 @@ hide the relocated SDK/source/output as well. Keep logs, exact argv, source/expo
 hashes, ELF imports, mapped images and unchanged inventories. Linux evidence does
 not grant macOS/Windows acceptance. The previous CMake receipts remain historical.
 
+The Linux counterpart uses native Bubblewrap, strace and readelf:
+
+```sh
+python3 /absolute/crt/tools/replay_cli_contract_linux.py \
+  --cli-source /absolute/crt-cli --sdk-root /absolute/handoff/dev \
+  --output /absolute/fresh-evidence \
+  --clang /usr/bin/clang --clangxx /usr/bin/clang++ \
+  --linker /usr/bin/ld.lld --ar /usr/bin/llvm-ar-21
+```
+
+Choose installed LLVM paths and a fresh evidence directory. Repeat `--hide`
+for additional producer checkouts; the producer/CLI source roots are hidden
+by default. The producer-side Python orchestrator is outside the tested
+consumer namespace. The
+[current Linux record](../acceptance/bootstrap_acceptance.md#linux-revalidation-after-windows-changes-2026-10-30)
+identifies the required PAL process-group fix and explicit dirty-SDK acceptance;
+an older SDK that rejects SETPGROUP cannot run the new common CLI runner.
+
 On macOS, use a native Seatbelt file/exec policy instead of Linux bubblewrap.
 The accepted replay denies producer-tree reads, permits only selected native
 tools/CLI/generated executables, and probes actual failures of shell, Python,

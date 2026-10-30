@@ -242,10 +242,37 @@ native-child hint for external tools, per-child runtime `PATH` and the `sdk_cons
 for their original sources. Open producer items (Unicode paths, per-library consumer options, `fread` cost, process groups)
 are listed in the Windows record. No promoted combination is adopted.
 
+## Linux Merged-source Revalidation (2026-10-30)
+
+**Pass, local/unpromoted Linux/x86_64**, CLI `ddaf288322e3292fbba53bc2bc4946c701ab5241`.
+The Windows-shared process/hash/output/HTTP/cache changes now have fresh Linux
+evidence. CRT baseline `a46e4307e2350c3c9de0826bd467bd32cae609c4` needed a
+non-Windows `POSIX_SPAWN_SETPGROUP` implementation; the failed clean candidate
+and corrected dirty source snapshot are separately identified in
+[Linux revalidation](acceptance/bootstrap_acceptance.md#linux-revalidation-after-windows-changes-2026-10-30).
+No CLI code changed; the original 15 code/config inputs match the executed export.
+
+The corrected Dev SDK is `development`, explicitly dirty/unpromoted, with
+producer patch/content/provider identities and native runtime audits in that
+record. The root lock stays unresolved. The existing committed Linux executable
+also bootstraps current sources against the new SDK through `.sdk.json`, then
+rebuilds itself through the native backend; the full native suite belongs to
+the separate passing replay. This does not adopt a production SDK
+lock or validate a future clean/release artifact. The changed sources/common
+PAL path still need native macOS replay; Windows' prior record remains at its
+own source/SDK identities.
+
+The producer fix is committed as
+[`74ea992a4ef702c853435cb6319e329647db7cee`](https://github.com/webos21/crt/commit/74ea992a4ef702c853435cb6319e329647db7cee).
+The exercised SDK remains the recorded `a46e430` plus dirty patch candidate;
+committing/pushing the fix does not relabel it as a clean SDK build or adopt a
+production lock. CLI source inputs remain byte-identical to `ddaf288`; the
+consumer commit records documentation and the verified Linux test executable.
+
 ## Adoption and Exercised Combinations
 
 There is **no promoted production combination yet**. The identified Linux D0
-local experiment above passes; the macOS and Windows/x64 local D0 replays pass (changed sources still to replay on Linux/macOS), complete D1 and Studio S0/S1
+local experiment above passes; the macOS and Windows/x64 local D0 replays pass (Linux replay renewed 2026-10-30; current-source macOS replay remains), complete D1 and Studio S0/S1
 remain Not run. Use the owning acceptance ledgers for scope, not a general
 claim that the SDK/CLI/Studio product combination is compatible.
 

@@ -713,3 +713,100 @@ provider unreadable, imports `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dl
 checkout). The committed `bin/win-x64/crt-cli.exe` is this replay's bare executable: SHA-256
 `183e1e6c7f60cfc823ca0e4e260ff913b252798b5b0d0daebe82c9f3a7529806`, 16,883,200 bytes. The 714-assertion, `8ab2912d...` r17 record above
 stays as the first pass on the pre-merge sources.
+
+## Linux Revalidation After Windows Changes (2026-10-30)
+
+**Pass, native Linux/x86_64; local/unpromoted.** Replayed the merged CLI
+`ddaf288322e3292fbba53bc2bc4946c701ab5241`, including Windows' common
+`posix_spawn` runner, descriptor hashing, pipe drain, output retirement,
+per-source SDK options, HTTP module and merged `.sdk.json` tests. The older
+Linux results do not establish this source combination. No CLI code change
+was needed in this pass; macOS must still replay the Windows-shared changes.
+
+### Reproduced Producer Gap and Fix
+
+The clean CRT baseline `a46e4307e2350c3c9de0826bd467bd32cae609c4` produced
+Dev SDK `v0.4.0-cli.20261030`. Replay r1 compiled all seven CLI sources and
+linked a seed, but configure failed:
+`cannot start process: /usr/lib/llvm-21/bin/clang (error 95)`.
+A minimal C probe and the expanded `spawn_status_test` both reproduce
+`POSIX_SPAWN_SETPGROUP` returning ENOTSUP. The Unix PAL rejected the flag
+before forking, while the Windows-updated CLI now uses it on every host.
+
+CRT's common non-Windows spawn path now calls `setpgid(0, pgroup)` in the
+child before file actions/exec, matching Bionic's attribute behavior. The
+existing status pipe propagates errors and reaps a failed child. Regression
+coverage verifies a new child-owned group combined with a signal mask,
+joining the parent's existing group, invalid-group EINVAL/no child to reap,
+and unchanged parent group/mask. Windows' separate spawn implementation is
+unchanged; macOS execution of the common fix is not inferred from Linux.
+
+A fresh `build-fixed` rebuilt all target artifacts from source-only caches.
+It uses `CRT_RELEASE_TAG=development` and explicit local dirty-SDK acceptance;
+no source commit was invented or older clean SDK relabeled. Exact producer
+inputs: baseline `a46e430` plus `producer-fix.patch` SHA-256
+`7bd865d82a73c57d6e1614b1ffaf9787d5b434f6dcf408c39fefef2885afd711`.
+Only `libc/src/process.c` and `libc/tests/spawn_status_test.c` differ in that
+compiled source snapshot; `fixed-source-inputs.json` records their hashes.
+Later documentation edits are not part of that compiled snapshot.
+
+Producer checks: **146/146 core tests**, imported libc++ exception/string-ABI/
+shared-iostream smokes, and static/shared Dev HTTPS+inflate, JSON/SHA-2 and
+trust negatives pass. Exporter fixtures pass 6 tests; Dev profile fixtures
+run 32 with two conditional skips. SDK consumer HTTPS is separate from the
+still-unimplemented CLI HTTPS bootstrap gate.
+
+### Isolated Replay and Bootstrap Loop
+
+Producer evidence root: `/home/syszone/GitLocal/crt/out/cli-linux-revalidation-20261030`.
+Original clean SDK/build and failed r1 remain alongside the corrected
+`build-fixed` and passing `replay-r2`. Commands and per-step output are in
+`replay-r2/commands.json`; the external source/SDK/work tree is
+`/home/syszone/GitLocal/crt-cli-replay/crt-cli-contract-b9yyz140`.
+
+The Linux driver exports a provider, verifies real Bubblewrap boundaries,
+compiles a CRT-native seed, configures/builds/self-builds the CLI and runs its
+native suite. Producer/CLI checkouts and the frozen producer worktree are
+hidden; network is isolated, environment cleared and interpreters/build
+scripts masked. Bare help/version/doctor additionally hide the relocated
+source/SDK/provider and compiler tools.
+
+- **660 native checks pass**, including C/C++ projects, all six typed variants,
+  cache invalidation/reuse, local `.sdk.json`, SDK-store selection, JSON/error/
+  pin/provenance rejection, hostile paths, exit-7 failures, timeout 124 and
+  bounded 8 MiB stdout capture from a 10 MiB producer. Counts depend on host
+  policy argv; Windows' 748 checks are not an expected Linux count.
+- Cold self-build: **8 executed / 0 reused**. Unchanged rebuild:
+  **0 executed / 8 reused**.
+- Execve audit: **397 successful execve calls / 22 distinct paths**, no
+  unexpected executable and zero shell/Python/CMake/CTest/Ninja/make or SDK
+  compiler-wrapper execution. SDK inventories remain unchanged.
+- A separate isolated loop starts with the previous committed Linux binary
+  (`cfc41532...`), selects the new SDK through `.sdk.json`, builds current
+  sources and lets stage1 rebuild them with the cache cleared. Stage1/stage2
+  are byte-identical, SHA-256
+  `5e7fa7b04bb47db8287605d7d23d9f3d25141b4b6b7965dfe6b701296c0ac439`;
+  cold 8/0, warm 0/8. Its separate commands/traces and
+  `bootstrap-loop-result.json` preserve this bootstrap-compatibility evidence.
+
+| Identity / runtime audit | Result |
+| --- | --- |
+| CLI export SHA-256 | `34ad528309616260f2a108dcf3b7e80e5f23469757a28acf65797065fd67f0bd` |
+| SDK inventory (driver dictionary) | `e9e525834a6f9a87ed802c666a4f9443728194b0933955b9e24f6e4dff9bbb62` |
+| SDK content (provider array) | `37d1698f44082c7682129c31c1d926c4ed174a8a0c94aed8f9fc7f76c511b1ef` |
+| Provider SHA-256 | `f747b5ab851d5e3f0491ae76207abf03e963d8fd79e5b4ba4737bf08ce7dacab` |
+| Passing result SHA-256 | `f4b722f8f0eab63f68c44c914ed20ab81e7cb08b1754ad0e97bf58687cf3ad1e` |
+| Bare CLI bytes / SHA-256 | 10,928,472 / `a44197764f1361b6691dc145f03fd794a880eb9fd1d4d5601a669f4cb0f3044d` |
+| ELF DT_NEEDED / RPATH / RUNPATH | All empty |
+| Interpreter | `/lib64/ld-linux-x86-64.so.2` |
+| PAL-reported images | Bare CLI, `/lib64/ld-linux-x86-64.so.2`, `linux-vdso.so.1` |
+| Doctor | C++ ownership/exceptions, zlib, HTTP/Mbed TLS initialization pass |
+| CLI HTTPS / authenticated integrity | `not_run` / `not_verified` |
+
+`validation-summary.json` rechecks 15 current CLI code/config inputs against
+the executed export and both changed CRT source hashes against the compiled
+snapshot. The new bare executable replaces `bin/linux-x64/crt-cli`; the old
+binary and old ignored `.sdk.json` are retained under the evidence root.
+The ignored `.sdk.json` now selects this handoff; the tracked root lock remains
+unresolved. No commit/push, public release, production lock adoption, general
+process-tree cancellation or new macOS/Windows pass is implied by this replay.

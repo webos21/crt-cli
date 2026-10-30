@@ -9,6 +9,26 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-10-30
+
+### Revalidate the Windows-merged sources on Linux and refresh the test binary
+
+The merged Windows changes affected shared process creation, hashing, output,
+HTTP and build/cache code, so the earlier Linux record was insufficient. A fresh
+producer SDK/replay reproduced SETPGROUP ENOTSUP before compiler execution.
+The CRT PAL fix and regression resolve it without CLI code changes. Fresh core,
+imported C++/Dev consumer tests and the isolated native replay pass; exact
+candidate/source/patch identities, 660 assertions, cold/warm cache, bare-runtime
+and bootstrap-loop results belong to
+[Linux revalidation](docs/acceptance/bootstrap_acceptance.md#linux-revalidation-after-windows-changes-2026-10-30).
+
+Refreshed `bin/linux-x64/crt-cli` from the passing bare executable and the ignored
+local `.sdk.json` from its verified handoff. Preserved the old binary/config,
+failed candidate and earlier results. The root lock stays unresolved; this is
+an explicit dirty local SDK, not promotion/public release. Current-source macOS
+replay and the remaining installer/HTTPS/upgrade/lifecycle gates stay open.
+STATUS is unchanged; no commit/push was performed in this verification turn.
+
 ## 2026-10-29
 
 ### Run the native contract on Windows/x64 and make the sources portable to it

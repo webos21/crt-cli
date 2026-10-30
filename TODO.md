@@ -25,7 +25,7 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
 ### D0 - SDK Consumer Contracts and Bootstrap Definition
 
 Current focus: PAL-only native contract, typed build targets and SDK-owned
-JSON/SHA-2, followed by Linux/Windows replay of that new contract and candidate coherence.
+JSON/SHA-2, followed by current-source macOS replay and candidate coherence.
 Temporary: each host's final executable is committed under `bin/` (`macos`, `linux-x64`,
 `linux-arm64`, `win-x64`, `win-arm64`; see `bin/README.md`). macOS, Linux/x86_64 and Windows/x64 are present;
 `linux-arm64` and `win-arm64` remain to be built on their hosts. Local SDK/tool inputs live in the ignored `.sdk.json`.
@@ -48,10 +48,11 @@ Public SDK release is not a prerequisite; CLI consumption stays SDK-only.
   manifest/lock inputs; the general SDK/project contracts remain distinct.
 - [ ] **D0.5** Implement bounded help/version/bootstrap diagnosis and check
   single-executable link feasibility for the chosen CRT/C++/HTTP/TLS stack.
-  Linux, macOS/arm64 and Windows/x64 pass (local, unpromoted); the changed sources still need a Linux/macOS replay.
+  Linux, macOS/arm64 and Windows/x64 pass (local, unpromoted); the merged Windows changes now pass Linux replay (2026-10-30); macOS replay remains.
 - [ ] **D0.6** Validate relocated build/run/imports with producer trees unavailable;
   Linux, macOS/arm64 and Windows/x64 pass ([Windows evidence](docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-windowsx64-2026-10-29));
   [macOS evidence](docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-macosarm64-2026-10-29).
+  [Current Linux merged-source replay](docs/acceptance/bootstrap_acceptance.md#linux-revalidation-after-windows-changes-2026-10-30) passes; current-source macOS replay remains.
 - [ ] **D0.7** Link exact candidate/case evidence in [compatibility](docs/compatibility.md),
   resolve asset coherence with CRT and adopt final pins only after producer promotion.
 

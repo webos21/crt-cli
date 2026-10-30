@@ -10,7 +10,7 @@ release artifacts.
 | Host | Path | Status |
 | --- | --- | --- |
 | macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `152b027f053fa7150dc7a3170ee361fd9615e2f305a915d45bef984576a5a55b` (2,983,112 bytes) |
-| Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `cfc41532e6a582982dcd19831d0e6dcf7919be7d189558821845e257432fe1d5` (10,804,200 bytes) |
+| Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `a44197764f1361b6691dc145f03fd794a880eb9fd1d4d5601a669f4cb0f3044d` (10,928,472 bytes) |
 | Linux/aarch64 | `bin/linux-arm64/crt-cli` | pending: build on a Linux/aarch64 host |
 | Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `183e1e6c7f60cfc823ca0e4e260ff913b252798b5b0d0daebe82c9f3a7529806` (16,883,200 bytes, built `-O1 -g`) |
 | Windows/arm64 | `bin/win-arm64/crt-cli.exe` | pending: build on a Windows/arm64 host |
@@ -26,10 +26,11 @@ against a clean local Dev SDK (CRT `d054a66`). Evidence:
 [Windows acceptance](../docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-windowsx64-2026-10-29).
 Rebuild outputs and intermediate objects live in the ignored `out/` directory.
 
-The Linux/x86_64 binary has no `DT_NEEDED`, RUNPATH or RPATH and only the interpreter
-`/lib64/ld-linux-x86-64.so.2`. With the SDK, sources, replay tree and `PATH` hidden in a
-Bubblewrap mount namespace (cleared environment), `--version`, `--help` and
-`doctor --bootstrap` pass and the mapped images are the loader, the binary and the vdso.
-It was built by stage1 (itself built by an earlier seed) from a clean `out/native` against
-the CRT `d054a66` Development SDK; stage1 and stage2 are byte-identical. This is a local
-check, not the CRT Bubblewrap/execve replay; see [HISTORY](../HISTORY.md).
+The Linux/x86_64 binary is the 2026-10-30 merged-source replay's bare executable:
+no DT_NEEDED/RPATH/RUNPATH, interpreter `/lib64/ld-linux-x86-64.so.2` only.
+With SDK/source/provider/compiler access hidden, help/version/doctor pass;
+PAL images are the CLI, loader and vdso. It uses CRT `a46e430` plus the recorded
+non-Windows SETPGROUP fix (explicit dirty local candidate). Native suite,
+execve audit and the previous-binary -> new-SDK -> self-build loop pass. See
+[Linux revalidation](../docs/acceptance/bootstrap_acceptance.md#linux-revalidation-after-windows-changes-2026-10-30).
+The prior `cfc41532...` Linux result remains historical, not overwritten evidence.
