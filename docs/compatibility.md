@@ -270,6 +270,19 @@ changed. SDK, provider, source and binary identities are in
 replayed the CRT changes, so no Windows combination is approved; the CRT commits need producer review and a promoted
 SDK. The root lock stays unresolved.
 
+## Windows/arm64 Fetch, Unicode and Release-asset SDK (2026-10-31)
+
+**Partial pass, local/unpromoted Windows/arm64.** CLI `f786f85` plus the uncommitted `fetch` command
+(experimental; contract in [bootstrap_contract](reference/bootstrap_contract.md#commands-and-results)) replays against a
+Development SDK **extracted from a locally collected ZIP** of clean CRT
+[`1c3d120`](https://github.com/webos21/crt/commit/1c3d120422451c98e65bd6344177945d3f4f01f5), version `v0.4.0-rehearsal.20261030`
+(no tag, nothing uploaded). The ZIP's two symlinks are file copies, so its inventory differs from the producer directory's in
+those entries; installer design must define it. The CRT test driver is
+[`182d901`](https://github.com/webos21/crt/commit/182d90128908ac499f726e86b8c8701129785c3b). Because no CRT release exists for
+this target, the promoted-SDK criterion is not met and no pin is adopted. Windows narrow-path handling is an open CRT/CLI
+decision; `ws2_32.dll` is loaded by name from the PAL. Details:
+[acceptance](acceptance/bootstrap_acceptance.md#windowsarm64-https-fetch-unicode-paths-and-release-asset-sdk-2026-10-31).
+
 ## Linux Merged-source Revalidation (2026-10-30)
 
 **Pass, local/unpromoted Linux/x86_64**, CLI `ddaf288322e3292fbba53bc2bc4946c701ab5241`.

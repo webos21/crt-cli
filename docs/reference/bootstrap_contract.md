@@ -1,8 +1,8 @@
 # Implemented Native Bootstrap Contract
 
 Experimental contract, not SDK Build Contract v1 or a promoted release. Native
-policy export currently supports Linux/x86_64 and macOS/arm64; Windows replay
-is still pending. Earlier format-0 evidence remains historical in
+policy export supports Linux/x86_64, Linux/aarch64, macOS/arm64, Windows/x64 and
+Windows/arm64 (each replayed locally and unpromoted). Earlier format-0 evidence remains historical in
 [acceptance](../acceptance/bootstrap_acceptance.md).
 
 ## Modules and Dependencies
@@ -158,9 +158,27 @@ headers. It is not permission to add host standard headers or a host C++ runtime
 
 `new <dir> [--language c|cxx] [--kind executable|static-library|shared-library]
 [--runtime-linkage static|shared]` creates sources only. Existing commands are
-`--help`, `--version`, `doctor --bootstrap`, `configure`, `build`, `test`, `run`.
+`--help`, `--version`, `doctor --bootstrap`, `fetch`, `configure`, `build`, `test`, `run`.
 Configure requires SDK selection, provider path/hash, `--cc`, `--cxx`, `--linker`
 and `--ar`. Subsequent commands use the locked local binding.
+
+`fetch --url <https-url> --ca-file <pem> --output <file> --sha256 <hex> --size <bytes>
+[--timeout <seconds>]` (2026-10-31) is the minimal HTTPS download primitive for the D1-07
+gate, not an SDK installer. Every option except `--timeout` (default 60, at most 3600 s)
+is required. The URL must be `https://`, name a host and carry no credentials; the CA
+file is the **only** trust input (no system store, environment variable or default
+bundle is consulted); the SHA-256 is 64 lowercase hex digits and the size, in
+1..2 GiB, is both the cap and the expectation. libcurl with Mbed TLS runs with peer and
+host verification always on (there is no option to disable them), TLS 1.2 or newer, no
+proxy, no redirects and HTTP 200 only. The body is written to a staging file beside the
+output, checked for size and digest, then renamed. Failure removes the staging file and
+publishes nothing; an existing output is never replaced (exit 2, content untouched). Exit
+2 is an invalid request (no network was used), exit 1 a transfer or verification failure
+with `data.code` one of `tls`, `network`, `timeout`, `interrupted`, `http_status`,
+`too_large`, `size_mismatch`, `digest_mismatch`. Success reports bytes, digest, HTTP
+status and the trust settings, plus `integrity: pinned-digest` and
+`publisher_authentication: not_verified`: a digest the caller pinned says the bytes match
+it, not who published them, and the CLI has no signed-metadata policy yet.
 
 `--json` emits one `crt-cli.bootstrap-result`, format 1, with command/ok/data.
 Child stdout is bounded at 8 MiB and relayed to stderr; result JSON remains
@@ -172,7 +190,8 @@ Broader Windows and interactive cancellation acceptance remains open.
 `out/native/last-build.json` records target kinds/linkage, artifact hashes,
 compiler/archive/link argv and outcomes. Bootstrap doctor checks C++ exceptions,
 local new/delete ownership through public `dladdr`, compression and HTTP/TLS
-initialization, and reports the PAL SDK store/image list. Actual HTTPS is still
-`not_run`, authenticated executable integrity `not_verified`. SDK installation,
+initialization, and reports the PAL SDK store/image list. The doctor itself does not use
+the network, so its HTTPS check stays `not_run` (`fetch` is exercised separately), and
+authenticated executable integrity stays `not_verified`. SDK installation,
 self-upgrade, general package resolution/deployment and public release are not
 implemented by this contract increment.

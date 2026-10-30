@@ -9,6 +9,20 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-10-31
+
+### Add `fetch`, measure Windows Unicode paths and replay against a release-asset SDK
+
+On Windows/arm64: the CLI gained a minimal `fetch` command (explicit CA file, always-on verification, size cap, pinned SHA-256,
+staging then rename, no overwrite) because it had no way to download; CRT's new `tools/test_cli_fetch_https.py` passes 17 of 17
+positive and negative cases against controlled loopback endpoints, and the suite has 769 checks. A Unicode-path probe
+shows that Hangul works as ANSI (CP949) bytes through the C library and libc++ `filesystem`, UTF-8 bytes fail, a character
+outside the code page is silently best-fit, and CLI `build` fails in a Hangul directory because clang writes its dependency
+file in UTF-8; nothing was patched. A local `crt-dev-release` rehearsal (no tag, nothing uploaded) collected the
+Windows/arm64 Dev SDK ZIP, whose two symlinks become file copies, and the CLI replay passes against its extraction.
+`bin/win-arm64/crt-cli.exe` is refreshed. D1-07 stays open (no signed-metadata policy, publisher or SDK-hidden run) and no
+SDK was promoted. [Acceptance](docs/acceptance/bootstrap_acceptance.md#windowsarm64-https-fetch-unicode-paths-and-release-asset-sdk-2026-10-31).
+
 ## 2026-10-30
 
 ### Replay the sources on Windows/arm64 and add the first win-arm64 binary

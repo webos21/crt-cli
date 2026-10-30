@@ -141,6 +141,8 @@ uses a second SID that sees only its own copy of the CLI. On Windows/arm64 point
 import libraries, not the Visual C++ ARM64 libraries. The driver follows the SDK target architecture. The driver has no
 bootstrap-loop stage, so run that separately (see the
 [Windows/arm64 record](../acceptance/bootstrap_acceptance.md#windowsarm64-native-replay-2026-10-30)).
+HTTPS `fetch` cases run separately with CRT's `tools/test_cli_fetch_https.py --cli <crt-cli> --output <fresh dir>` (needs
+OpenSSL and Python as build-host test tools; the CLI is run from a clean directory with an empty `PATH`).
 Keep the producer worktree under the user profile (a path that
 public Users grants can read cannot be hidden this way) and use short, ASCII work paths: Windows narrow paths are ANSI
 bytes and the imported libc++ rejects non-ASCII narrow/wide conversion today. Treat a directory name containing `;` as

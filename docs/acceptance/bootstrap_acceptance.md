@@ -81,8 +81,11 @@ Follow-on self-upgrade/project/package gates belong to
 
 ### SDK-free HTTPS Bootstrap Gate
 
-This is a future gate, **Not run**, not an SDK installer already implemented
-in D1. A minimal fetch/verify path may be exercised before D2 transactions;
+This gate is **open**. Partial Windows/arm64 evidence (a controlled loopback endpoint, the
+CLI's `fetch` command and 17 positive/negative cases) is in the
+[2026-10-31 record](#windowsarm64-https-fetch-unicode-paths-and-release-asset-sdk-2026-10-31); it does
+not include a signed-metadata policy, a real publisher or an SDK-hidden run, and no other host
+has run it. This is not an SDK installer already implemented in D1. A minimal fetch/verify path may be exercised before D2 transactions;
 D2 still owns SDK extraction, installation, selection and rollback acceptance.
 Agree the HTTP/TLS stack, trust store and metadata-authentication policy in D0.
 Do not assume signing exists or treat an archive checksum as publisher identity.
@@ -1099,3 +1102,133 @@ rather than denial; the bootstrap loop is unsandboxed; Windows/x64 has not repla
 `5dd64c3` or the new recorder; CLI HTTPS, installation/upgrade and promotion remain open.
 The CRT commits `67f9516` and `9a31667` need producer review and a promoted SDK before
 any combination is approved. No public release or production lock is adopted.
+
+## Windows/arm64 HTTPS Fetch, Unicode Paths and Release-asset SDK (2026-10-31)
+
+**Partial pass, native Windows/arm64; local/unpromoted.** Three follow-ups to the
+[Windows/arm64 replay](#windowsarm64-native-replay-2026-10-30). The CLI gained one
+command, `fetch`, because it had no download path to test; the Unicode-path run found a
+CLI/producer defect that is **not** fixed here; and the SDK was rebuilt through CRT's
+release-collection entry point. Nothing here is a published release, a signed-metadata
+policy or a promotion.
+
+### CLI HTTPS (D1-07), controlled endpoint only
+
+`fetch` ([contract](../reference/bootstrap_contract.md#commands-and-results)) downloads one
+`https://` URL with libcurl and Mbed TLS using an explicit CA file as the only trust input,
+always-on peer and host verification, TLS 1.2 or newer, no proxy and no redirects, caps the
+body at the declared size and publishes a file only after its size and SHA-256 match. The
+reply states `publisher_authentication: not_verified`; the caller pins the digest and the
+CLI has no signed-metadata policy yet, so this is transport verification plus integrity,
+not publisher authentication.
+
+CRT's producer-side driver `tools/test_cli_fetch_https.py` (CRT `182d901`) generates an
+OpenSSL 3.5.7 PKI, serves loopback endpoints with Python's `ssl` module and runs the CLI
+from a clean directory with an empty `PATH` and no SDK argument. Final run: the
+replayed binary below, **17 of 17 cases as expected**; the first run, with the CLI built
+before the replay, also passed all 17.
+
+| Case | Result |
+| --- | --- |
+| pinned metadata, then the 1 MiB artifact it names | published, sizes and digests equal |
+| wrong CA / expired certificate / host name mismatch | exit 1, `tls` (curl 60; mbedTLS: not signed by the trusted CA / validity expired / CN mismatch) |
+| malformed CA file | exit 1, `tls` (curl 77, PEM error) |
+| missing CA file, plain `http://` URL, existing output | exit 2 before any connection; the existing file stays byte-identical |
+| tampered metadata (same length) / wrong artifact digest | exit 1, `digest_mismatch` |
+| body larger than declared / smaller than declared | exit 1, `too_large` (curl 63) / `size_mismatch` |
+| truncated transfer | exit 1, `interrupted` (curl 56) |
+| stalled server, `--timeout 2` | exit 1, `timeout` after 2.1 s (curl 28) |
+| HTTP 404 / HTTP 302 | exit 1, `http_status` (the redirect is not followed) |
+
+After every rejection the output directory holds no output and no staging file. The suite
+also gained 21 argument-validation checks (**769 native checks** pass). Limits: this is
+not an SDK-free clean host (the SDK is still installed and was not hidden; the run is
+not sandboxed); the endpoint is loopback with a generated CA, not a public server or a
+trust bundle from a publisher; invalid-CLI-resource, interrupted-resume and
+concurrent-fetch cases were not run. D1-07 therefore stays **open**: a signed-metadata
+policy, a real publisher endpoint and an SDK-hidden bare run are still required.
+
+Loader check: the executable imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`, but
+CRT's PAL calls `LoadLibraryA("ws2_32.dll")` at the first socket (`libc/src/arch/windows/common/syscall.c`).
+A marker DLL named `ws2_32.dll` placed beside the executable was **not** loaded (a control that
+loads the same DLL explicitly writes its marker), and the fetch reached the connect step, so the
+real library came from the system. `ws2_32.dll` is a Windows known DLL; the call is not
+hardened with an explicit search directory, so any non-known name would follow the default
+search order. That is a producer item, not tested further here.
+
+### Unicode paths
+
+Measured with a CRT-built probe on this host (active code page 949, Korean). The CRT
+treats narrow strings as **ANSI code-page bytes** for process arguments, the environment and
+file-system calls, while `wcstombs` produces UTF-8; the two disagree.
+
+| Observation | Result |
+| --- | --- |
+| Hangul in `argv`/environment | arrives as CP949 bytes (`c7 d1 b1 db`) |
+| C `mkdir`/`fopen`/`opendir` and libc++ `filesystem`/`ofstream` with those CP949 bytes | work, including `remove_all` |
+| the same calls with UTF-8 bytes | `mkdir` ENOENT; libc++ throws `__char_to_wide: Invalid or incomplete multibyte` |
+| a character outside CP949 (`é`) in `argv` | silently best-fit to `e`: a **different path** is used |
+| CLI `new` and `configure` in a Hangul parent directory | pass |
+| CLI `build` there | **fails**: clang writes its dependency file in UTF-8 and the CLI reads those paths as ANSI, so libc++ throws |
+| project basename | must remain a package identifier (a spaced or Hangul basename is rejected by design) |
+
+So the Windows requirement for real Unicode paths is **still not met**: spaces work, Hangul
+works only as far as `build`. Two owners: the CLI reads dependency-file paths without regard to their encoding on
+every host, and the CRT narrow-string model (ANSI for the OS, UTF-8 for conversion) needs a
+public PAL decision (for example UTF-8 narrow paths with wide system calls). No workaround
+was added to the CLI, because converting between UTF-8 and the ANSI code page needs a
+platform query that belongs in CRT's PAL, and silently best-fit paths cannot be repaired
+above it. Evidence: `unicode/` (probe sources, outputs, CLI run).
+
+### Release-asset SDK (not a promotion)
+
+At CRT `1c3d120` (clean worktree, fresh build root, version `v0.4.0-rehearsal.20261030`,
+no tag, nothing uploaded) `crt-development-sdk-test`, `crt-c-test` (**166/166**) and
+`crt-dev-release` pass and collect the Windows/arm64 Development SDK:
+
+| Asset | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `crt-v0.4.0-rehearsal.20261030-windows-aarch64-dev.zip` | 140,708,926 | `aa646a033a02996c2170d1f740e9a50a2a9489c0505208cb18263586d57b015f` |
+| `crt-v0.4.0-rehearsal.20261030-windows-02-cxx-source.tar.xz` | 8,585,436 | `27a633d1f56f6cba115298fd2eb47e35e4bd155956c723d6d6d4c4670ab8118e` |
+| `crt-v0.4.0-rehearsal.20261030-windows-03-gfx-simple-source.tar.xz` | 129,612 | `e22a474975d71a953efab489872a63e2b6d873c01172f5765b6c8359c78a87c5` |
+
+All three match the collector's `SHA256SUMS` and release manifest (source commit `1c3d120`).
+The ZIP was extracted with Python's `zipfile` (names checked for traversal) into a
+directory with spaces. **Finding:** the ZIP has no symlink entries, so `lib/libz.so` and
+`lib/libz.so.1` become regular file copies; the extracted tree's inventory digest
+(`1e58d9c7...a6d5fcd`) therefore differs from the producer directory's (`09624722...bf3d4f`)
+in exactly those two entries, with identical bytes. The SDK installer (D2) must define the
+inventory of an extracted Windows archive instead of assuming the directory's.
+
+The CLI sources of this increment (769 checks, with `fetch`) were replayed against the
+**extracted archive**, with the driver as before (CRT `182d901`): all steps exit 0,
+**769 native checks**, cold self-build **9 executed / 0 reused**, warm **0 / 9**,
+377 process records and no forbidden image, bare help/version/doctor, imports
+`kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll` only. The CLI base is `f786f85` plus
+the `fetch` change, committed afterwards (source SHA-256 `9167c6524c37fc7368ecaab5015738c28c24ff66dce08cc013b668a37fd137ff`
+covers the whole exported tree including the documents of that moment; the 15 files under `src/`, `include/`, `tools/` and
+`crt.json`/`crt.lock` are byte-identical to the committed ones);
+provider `53bf519f94573003e1003d0b0f53d364dda4ae2be9bf2d829f4bde35fd991ac1`; SDK content
+`6312edfd5b4dd232fb0dec2898b010df370d989a763f21c4bbcaf9e6607f6cb1`; `result.json`
+`11f62bc2beb405fe5fc376c7338fadfa6b5744387f850c7247ddaef9d30edc33`. The bare executable
+(18,739,200 bytes, SHA-256 `5ae9a4bcd6d618f02aadb98bc00cc3255ee8e0568dcdd1bc8d35bdd79c55c351`;
+larger than before because the curl and TLS code is now actually used) replaces
+`bin/win-arm64/crt-cli.exe`. No bootstrap loop was repeated for it.
+
+This is a locally assembled, unpublished artifact of a clean producer commit. A public
+Windows/arm64 release, a signed or tagged artifact and an adopted pin do not exist, so the
+promoted-SDK criterion is **not** met; what is shown is that the CLI consumes a packaged
+archive extracted outside the producer tree.
+
+### Evidence and Limits
+
+Producer evidence root (git-ignored): `out/cli-windows-arm64-20261031/` in the CRT checkout:
+`https-r1` (first run), `https-r2` and `https-r3` (final binary), `replay-rr1/`
+(`commands.json`, `inputs.json`, `result.json`), `release-rehearsal/` (checksums and
+manifest; the 140 MB ZIP stays in the rehearsal build root), `unicode/`, `dll-planting/` and
+the build logs. The producer worktree is `C:/Users/cmjo/cw/crt`, build root `out/rr/build`.
+
+Open: Windows/x64 replay of the CRT changes and of `fetch`; a Linux/macOS replay of the new
+sources; the Unicode-path decisions above; ws2_32 loader hardening; a signed-metadata policy,
+real-publisher HTTPS and an SDK-hidden fetch run; an actual promoted SDK. The CRT commits need
+producer review. No public release or production lock is adopted.

@@ -39,6 +39,20 @@ int main(int argc, char** argv) {
         check(fs::path(doctor.at("sdk_store").get<std::string>()).filename() == "sdks", "common SDK store basename");
         for (const auto& args : std::vector<std::vector<std::string>>{{"upgrade"}, {"doctor"}, {"--version", "extra"}, {"--json"}, {"new"}, {"build", "--bad"}, {"configure", "--project"}})
             invoke(cli, args, false);
+        // fetch validates every input before any network use: plain HTTP, URL credentials, a malformed digest or size and
+        // a missing trust file are all rejected without a connection attempt.
+        const std::string zero_digest(64, '0');
+        const std::vector<std::string> fetch_base{"fetch", "--url", "https://localhost:9/m.json", "--ca-file", cli, "--output", cli + ".fetched", "--sha256", zero_digest, "--size", "1"};
+        auto with = [&](const std::string& option, const std::string& value) {
+            auto args = fetch_base;
+            for (size_t i = 1; i + 1 < args.size(); i += 2) if (args[i] == option) args[i + 1] = value;
+            return args;
+        };
+        for (const auto& args : {std::vector<std::string>{"fetch"}, with("--url", "http://localhost:9/m.json"), with("--url", "https://user:secret@localhost:9/m.json"),
+                                 with("--url", "https:///m.json"), with("--sha256", std::string(64, 'A')), with("--sha256", "abc"), with("--size", "0"),
+                                 with("--size", "-1"), with("--ca-file", cli + ".missing"), with("--output", cli)})
+            invoke(cli, args, false);
+        check(!fs::exists(cli + ".fetched"), "a rejected fetch publishes nothing");
         // The temporary root comes from the environment (TMPDIR, then TEMP); a literal /tmp does not exist everywhere.
         const char* temporary_root = std::getenv("TMPDIR") ? std::getenv("TMPDIR") : std::getenv("TEMP") ? std::getenv("TEMP") : "/tmp";
         std::string temporary = (fs::path(temporary_root) / "crt-cli-native-XXXXXX").string();
