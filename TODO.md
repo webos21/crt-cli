@@ -27,8 +27,8 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
 Current focus: PAL-only native contract, typed build targets and SDK-owned
 JSON/SHA-2, followed by candidate coherence.
 Temporary: each host's final executable is committed under `bin/` (`macos`, `linux-x64`,
-`linux-arm64`, `win-x64`, `win-arm64`; see `bin/README.md`). macOS, Linux/x86_64, Linux/aarch64 and Windows/x64 are present;
-`win-arm64` remains to be built on its host; `linux-arm64` was added on 2026-10-30. Local SDK/tool inputs live in the ignored `.sdk.json`.
+`linux-arm64`, `win-x64`, `win-arm64`; see `bin/README.md`). All five are present;
+`linux-arm64` and `win-arm64` were added on 2026-10-30. Local SDK/tool inputs live in the ignored `.sdk.json`.
 Bootstrap loop goal: a changed SDK plus an already built `crt-cli` produce a new `crt-cli`, which then rebuilds and tests itself.
 The native JSON builder replaces the initial CMake prototype. Bootstrap and
 bounded new/configure/build/test/run pass on Linux and macOS without Python/shell;
@@ -48,11 +48,11 @@ Public SDK release is not a prerequisite; CLI consumption stays SDK-only.
   manifest/lock inputs; the general SDK/project contracts remain distinct.
 - [ ] **D0.5** Implement bounded help/version/bootstrap diagnosis and check
   single-executable link feasibility for the chosen CRT/C++/HTTP/TLS stack.
-  Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64 pass (local, unpromoted); the merged Windows changes now pass Linux/x86_64 and macOS replay (2026-10-30), and the Linux/aarch64 pair passes after a CRT `fcntl.h` fix that macOS/x86_64/Windows replay still has to confirm.
+  Linux/x86_64, Linux/aarch64, macOS/arm64, Windows/x64 and Windows/arm64 pass (local, unpromoted); the merged Windows changes now pass Linux/x86_64 and macOS replay (2026-10-30), and the Linux/aarch64 pair passes after a CRT `fcntl.h` fix that Windows/arm64 compiled and passed with but Linux/x86_64, macOS and Windows/x64 replay still have to confirm.
 - [ ] **D0.6** Validate relocated build/run/imports with producer trees unavailable;
   Linux, macOS/arm64 and Windows/x64 pass ([Windows evidence](docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-windowsx64-2026-10-29));
   [macOS evidence](docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-macosarm64-2026-10-29).
-  [Current Linux merged-source replay](docs/acceptance/bootstrap_acceptance.md#linux-revalidation-after-windows-changes-2026-10-30) passes; [macOS merged-source replay](docs/acceptance/bootstrap_acceptance.md#macos-revalidation-after-windows-and-linux-changes-2026-10-30) passes. [Linux/aarch64 replay](docs/acceptance/bootstrap_acceptance.md#linuxaarch64-native-replay-2026-10-30) passes.
+  [Current Linux merged-source replay](docs/acceptance/bootstrap_acceptance.md#linux-revalidation-after-windows-changes-2026-10-30) passes; [macOS merged-source replay](docs/acceptance/bootstrap_acceptance.md#macos-revalidation-after-windows-and-linux-changes-2026-10-30) passes. [Linux/aarch64 replay](docs/acceptance/bootstrap_acceptance.md#linuxaarch64-native-replay-2026-10-30) and [Windows/arm64 replay](docs/acceptance/bootstrap_acceptance.md#windowsarm64-native-replay-2026-10-30) pass.
 - [ ] **D0.7** Link exact candidate/case evidence in [compatibility](docs/compatibility.md),
   resolve asset coherence with CRT and adopt final pins only after producer promotion.
 

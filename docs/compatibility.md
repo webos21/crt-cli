@@ -256,6 +256,20 @@ No CLI code changed. The CRT header change is only replayed here: Linux/x86_64,
 macOS and Windows must replay it before any combination is approved, and the CRT
 changes need producer review and a clean promoted SDK. The root lock stays unresolved.
 
+## Windows/arm64 Native Replay (2026-10-30)
+
+**Pass, local/unpromoted Windows/arm64**, CLI `ec187d5944160b9eaf8f3a9c124ce1fbdeec7aa6`.
+First replay of this host pair. The Dev SDK was built natively from a clean CRT
+[`67f9516`](https://github.com/webos21/crt/commit/67f951626b9e7164d93fd6510cc25290ff7744d3)
+(version `v0.4.0-cli.20261030`, not a tag). That commit follows the Linux/aarch64 `fcntl.h` change and adds the
+Windows/arm64 target to the toolchain exporter and replay driver; the replay itself ran with CRT
+[`9a31667`](https://github.com/webos21/crt/commit/9a316671ebd372df44cb0fd20b7138d5231a1cd3), which also makes the
+exporter's argv recorder freestanding. The provider and SDK profile formats are unchanged. No CLI code
+changed. SDK, provider, source and binary identities are in
+[Windows/arm64 replay](acceptance/bootstrap_acceptance.md#windowsarm64-native-replay-2026-10-30). Windows/x64 has not
+replayed the CRT changes, so no Windows combination is approved; the CRT commits need producer review and a promoted
+SDK. The root lock stays unresolved.
+
 ## Linux Merged-source Revalidation (2026-10-30)
 
 **Pass, local/unpromoted Linux/x86_64**, CLI `ddaf288322e3292fbba53bc2bc4946c701ab5241`.

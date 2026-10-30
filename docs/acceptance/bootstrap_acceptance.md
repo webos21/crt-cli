@@ -979,3 +979,123 @@ The bare executable is committed as `bin/linux-arm64/crt-cli`.
   clean (non-dirty) promoted SDK, and the remaining `crtmedia` results above.
   No commit, push, public release or production lock adoption is implied; the
   tracked root lock stays unresolved.
+
+## Windows/arm64 Native Replay (2026-10-30)
+
+**Pass, native Windows/arm64; local/unpromoted.** First replay of this host pair.
+CLI `ec187d5944160b9eaf8f3a9c124ce1fbdeec7aa6` (clean working tree, no CLI code
+change) against a Development SDK built natively on this host from a **clean**
+CRT [`67f9516`](https://github.com/webos21/crt/commit/67f951626b9e7164d93fd6510cc25290ff7744d3),
+which contains the Linux/aarch64 `fcntl.h` change `5dd64c3` and one producer-tool
+commit. The Windows/x64 record covers neither this architecture nor `5dd64c3`.
+
+### Exact Inputs
+
+| Input | Identity |
+| --- | --- |
+| Host | Windows 11 Pro 10.0.26300 on Arm64 (Developer Mode on); the Git Bash used for orchestration is an emulated x86_64 MSYS, the producer Python (3.14) and every build tool are native arm64 |
+| Tools | LLVM/Clang 22.1.8 (`aarch64-pc-windows-msvc`: `clang`, `clang++`, `ld.lld`, `llvm-ar`), Windows SDK 10.0.28000.0 `um/arm64` |
+| Producer SDK | CRT `67f9516`, detached worktree `C:/Users/cmjo/cw/crt` (short ASCII path under the profile), flags clean; `dist/dev`, 2,711 file/symlink entries, 383 MB; `-DCRT_RELEASE_TAG=v0.4.0-cli.20261030` (a local version, not a Git tag; no archive was cut) |
+| SDK inventory (driver) | `716938e3eca2181d6db8f3c56209525a09e3ad87d8b4c39fc0e5470deb80c7ed` |
+| SDK content (provider) | `b11b3f14b512b9146a42016d6db4cc1157ff5c27cd7b259707ce40bdf364ac51` |
+| Provider SHA-256 | `00c79a60c63c6ffaf0a9de0f1e25643154d4e035c82e71b70e4240c94345fc0e` (exporter `c261acbe73260e9264db3fdac9b0308f3306ad2a8ab122eea1c9bd99c10d7b16`, CRT `9a31667`) |
+| CLI source SHA-256 (driver inventory, LF text, `bin/` excluded) | `e3bca84d11c2eb80e376051c4e1856d5a311bda5aa6ea0fad17d1ffb29efad19` |
+
+The producer checks passed before the CLI replay: `crt-development-sdk-test` (995 build
+steps; Development profile verification and the ordinary consumer's static and shared
+HTTPS/inflate plus four trust cases each) and `crt-c-test` **166/166** (one test,
+`fork_heap_snapshot_test_runs`, is reported as skipped by CRT itself). That run
+compiled the SDK with the changed `fcntl.h`, so the header does not break Windows/arm64
+(its Linux/aarch64 branch is not compiled here); Windows/x64 has still not replayed it.
+
+### Producer Tool Findings
+
+Both were found by running the Windows driver on this pair; the CLI needed no change.
+
+1. **Windows/arm64 was rejected by design.** `tools/export_cli_toolchain.py` refused
+   the pair (a deliberate scope guard like the Linux/aarch64 one) and
+   `replay_cli_contract_windows.py` hard-coded `CRT_TARGET_ARCH=x86_64` for its probe.
+   The exporter now accepts Windows/arm64 (its unit test moved the rejection to
+   Windows/x86) and the driver follows the SDK target (CRT `67f9516`).
+2. **The argv recorder needed Visual C++ libraries this host does not have.** The
+   exporter compiled `cli_argv_recorder.c` as a hosted program, so the link wanted
+   `libcmt.lib` and `oldnames.lib`. The Visual Studio Build Tools here ship them for
+   x64/x86 only; the ARM64 MSVC library directory has no C runtime. Replay r1 stopped
+   there; r2, rerun with `LIB` pointing at the ARM64 MSVC/UCRT/`um` directories, stopped
+   at the same error. The recorder is now freestanding (kernel32/shell32 only,
+   `-nostdlib`, no host headers) and needs only the Windows SDK import libraries the
+   exporter already requires (CRT `9a31667`). Its output equals the previous recorder's
+   byte for byte on five ASCII argument sets (spaces, quotes, backslashes, tab, empty,
+   `-print-resource-dir`; the old recorder built for x64 and run under emulation against
+   new x64 and arm64 builds). A non-ASCII argument is now correct UTF-8 where the old
+   recorder wrote ANSI bytes. The x64 host path has **not** been regenerated with the new
+   recorder on an x64 machine.
+
+### Isolated Native Workflow
+
+Driver `tools/replay_cli_contract_windows.py` (CRT `9a31667`) as on Windows/x64: the
+seed, `configure`, `build`, `self-build`, `cached-build`, the native suite and the bare
+phase run under the restricted token of `crt_windows_external`, with an empty `PATH`,
+redirected stdio and a job object that records every process (accounting, not denial;
+the Windows/x64 section explains the limits). The producer worktree, the main CRT
+checkout, the CLI checkout and the original SDK were hidden; the bare phase additionally
+hid the exported source, the relocated SDK and the provider. Work root
+`%TEMP%\crt dev external 3cg04bqq` (spaces).
+
+- Provider export, probe build, seven seed compiles and link, `configure`, `build`,
+  `self-build`, `cached-build`, native suite, bare help/version/doctor: all exit 0.
+- **748 native checks pass** (the same count as the merged-source Windows/x64 replay).
+- Cold self-build **8 executed / 0 reused**; unchanged rebuild **0 executed / 8 reused**.
+- **361 process records over 20 commands**: `clang`, `clang++`, `ld.lld`, `llvm-ar`,
+  the seed/CLI, generated test and application executables, the visibility probe and
+  `conhost.exe`; none of cmd/PowerShell/Python/CMake/Ninja/make/sh/bash/mksh/perl or
+  `crt-cc.cmd`.
+- The probe confirms four roots unreadable during the build and seven during the bare
+  phase. SDK inventories (original and relocated) are unchanged after the run.
+
+### One Executable and Runtime Audit
+
+| Observation | Result |
+| --- | --- |
+| Bare CLI | PE, machine `0xAA64` (arm64), 16,795,136 bytes (built `-O1 -g`, DWARF included) |
+| SHA-256 | `e25b449bc338ea4111adb2bb787dd712b213591c72446721bb45e21e059d2547` |
+| Imports | `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll` only |
+| Loaded images (doctor, OS loader) | the CLI plus `ntdll`, `KERNEL32`, `KERNELBASE`, `CRYPTBASE`, `RPCRT4`, `advapi32`, `bcryptPrimitives`, `msvcrt`, `sechost`; no CRT, C++ or `PATH`-resolved DLL |
+| Doctor | C++ allocation ownership and exceptions, zlib and HTTP/Mbed TLS initialization pass |
+| CLI HTTPS / authenticated integrity | `not_run` / `not_verified` |
+
+The bare executable is committed as `bin/win-arm64/crt-cli.exe`.
+
+### Bootstrap Loop
+
+The Windows driver has no loop stage, so the loop was run separately (a script outside
+the repositories, **not sandboxed**, empty `PATH`, no process accounting) with the
+replay's own bare executable as stage0. Stage0 configures and builds a copy of the
+sources into stage1 (8 executed / 0 reused). Stage1 reads a new `.sdk.json`
+(`allow_dirty_sdk: false`, accepted because this SDK is clean), configures, and rebuilds
+the sources with a cleared cache into stage2 (8 / 0). Stage2 runs the suite
+(**748 checks**) and rebuilds warm (0 / 8).
+
+Stage1 and stage2 (both 16,840,192 bytes; `3de271f7...ccf19a` and `4b12e9cb...d217b2f`)
+differ in **four bytes**: the PE `TimeDateStamp` (2) and the `.buildid` debug record (2),
+both derived from link time. Everything else is identical, so the fixed-point criterion
+here is image identity apart from the link timestamp, as segment identity is for macOS.
+Stage0 differs from stage1 only in the DWARF sections (equal `.text`, `.rdata`, `.data`,
+`.eh_frame` and `.reloc` sizes); the cause was not investigated beyond the different
+source path. There is no earlier Windows/arm64 binary, so this proves a fixed point, not
+a bootstrap from a previous release.
+
+### Evidence and Limits
+
+Producer evidence root (git-ignored): `out/cli-windows-arm64-20261030/` in the CRT
+checkout: `sdk-build.log`, `c-test.log`, `dev-consumer-result.json`, `replay-r1.log` and
+`replay-r2.log` (retained failures), `replay-r3/` (pass: `commands.json`, `inputs.json`,
+`result.json`, per-step output), `loop-r1/` and `recorder-compare/`. `result.json`
+SHA-256: `5c4b740603d913b4c0d49a2224371053b2aa38091e28bc13719243779fb93b9c`.
+
+Limits: Windows/arm64 only; ASCII and space paths (the Windows/x64 Unicode-path producer
+gap applies unchanged and was not re-measured); the process inventory is accounting
+rather than denial; the bootstrap loop is unsandboxed; Windows/x64 has not replayed
+`5dd64c3` or the new recorder; CLI HTTPS, installation/upgrade and promotion remain open.
+The CRT commits `67f9516` and `9a31667` need producer review and a promoted SDK before
+any combination is approved. No public release or production lock is adopted.

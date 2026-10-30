@@ -137,7 +137,11 @@ python C:/absolute/crt/tools/replay_cli_contract_windows.py `
 
 It runs every consumer process under a restricted token (producer trees unreadable through the per-run SID, `PATH` empty,
 stdio redirected) and records the executables each run starts through a job object: accounting, not denial. The bare phase
-uses a second SID that sees only its own copy of the CLI. Keep the producer worktree under the user profile (a path that
+uses a second SID that sees only its own copy of the CLI. On Windows/arm64 point `CRT_WINDOWS_SDK_LIBPATH` at `um/arm64`; the exporter's argv recorder needs only those Windows SDK
+import libraries, not the Visual C++ ARM64 libraries. The driver follows the SDK target architecture. The driver has no
+bootstrap-loop stage, so run that separately (see the
+[Windows/arm64 record](../acceptance/bootstrap_acceptance.md#windowsarm64-native-replay-2026-10-30)).
+Keep the producer worktree under the user profile (a path that
 public Users grants can read cannot be hidden this way) and use short, ASCII work paths: Windows narrow paths are ANSI
 bytes and the imported libc++ rejects non-ASCII narrow/wide conversion today. Treat a directory name containing `;` as
 unsupported for programs that import a DLL beside them.

@@ -11,6 +11,19 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-10-30
 
+### Replay the sources on Windows/arm64 and add the first win-arm64 binary
+
+First native run of this host pair: CLI `ec187d5` against a Development SDK built on the arm64 host from a clean CRT
+`67f9516`. Two producer-tool gaps blocked it and were fixed in CRT: the toolchain exporter and the Windows replay driver
+accepted only Windows/x64 (the driver hard-coded the probe architecture), and the exporter's argv recorder was a hosted
+program that needs a C runtime library this host's Visual Studio Build Tools lack for ARM64; it is now freestanding and
+matches the previous output byte for byte on ASCII arguments. No CLI code changed. The replay passes 748 native checks,
+cold 8/0 and warm 0/8 cache, a 361-process inventory without forbidden images and the bare-runtime audit (kernel32 and
+one API-set import); a separate, unsandboxed stage1/stage2 loop is identical apart from the PE link timestamp.
+`crt-c-test` passes 166/166 with the Linux/aarch64 `fcntl.h` change compiled in. `bin/win-arm64/crt-cli.exe` is added.
+The CRT changes and the new recorder are not replayed on Windows/x64, and CLI HTTPS and Unicode paths remain open.
+[Acceptance](docs/acceptance/bootstrap_acceptance.md#windowsarm64-native-replay-2026-10-30).
+
 ### Replay the sources on Linux/aarch64 and add the first aarch64 binary
 
 First native run of this host pair: CLI `50bda2e` against a Development SDK built

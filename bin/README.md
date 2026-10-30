@@ -13,7 +13,7 @@ release artifacts.
 | Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `a44197764f1361b6691dc145f03fd794a880eb9fd1d4d5601a669f4cb0f3044d` (10,928,472 bytes) |
 | Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `94ba0f0c37159e6aa07fe78ea637fd202b658cab45daca70680c380f12450eea` (10,994,232 bytes; 2026-10-30 replay, dirty local SDK) |
 | Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `183e1e6c7f60cfc823ca0e4e260ff913b252798b5b0d0daebe82c9f3a7529806` (16,883,200 bytes, built `-O1 -g`) |
-| Windows/arm64 | `bin/win-arm64/crt-cli.exe` | pending: build on a Windows/arm64 host |
+| Windows/arm64 | `bin/win-arm64/crt-cli.exe` | present; SHA-256 `e25b449bc338ea4111adb2bb787dd712b213591c72446721bb45e21e059d2547` (16,795,136 bytes, built `-O1 -g`; 2026-10-30 replay, clean local SDK) |
 
 macOS ships only arm64, so it keeps the single `bin/macos/` directory. Linux and
 Windows are split by architecture: `linux-x64`, `linux-arm64`, `win-x64`, `win-arm64`.
@@ -25,6 +25,12 @@ The Windows/x64 binary imports only `kernel32.dll` and `api-ms-win-core-synch-l1
 against a clean local Dev SDK (CRT `d054a66`). Evidence:
 [Windows acceptance](../docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-windowsx64-2026-10-29).
 Rebuild outputs and intermediate objects live in the ignored `out/` directory.
+
+The Windows/arm64 binary imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll` (PE machine `0xAA64`). It is the
+2026-10-30 replay's bare executable, built against a Dev SDK from a clean CRT `67f9516`. The first arm64 build has no earlier
+binary, so the bootstrap loop proves a stage1/stage2 fixed point (equal but for the link timestamp), not a bootstrap from a
+previous release. See
+[Windows/arm64 replay](../docs/acceptance/bootstrap_acceptance.md#windowsarm64-native-replay-2026-10-30).
 
 The Linux/x86_64 binary is the 2026-10-30 merged-source replay's bare executable:
 no DT_NEEDED/RPATH/RUNPATH, interpreter `/lib64/ld-linux-x86-64.so.2` only.
