@@ -11,6 +11,22 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-10-30
 
+### Replay the sources on Linux/aarch64 and add the first aarch64 binary
+
+First native run of this host pair: CLI `50bda2e` against a Development SDK built
+on the aarch64 host from CRT `641b034` plus two uncommitted producer changes. The
+CLI toolchain exporter now accepts Linux/aarch64 (it rejected it by design), and
+CRT's `include/fcntl.h` now uses the arm64 kernel values for `O_NOFOLLOW` and
+`O_DIRECTORY`; the x86_64 values had silently disabled `O_NOFOLLOW`, which broke
+imported libc++ `remove_all` on dangling symlinks and failed replay r2 at its final
+cleanup line. A regression test fails on the old header and passes on the new one.
+No CLI code changed. Replay r3 passes 672 native checks, cold 8/0 and warm 0/8
+cache, a clean execve audit and the bare-runtime audit; a stage1/stage2 bootstrap
+loop is byte-identical. `bin/linux-arm64/crt-cli` is added. The header change was
+not replayed on Linux/x86_64, macOS or Windows, and eight unrebuilt `crtmedia`
+tests fail or time out for reasons not investigated.
+[Acceptance](docs/acceptance/bootstrap_acceptance.md#linuxaarch64-native-replay-2026-10-30).
+
 ### Replay the merged sources on macOS/arm64
 
 Native macOS replay of CLI `754ca29` against a Development SDK built from CRT

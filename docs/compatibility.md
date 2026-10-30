@@ -242,6 +242,20 @@ native-child hint for external tools, per-child runtime `PATH` and the `sdk_cons
 for their original sources. Open producer items (Unicode paths, per-library consumer options, `fread` cost, process groups)
 are listed in the Windows record. No promoted combination is adopted.
 
+## Linux/aarch64 Native Replay (2026-10-30)
+
+**Pass, local/unpromoted Linux/aarch64**, CLI `50bda2e96ecb29d4100ac3496053fb02b384ca2d`.
+First replay of this host pair. The Dev SDK was built natively from CRT
+[`641b034`](https://github.com/webos21/crt/commit/641b0346a08914c80c1a51fae443795e3418c06d)
+plus an uncommitted CRT working tree: the toolchain exporter accepts Linux/aarch64
+and `include/fcntl.h` carries the arm64 `O_NOFOLLOW`/`O_DIRECTORY` values (the
+x86_64 values disabled `O_NOFOLLOW`). The SDK is explicitly dirty and used with
+`--allow-dirty-sdk`; patch, test-file, SDK, provider and binary identities are in
+[Linux/aarch64 replay](acceptance/bootstrap_acceptance.md#linuxaarch64-native-replay-2026-10-30).
+No CLI code changed. The CRT header change is only replayed here: Linux/x86_64,
+macOS and Windows must replay it before any combination is approved, and the CRT
+changes need producer review and a clean promoted SDK. The root lock stays unresolved.
+
 ## Linux Merged-source Revalidation (2026-10-30)
 
 **Pass, local/unpromoted Linux/x86_64**, CLI `ddaf288322e3292fbba53bc2bc4946c701ab5241`.

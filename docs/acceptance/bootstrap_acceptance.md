@@ -869,3 +869,113 @@ its fixtures under `$TMPDIR`; and the bootstrap-loop fixed-point test assumed
 byte identity. Open: Windows/arm64 and Linux/aarch64 hosts, actual CLI HTTPS,
 installation, upgrades and promotion.
 
+
+## Linux/aarch64 Native Replay (2026-10-30)
+
+**Pass, native Linux/aarch64; local/unpromoted.** First replay of this host pair.
+CLI `50bda2e96ecb29d4100ac3496053fb02b384ca2d` (clean working tree, no CLI code
+change) against a Development SDK built natively on this aarch64 host from CRT
+`641b0346a08914c80c1a51fae443795e3418c06d` plus the producer changes below. The
+older Linux records are x86_64 only and do not cover this pair.
+
+### Reproduced Producer Gaps and Fixes
+
+Two CRT gaps blocked the replay; the CLI sources needed neither a change nor a
+workaround. Both producer changes are an uncommitted CRT working tree, so the SDK
+records `producer_working_tree_dirty: true` and is used with
+`--allow-dirty-sdk true`. Patch `producer-fix-r3.patch` SHA-256
+`06e2724bfd6ffa4215583e0323a520d4ea21cac34df67c166285d137524cb803`;
+the new test file `libc/tests/open_nofollow_test.c` is untracked and therefore
+hashed separately, `b52ead7d8f758d0a1b09cbf48e2f101b809f0429bbd8cab5aa874653e9420ba9`.
+
+1. **Toolchain export refused the host pair.** `tools/export_cli_toolchain.py`
+   accepted only Linux/x86_64, macOS/arm64 and Windows/x64 and a unit test
+   asserted that Linux/aarch64 is rejected. This was a deliberate scope guard,
+   not a defect; it now also accepts Linux/aarch64 (Linux/riscv64 stays
+   rejected). Replay r1 stopped there.
+2. **`O_NOFOLLOW`/`O_DIRECTORY` were x86_64 values on aarch64 (real defect).**
+   CRT `include/fcntl.h` used one Linux value set. On arm64 the kernel defines
+   `O_DIRECTORY` 040000 and `O_NOFOLLOW` 0100000, so CRT's `0x20000`/`0x10000`
+   reached the kernel as `O_LARGEFILE`/`O_DIRECT`. `O_NOFOLLOW` was silently a
+   no-op, so symlinks were followed. Replay r2 passed every native check and then
+   failed in the final `fs::remove_all(fixture)` with `ENOTEMPTY`: imported
+   libc++ opens each entry with `O_NOFOLLOW` to recognise links, and a dangling
+   link whose target was already removed opened as `ENOENT` and was never
+   unlinked. This depends on directory enumeration order, which is the likely
+   reason x86_64 did not show it; that explanation is inferred, not measured.
+   Minimal reproducer: a C++ `remove_all` over a copy of the SDK (strace shows
+   `openat` without `O_NOFOLLOW`).
+
+   The aarch64 Linux branch of `include/fcntl.h` now carries the kernel values.
+   `libc/tests/open_nofollow_test.c` (Linux and macOS, not Windows) checks ELOOP
+   for a followed and a dangling link and ENOTDIR for `O_DIRECTORY`; it contains a
+   compile-time assertion of the arm64 values. It fails to compile against the
+   old header and, with the assertion removed, fails at run time with the old
+   header (`O_NOFOLLOW on link must fail with ELOOP (errno 0)`); it passes after
+   the fix.
+
+### Isolated Replay and Bootstrap Loop
+
+Producer evidence root: `/home/cmjo/GitLocal/crt/out/cli-linux-aarch64-20261030/`
+(`replay-r1` export refusal and `replay-r2` `remove_all` failure retained next to
+the passing `replay-r3`; the r2 SDK is kept as `dev-sdk-r2-built`). External
+work tree: `/home/cmjo/GitLocal/crt-cli-replay/crt-cli-contract-822ci8w0`.
+Driver `replay_cli_contract_linux.py` with Bubblewrap and strace as on x86_64;
+producer and CLI checkouts hidden, network isolated, environment cleared and
+interpreters/build tools masked. The aarch64 interpreter path was already allowed
+by the driver.
+
+- **672 native checks pass** (the x86_64 count was 660; counts depend on host
+  policy argv and are not a cross-host expectation).
+- Cold self-build **8 executed / 0 reused**; unchanged rebuild
+  **0 executed / 8 reused**.
+- Execve audit: **397 successful execve calls / 22 distinct paths**, no unexpected
+  executable and no shell/Python/CMake/make/Ninja or SDK compiler-wrapper
+  execution. SDK inventory unchanged.
+- Bare help/version/doctor pass with SDK, source, provider and compilers hidden.
+- **Bootstrap loop.** No earlier aarch64 binary exists, so the loop starts from
+  the replay's own bare executable (stage0): stage0 builds the sources into stage1
+  with the new SDK selected by `.sdk.json`; stage1 rebuilds them with a cleared
+  cache into stage2, in the same project path. Stage1 and stage2 are
+  **byte-identical**, SHA-256
+  `98203a636ed7a745d4eec3f294055f003c8fad9a64b9bd3456f2715ccf6089b8`
+  (10,993,840 bytes). Stage2 runs its own suite (672 checks) and a warm rebuild.
+  It differs from stage0 by 392 bytes because a different source path was built;
+  this loop proves a fixed point, not a bootstrap from a previous aarch64 release.
+  Work: `/home/cmjo/GitLocal/crt-cli-replay/loop-aarch64-20261030`.
+
+| Identity / runtime audit | Result |
+| --- | --- |
+| CRT producer | `641b034` + dirty working tree (patch above) |
+| CLI source SHA-256 (driver inventory) | `4ddd0103e2b2533088491b8911bb093132ea4dc6d4fa35c552b5fc8dd6931b7a` |
+| SDK inventory (driver dictionary) | `4696ea1e9c161daa886b0e0aa5dc83a9de014be828ca85d427a96bdf5c81da0c` |
+| SDK content (provider array) | `08d37d8b3f922da2b29ce7e3df82f23d8658b3d33004a185711bc03eba03cc26` |
+| Provider SHA-256 | `9c69e67fdd30acd263e59d08339bd27bdd67caa1e5954bb5937c3255538f47aa` |
+| Bare CLI bytes / SHA-256 | 10,994,232 / `94ba0f0c37159e6aa07fe78ea637fd202b658cab45daca70680c380f12450eea` |
+| ELF DT_NEEDED / RPATH / RUNPATH | All empty |
+| Interpreter | `/lib/ld-linux-aarch64.so.1` |
+| PAL-reported images | Bare CLI, `/lib/ld-linux-aarch64.so.1`, `linux-vdso.so.1` |
+| Doctor | C++ ownership/exceptions, zlib, HTTP/Mbed TLS initialization pass |
+| CLI HTTPS / authenticated integrity | `not_run` / `not_verified` |
+
+The bare executable is committed as `bin/linux-arm64/crt-cli`.
+
+### Producer Checks and Limits
+
+- All 128 `libc/tests` executables were rebuilt after the header edit (file
+  timestamps newer than `include/fcntl.h`). Together with the new
+  `open_nofollow_test` they pass under `ctest`. The full `ctest -j3` run reports
+  **201 of 209** passing. The eight failures are all `crtmedia_*`: six hardware decode/encode
+  tests time out at 300 s and two assert. Their binaries date from 2026-10-21 and
+  were **not rebuilt** with the fixed header, so they neither confirm nor refute
+  it; `crtmedia_http_lifecycle_test` passed 3 of 3 when rerun alone and
+  `crtmedia_playback_pipeline_test` passed 2 of 3, so those two look
+  timing-dependent under `-j3`. The VAAPI timeouts were not investigated here and
+  are not claimed as caused or unaffected by the change.
+- The fix is applied only to the aarch64 Linux branch, so it cannot change
+  x86_64, macOS or Windows output. That was not replayed here: the header
+  change still needs a replay on those hosts at the next sync.
+- Not covered: CLI HTTPS, installation/upgrade, Linux/aarch64 behavior under a
+  clean (non-dirty) promoted SDK, and the remaining `crtmedia` results above.
+  No commit, push, public release or production lock adoption is implied; the
+  tracked root lock stays unresolved.

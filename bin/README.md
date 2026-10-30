@@ -11,7 +11,7 @@ release artifacts.
 | --- | --- | --- |
 | macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `e1d65adafc806c21b227c61d966947bdbc45003f15d80f072b1c6b9af8d6de44` (3,023,032 bytes; 2026-10-30 replay of `754ca29`) |
 | Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `a44197764f1361b6691dc145f03fd794a880eb9fd1d4d5601a669f4cb0f3044d` (10,928,472 bytes) |
-| Linux/aarch64 | `bin/linux-arm64/crt-cli` | pending: build on a Linux/aarch64 host |
+| Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `94ba0f0c37159e6aa07fe78ea637fd202b658cab45daca70680c380f12450eea` (10,994,232 bytes; 2026-10-30 replay, dirty local SDK) |
 | Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `183e1e6c7f60cfc823ca0e4e260ff913b252798b5b0d0daebe82c9f3a7529806` (16,883,200 bytes, built `-O1 -g`) |
 | Windows/arm64 | `bin/win-arm64/crt-cli.exe` | pending: build on a Windows/arm64 host |
 
@@ -34,3 +34,10 @@ non-Windows SETPGROUP fix (explicit dirty local candidate). Native suite,
 execve audit and the previous-binary -> new-SDK -> self-build loop pass. See
 [Linux revalidation](../docs/acceptance/bootstrap_acceptance.md#linux-revalidation-after-windows-changes-2026-10-30).
 The prior `cfc41532...` Linux result remains historical, not overwritten evidence.
+
+The Linux/aarch64 binary is the 2026-10-30 replay's bare executable: no DT_NEEDED/RPATH/RUNPATH,
+interpreter `/lib/ld-linux-aarch64.so.1` only. It was built against a local Dev SDK from CRT `641b034`
+plus an uncommitted fix to the aarch64 `O_NOFOLLOW`/`O_DIRECTORY` values and a Linux/aarch64 toolchain-export
+allowance (explicit dirty local candidate). The first aarch64 build has no earlier aarch64 binary, so the
+bootstrap loop proves a stage1/stage2 fixed point, not a bootstrap from a previous release. See
+[Linux/aarch64 replay](../docs/acceptance/bootstrap_acceptance.md#linuxaarch64-native-replay-2026-10-30).
