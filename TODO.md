@@ -69,8 +69,10 @@ These are future increments, not implemented features.
   environment/project diagnosis, env/shell and per-child environments.
 - [ ] Verify actual CRT mksh/toybox/awk/make, SDK-free CLI execution, paths,
   private DLL resolution, and bounded owned-process cleanup.
-- [ ] Decide the Windows narrow-path model with CRT (UTF-8 narrow paths over wide calls versus ANSI), fix CLI
-  dependency-file paths and rerun the Unicode cases; replay `fetch` and the new sources on the other hosts and Windows/x64.
+- [ ] Decide the Windows narrow-string model with CRT (proposal: UTF-8 active-code-page manifest, wide calls as fallback;
+  [design](https://github.com/webos21/crt/blob/main/docs/design/windows_narrow_strings.md), prototype passes), then ship the SDK
+  manifest policy, add the doctor check and UTF-8 path validation, enable the Unicode suite fixture and replay on Windows.
+- [ ] Replay `fetch` and the new sources on the other hosts and Windows/x64.
 - [ ] Pass [D1-07 HTTPS bootstrap](docs/acceptance/bootstrap_acceptance.md#sdk-free-https-bootstrap-gate)
   with only the shipped CLI runtime/trust inputs; exercise invalid trust and
   tampered metadata/artifacts without SDK/global DLL fallback. Partial: `fetch` and 17 loopback cases pass on

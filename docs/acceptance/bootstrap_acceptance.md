@@ -1178,7 +1178,8 @@ every host, and the CRT narrow-string model (ANSI for the OS, UTF-8 for conversi
 public PAL decision (for example UTF-8 narrow paths with wide system calls). No workaround
 was added to the CLI, because converting between UTF-8 and the ANSI code page needs a
 platform query that belongs in CRT's PAL, and silently best-fit paths cannot be repaired
-above it. Evidence: `unicode/` (probe sources, outputs, CLI run).
+above it. The follow-up [model prototype](#windows-narrow-string-model-prototype-2026-10-31)
+shows that a UTF-8 active-code-page manifest removes the failure without a CLI source change. Evidence: `unicode/` (probe sources, outputs, CLI run).
 
 ### Release-asset SDK (not a promotion)
 
@@ -1232,3 +1233,64 @@ Open: Windows/x64 replay of the CRT changes and of `fetch`; a Linux/macOS replay
 sources; the Unicode-path decisions above; ws2_32 loader hardening; a signed-metadata policy,
 real-publisher HTTPS and an SDK-hidden fetch run; an actual promoted SDK. The CRT commits need
 producer review. No public release or production lock is adopted.
+
+## Windows Narrow-String Model Prototype (2026-10-31)
+
+**Prototype pass, native Windows/arm64; nothing implemented in the SDK or committed to
+the CLI sources.** Follows the Unicode-path finding of the
+[previous record](#windowsarm64-https-fetch-unicode-paths-and-release-asset-sdk-2026-10-31).
+The proposal is CRT's
+[Windows Narrow-String Model](https://github.com/webos21/crt/blob/main/docs/design/windows_narrow_strings.md):
+narrow strings are UTF-8, obtained on Windows 10 1903 or later by embedding an
+`activeCodePage=UTF-8` application manifest in every CRT-built executable through the SDK's
+link policy. This record is the evidence for that proposal, not an acceptance of it.
+
+### What Was Run
+
+All on the Windows/arm64 host of the earlier records (active code page 949), CRT SDK
+from clean `67f9516`, LLVM 22.1.8. The manifest was a loose file linked with
+`-Wl,/manifest:embed -Wl,/manifestinput:<file>`; for the CLI, a copy of the provider JSON
+whose `executable-*` link vectors gain those two arguments before `@OBJECTS@` (six
+vectors). The SDK, the committed CLI sources and the real provider were not changed. The
+files are in the evidence root (`narrow-strings/`).
+
+| Step | Without the manifest | With the manifest |
+| --- | --- | --- |
+| probe `GetACP()` | 949 | 65001 |
+| probe `argv` Hangul / `é` | CP949 bytes / best-fit `e` | UTF-8 bytes / UTF-8 `é` |
+| probe environment value | CP949 | UTF-8 |
+| C `mkdir`/`fopen`/`readdir`, libc++ `filesystem` and `ofstream`, UTF-8 name | `ENOENT` / exception | all work |
+| invalid UTF-8, encoded lone surrogate | n/a | accepted as U+FFFD names |
+| emoji, NFC and NFD names | n/a | created as written, distinct |
+| two `/manifestinput` files | n/a | merged, both settings embedded |
+| CLI built with the manifest: `new`, `configure`, `build`, `test`, `run` in `한글 é 공백/hello` | `build` fails | all exit 0, JSON paths valid UTF-8, program prints `Hello from CRT` |
+| native suite, CLI and suite built with the manifest, Windows fixture directory renamed to `space 한글 é @ $(touch never-execute)` | not applicable | **777 checks pass** |
+
+The clang child received the Hangul/`é` path correctly and wrote its dependency file in
+UTF-8, which the manifested CLI read back: the original `build` failure disappears with
+no CLI source change. The suite fixture rename was not committed, because the current SDK
+supplies no manifest and the rename would fail the existing Windows replay; it belongs to
+the SDK increment of the design. The suite ran with the manifest-built builder and
+provider copy only; the Windows/x64 pair, an SDK that actually ships the file, and
+CRT's own tools and tests (mksh, toybox, awk, make, `crt-c-test`) were **not** run with
+the manifest.
+
+### Findings
+
+- **Invalid bytes collide.** `mkdir` of two different invalid UTF-8 names creates two
+  directories whose names are both made of U+FFFD, and the encoded lone surrogate maps the
+  same way; the OS does not report the error. A caller that takes paths from untrusted
+  input must validate UTF-8 first. The CLI does not yet; this is a CLI follow-up.
+- **The process-wide setting is all or nothing.** It cannot be chosen by a library; CRT
+  shared-runtime DLLs inside a foreign host and executables linked without the policy stay
+  ANSI. The design asks for a detectable query rather than an abort.
+- **No new runtime import.** The manifest is data in the executable; imports stay
+  `kernel32.dll` plus the API-set DLL.
+
+### Limits and Decisions
+
+Prototype only: absolute manifest path, one host, one architecture, no SDK change. The
+owner decisions (accept the manifest model or require wide calls; minimum Windows build
+1903; the query; opt-out; validation ownership) are listed in the CRT document. The
+Windows Unicode-path requirement of this repository remains **not met** until the SDK
+ships the manifest policy and the Windows suite passes with the Unicode fixture.

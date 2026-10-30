@@ -11,6 +11,18 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-10-31
 
+### Design the Windows narrow-string model and prototype it
+
+The Hangul-path `build` failure traced to two narrow encodings on Windows (ANSI for `argv`, environment, file calls and
+libc++; UTF-8 for `mbstowcs`, `nl_langinfo`, the PAL image paths and clang). CRT's new
+[design document](https://github.com/webos21/crt/blob/main/docs/design/windows_narrow_strings.md) compares keeping ANSI, an
+`activeCodePage=UTF-8` manifest and wide calls inside CRT, and recommends the manifest (Windows 10 1903+) with the wide-call
+rewrite as the fallback. A prototype linked the CLI through a provider copy that adds the manifest: `new`, `configure`,
+`build`, `test` and `run` pass in a Hangul, `é` and space directory, and the native suite passes 777 checks with a Unicode
+fixture, with no CLI source change; invalid UTF-8 is silently mapped to U+FFFD, so callers must validate. Nothing was
+implemented in the SDK and the fixture change was not committed. The owner decisions are open.
+[Acceptance](docs/acceptance/bootstrap_acceptance.md#windows-narrow-string-model-prototype-2026-10-31).
+
 ### Add `fetch`, measure Windows Unicode paths and replay against a release-asset SDK
 
 On Windows/arm64: the CLI gained a minimal `fetch` command (explicit CA file, always-on verification, size cap, pinned SHA-256,

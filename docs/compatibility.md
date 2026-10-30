@@ -283,6 +283,15 @@ this target, the promoted-SDK criterion is not met and no pin is adopted. Window
 decision; `ws2_32.dll` is loaded by name from the PAL. Details:
 [acceptance](acceptance/bootstrap_acceptance.md#windowsarm64-https-fetch-unicode-paths-and-release-asset-sdk-2026-10-31).
 
+## Windows Narrow-String Model (2026-10-31)
+
+**Proposal with a local prototype, not an adopted contract.** A CRT SDK that embeds a UTF-8 active-code-page manifest in
+executables through its link policy would make Windows `char*` UTF-8 for the CLI and the projects it builds; the provider
+would carry the option, so the CLI needs no hard-coded flag. Requirements it would add: Windows 10 1903 or later for
+non-ASCII paths, and a CRT query for detecting a process without the setting. Today's SDKs and pins are unaffected. See the
+CRT [design](https://github.com/webos21/crt/blob/main/docs/design/windows_narrow_strings.md) and the
+[prototype record](acceptance/bootstrap_acceptance.md#windows-narrow-string-model-prototype-2026-10-31).
+
 ## Linux Merged-source Revalidation (2026-10-30)
 
 **Pass, local/unpromoted Linux/x86_64**, CLI `ddaf288322e3292fbba53bc2bc4946c701ab5241`.
