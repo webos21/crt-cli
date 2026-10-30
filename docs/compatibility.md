@@ -320,3 +320,18 @@ The checklist is manual now. Lightweight automated reference/owner/version/
 capability and TODO-to-acceptance checks are planned, not an existing CI job.
 They must not require identical Markdown across owners or rebuild WebKit for
 every documentation edit. Remote link availability was not a runtime test.
+
+## macOS Merged-source Revalidation (2026-10-30)
+
+**Pass, local/unpromoted macOS/arm64**, CLI `754ca2992e7b6b2ffa339d965f6085f05f505297`.
+The Windows-shared process, hash, output, HTTP, cache and `.sdk.json` changes now
+have macOS evidence against a Development SDK built from CRT
+[`74ea992`](https://github.com/webos21/crt/commit/74ea992a4ef702c853435cb6319e329647db7cee)
+(dirty only by the macOS replay driver; used with explicit dirty-SDK acceptance).
+The common `POSIX_SPAWN_SETPGROUP` fix works on macOS. The previously committed
+macOS executable bootstraps the current sources, and the result rebuilds them
+through `.sdk.json`; the two builds match in code and data segments but not in
+`LC_UUID`/`__LINKEDIT`, which ld64 varies per build. Details and hashes:
+[macOS revalidation](acceptance/bootstrap_acceptance.md#macos-revalidation-after-windows-and-linux-changes-2026-10-30).
+No production lock is adopted and the root lock stays unresolved.
+

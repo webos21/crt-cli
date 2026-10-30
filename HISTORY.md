@@ -11,6 +11,16 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-10-30
 
+### Replay the merged sources on macOS/arm64
+
+Native macOS replay of CLI `754ca29` against a Development SDK built from CRT
+`74ea992`: 700 native checks, cold 8/0 and warm 0/8 cache, a bootstrap loop from
+the previous committed binary and a bare-runtime/import audit pass without CLI
+changes. Stage1 and stage2 match in code and data and differ only in `LC_UUID`
+and `__LINKEDIT`, so the macOS fixed-point criterion is segment identity. The
+committed `bin/macos/crt-cli` is refreshed.
+[Acceptance](docs/acceptance/bootstrap_acceptance.md#macos-revalidation-after-windows-and-linux-changes-2026-10-30).
+
 ### Revalidate the Windows-merged sources on Linux and refresh the test binary
 
 The merged Windows changes affected shared process creation, hashing, output,

@@ -9,7 +9,7 @@ release artifacts.
 
 | Host | Path | Status |
 | --- | --- | --- |
-| macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `152b027f053fa7150dc7a3170ee361fd9615e2f305a915d45bef984576a5a55b` (2,983,112 bytes) |
+| macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `e1d65adafc806c21b227c61d966947bdbc45003f15d80f072b1c6b9af8d6de44` (3,023,032 bytes; 2026-10-30 replay of `754ca29`) |
 | Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `a44197764f1361b6691dc145f03fd794a880eb9fd1d4d5601a669f4cb0f3044d` (10,928,472 bytes) |
 | Linux/aarch64 | `bin/linux-arm64/crt-cli` | pending: build on a Linux/aarch64 host |
 | Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `183e1e6c7f60cfc823ca0e4e260ff913b252798b5b0d0daebe82c9f3a7529806` (16,883,200 bytes, built `-O1 -g`) |
@@ -19,7 +19,7 @@ macOS ships only arm64, so it keeps the single `bin/macos/` directory. Linux and
 Windows are split by architecture: `linux-x64`, `linux-arm64`, `win-x64`, `win-arm64`.
 
 The macOS binary imports only `/usr/lib/libSystem.B.dylib` and has no RPATH. Evidence:
-[macOS acceptance](../docs/acceptance/bootstrap_acceptance.md#incremental-build-cache-and-committed-binary-2026-10-29).
+[macOS acceptance](../docs/acceptance/bootstrap_acceptance.md#macos-revalidation-after-windows-and-linux-changes-2026-10-30).
 
 The Windows/x64 binary imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`; it was built by the CLI itself
 against a clean local Dev SDK (CRT `d054a66`). Evidence:

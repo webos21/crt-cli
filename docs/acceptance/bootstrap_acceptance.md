@@ -810,3 +810,62 @@ binary and old ignored `.sdk.json` are retained under the evidence root.
 The ignored `.sdk.json` now selects this handoff; the tracked root lock remains
 unresolved. No commit/push, public release, production lock adoption, general
 process-tree cancellation or new macOS/Windows pass is implied by this replay.
+
+## macOS Revalidation After Windows and Linux Changes (2026-10-30)
+
+**Pass, native macOS/arm64; local/unpromoted.** Replayed CLI
+`754ca2992e7b6b2ffa339d965f6085f05f505297` (unmodified working tree), which
+carries the Windows-shared `posix_spawn` runner, descriptor hashing, pipe drain,
+output retirement, per-source SDK options, HTTP module and `.sdk.json`. The
+older macOS records (`replay-r5`, `replay-r7`) cover earlier sources only. No CLI
+code change was needed.
+
+Producer: CRT `74ea992a4ef702c853435cb6319e329647db7cee` (includes the common
+non-Windows `POSIX_SPAWN_SETPGROUP` fix) built natively as the Development SDK
+`development` with `crt-development-sdk-test`; the tree also held the uncommitted
+macOS replay-driver edit, so the SDK records `producer_working_tree_dirty: true` and
+is used with `--allow-dirty-sdk true`. No producer source other than that driver
+differs from the commit. Evidence root in the CRT checkout:
+`out/cli-contract-20261029/replay-r10/` (earlier attempts r8, r9 retained).
+
+Driver `tools/replay_cli_contract_macos.py` (Seatbelt: network and producer/CLI
+trees denied; only the declared compiler, linker, `ar`/`ranlib`, the CRT-native
+seed and the fixtures built under `$TMPDIR` may execute): provider export, CRT-native
+seed from provider argv, configure/build, cold self-build, cached rebuild,
+bootstrap loop, native suite, bare-runtime checks and the single-import audit.
+
+- **700 native checks pass** (C and C++ projects, six typed variants, cache
+  invalidation/reuse, local `.sdk.json`, SDK-store selection, hostile paths, exit-7
+  failures, timeout 124, bounded stdout).
+- Cold self-build **8 executed / 0 reused**; unchanged rebuild **0 / 8 reused**.
+- **Bootstrap loop:** the previously committed macOS executable
+  (`152b027f...`, which predates `.sdk.json`) configures with explicit flags and
+  builds the current sources (stage1); stage1 then configures from `.sdk.json`
+  alone, with its objects and lock cleared, and rebuilds them (stage2, 8 executed /
+  0 reused). Stage1 and stage2 differ in **246 of 3,023,112 bytes**: 16 in
+  `LC_UUID` and 230 in `__LINKEDIT`. Every load command and the `__TEXT`,
+  `__DATA_CONST` and `__DATA` bytes are identical. ld64 derives the UUID from its
+  inputs and records each object file's modification time in the debug map next to
+  the ad-hoc signature hashes, so two macOS builds are never byte-identical;
+  Linux's byte-identical stage1/stage2 result is not expected here. The criterion is
+  therefore identical code/data segments with differences confined to those two
+  regions (`bootstrap-loop.json`).
+- Bare help/version/doctor pass with SDK, source, provider and compilers hidden;
+  the executable imports only `/usr/lib/libSystem.B.dylib`, has no RPATH and
+  carries its own allocator; SDK inventories are unchanged.
+
+| Identity | Value |
+| --- | --- |
+| SDK inventory SHA-256 | `69f151a392e3177d045612f8763d5c7a30594ff2618e02dd689baabc07c5c51d` |
+| Provider SHA-256 | `212a402f8b4c3239d234ab894e3d70c437a58491b83d93db6ff0894d4c9e1018` |
+| CLI source tree SHA-256 (driver inventory of the copied checkout) | `6952842c280cc916655af4b07da2ab97283dbb85da5f251d924070306f152ffd` |
+| Bare CLI bytes / SHA-256 | 3,023,032 / `e1d65adafc806c21b227c61d966947bdbc45003f15d80f072b1c6b9af8d6de44` |
+
+The bare executable is committed as `bin/macos/crt-cli`.
+
+Two driver defects found on the way, neither in the CLI: the Seatbelt policy
+allowed execution only under a literal `/private/tmp`, while the suite now builds
+its fixtures under `$TMPDIR`; and the bootstrap-loop fixed-point test assumed
+byte identity. Open: Windows/arm64 and Linux/aarch64 hosts, actual CLI HTTPS,
+installation, upgrades and promotion.
+
