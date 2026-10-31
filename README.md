@@ -79,3 +79,13 @@ missing prerequisites rather than change security settings automatically.
 
 Design and bootstrap contributions should preserve the SDK-only consumer
 boundary and avoid making the CRT runtime depend on CLI sources.
+
+## License
+
+Unless otherwise noted, project-owned source code and documentation in this
+repository are licensed under the [Apache License, Version 2.0](LICENSE)
+(SPDX identifier: `Apache-2.0`).
+
+The CRT runtime and other third-party components retain their respective
+licenses. See [dependency ownership and notices](third_party/README.md);
+the project license does not replace their license or notice requirements.

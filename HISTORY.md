@@ -11,6 +11,16 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-10-31
 
+### Declare the CRT-CLI project license
+
+Added the Apache License, Version 2.0 text in the root `LICENSE` and declared
+`Apache-2.0` for project-owned source code and documentation in the README,
+unless otherwise noted. CRT and other third-party components retain their own
+licenses and redistribution notices. Verified the adjacent CRT repository's
+`LICENSE.md` at `4e8606c`: its project-owned default is BSD-style with two
+conditions, and imported components retain their original licenses; CRT is
+not licensed project-wide under Apache-2.0. This change applies to CRT-CLI only.
+
 ### Implement the Windows UTF-8 narrow-string model
 
 Adopting the manifest option (B), CRT now ships `share/crt/windows/utf8.manifest`, its `crt-cc`/`crt-c++` wrappers and in-tree
