@@ -10,12 +10,18 @@ objects, sysroots, special compiler flags, or runtime search paths.
 
 ## Project Maturity
 
-The Linux/x86_64 and macOS/arm64 bootstraps consume a produced Dev SDK. The native C++ builder
+Local native bootstrap replays are recorded for Linux/x86_64, Linux/aarch64,
+macOS/arm64, Windows/x64 and Windows/arm64 at their exact source/SDK snapshots.
+The native C++ builder
 reads `crt.json` and invokes LLVM directly. `new` creates separate C/C++ files
 under `src/main/` and `src/test/`, with headers in `include/`; bounded configure/build/test/run and bootstrap
 doctor are implemented. CMake, Python and shell are excluded from this app path.
-The SDK installer, dependency resolver, self-upgrade, Windows native replay
-and public release remain pending.
+The SDK installer, dependency resolver, self-upgrade, complete current-source
+native matrix and public release remain pending.
+`fetch` can verify a detached RSA-PSS signature against an explicitly supplied
+public key. Official publisher keys and signed-release policy remain unassigned;
+the [D1 audit](docs/acceptance/bootstrap_acceptance.md#d1-publisher-and-host-environment-audit-2026-10-31)
+records the measured scope and remaining gates.
 
 See the [build guide](docs/guides/development.md#build-and-test-the-bootstrap)
 and [implemented contract](docs/reference/bootstrap_contract.md) for actual

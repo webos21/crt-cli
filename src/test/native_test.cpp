@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <spawn.h>
 #include <cstdlib>
 using namespace crtcli;
 namespace {
@@ -18,6 +19,14 @@ Json invoke(const std::string& cli, std::vector<std::string> args, bool success 
 }
 }
 int main(int argc, char** argv) {
+    if (argc == 3 && std::string(argv[1]) == "--tree-child") { sleep(2); write_text(argv[2], "descendant ran\n"); return 0; }
+    if (argc == 3 && std::string(argv[1]) == "--tree-parent") {
+        char* child_args[] = {argv[0], const_cast<char*>("--tree-child"), argv[2], nullptr};
+        pid_t child;
+        if (posix_spawn(&child, argv[0], nullptr, nullptr, child_args, environ) != 0) return 17;
+        sleep(10);
+        return 0;
+    }
     if (argc == 2 && std::string(argv[1]) == "--sleeper") { sleep(10); return 0; }
     if (argc == 2 && std::string(argv[1]) == "--flood") {
         std::string block(65536, 'x');
@@ -58,6 +67,14 @@ int main(int argc, char** argv) {
                                  with("--size", "-1"), with("--ca-file", cli + ".missing"), with("--output", cli)})
             invoke(cli, args, false);
         check(!fs::exists(cli + ".fetched"), "a rejected fetch publishes nothing");
+        for (const auto& option : {"--publisher-key", "--signature"}) {
+            auto args = fetch_base;
+            args.insert(args.end(), {option, cli});
+            invoke(cli, args, false);
+        }
+        auto invalid_key = fetch_base;
+        invalid_key.insert(invalid_key.end(), {"--publisher-key", cli, "--signature", cli});
+        invoke(cli, invalid_key, false);
         // The temporary root comes from the environment (TMPDIR, then TEMP); a literal /tmp does not exist everywhere.
         const char* temporary_root = std::getenv("TMPDIR") ? std::getenv("TMPDIR") : std::getenv("TEMP") ? std::getenv("TEMP") : "/tmp";
         std::string temporary = (fs::path(temporary_root) / "crt-cli-native-XXXXXX").string();
@@ -76,6 +93,13 @@ int main(int argc, char** argv) {
         check(rejected, "duplicate JSON keys");
         auto timeout = execute({fs::canonical(argv[0]).string(), "--sleeper"}, 1, false);
         check(timeout.timed_out && timeout.exit_code == 124, "owned process timeout");
+        auto marker = fixture / "descendant-marker";
+        auto control = execute({fs::canonical(argv[0]).string(), "--tree-parent", marker.string()}, 4, false);
+        check(control.timed_out && fs::exists(marker), "descendant control actually executes before a later timeout");
+        fs::remove(marker);
+        auto tree = execute({fs::canonical(argv[0]).string(), "--tree-parent", marker.string()}, 1, false);
+        sleep(3);
+        check(tree.timed_out && tree.exit_code == 124 && !fs::exists(marker), "timeout kills owned descendants before delayed writes");
         auto flood = execute({fs::canonical(argv[0]).string(), "--flood"}, 30, false);
         check(flood.exit_code == 0 && flood.output_truncated && flood.output.size() == 8 * 1024 * 1024, "bounded stdout capture without pipe deadlock");
         auto local = read_json(project_root / ".crt/local.json");

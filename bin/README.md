@@ -4,13 +4,13 @@ For hands-on testing and to steer the contract, the final executable of each hos
 committed here until a release process exists. These are **local, unpromoted**
 builds, not releases: they are built by the CLI itself (`crt-cli build`) from the
 committed `src/` and `include/` against a locally produced Development SDK whose
-provenance is dirty (`--allow-dirty-sdk`). Do not treat them as signed or reproducible
+provenance is recorded per host below (some require `--allow-dirty-sdk`). Do not treat them as signed or reproducible
 release artifacts.
 
 | Host | Path | Status |
 | --- | --- | --- |
 | macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `e1d65adafc806c21b227c61d966947bdbc45003f15d80f072b1c6b9af8d6de44` (3,023,032 bytes; 2026-10-30 replay of `754ca29`) |
-| Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `a44197764f1361b6691dc145f03fd794a880eb9fd1d4d5601a669f4cb0f3044d` (10,928,472 bytes) |
+| Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `2a84c61debf31ce87c441f21ca4b0111701e6773567199aa5a2ec71a34e79967` (12,066,824 bytes; 2026-10-31 D1 experiment, base `36c6f65` plus signature/test delta, clean local CRT `f826397`) |
 | Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `94ba0f0c37159e6aa07fe78ea637fd202b658cab45daca70680c380f12450eea` (10,994,232 bytes; 2026-10-30 replay, dirty local SDK) |
 | Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `183e1e6c7f60cfc823ca0e4e260ff913b252798b5b0d0daebe82c9f3a7529806` (16,883,200 bytes, built `-O1 -g`) |
 | Windows/arm64 | `bin/win-arm64/crt-cli.exe` | present; SHA-256 `2cfd57291e983cf2a171c29271a3319aac05c558f0586a5b30c69a50005e03a5` (18,779,136 bytes, built `-O1 -g`; 2026-10-31 replay with `fetch` and UTF-8 narrow strings, SDK extracted from a local release-asset ZIP of CRT `85546d9`) |
@@ -37,14 +37,17 @@ one's loop was not repeated. See
 [fetch, Unicode and release-asset record](../docs/acceptance/bootstrap_acceptance.md#windowsarm64-https-fetch-unicode-paths-and-release-asset-sdk-2026-10-31) and
 [UTF-8 narrow strings](../docs/acceptance/bootstrap_acceptance.md#windows-utf-8-narrow-strings-implemented-2026-10-31).
 
-The Linux/x86_64 binary is the 2026-10-30 merged-source replay's bare executable:
+The Linux/x86_64 binary is the 2026-10-31 D1 audit replay's bare executable:
 no DT_NEEDED/RPATH/RUNPATH, interpreter `/lib64/ld-linux-x86-64.so.2` only.
 With SDK/source/provider/compiler access hidden, help/version/doctor pass;
-PAL images are the CLI, loader and vdso. It uses CRT `a46e430` plus the recorded
-non-Windows SETPGROUP fix (explicit dirty local candidate). Native suite,
-execve audit and the previous-binary -> new-SDK -> self-build loop pass. See
-[Linux revalidation](../docs/acceptance/bootstrap_acceptance.md#linux-revalidation-after-windows-changes-2026-10-30).
-The prior `cfc41532...` Linux result remains historical, not overwritten evidence.
+PAL images are the CLI, loader and vdso. It uses a fresh clean CRT `f826397` Dev
+SDK with `crt-narrow-encoding-1`. The native suite passes 692 checks, including
+owned-descendant timeout control, and 32 HTTPS/signature cases pass with SDKs,
+sources and providers hidden. Explicit-key signatures are experimental; no
+official publisher key or complete D1 acceptance is claimed. See
+[D1 audit](../docs/acceptance/bootstrap_acceptance.md#d1-publisher-and-host-environment-audit-2026-10-31).
+The prior `a611f6c5...` executable/config are retained under the D1 evidence root;
+the earlier `a4419776...` result remains in the preceding revalidation record.
 
 The Linux/aarch64 binary is the 2026-10-30 replay's bare executable: no DT_NEEDED/RPATH/RUNPATH,
 interpreter `/lib/ld-linux-aarch64.so.1` only. It was built against a local Dev SDK from CRT `641b034`

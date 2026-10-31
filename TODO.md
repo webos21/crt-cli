@@ -22,10 +22,14 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
 
 ## In Progress
 
-### D0 - SDK Consumer Contracts and Bootstrap Definition
+### D0/D1 - SDK Consumer Contracts, Bootstrap and Trust
 
-Current focus: PAL-only native contract, typed build targets and SDK-owned
-JSON/SHA-2, followed by candidate coherence.
+Current focus: remaining D1 trust/environment gates after the Linux audit.
+Explicit-key signature verification is implemented; official trust anchors,
+host-tools/env/shell contracts and unavailable native Windows/macOS cases remain
+open. Linux/x86_64 passes against a fresh clean-source Dev SDK with
+`crt-narrow-encoding-1`; the exact scope is in
+[the latest Linux record](docs/acceptance/bootstrap_acceptance.md#linux-latest-source-revalidation-2026-10-31).
 Temporary: each host's final executable is committed under `bin/` (`macos`, `linux-x64`,
 `linux-arm64`, `win-x64`, `win-arm64`; see `bin/README.md`). All five are present;
 `linux-arm64` and `win-arm64` were added on 2026-10-30. Local SDK/tool inputs live in the ignored `.sdk.json`.
@@ -48,11 +52,16 @@ Public SDK release is not a prerequisite; CLI consumption stays SDK-only.
   manifest/lock inputs; the general SDK/project contracts remain distinct.
 - [ ] **D0.5** Implement bounded help/version/bootstrap diagnosis and check
   single-executable link feasibility for the chosen CRT/C++/HTTP/TLS stack.
-  Linux/x86_64, Linux/aarch64, macOS/arm64, Windows/x64 and Windows/arm64 pass (local, unpromoted); the merged Windows changes now pass Linux/x86_64 and macOS replay (2026-10-30), and the Linux/aarch64 pair passes after a CRT `fcntl.h` fix that Windows/arm64 compiled and passed with but Linux/x86_64, macOS and Windows/x64 replay still have to confirm.
+  All five native pairs pass at their recorded local/unpromoted snapshots.
+  Linux/x86_64 now replays the latest fetch/encoding sources and CRT `fcntl.h`/PAL
+  changes (2026-10-31); the latest-source Windows/x64, macOS and Linux/aarch64
+  replays remain open.
 - [ ] **D0.6** Validate relocated build/run/imports with producer trees unavailable;
   Linux, macOS/arm64 and Windows/x64 pass ([Windows evidence](docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-windowsx64-2026-10-29));
   [macOS evidence](docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-macosarm64-2026-10-29).
-  [Current Linux merged-source replay](docs/acceptance/bootstrap_acceptance.md#linux-revalidation-after-windows-changes-2026-10-30) passes; [macOS merged-source replay](docs/acceptance/bootstrap_acceptance.md#macos-revalidation-after-windows-and-linux-changes-2026-10-30) passes. [Linux/aarch64 replay](docs/acceptance/bootstrap_acceptance.md#linuxaarch64-native-replay-2026-10-30) and [Windows/arm64 replay](docs/acceptance/bootstrap_acceptance.md#windowsarm64-native-replay-2026-10-30) pass.
+  [Earlier Linux merged-source replay](docs/acceptance/bootstrap_acceptance.md#linux-revalidation-after-windows-changes-2026-10-30), [macOS merged-source replay](docs/acceptance/bootstrap_acceptance.md#macos-revalidation-after-windows-and-linux-changes-2026-10-30), [Linux/aarch64 replay](docs/acceptance/bootstrap_acceptance.md#linuxaarch64-native-replay-2026-10-30) and [Windows/arm64 replay](docs/acceptance/bootstrap_acceptance.md#windowsarm64-native-replay-2026-10-30) pass at their recorded snapshots.
+  The [latest Linux D1 audit](docs/acceptance/bootstrap_acceptance.md#d1-publisher-and-host-environment-audit-2026-10-31)
+  additionally covers the experimental signature primitive.
 - [ ] **D0.7** Link exact candidate/case evidence in [compatibility](docs/compatibility.md),
   resolve asset coherence with CRT and adopt final pins only after producer promotion.
 
@@ -71,13 +80,22 @@ These are future increments, not implemented features.
   private DLL resolution, and bounded owned-process cleanup.
 - [ ] Windows UTF-8 narrow strings are implemented and pass on Windows/arm64
   ([record](docs/acceptance/bootstrap_acceptance.md#windows-utf-8-narrow-strings-implemented-2026-10-31)); replay on Windows/x64,
-  run CRT's host tools in Unicode directories, and rebuild the Linux and macOS SDKs with the new capability before replaying there.
-- [ ] Replay `fetch` and the new sources on the other hosts and Windows/x64.
+  run CRT's host tools in Unicode directories, and rebuild the remaining Linux/aarch64
+  and macOS SDKs with the new capability before replaying there. Linux/x86_64 passes.
+- [ ] Replay `fetch` and the new sources on macOS, Linux/aarch64 and Windows/x64.
 - [ ] Pass [D1-07 HTTPS bootstrap](docs/acceptance/bootstrap_acceptance.md#sdk-free-https-bootstrap-gate)
   with only the shipped CLI runtime/trust inputs; exercise invalid trust and
   tampered metadata/artifacts without SDK/global DLL fallback. Partial: `fetch` and 17 loopback cases pass on
   Windows/arm64 ([record](docs/acceptance/bootstrap_acceptance.md#windowsarm64-https-fetch-unicode-paths-and-release-asset-sdk-2026-10-31));
-  a signed-metadata policy, a real publisher and an SDK-hidden run remain.
+  a signed-metadata policy and a real publisher remain. Linux/x86_64 also passes
+  all 17 controlled-endpoint cases with SDK/source/provider hidden (2026-10-31);
+  Windows/arm64's SDK-hidden HTTPS run and the other native hosts remain open.
+  The [D1 audit](docs/acceptance/bootstrap_acceptance.md#d1-publisher-and-host-environment-audit-2026-10-31)
+  adds explicit-key signature cases and a real repository HTTPS probe; qualify
+  official key ownership/distribution, signed-release metadata and anti-replay policy.
+- [ ] Define the independent host-tools contract and CLI port-build adapter;
+  retain the measured make `SHELL` space-path failure and declare its temporary
+  native-tool bridge. Qualify the notices/trust package and remaining D1 negatives.
 
 ### D2 - Safe SDK Management
 

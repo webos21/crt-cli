@@ -295,6 +295,39 @@ combination also requires Windows 10 1903 or later for non-ASCII paths. See the 
 [design](https://github.com/webos21/crt/blob/main/docs/design/windows_narrow_strings.md) and the
 [implementation record](acceptance/bootstrap_acceptance.md#windows-utf-8-narrow-strings-implemented-2026-10-31). No pin is adopted.
 
+## Linux Latest-source Revalidation (2026-10-31)
+
+**Pass, local/unpromoted Linux/x86_64.** CLI
+`36c6f65012a4166788b10d3ba225d67c67c428d5` plus the scope-only TODO edit replays
+against a fresh clean CRT `f826397399eec66153451a18ba4fd0f7a1b5cbc0` Dev SDK
+(`v0.4.0-cli.20261031`, a local parameter, no tag). The producer/base/compile
+identities agree; `crt-narrow-encoding-1` is present, so the new PAL calls now
+have native Linux evidence. No implementation fix was required. The exact
+export, SDK content/inventory, compiler provider, runtime audit and 684-check
+result belong to [Linux acceptance](acceptance/bootstrap_acceptance.md#linux-latest-source-revalidation-2026-10-31).
+
+All 17 controlled HTTPS transport/integrity cases additionally pass with SDK,
+producer/CLI source and provider unavailable. This is not publisher
+authentication or complete D1-07. The new binary/local SDK config replace the
+previous development selections with preserved backups. The tracked root lock
+stays unresolved; no producer promotion or production pin is adopted. The
+other native hosts retain their original snapshots and need current-source
+replay independently.
+
+## Experimental Publisher Verification and D1 Audit (2026-10-31)
+
+CLI base `36c6f65` plus the separately identified signature/test delta consumes
+the same clean CRT `f826397` Dev candidate. It adds optional explicit-key
+RSA-PSS/SHA-256 verification using installed Mbed TLS, with no new SDK schema
+or producer rebuild. Public-key ownership, official key distribution/rotation,
+release-metadata binding and replay protection are unassigned; test keys are
+not production pins. The actual native replay, signature negatives, real
+repository HTTPS and host-tools findings are in
+[D1 acceptance](acceptance/bootstrap_acceptance.md#d1-publisher-and-host-environment-audit-2026-10-31).
+Complete D1 remains open, including the independent host-tools/CLI environment
+contract and current-source Windows/macOS results. No official signing key,
+release publication or production combination is established by this experiment.
+
 ## Linux Merged-source Revalidation (2026-10-30)
 
 **Pass, local/unpromoted Linux/x86_64**, CLI `ddaf288322e3292fbba53bc2bc4946c701ab5241`.
@@ -324,9 +357,11 @@ consumer commit records documentation and the verified Linux test executable.
 
 ## Adoption and Exercised Combinations
 
-There is **no promoted production combination yet**. The identified Linux D0
-local experiment above passes; the macOS and Windows/x64 local D0 replays pass (Linux replay renewed 2026-10-30; current-source macOS replay remains), complete D1 and Studio S0/S1
-remain Not run. Use the owning acceptance ledgers for scope, not a general
+There is **no promoted production combination yet**. Local bootstrap replays
+exist for all five native pairs at their recorded source/SDK identities;
+the latest fetch/encoding sources pass on Windows/arm64 and Linux/x86_64.
+Windows/x64, macOS/arm64 and Linux/aarch64 still need those latest changes.
+Complete D1 and Studio S0/S1 remain open. Use the owning acceptance ledgers for scope, not a general
 claim that the SDK/CLI/Studio product combination is compatible.
 
 Add a combination record only with these fields and links to original evidence:

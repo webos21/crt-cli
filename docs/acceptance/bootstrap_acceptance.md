@@ -81,11 +81,16 @@ Follow-on self-upgrade/project/package gates belong to
 
 ### SDK-free HTTPS Bootstrap Gate
 
-This gate is **open**. Partial Windows/arm64 evidence (a controlled loopback endpoint, the
-CLI's `fetch` command and 17 positive/negative cases) is in the
-[2026-10-31 record](#windowsarm64-https-fetch-unicode-paths-and-release-asset-sdk-2026-10-31); it does
-not include a signed-metadata policy, a real publisher or an SDK-hidden run, and no other host
-has run it. This is not an SDK installer already implemented in D1. A minimal fetch/verify path may be exercised before D2 transactions;
+This gate is **open**. Controlled-loopback `fetch` evidence covers 17 positive/negative
+cases on [Windows/arm64](#windowsarm64-https-fetch-unicode-paths-and-release-asset-sdk-2026-10-31)
+and [Linux/x86_64](#linux-latest-source-revalidation-2026-10-31). The Linux run additionally
+hides SDK/source/provider inputs. A signed-metadata/publisher-authentication policy,
+an official signed-release replay and the remaining native-host cases are still absent;
+Windows/arm64 has not run the SDK-hidden HTTPS scope.
+The later [D1 audit](#d1-publisher-and-host-environment-audit-2026-10-31) adds
+experimental caller-selected signature verification and a real CRT repository
+HTTPS probe; neither establishes an official release trust anchor.
+This is not an SDK installer already implemented in D1. A minimal fetch/verify path may be exercised before D2 transactions;
 D2 still owns SDK extraction, installation, selection and rollback acceptance.
 Agree the HTTP/TLS stack, trust store and metadata-authentication policy in D0.
 Do not assume signing exists or treat an archive checksum as publisher identity.
@@ -1357,3 +1362,257 @@ need an SDK that has it) and Windows before 10 version 1903 are not run. CRT's h
 were not exercised in Unicode directories. The bootstrap loop was not repeated for the new binary. The source digest
 identifies the replayed CLI changes. The SDK is still a local rehearsal asset,
 not a promoted release.
+
+## Linux Latest-source Revalidation (2026-10-31)
+
+**Pass, native Linux/x86_64; local/unpromoted.** Replayed CLI
+`36c6f65012a4166788b10d3ba225d67c67c428d5` (the `e1ed3d0` fetch/UTF-8 sources
+plus the project license declaration) against a freshly built clean CRT
+`f826397399eec66153451a18ba4fd0f7a1b5cbc0` Dev SDK. The CLI export includes one
+scope-only TODO edit; `inputs.json` identifies that exact snapshot. No consumer
+or producer implementation fix was needed. This covers the committed Unix
+SETPGROUP, architecture-selected open flags and narrow-encoding query, without
+relabeling the previous dirty Linux SDK as a clean build.
+
+### Producer and Exact Inputs
+
+Evidence root: `/home/syszone/GitLocal/crt/out/cli-linux-revalidation-20261031`.
+The new Ninja build is `build/` below it; no prior compiled output was copied.
+Only the previous LLVM source directories and hash-verified port download
+archives were reused. `producer-inputs.json`, `producer-commands.json`,
+`tool-identities.json`, CMakeCache and the configure/build logs retain the
+actual inputs and commands. Graphics/Web production is not part of this pass.
+
+```sh
+cmake -S /home/syszone/GitLocal/crt -B /home/syszone/GitLocal/crt/out/cli-linux-revalidation-20261031/build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DCRT_TARGET_OS=linux -DCRT_TARGET_ARCH=host -DCRT_USE_IMPORTED_LIBCXX=ON -DCRTGFX_ENABLE_SKIA=OFF -DCRTMEDIA_ENABLE_FFMPEG=OFF -DCRTMEDIA_ENABLE_CURL=OFF -DCRTUI_ENABLE_LVGL=OFF -DCRT_RELEASE_TAG=v0.4.0-cli.20261031
+cmake --build out/cli-linux-revalidation-20261031/build --target crt-development-sdk-test -j 6
+cmake --build out/cli-linux-revalidation-20261031/build --target crt-c-test -j 6
+cmake --build out/cli-linux-revalidation-20261031/build --target crt-cxx-test -j 6
+```
+
+These are CRT producer commands. CLI/app builds still invoke native LLVM argv
+without CMake, Python or shell. The local version parameter creates no Git tag.
+
+- Native Linux/x86_64, Clang/LLD/LLVM ar **21.1.8**; precise OS/tool identities
+  and executable hashes are in `tool-identities.json` and `producer-inputs.json`.
+- Dev profile, producer/base/compile identity `f826397`, clean source, version
+  `v0.4.0-cli.20261031`; `crt-platform-queries-1`, `json-sha2-1` and
+  `crt-narrow-encoding-1` are present. **147/147** core tests, imported libc++
+  exception/string-ABI/shared-iostream smokes, and ordinary static/shared Dev
+  HTTPS+inflate and trust-negative consumers pass. Exporter/profile fixtures:
+  **36 pass, two conditional skips**.
+- SDK handoff: `/home/syszone/GitLocal/crt-cli-replay/crt-cli-contract-kaa9hgxj/SDK space 한글/dev`,
+  copied with symlinks outside the producer checkout/build tree; **2,597**
+  file/symlink entries. This pass did not cut a Dev SDK archive.
+- The installed root/runtime license files and both generated source archives
+  contain the updated Apache-2.0 policy/text. `license-packaging-check.json`
+  records byte equality; `producer-artifacts.json` records source-archive hashes.
+
+| Identity | SHA-256 |
+| --- | --- |
+| CLI export inventory | `02ed9918e9556e97b05d768f8dc1b57e7b38b548988b626d291ed0b7d12bafe6` |
+| SDK inventory (driver dictionary) | `ba9d34b4f45d6b35203fc35daf8d0e74d3ca5005fdc870a227c16a35d664db87` |
+| SDK content (provider array) | `b8f18ff52270a9da0de69ce9c4b4f7eddda696c7ae1b751267579b079b9803c1` |
+| Compiler provider | `d8b9a223194e95915a0ee61d774ba1ed1527912196c2d5223036c454458fcb16` |
+| Replay result | `fbf752edb6cd90320c3c671d86e806262e61f37d03033f616f6607da2a25c059` |
+| Bare CLI (11,947,400 bytes) | `a611f6c5ff988118c3e911a0ef7e3644e2474232cefb700f9bf7d7202d2605d9` |
+
+### Isolated Replay and Runtime Boundary
+
+`tools/replay_cli_contract_linux.py` from CRT `f826397` ran with the selected
+SDK and the LLVM paths above (`--ar /usr/bin/llvm-ar-21`). Its exact argv is in
+`replay-r1/commands.json`; it exports a CRT-native seed, then builds and
+self-builds the native CLI. Bubblewrap hides CRT/CLI producer trees, clears
+the environment, denies networking and masks interpreters/build scripts.
+Boundary probes precede execution; bare checks additionally hide the handoff
+SDK, source, provider and compiler executables.
+
+- **684 native checks**, including actual C/C++ generated projects, typed
+  static/shared variants, Unicode/space/hostile paths, incremental invalidation,
+  local SDK config, rejection cases, child failure/timeout and bounded stdout.
+  Counts differ by host/provider argv; Windows' 780 is not the Linux threshold.
+- Cold self-build **9 executed / 0 reused**, warm **0 / 9**; original and
+  relocated SDK inventories remain unchanged.
+- **410 successful execve calls / 22 distinct paths**, zero unexpected
+  executables and no shell/Python/CMake/Ninja/make/SDK-wrapper execution.
+- Bare help/version/doctor pass. ELF has **no DT_NEEDED, RPATH or RUNPATH**;
+  interpreter `/lib64/ld-linux-x86-64.so.2`. PAL images are the CLI, the loader
+  and `linux-vdso.so.1`; allocation ownership/exceptions/zlib/HTTP/TLS and
+  `narrow_encoding: utf-8` pass. Integrity remains `not_verified`, and doctor's
+  own HTTPS field remains `not_run`; the separate network cases follow.
+
+### Previous-binary Bootstrap Loop
+
+The separate `run-bootstrap-loop.py` starts with the previous committed Linux
+binary (`a4419776...`) and the new SDK/provider, using a fresh exported project
+and `.sdk.json` with `allow_dirty_sdk: false`. It reuses the verified Bubblewrap
+boundary and execve tracing, with no producer-source access or interpreter
+execution. The old binary configures/builds stage1; stage1 rebuilds from cleared
+object/dependency caches into stage2. Cold **9/0**, warm **0/9**, stage2 doctor
+and **684 native checks** all pass.
+
+Stage1 and stage2 are byte-identical, SHA-256
+`b0d2c677220066fb9fb66c611a065335ba180cf68ae989a792a54525a3949360`.
+The main replay's different source directory gives a different complete binary
+digest; cross-directory byte identity is not claimed. `bootstrap-loop-result.json`,
+`bootstrap-loop-commands.json`, `bootstrap-loop-execve-summary.json` and the
+per-step output retain the loop evidence. Both SDK inventories remain unchanged
+after the loop, and its trace contains no forbidden/undeclared executable.
+
+### SDK-hidden HTTPS Cases
+
+`run-https-hidden.py` in the evidence root copies CRT's unchanged
+`tools/test_cli_fetch_https.py` and the passing bare CLI outside both
+repositories. It runs all **17/17** cases under Bubblewrap with CRT/CLI
+checkouts, the replay source and relocated SDK hidden and the provider masked.
+`https-hidden-visibility.json` proves those inputs are unavailable.
+The network namespace is shared for the controlled loopback server. Python
+and OpenSSL are declared test-server/PKI tools; each CLI process has empty
+PATH and no SDK argument. Successful execve paths are only the test Python,
+OpenSSL and the bare CLI; `https-hidden-execve.log` retains the trace.
+
+Positive pinned metadata/artifact download and the certificate/trust, digest,
+size, transfer interruption, timeout, HTTP/redirect, input and no-overwrite
+rejections all pass. OpenSSL is **3.5.5**. `https-hidden/result.json` SHA-256 is
+`3c7d341bb8fc8b21a58d5cd7806a80a93d5ac3c258a79e29fe7732e57368dd01`.
+This closes the SDK-hidden controlled-endpoint portion on Linux/x86_64 only;
+there is still no signed-metadata/publisher-authentication policy or real
+publisher replay, so **D1-07 remains open**.
+
+### Retention and Limits
+
+The new bare executable replaces `bin/linux-x64/crt-cli`; the prior
+`a4419776...` binary and ignored SDK config remain in the evidence root.
+The ignored `.sdk.json` selects the new handoff/provider with
+`allow_dirty_sdk: false`. The tracked root lock stays unresolved.
+`validation-summary.json` checks 14 current code/config inputs against the
+executed export (excluding its generated local lock). No production pin is
+adopted. Other native hosts must replay their own current-source SDKs; general
+installation, host-tool/rootfs, self-upgrade and complete D1 remain open.
+
+## D1 Publisher and Host-environment Audit (2026-10-31)
+
+**Partial, native Linux/x86_64; complete D1 remains open.** The existing CLI
+had no publisher-signature verification, official public key, signed release
+metadata or independent host-tools contract. This increment adds an
+experimental caller-selected signature primitive and audits every D1 gate;
+test identities and Linux results do not close official or other-host gates.
+
+### Experimental Authentication Boundary
+
+Paired `fetch --publisher-key <public.pem> --signature <signature.bin>` options
+use CRT-built Mbed TLS directly. The fixed primitive is RSA-PSS/SHA-256 with
+SHA-256 MGF1, 32 salt bytes and RSA keys of 2048..4096 bits. Public key input
+is bounded to 16 KiB and binary signatures to 512 bytes. Verification follows
+size/digest validation and precedes publication; failures remove staging and
+never replace an existing output. The result identifies the supplied key by
+canonical DER SPKI SHA-256 and says `signature_verified` only when it verifies.
+Unsigned requests keep their explicit `not_verified` result.
+
+The caller must obtain the trusted public key independently. No official key,
+private key, trust-store entry, release metadata schema, key rotation/revocation
+or expiry/anti-replay policy is established here. A valid test signature proves
+the implemented verification path; it is not official publisher acceptance.
+The primitive authenticates downloaded bytes and does not automatically resolve
+or install artifacts named by a signed metadata file.
+
+The final Linux binary passes **692 native checks** under the existing isolated
+replay, including a positive-control descendant that writes before a later
+timeout and a shorter timeout that prevents the descendant's delayed write.
+Cold build **10/0**, warm **0/10**; **420 successful execve / 22 distinct paths**,
+no unexpected executable, and both SDK inventories unchanged. Bare doctor and
+ELF audits pass with no DT_NEEDED/RPATH/RUNPATH and only the declared loader.
+The installed SDK/provider remain the exact `f826397` candidate above; no
+producer rebuild or production lock adoption is implied by the test-driver edit.
+
+| Identity | SHA-256 |
+| --- | --- |
+| Dirty CLI export, base `36c6f65` | `292978a20ad59bf6a315cbbc3de0447e0b3a17bf063a903005e5d08c6318a070` |
+| Compiler provider | `d8b9a223194e95915a0ee61d774ba1ed1527912196c2d5223036c454458fcb16` |
+| Bare CLI (12,066,824 bytes) | `2a84c61debf31ce87c441f21ca4b0111701e6773567199aa5a2ec71a34e79967` |
+| Native replay result | `a26d54ad36566a6d9d806e412a3c81ea69a58bca9ef4c0679f9e0a543082ae92` |
+| Final signature/HTTPS result | `a26b77ad6dc0a456a85b8228b7c8cb00c2372b8bad1c0d7fbc58efa97636c95a` |
+
+CRT's `tools/test_cli_fetch_https.py --publisher-cases` generates disposable
+test keys and exercises the 17 original transport cases plus 15 authentication
+cases. The signature tests include metadata/artifact success, wrong key,
+corrupted signature, PKCS#1 v1.5 padding, wrong PSS salt, malformed/private/weak/
+missing keys, short/oversized signatures and unpaired options. A tampered
+metadata case pins the tampered digest, so signature verification alone rejects
+it. Test keys stay outside tracked sources and are never promoted.
+All **32/32** cases pass with the final replayed binary, with original and
+relocated SDKs, producer/CLI sources and both providers unavailable. Visibility
+probes and execve traces are retained in `publisher-visibility-r2.json` and
+`publisher-execve-r2.log`. OpenSSL/Python are test PKI/server tools only; the
+CLI invokes neither. The first 32-case run is retained separately from the
+final-binary run. `summary.json` checks 16 current code/config inputs against
+the executed export and records the producer test-driver hash.
+
+### Real Publisher-repository HTTPS Probe
+
+With the original CRT/CLI repositories, selected SDK and provider unavailable,
+the previous passing Linux CLI fetched
+`https://raw.githubusercontent.com/webos21/crt/f826397399eec66153451a18ba4fd0f7a1b5cbc0/LICENSE.md`
+using an explicit copy of the host CA bundle. HTTP 200, Mbed TLS 3.6.7,
+15,554 bytes, SHA-256
+`174b701101302ce196b907224aaf632e0299b0b26122c33aba261b719c20ec79`, equal to
+the pinned local Git blob. The command reports `publisher_authentication: not_verified`.
+This is a real HTTPS repository-source probe, not signed SDK/CLI release
+metadata or a public release. `out/d1-audit-20261031/setup.json` records URL,
+CA/binary hashes and the exact Bubblewrap argv; stdout/exit files retain the result.
+
+### Linux CRT Host-tools Probe and Retained Failure
+
+The identified SDK's mksh/sh, toybox and separate awk execute from a copied
+`CRT tools 한글 space` directory while host shells/awk/make/Python are masked.
+The copy is read-only during execution and scratch is separate; traces record
+only CRT tool/alias execution. The toybox applet list is recorded explicitly.
+These are SDK-derived tools, not an independently versioned Host Tools Bundle;
+the installed manifest still declares `host-posix-shell` as the Linux default.
+
+Direct `make SHELL=<space-containing-path>/mksh` **fails**: GNU make splits the
+shell name at the first space. An explicitly declared temporary real symlink
+bridge to that same CRT mksh lets the make smoke pass. Both runs and traces
+remain in `host-tools.json`; the direct-path failure is not overwritten or
+presented as a pass. This matches the existing producer bridge approach and
+does not patch upstream make or implement a CLI port-build environment.
+
+### Per-gate Disposition
+
+| Gate | Current evidence / remaining condition |
+| --- | --- |
+| D1-01 Standalone CLI | Linux isolated native replay/import evidence; current-source Windows initial loader and macOS replay still required |
+| D1-02 CRT tools | Linux SDK-derived tools measured, including failed direct make shell path and passing explicit bridge; independent host-tools identity/closure and native Windows CRT tools remain open |
+| D1-03 Scoped environment | Control/app child environments are bounded; CLI env/shell and independent port-build/rootfs adapter are not implemented |
+| D1-04 Paths/collisions | Linux app Unicode/space paths and tool probes exist; make requires the declared shell bridge; Windows DLL collisions/aliases need native replay |
+| D1-05 Child lifecycle | Linux native tests cover bounded output, child timeout and an owned-descendant control/timeout regression; native Windows cancellation/terminal support remains separate |
+| D1-06 Failure behavior | Transport/authentication/input rejections are measured; corrupt CLI resources, interrupted selection and Windows Developer Mode prerequisites are not complete |
+| D1-07 HTTPS/authentication | Controlled explicit-key primitive and real repository HTTPS are measured; official trusted key, signed release policy/artifact pair and the remaining native hosts are absent |
+| D1-08 Self doctor | SDK-hidden bootstrap checks distinguish unavailable integrity/network evidence; authenticated self-integrity and full diagnostic scopes remain open |
+| D1-09 Resources | A local one-executable fixture with explicit CA and 24 declared notice/provenance files passes SDK-hidden doctor/real HTTPS; official trust and a shipping package remain unqualified |
+
+No gate is closed across the native matrix by this audit. The required
+Windows/x64 and macOS/arm64 hosts are not available in this session, and no
+emulation/cross-compile is substituted. Public-key ownership/distribution and
+official signed metadata URLs require owner input before an official release
+combination can be tested. Evidence is retained under the CLI's ignored
+`out/d1-audit-20261031/`, with external work directories recorded in its JSON files.
+
+The bootstrap resource fixture selects the actual CLI dependencies (CRT libc,
+LLVM runtimes, curl, Mbed TLS, zlib and nlohmann/json) from the installed SDK's
+notice/provenance declarations. It includes no host tools, non-OS shared runtime,
+permanent launcher or publisher key. `package.json`, `package-commands-r4.json`
+and `package-visibility-r4.json`
+record the data and SDK-hidden checks. This fixture is not a new shipping-layout
+contract or artifact promotion. The final probe also hides both relocated source
+trees and SDKs and checks that both provider paths are the mounted `/dev/null`
+character device. Earlier harness errors (argv construction, treating the masked
+device as a regular/readable file) are retained separately and executed no CLI;
+the final visibility probe passes before doctor/HTTPS execution. The direct make-path failure remains an actual failed
+case requiring a declared bridge in the future CLI port environment.
+
+The final executable replaces `bin/linux-x64/crt-cli`; the previous binary and
+local SDK configuration are backed up under this evidence root. The ignored
+`.sdk.json` selects the replayed handoff/provider with dirty-SDK opt-in disabled.
+The tracked root lock stays unresolved. Other committed host binaries are older
+snapshots without this signature primitive; they have not been rebuilt here.

@@ -143,10 +143,18 @@ bootstrap-loop stage, so run that separately (see the
 [Windows/arm64 record](../acceptance/bootstrap_acceptance.md#windowsarm64-native-replay-2026-10-30)).
 HTTPS `fetch` cases run separately with CRT's `tools/test_cli_fetch_https.py --cli <crt-cli> --output <fresh dir>` (needs
 OpenSSL and Python as build-host test tools; the CLI is run from a clean directory with an empty `PATH`).
+Add `--publisher-cases` for the experimental explicit-key signature cases.
+That option generates test-only RSA keys outside tracked sources; it neither
+creates official publisher keys nor changes a trust store. Product signature
+verification uses the selected CRT SDK's Mbed TLS directly, with no OpenSSL,
+Python or shell subprocess. See the [authentication contract](../reference/bootstrap_contract.md#commands-and-results)
+and the [D1 audit](../acceptance/bootstrap_acceptance.md#d1-publisher-and-host-environment-audit-2026-10-31)
+for exact scope and prerequisites still missing from complete D1 acceptance.
 Keep the producer worktree under the user profile (a path that
 public Users grants can read cannot be hidden this way) and prefer short work paths. With an SDK that has the
 `crt-narrow-encoding-1` capability, Windows narrow strings are UTF-8 (CRT's UTF-8 manifest, Windows 10 1903 or later) and Unicode
-and spaces work in paths; an older SDK keeps ANSI paths and rejects non-ASCII. Treat a directory name containing `;` as
+and spaces work in paths. Earlier binaries/SDKs retain their recorded ANSI limits;
+current sources require the new encoding capability. Treat a directory name containing `;` as
 unsupported for programs that import a DLL beside them.
 
 ## Bootstrap Planning Order

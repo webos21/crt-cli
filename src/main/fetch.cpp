@@ -1,5 +1,6 @@
 #include <crtcli/core.h>
 #include <crtcli/http.h>
+#include <crtcli/publisher.h>
 #include <chrono>
 #include <map>
 #include <set>
@@ -20,9 +21,9 @@ void discard(const fs::path& path) { std::error_code ignored; fs::remove(path, i
 }
 
 Reply fetch(const std::vector<std::string>& args) {
-    const char* usage = "usage: fetch --url <https-url> --ca-file <pem> --output <file> --sha256 <hex> --size <bytes> [--timeout <seconds>]";
+    const char* usage = "usage: fetch --url <https-url> --ca-file <pem> --output <file> --sha256 <hex> --size <bytes> [--timeout <seconds>] [--publisher-key <public.pem> --signature <signature.bin>]";
     std::map<std::string, std::string> options;
-    const std::set<std::string> known{"--url", "--ca-file", "--output", "--sha256", "--size", "--timeout"};
+    const std::set<std::string> known{"--url", "--ca-file", "--output", "--sha256", "--size", "--timeout", "--publisher-key", "--signature"};
     for (size_t i = 1; i < args.size(); i += 2) {
         if (i + 1 >= args.size() || !known.count(args[i])) throw Error(usage, 2);
         if (!options.emplace(args[i], args[i + 1]).second) throw Error("duplicate fetch option", 2);
@@ -36,6 +37,9 @@ Reply fetch(const std::vector<std::string>& args) {
     unsigned long long size = 0, timeout = 60;
     if (!decimal(options.at("--size"), 1ull << 31, size)) throw Error("--size must be between 1 and 2147483648 bytes", 2);
     if (options.count("--timeout") && !decimal(options.at("--timeout"), 3600, timeout)) throw Error("--timeout must be between 1 and 3600 seconds", 2);
+    if (options.count("--publisher-key") != options.count("--signature")) throw Error("--publisher-key and --signature must be supplied together", 2);
+    std::unique_ptr<PublisherSignature> publisher;
+    if (options.count("--publisher-key")) publisher.reset(new PublisherSignature(options.at("--publisher-key"), options.at("--signature")));
 
     fs::path ca = fs::absolute(options.at("--ca-file")).lexically_normal();
     if (!fs::is_regular_file(ca)) throw Error("--ca-file must name an existing regular file: " + ca.string(), 2);
@@ -65,11 +69,13 @@ Reply fetch(const std::vector<std::string>& args) {
     if (actual_size != size) return failure("size_mismatch", "verify", "downloaded size differs from the declared size", {{"expected_bytes", size}, {"actual_bytes", actual_size}});
     auto digest = file_sha256(staging);
     if (digest != options.at("--sha256")) return failure("digest_mismatch", "verify", "SHA-256 differs from the declared digest", {{"expected_sha256", options.at("--sha256")}, {"actual_sha256", digest}});
+    if (publisher && !publisher->verify(digest)) return failure("publisher_signature_invalid", "authenticate", "publisher signature verification failed", Json::object());
     if (fs::exists(fs::symlink_status(output))) return failure("output_exists", "publish", "the output appeared while downloading", Json::object());
     fs::rename(staging, output);
     Json data{{"url", url}, {"output", output.string()}, {"published", true}, {"bytes", actual_size}, {"sha256", digest},
               {"http_status", outcome.http_status}, {"trust", trust},
-              {"integrity", "pinned-digest"}, {"publisher_authentication", "not_verified"}};
+              {"integrity", "pinned-digest"}, {"publisher_authentication", publisher ? "signature_verified" : "not_verified"}};
+    if (publisher) data["publisher"] = {{"trust", "explicit-public-key"}, {"algorithm", "rsa-pss-sha256"}, {"salt_bytes", 32}, {"public_key_spki_sha256", publisher->key_sha256()}};
     return {0, "fetch", data, "fetched " + url + " (" + std::to_string(actual_size) + " bytes, sha256 " + digest + ")"};
 }
 }

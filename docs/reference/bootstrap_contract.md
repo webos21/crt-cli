@@ -88,8 +88,9 @@ Use `.c` for C99, `.cpp`/`.cc`/`.cxx` for C++17. Source/include paths must remai
 inside the project after resolving symlinks; output symlinks are rejected.
 Target names are unique across build/test targets. Legacy format-0 `application`
 declarations are read for migration; `application` and `targets` cannot coexist.
-The driver rebuilds requested targets without incremental/header-dependency
-caching. Optimization remains O1 with debug info, separate from SDK profiles.
+The driver caches requested target steps using the command, SDK/tool identity
+and input/header content; changed inputs invalidate the affected steps.
+Optimization remains O1 with debug info, separate from SDK profiles.
 Tests have an executable main and a bounded `timeout_seconds` (1..3600).
 
 `build --target <name>` builds one target and its dependencies; plain build
@@ -184,7 +185,28 @@ with `data.code` one of `tls`, `network`, `timeout`, `interrupted`, `http_status
 `too_large`, `size_mismatch`, `digest_mismatch`. Success reports bytes, digest, HTTP
 status and the trust settings, plus `integrity: pinned-digest` and
 `publisher_authentication: not_verified`: a digest the caller pinned says the bytes match
-it, not who published them, and the CLI has no signed-metadata policy yet.
+it, not who published them.
+
+Experimental explicit-key authentication adds paired options
+`--publisher-key <public.pem> --signature <signature.bin>`. The caller supplies
+a trusted PEM SubjectPublicKeyInfo RSA public key independently of the download;
+the CLI has no official embedded key or key-discovery service. RSA keys must be
+2048..4096 bits. The detached binary signature covers the exact downloaded bytes
+using RSA-PSS with SHA-256, SHA-256 MGF1 and exactly 32 salt bytes. Other padding,
+salt lengths, weak/private/malformed keys and mismatched signatures are rejected.
+Key/signature reads are bounded to 16 KiB/512 bytes; invalid inputs fail before
+network use. A signature mismatch returns exit 1 with
+`publisher_signature_invalid`, removes staging and publishes nothing.
+
+Successful signed fetch reports `publisher_authentication: signature_verified`
+and `publisher.trust: explicit-public-key`, the algorithm and the SHA-256 of the
+canonical DER SubjectPublicKeyInfo. This authenticates bytes to the explicitly
+selected key; it does not label that key an official CRT publisher. Unsigned
+fetch remains available and reports `not_verified`. Metadata may be fetched
+and authenticated this way, but release-metadata schema, artifact binding,
+expiry/replay protection, official key distribution/rotation/revocation and
+executable self-integrity are not implemented. No production trust policy or
+new SDK schema is assigned by this experimental primitive.
 
 `--json` emits one `crt-cli.bootstrap-result`, format 1, with command/ok/data.
 Child stdout is bounded at 8 MiB and relayed to stderr; result JSON remains

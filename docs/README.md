@@ -38,6 +38,8 @@ from the SDK build baseline:
   CLI consumption, initial layout/decisions, single-executable feasibility,
   SDK-free self-doctor/HTTPS and Windows host-environment gates, and
   the evidence format. Planned criteria are not passing results.
+  The [D1 audit](acceptance/bootstrap_acceptance.md#d1-publisher-and-host-environment-audit-2026-10-31)
+  separates measured Linux/explicit-key cases from official trust and native-host gaps.
 - [CLI Lifecycle Acceptance](acceptance/lifecycle_acceptance.md): future
   self-upgrade/activation/recovery, per-project SDK/new, scoped doctor and
   shipping-artifact gates. Complete lifecycle gates remain Not run; partial

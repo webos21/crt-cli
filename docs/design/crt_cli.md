@@ -88,7 +88,7 @@ crt-cli/
   crt.json                   experimental JSON project declaration
   crt.lock                   exact project inputs; no promoted root pin yet
   src/main/main.cpp          command dispatch
-  src/main/{core,process,toolchain,project,bootstrap}.cpp
+  src/main/{core,process,toolchain,project,bootstrap,http,fetch,publisher}.cpp
   src/test/native_test.cpp   C/C++ tests, built through the same backend
   include/crtcli/             project-owned module headers
   third_party/                dependency-ownership note; JSON/SHA come from SDK
@@ -102,8 +102,8 @@ crt-cli/
 test in `src/test/` (or `.c` equivalents with `--language c`). Source lists,
 include directories and test targets are explicit JSON fields, not shell commands.
 The initial schema is format 0; see the [implemented contract](../reference/bootstrap_contract.md).
-A temporary hosted C++ seed uses the same native backend to build the first
-CRT-native CLI. Subsequent self-build/tests use `crt-cli`, with no seed/runtime
+A temporary CRT-native seed compiled through the selected SDK policy uses the
+same native backend to build the CLI. Subsequent self-build/tests use `crt-cli`, with no seed/runtime
 launcher exemption in the distributed product. LLVM remains an external tool.
 Template migrations and regressions preserve existing projects; CLI upgrades do
 not rewrite sources or project pins implicitly.
@@ -113,7 +113,8 @@ not rewrite sources or project pins implicitly.
 The intended CLI distribution is one native executable per supported host,
 with non-OS CRT/C++/HTTP/TLS dependencies linked into it. This replaces the
 earlier minimal-dynamic-bundle default as the product goal. Linux feasibility
-is recorded; macOS/Windows native proof remains pending. OS/PAL dependencies remain permitted.
+is recorded, with local macOS/Windows proof at their recorded snapshots.
+Current-source native replay remains per-host work. OS/PAL dependencies remain permitted.
 LLVM, project SDKs, CRT host tools and port-build interpreters are separate
 development assets, not required merely to start the CLI control commands.
 

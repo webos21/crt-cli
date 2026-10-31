@@ -11,6 +11,47 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-10-31
 
+### Add experimental publisher signatures and audit the D1 gates
+
+Added paired explicit-public-key/detached-signature fetch options, verified
+through CRT's Mbed TLS using fixed RSA-PSS/SHA-256 and 32-byte salt before
+publication. Invalid keys/signatures fail closed; unsigned mode remains
+explicitly unverified. The public key is selected by the caller, not adopted
+as an official release anchor. Native Linux replay passes 692 checks (including
+positive-control/timeout descendant cleanup), cold/warm 10/0 and 0/10, an execve
+audit and SDK-hidden loader/doctor checks. The final binary passes all 32
+controlled HTTPS/signature cases with SDKs/source/providers hidden. A real CRT
+repository HTTPS probe and a local notices/CA resource fixture also pass.
+
+The host-tools audit retains a real failure: make splits a space-containing
+SHELL path; a declared temporary symlink bridge to the same CRT mksh passes.
+Updated the implemented contract, guide, per-gate D1 audit, compatibility and
+work queue; refreshed the Linux binary/config with backups. Exact identities
+and limitations are in [D1 acceptance](docs/acceptance/bootstrap_acceptance.md#d1-publisher-and-host-environment-audit-2026-10-31).
+Complete D1 remains open: official key/release-metadata policy, independent
+host-tools/env/shell, remaining failure/resource qualification and current
+Windows/macOS native gates are not closed. No test private key, official trust
+setting, production pin or release artifact was published.
+
+### Revalidate the latest Linux/x86_64 CLI with a clean Dev SDK
+
+Replayed CLI `36c6f65` (fetch and narrow-encoding changes, plus a scope-only TODO
+edit) against a fresh Dev SDK from clean CRT `f826397`; no implementation fix
+was needed. Producer core 147/147, imported C++ smokes and static/shared Dev
+transport/trust consumers pass. Isolated CLI replay passes 684 native checks,
+cold 9/0 and warm 0/9, execve and SDK-free runtime/import audits. The previous
+Linux binary builds the new CLI against the new SDK, which rebuilds byte-identically
+and passes 684 checks itself. All 17 controlled HTTPS cases pass with SDK,
+source and provider hidden; publisher authentication/full D1-07 remain open.
+Exact identities, commands, receipts and limits are in
+[Linux acceptance](docs/acceptance/bootstrap_acceptance.md#linux-latest-source-revalidation-2026-10-31).
+
+Refreshed `bin/linux-x64/crt-cli` and the ignored `.sdk.json` to the passing
+handoff with dirty-SDK opt-in disabled, retaining the prior binary/config and
+all older candidates. Updated the work queue, maturity and compatibility links.
+The tracked root lock remains unresolved; no SDK promotion or public release
+is claimed. Other native hosts still need current-source replay.
+
 ### Declare the CRT-CLI project license
 
 Added the Apache License, Version 2.0 text in the root `LICENSE` and declared

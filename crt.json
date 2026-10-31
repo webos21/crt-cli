@@ -23,7 +23,8 @@
       "src/main/toolchain.cpp",
       "src/main/project.cpp",
       "src/main/http.cpp",
-      "src/main/fetch.cpp"
+      "src/main/fetch.cpp",
+      "src/main/publisher.cpp"
     ],
     "sdk_consumer_option_sources": ["src/main/http.cpp"],
     "sdk_libraries": [
