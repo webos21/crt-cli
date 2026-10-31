@@ -144,8 +144,9 @@ bootstrap-loop stage, so run that separately (see the
 HTTPS `fetch` cases run separately with CRT's `tools/test_cli_fetch_https.py --cli <crt-cli> --output <fresh dir>` (needs
 OpenSSL and Python as build-host test tools; the CLI is run from a clean directory with an empty `PATH`).
 Keep the producer worktree under the user profile (a path that
-public Users grants can read cannot be hidden this way) and use short, ASCII work paths: Windows narrow paths are ANSI
-bytes and the imported libc++ rejects non-ASCII narrow/wide conversion today. Treat a directory name containing `;` as
+public Users grants can read cannot be hidden this way) and prefer short work paths. With an SDK that has the
+`crt-narrow-encoding-1` capability, Windows narrow strings are UTF-8 (CRT's UTF-8 manifest, Windows 10 1903 or later) and Unicode
+and spaces work in paths; an older SDK keeps ANSI paths and rejects non-ASCII. Treat a directory name containing `;` as
 unsupported for programs that import a DLL beside them.
 
 ## Bootstrap Planning Order

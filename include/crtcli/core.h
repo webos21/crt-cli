@@ -23,6 +23,15 @@ fs::path sdk_store_root();
 fs::path inside(const fs::path& root, const std::string& relative);
 void require(bool condition, const std::string& message);
 void native_executable(const fs::path& path);
+// Strict UTF-8 (no overlong forms, surrogates or values above U+10FFFF).
+bool valid_utf8(const std::string& value);
+// Windows narrow strings are UTF-8 (CRT docs/design/windows_narrow_strings.md), and the OS replaces invalid sequences with
+// U+FFFD without an error, so distinct invalid names would collide. On a Windows host this requires valid UTF-8; elsewhere
+// a path is any byte string and the call does nothing.
+void require_native_utf8(const std::string& value, const std::string& what);
+// Rejects non-ASCII or invalid arguments when the process cannot represent them: a Windows executable without the UTF-8
+// active code page (crt_get_narrow_encoding() is not "utf-8") would read them through the ANSI code page.
+void check_arguments(const std::vector<std::string>& args);
 // host_tool marks an external native program (compiler, linker, archiver): on Windows CRT's posix_spawn only redirects
 // stdio for a non-CRT child when told so (CRT_SPAWN_NATIVE_WINDOWS); CRT-built children need no hint.
 // runtime_path lists directories the child's dynamic images are loaded from. Only Windows needs it (no RPATH there, and the

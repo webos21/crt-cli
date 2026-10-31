@@ -30,10 +30,15 @@ int main(int argc, char** argv) {
         std::string cli = fs::canonical(argv[1]).string();
         fs::path project_root = fs::canonical(argv[2]);
         check(sha256("abc") == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", "SHA256 vector");
+        auto raw = [](std::initializer_list<int> values) { std::string bytes; for (int value : values) bytes += static_cast<char>(value); return bytes; };
+        check(valid_utf8("") && valid_utf8("space 한글 é") && valid_utf8(raw({0xf0, 0x9f, 0x98, 0x80})) && !valid_utf8(raw({0xff})) && !valid_utf8(raw({0xc0, 0x80})) &&
+              !valid_utf8(raw({0xed, 0xa0, 0x80})) && !valid_utf8(raw({0xf4, 0x90, 0x80, 0x80})) && !valid_utf8(raw({0xe2, 0x82})) && !valid_utf8(raw({0x80})), "strict UTF-8 validation");
+        check(std::string(crt_get_narrow_encoding()) == "utf-8", "the test program runs with UTF-8 narrow strings");
         invoke(cli, {"--help"}); invoke(cli, {"--version"});
         auto doctor = invoke(cli, {"doctor", "--bootstrap"});
         check(doctor.at("checks").at("cxx_allocation_owner") == "pass", "CLI owns its C++ allocation functions");
         check(doctor.at("checks").at("executable_integrity") == "not_verified", "honest integrity result");
+        check(doctor.at("checks").at("narrow_encoding") == "pass" && doctor.at("narrow_encoding") == "utf-8", "UTF-8 narrow strings");
         check(doctor.at("checks").at("https_network") == "not_run", "honest network result");
         check(doctor.at("runtime_maps").at("status") == "collected", "PAL image enumeration");
         check(fs::path(doctor.at("sdk_store").get<std::string>()).filename() == "sdks", "common SDK store basename");
@@ -59,12 +64,11 @@ int main(int argc, char** argv) {
         auto location = mkdtemp(temporary.data());
         require(location != nullptr, "mkdtemp failed");
         fixture = fs::path(location);
-        // Windows narrow paths are ANSI code-page bytes and the imported libc++ rejects non-ASCII narrow<->wide conversion
-        // ("locale not supported"), so the Hangul part of the hostile name is exercised on the other hosts only. The Windows
-        // loader also splits its DLL search path at ';', so a program importing a DLL beside it cannot start from a directory
-        // whose name contains one: the semicolon is exercised on the other hosts only.
+        // Windows narrow strings are UTF-8 because the SDK's link policy embeds the active-code-page manifest (doctor reports it);
+        // the Windows loader also splits its DLL search path at ';', so a program importing a DLL beside it cannot start from a
+        // directory whose name contains one: the semicolon is exercised on the other hosts only.
         const bool windows_host = std::string(crt_get_platform_info()->os) == "windows";
-        auto hostile = fixture / (windows_host ? "space @ $(touch never-execute)" : "space 한글 @ ; $(touch never-execute)");
+        auto hostile = fixture / (windows_host ? "space 한글 é @ $(touch never-execute)" : "space 한글 @ ; $(touch never-execute)");
         fs::create_directories(hostile);
         write_text(fixture / "duplicate.json", "{\"x\":1,\"x\":2}");
         bool rejected = false;

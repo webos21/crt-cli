@@ -13,7 +13,7 @@ release artifacts.
 | Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `a44197764f1361b6691dc145f03fd794a880eb9fd1d4d5601a669f4cb0f3044d` (10,928,472 bytes) |
 | Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `94ba0f0c37159e6aa07fe78ea637fd202b658cab45daca70680c380f12450eea` (10,994,232 bytes; 2026-10-30 replay, dirty local SDK) |
 | Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `183e1e6c7f60cfc823ca0e4e260ff913b252798b5b0d0daebe82c9f3a7529806` (16,883,200 bytes, built `-O1 -g`) |
-| Windows/arm64 | `bin/win-arm64/crt-cli.exe` | present; SHA-256 `5ae9a4bcd6d618f02aadb98bc00cc3255ee8e0568dcdd1bc8d35bdd79c55c351` (18,739,200 bytes, built `-O1 -g`; 2026-10-31 replay of the sources with `fetch`, SDK extracted from a local release-asset ZIP) |
+| Windows/arm64 | `bin/win-arm64/crt-cli.exe` | present; SHA-256 `2cfd57291e983cf2a171c29271a3319aac05c558f0586a5b30c69a50005e03a5` (18,779,136 bytes, built `-O1 -g`; 2026-10-31 replay with `fetch` and UTF-8 narrow strings, SDK extracted from a local release-asset ZIP of CRT `85546d9`) |
 
 macOS ships only arm64, so it keeps the single `bin/macos/` directory. Linux and
 Windows are split by architecture: `linux-x64`, `linux-arm64`, `win-x64`, `win-arm64`.
@@ -27,12 +27,15 @@ against a clean local Dev SDK (CRT `d054a66`). Evidence:
 Rebuild outputs and intermediate objects live in the ignored `out/` directory.
 
 The Windows/arm64 binary imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll` (PE machine `0xAA64`). It is the
-2026-10-31 replay's bare executable and includes the `fetch` command; the SDK was extracted from the locally collected
-`crt-dev-release` ZIP of a clean CRT `1c3d120` (version `v0.4.0-rehearsal.20261030`, not published or promoted). The earlier
+2026-10-31 replay's bare executable; it includes the `fetch` command and embeds CRT's UTF-8 active-code-page manifest (the
+SDK's link policy supplies it), so it needs Windows 10 1903 or later for non-ASCII paths and its `doctor` reports
+`narrow_encoding`. The SDK was extracted from the locally collected `crt-dev-release` ZIP of a clean CRT `85546d9`
+(version `v0.4.0-rehearsal.20261031`, not published or promoted). The earlier
 2026-10-30 binary (`e25b449b...`, no `fetch`) was a stage1/stage2 fixed point of the sources before that command; the new
 one's loop was not repeated. See
 [Windows/arm64 replay](../docs/acceptance/bootstrap_acceptance.md#windowsarm64-native-replay-2026-10-30) and the
-[fetch, Unicode and release-asset record](../docs/acceptance/bootstrap_acceptance.md#windowsarm64-https-fetch-unicode-paths-and-release-asset-sdk-2026-10-31).
+[fetch, Unicode and release-asset record](../docs/acceptance/bootstrap_acceptance.md#windowsarm64-https-fetch-unicode-paths-and-release-asset-sdk-2026-10-31) and
+[UTF-8 narrow strings](../docs/acceptance/bootstrap_acceptance.md#windows-utf-8-narrow-strings-implemented-2026-10-31).
 
 The Linux/x86_64 binary is the 2026-10-30 merged-source replay's bare executable:
 no DT_NEEDED/RPATH/RUNPATH, interpreter `/lib64/ld-linux-x86-64.so.2` only.

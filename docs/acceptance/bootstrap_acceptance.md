@@ -1292,5 +1292,68 @@ the manifest.
 Prototype only: absolute manifest path, one host, one architecture, no SDK change. The
 owner decisions (accept the manifest model or require wide calls; minimum Windows build
 1903; the query; opt-out; validation ownership) are listed in the CRT document. The
-Windows Unicode-path requirement of this repository remains **not met** until the SDK
-ships the manifest policy and the Windows suite passes with the Unicode fixture.
+Windows Unicode-path requirement of this repository was **not met** at that point; the
+[implementation record](#windows-utf-8-narrow-strings-implemented-2026-10-31) meets it.
+
+## Windows UTF-8 Narrow Strings Implemented (2026-10-31)
+
+**Pass, native Windows/arm64; local/unpromoted.** CRT's
+[Windows Narrow-String Model](https://github.com/webos21/crt/blob/main/docs/design/windows_narrow_strings.md)
+(UTF-8 active-code-page manifest) is implemented in CRT and consumed by the CLI, and the Windows
+Unicode-path requirement is met on this host pair. Windows/x64 has not replayed it.
+
+### Inputs
+
+| Input | Identity |
+| --- | --- |
+| CRT producer | clean `85546d9bd45a7466e75a30905e3db0113a7763c6` (version `v0.4.0-rehearsal.20261031`, no tag, nothing uploaded) |
+| SDK asset | `crt-v0.4.0-rehearsal.20261031-windows-aarch64-dev.zip`, 140,783,815 bytes, SHA-256 `0f1a51c5f345e3b326c521d3cd6d8cf099adf8aabec6de37cfdae7c076389939`, matches the collector's `SHA256SUMS`; the two stage-source assets are `7b814141...36a` and `469a43c8...785` |
+| Extracted SDK (path with spaces) | 2,712 entries, driver inventory `386d692057d8dfdcb0e13339439fa9c085e11173a042f02cbacb21098f1d5a87`; differs from the producer directory only in `lib/libz.so` and `lib/libz.so.1` (ZIP has no symlinks; same bytes) |
+| Provider | `cc01aa2d78e40df0eb3c0d57d759da8503a3a3dac419bbaffa75271e1f84929e`, SDK content `978e28f8b4ad8ffd076e0dad2027c5f21da38adc5ac29cfccceebdcd8a42bd54`; exported with `crt-narrow-encoding-1` required |
+| CLI | base `89dfa82befb9b124fa2071168b3b9dab55c8c921` plus the changes below, committed afterwards (driver source SHA-256 `55b0bde5ef4e0229fd07bdcfceba20e91777cd930e1f7345d428a9ef0078feab`) |
+
+### What Changed
+
+CRT: the SDK ships `share/crt/windows/utf8.manifest`; the `crt-cc`/`crt-c++` executable links embed it
+(a sysroot without the file links as before); in-tree executables take the option from CMake (the SDK's
+`mksh.exe` and `toybox.exe` carry it); `crt_get_narrow_encoding()` reports `utf-8` or `ansi`; the Development
+profile gains the `crt-narrow-encoding-1` capability and `verify_dist.py` checks the Windows manifest.
+Because the exporter records the wrapper's argv, the CLI picked the manifest up **from the provider with no
+hard-coded flag**.
+
+CLI: `doctor --bootstrap` reports `narrow_encoding` (a non-`utf-8` process fails the check); `main` rejects,
+before any work, non-ASCII arguments in a process that is not UTF-8, and on Windows any argument that is not
+valid UTF-8; compiler-reported dependency paths are validated the same way (the OS would otherwise map invalid
+bytes to U+FFFD and merge distinct names); `valid_utf8` is a strict validator (overlong forms, surrogates and
+values above U+10FFFF rejected). The native suite runs its hostile Windows fixture as
+`space 한글 é @ $(touch never-execute)` and checks the encoding and the validator. This revives the
+[prototype](#windows-narrow-string-model-prototype-2026-10-31) as the real policy.
+
+### Results
+
+- CRT: `crt-development-sdk-test` and the SDK consumer pass; `crt-c-test` **167/167** (including the new
+  `windows_utf8_narrow_test` and the extended `platform_test`); `crt-dev-release` collected the assets after the
+  earlier release root was moved aside (the collector refuses an existing identity). The Python unit tests for
+  `create_dist`, `verify_dist`, the exporter, the stage-source closure and the Development profile pass.
+- CLI replay against the **extracted archive**, driver CRT `85546d9`: every step exit 0, **780 native checks**,
+  cold self-build **9 executed / 0 reused**, warm **0 / 9**, 381 process records and no forbidden image, bare
+  help/version/doctor with `narrow_encoding: pass`, imports `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`.
+  Bare CLI: 18,779,136 bytes, SHA-256 `2cfd57291e983cf2a171c29271a3319aac05c558f0586a5b30c69a50005e03a5`,
+  now `bin/win-arm64/crt-cli.exe`. `result.json` SHA-256
+  `cabc65f6215a6d427406b0f64630604017b319404b0f3072d0a432346beca620`.
+- With that executable and the SDK's own provider (no loose manifest): `new`, `configure`, `build`, `test` and
+  `run` pass in `한글 é 공백/hello`, and the 17 `fetch` cases pass again.
+
+The process inventory is accounting, and it showed an imprecision this run: the same 11 generated executables
+were started in both replays, but this time the two `hello-*` programs were recorded under the name
+`greeting-test.exe`, and a static versus shared library test swapped places. All four `Hello from CRT` lines were
+printed, so nothing was missed; the likely cause is the recorder resolving a short-lived process image late. It is
+not a denial mechanism and no forbidden image appeared.
+
+### Limits
+
+Windows/arm64 only; the Windows/x64 pair, other hosts (the new sources call `crt_get_narrow_encoding()`, so they
+need an SDK that has it) and Windows before 10 version 1903 are not run. CRT's host tools (mksh, toybox, awk, make)
+were not exercised in Unicode directories. The bootstrap loop was not repeated for the new binary. The source digest
+identifies the replayed CLI changes. The SDK is still a local rehearsal asset,
+not a promoted release.

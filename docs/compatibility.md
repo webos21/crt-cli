@@ -285,12 +285,15 @@ decision; `ws2_32.dll` is loaded by name from the PAL. Details:
 
 ## Windows Narrow-String Model (2026-10-31)
 
-**Proposal with a local prototype, not an adopted contract.** A CRT SDK that embeds a UTF-8 active-code-page manifest in
-executables through its link policy would make Windows `char*` UTF-8 for the CLI and the projects it builds; the provider
-would carry the option, so the CLI needs no hard-coded flag. Requirements it would add: Windows 10 1903 or later for
-non-ASCII paths, and a CRT query for detecting a process without the setting. Today's SDKs and pins are unaffected. See the
-CRT [design](https://github.com/webos21/crt/blob/main/docs/design/windows_narrow_strings.md) and the
-[prototype record](acceptance/bootstrap_acceptance.md#windows-narrow-string-model-prototype-2026-10-31).
+**Implemented locally, replayed on Windows/arm64 only; unpromoted.** CRT
+[`85546d9`](https://github.com/webos21/crt/commit/85546d9bd45a7466e75a30905e3db0113a7763c6) embeds a UTF-8 active-code-page
+manifest in Windows executables through the SDK link policy (a new SDK file, `share/crt/windows/utf8.manifest`) and adds
+`crt_get_narrow_encoding()` and the `crt-narrow-encoding-1` capability, which the exporter now requires. The provider carries
+the link option, so the CLI hard-codes nothing, but CLI sources from this increment call the new query and need an SDK that has
+it: **older SDKs and the other hosts' recorded replays do not combine with these sources** until their SDKs are rebuilt. A
+combination also requires Windows 10 1903 or later for non-ASCII paths. See the CRT
+[design](https://github.com/webos21/crt/blob/main/docs/design/windows_narrow_strings.md) and the
+[implementation record](acceptance/bootstrap_acceptance.md#windows-utf-8-narrow-strings-implemented-2026-10-31). No pin is adopted.
 
 ## Linux Merged-source Revalidation (2026-10-30)
 

@@ -10,6 +10,7 @@ int main(int argc, char** argv) {
             else args.emplace_back(argv[i]);
         }
         if (args.empty() || args == std::vector<std::string>{"--help"}) return print_reply({0, "help", {{"usage", "crt-cli [--json] --help|--version|doctor --bootstrap|fetch|new|configure|build|test|run"}}, "crt-cli: --help | --version | doctor --bootstrap | fetch --url <https-url> --ca-file <pem> --output <file> --sha256 <hex> --size <bytes> | new <dir> [--language c|cxx] | configure/build/test/run [--project <dir>]"}, json);
+        check_arguments(args);
         command = args.front();
         if (args == std::vector<std::string>{"--version"}) return print_reply({0, "version", {{"version", "0.1.0-dev"}}, "crt-cli 0.1.0-dev"}, json);
         if (args == std::vector<std::string>{"doctor", "--bootstrap"}) return print_reply(bootstrap_doctor(), json);

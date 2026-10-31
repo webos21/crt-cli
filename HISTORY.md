@@ -11,6 +11,18 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-10-31
 
+### Implement the Windows UTF-8 narrow-string model
+
+Adopting the manifest option (B), CRT now ships `share/crt/windows/utf8.manifest`, its `crt-cc`/`crt-c++` wrappers and in-tree
+executables embed it, `crt_get_narrow_encoding()` reports the result and the Development profile gains the
+`crt-narrow-encoding-1` capability (`crt-c-test` 167/167). The CLI takes the manifest from the provider, so it carries no
+flag: `doctor` reports `narrow_encoding`, non-ASCII or invalid arguments and compiler-reported dependency paths are checked on
+Windows, and the native suite runs a Hangul/`é` fixture. Against an SDK extracted from a local release-asset ZIP the replay
+passes 780 checks (cold 9/0, warm 0/9), `new` to `run` pass in `한글 é 공백`, and the 17 `fetch` cases pass again;
+`bin/win-arm64/crt-cli.exe` is refreshed. The Windows Unicode-path requirement is met on Windows/arm64 only; Windows/x64, other
+hosts (they need an SDK with the new capability), Windows before 1903, host tools in Unicode directories and a promoted SDK
+remain open. [Acceptance](docs/acceptance/bootstrap_acceptance.md#windows-utf-8-narrow-strings-implemented-2026-10-31).
+
 ### Design the Windows narrow-string model and prototype it
 
 The Hangul-path `build` failure traced to two narrow encodings on Windows (ANSI for `argv`, environment, file calls and

@@ -44,12 +44,14 @@ Reply bootstrap_doctor() {
     zlib = zlib && uncompress(restored, &restored_size, compressed, compressed_size) == Z_OK;
     zlib = zlib && restored_size == sizeof(input) && std::memcmp(restored, input, sizeof(input)) == 0;
     bool tls = http_tls_probe();
-    bool ok = cxx && local_cxx_allocation && zlib && tls;
+    bool narrow = std::strcmp(crt_get_narrow_encoding(), "utf-8") == 0;
+    bool ok = cxx && local_cxx_allocation && zlib && tls && narrow;
     Json data{{"scope", "bootstrap"}, {"target", {{"os", CRT_CLI_TARGET_OS}, {"arch", CRT_CLI_TARGET_ARCH}}},
               {"sdk_build_input", {{"version", CRT_CLI_SDK_VERSION}, {"source_commit", CRT_CLI_SDK_COMMIT}, {"content_sha256", CRT_CLI_SDK_CONTENT}}},
-              {"checks", {{"cxx_runtime", cxx ? "pass" : "fail"}, {"cxx_allocation_owner", local_cxx_allocation ? "pass" : "fail"}, {"zlib", zlib ? "pass" : "fail"}, {"http_tls_linkage", tls ? "pass" : "fail"}, {"executable_integrity", "not_verified"}, {"https_network", "not_run"}}},
+              {"checks", {{"cxx_runtime", cxx ? "pass" : "fail"}, {"cxx_allocation_owner", local_cxx_allocation ? "pass" : "fail"}, {"zlib", zlib ? "pass" : "fail"}, {"http_tls_linkage", tls ? "pass" : "fail"}, {"narrow_encoding", narrow ? "pass" : "fail"}, {"executable_integrity", "not_verified"}, {"https_network", "not_run"}}},
               {"allocation_images", {{"executable", image.dli_fname ? image.dli_fname : ""},
                   {"new", allocation.dli_fname ? allocation.dli_fname : ""}, {"delete", deallocation.dli_fname ? deallocation.dli_fname : ""}}},
+              {"narrow_encoding", crt_get_narrow_encoding()},
               {"sdk_store", sdk_store_root().string()},
               {"runtime_maps", runtime_maps()}};
     return {ok ? 0 : 1, "doctor", data, ok ? "bootstrap C++/zlib/HTTP/TLS pass; integrity not verified; HTTPS not run" : "bootstrap checks failed"};

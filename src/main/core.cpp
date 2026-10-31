@@ -111,6 +111,32 @@ void native_executable(const fs::path& path) {
     require(path.is_absolute() && fs::is_regular_file(path), "external tool must be an absolute native executable: " + path.string());
     require(crt_is_native_executable(path.string().c_str()) == 1, "script/interpreter or non-native tool is unsupported: " + path.string());
 }
+bool valid_utf8(const std::string& value) {
+    for (size_t i = 0; i < value.size();) {
+        unsigned char c = static_cast<unsigned char>(value[i]);
+        size_t length = c < 0x80 ? 1 : (c >= 0xC2 && c <= 0xDF) ? 2 : (c >= 0xE0 && c <= 0xEF) ? 3 : (c >= 0xF0 && c <= 0xF4) ? 4 : 0;
+        if (length == 0 || i + length > value.size()) return false;
+        for (size_t k = 1; k < length; ++k) if ((static_cast<unsigned char>(value[i + k]) & 0xC0) != 0x80) return false;
+        unsigned char second = length > 1 ? static_cast<unsigned char>(value[i + 1]) : 0;
+        if ((c == 0xE0 && second < 0xA0) || (c == 0xED && second > 0x9F) || (c == 0xF0 && second < 0x90) || (c == 0xF4 && second > 0x8F)) return false;
+        i += length;
+    }
+    return true;
+}
+void require_native_utf8(const std::string& value, const std::string& what) {
+    if (std::string(crt_get_platform_info()->os) == "windows")
+        require(valid_utf8(value), what + " is not valid UTF-8; Windows would silently replace the invalid bytes");
+}
+void check_arguments(const std::vector<std::string>& args) {
+    const bool ansi_process = std::string(crt_get_narrow_encoding()) != "utf-8";
+    for (const auto& argument : args) {
+        bool ascii = true;
+        for (unsigned char c : argument) if (c >= 0x80) ascii = false;
+        if (ascii) continue;
+        if (ansi_process) throw Error("this executable runs with the " + std::string(crt_get_narrow_encoding()) + " narrow-string encoding (it lacks the SDK's UTF-8 manifest); non-ASCII arguments are not supported", 2);
+        try { require_native_utf8(argument, "an argument"); } catch (const Error& error) { throw Error(error.what(), 2); }
+    }
+}
 int print_reply(const Reply& reply, bool json) {
     if (json) std::printf("%s\n", Json{{"schema", "crt-cli.bootstrap-result"}, {"format", 1},
         {"command", reply.command}, {"ok", reply.code == 0}, {"data", reply.data}}.dump(-1, ' ', false, Json::error_handler_t::replace).c_str());

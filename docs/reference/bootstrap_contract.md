@@ -42,6 +42,12 @@ child `PATH=<sdk>/bin;<sdk>/lib` on Windows only. A target may list `sdk_consume
 translation units that use `<filesystem>`. A running executable that the build must replace is renamed aside
 (`<name>.old-<n>`, removed on the next build). Output, receipts and replies replace invalid UTF-8 from OS text.
 
+Narrow strings are UTF-8 (2026-10-31): the SDK's link policy embeds CRT's UTF-8 active-code-page manifest, which the provider's
+link argv carries, so the CLI and the programs it builds read `argv`, the environment and paths as UTF-8 (Windows 10 1903 or
+later). `doctor --bootstrap` reports `narrow_encoding` and fails when it is not `utf-8`. Before any command the CLI rejects, with
+exit 2, non-ASCII arguments in a process that is not UTF-8 and, on Windows, any argument that is not valid UTF-8; dependency
+paths reported by the compiler get the same Windows check. A project directory's basename must still be a package identifier.
+
 ## Project and Target Declaration
 
 New projects use `manifest_format: 1`:

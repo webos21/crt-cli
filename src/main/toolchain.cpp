@@ -198,6 +198,7 @@ bool Toolchain::invoke(const std::string& operation, bool cpp, const std::vector
     else dependencies.insert(dependencies.end(), libraries.begin(), libraries.end());
     Json recorded = Json::object();
     for (const auto& dependency : dependencies) {
+        require_native_utf8(dependency, "a dependency path reported by the compiler");
         fs::path path = fs::absolute(dependency);
         if (under(path, sdk) || under(path, resource)) continue; // covered by the verified SDK/tool identity
         recorded[path.string()] = file_sha256(path);
