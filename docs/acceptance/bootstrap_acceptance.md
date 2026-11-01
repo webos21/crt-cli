@@ -1670,3 +1670,257 @@ than relabeled or rerun for this trust-scope choice. Remaining Linux D1
 host-tools/env/shell/resource gates and release metadata/anti-replay policy
 are not closed by these 32 tests. Official publisher qualification is deferred
 separately, not requested again as an input to this test-only scope.
+
+## Windows/x64 Latest-source Revalidation (2026-11-01)
+
+The failed snapshot below is retained; the subsequent [owned-descendant fix](#windowsx64-owned-descendant-timeout-fix-2026-11-01) passes the full native suite.
+
+**Partial pass; full native regression fails.** Remote `main` and the clean
+local checkouts agree at CRT `fa5dc305efa3cf3c807786550dd727023cad8bd3` and
+CLI `e66abf2e96a19c6c8c5b3ad59ffcbec48f666b1c`. CLI implementation inputs are
+unchanged; the exported tree includes a scope-only TODO edit. This replay
+checks UTF-8 paths, fetch and experimental publisher verification on native
+Windows/x64, rather than carrying forward Windows/arm64 or Linux results.
+
+### Inputs and Producer Gate
+
+The fresh clean producer clone is
+`C:/Users/Lee/AppData/Local/Temp/crt-win-x64-20261101/producer`; its build is
+`out/cli-windows-20261101/build`. CMake configured with `--fresh --preset
+windows-host-ninja-debug -B <build> -DCRT_RELEASE_TAG=v0.4.0-cli.20261101`, then
+built `crt-development-sdk-test` and `crt-c-test` with `--parallel 8`.
+LLVM is 22.1.8 under `C:/Program Files/LLVM/bin`; the external Windows SDK
+import libraries are `10.0.28000.0/um/x64`. Developer Mode is enabled; it was
+not changed. The Dev SDK remains a local directory candidate, without a tag,
+release archive, promotion or production lock.
+
+Producer tests: **166 pass, one skip, no failures** in 167 registered core
+tests. `fork_heap_snapshot_test_runs` is skipped, not a runtime pass.
+`windows_utf8_narrow_test_runs` and the platform query test pass. The ordinary
+Dev consumer passes static/shared HTTPS, inflate and trust negatives.
+Exporter/create-dist/verify-dist fixtures have 31 passes and six conditional
+skips; the Development profile/boundary fixtures pass 32/32 on the native host.
+The earlier Codex-sandbox run of that latter group hit ACL/file-publication
+restrictions; its log is retained separately. The producer gate is defined in
+[CRT's SDK acceptance](https://github.com/webos21/crt/blob/fa5dc305efa3cf3c807786550dd727023cad8bd3/docs/acceptance/sdk_split_acceptance.md).
+This run's original producer receipts remain under `logs/` and
+`sdk-status.json` below. The later producer documentation and source reconciliation are linked in
+[the owned-spawn fix record](#windowsx64-owned-descendant-timeout-fix-2026-11-01).
+
+| Identity | SHA-256 |
+| --- | --- |
+| Exported CLI source inventory | `adce6ed2a029c78b1d722d2ca1101a0e8aa9580d0f3436fc93209b191327162b` |
+| SDK inventory | `8c1b2b0634b035074a9c335bcdab4c491b61cf15803600390010393c7ed9670f` |
+| SDK content selection | `25494a700c73741bb0e8d8f1f345b82efd2b8dc0cbf91548026dbf56e41735c6` |
+| Native provider | `af4ad4ad1198dd0fe0880d892d279735683fa06f9d2aae3a90bde46178d56937` |
+| Final executable (19,186,688 bytes) | `fa094100aabfd3763dbac01b457fe7029563262fcaed045429e5730669be42ac` |
+
+Producer/base/compile provenance all identify clean CRT `fa5dc30`.
+The original and relocated SDK inventories remain equal after testing.
+
+### Native Replay and Retained Failure
+
+The unchanged producer driver `tools/replay_cli_contract_windows.py` runs with
+`--cli-source <checkout> --sdk-root <build>/dist/dev --hidden <original CRT>
+--output <evidence>/replay-utf8 --work "C:/Users/Lee/AppData/Local/Temp/crt replay 한글 é 20261101 utf8"`
+and explicit `--clang`, `--clangxx`, `--linker`, `--ar` paths under LLVM.
+`CRT_WINDOWS_SDK_LIBPATH` selects the import-library directory above.
+`PYTHONUTF8=1` is an explicit **test-host** setting: without it, the first
+Unicode-path attempt fails because `export_cli_toolchain.py:211` reads the
+recorder's UTF-8 `argv.json` using Python's CP949 default. That failed
+`replay/` attempt is preserved; no SDK or CLI encoding fallback was added.
+
+The relocated SDK and sources use Hangul, accented characters and spaces.
+Provider export, boundary probe, nine seed compiles/link, configure, build,
+cold self-build (**10 executed / 0 reused**) and warm build (**0 / 10**) pass.
+The first build hashes to `e62aa536d9e7ba3d9146e7ca1b4d1fd4a0f9dc809884524deab9c8deba7c7296`;
+the self-build hash is in the table. Byte reproducibility is not established.
+The driver records 94 processes, all declared native images or `conhost.exe`;
+this remains process accounting, not executable-launch denial.
+
+`native-tests` exits **1** at `timeout kills owned descendants before delayed
+writes`. Its positive control first proves that a descendant can execute.
+After the one-second timeout, the retained fixture's `descendant-marker`
+contains `descendant ran`. The fixture is
+`<work>/tmp/crt-cli-native-q8O3ga`; the failing implementation is the existing
+`execute()` call to `kill(-pid, SIGKILL)`, followed by direct-child kill.
+CRT's Windows `__crt_sys_kill` explicitly returns `ENOSYS` for process groups
+([exact producer source](https://github.com/webos21/crt/blob/fa5dc305efa3cf3c807786550dd727023cad8bd3/libc/src/arch/windows/common/syscall.c#L8107)).
+The outer test job cleans up its owned tree; that does not satisfy the CLI's
+own timeout contract. Later cases in this aborting suite are **Not run**.
+No assertion was disabled and no complete Windows regression pass is claimed.
+
+Independent restricted-token checks still pass: bare help/version/doctor,
+and `new`, configure, build, test and run of a C++ project under
+`<work>/tmp/한글 é 공백/hello`. A second SID cannot read either original
+repository, the producer SDK/build tree, exported source, relocated SDK or
+provider. Doctor reports `narrow_encoding: utf-8` and passing C++ allocation,
+exception, zlib and HTTP/TLS initialization checks. Direct PE imports are only
+`KERNEL32.dll` and `api-ms-win-core-synch-l1-2-0.dll`; mapped allocation owners
+are the executable. OS-transitive mapped images are recorded separately.
+Integrity stays `not_verified`; doctor's network field stays `not_run`.
+
+CRT-built mksh (`echo`), toybox (`echo`), separate awk (`BEGIN`) and make
+(`--version`) each start successfully from the Unicode SDK path with empty
+PATH. An initial mksh probe incorrectly assumed `printf` was builtin; that
+empty-PATH failure is retained, followed by the explicit `echo` probe.
+These are startup/basic-operation checks, not configure/make port acceptance
+or an implemented independent CLI host-tools/environment contract.
+
+### SDK-free HTTPS and Experimental Signatures
+
+All **32 controlled-loopback cases pass**, using disposable test CA/server
+and RSA publisher identities. Trust, expiry, hostname, digest, size,
+interruption, timeout, HTTP/redirect, existing-output and signature/key/padding/
+salt/argument negatives fail closed without staging leftovers or publication.
+CA, signature, key and output paths contain Hangul, accented characters and
+spaces. The CA certificate SHA-256 is
+`0e231819016f4d06706e15f841ae402388b65b610b45909551aecdb86bb35582`.
+Private test keys remain outside tracked sources and are not trust anchors.
+
+The test-host adapter around CRT's unchanged case definitions launches only
+the CLI through `crt_windows_trace.run`: 64 recorded CLI/OS-console processes,
+empty PATH, and a new private work directory. A native visibility probe
+confirms eight SDK/source/provider/build roots inaccessible under that same
+SID. Product fetch invokes no Python, OpenSSL or shell. Test Python/OpenSSL
+only create identities and serve loopback HTTPS. OpenSSL 3.6.1 from Strawberry
+needs an explicit test-only `OPENSSL_CONF` (its compiled default points to a
+missing `Z:/extlib/...` file) and a relative `-extfile` filename in the PKI
+working directory; its non-ASCII absolute-path failure is retained. The CLI
+still receives full Unicode absolute paths. No system settings were changed.
+
+### Evidence and Disposition
+
+Raw evidence is under CLI `out/windows-x64-20261101/`: `review.json`,
+`run_sdk.py`, `sdk-status.json`, `logs/`, `replay/`, `replay-utf8/`,
+`supplement/`, `host-tools/`, `https/`, `https-configured/`, `https-final/`,
+the test adapters and aggregate `result.json`. Failed attempts are retained.
+`replay-utf8/commands.json` SHA-256 is
+`df42d6ea100c52788be7040efee181f76d5b3d204ad7e3d74c811d374d8d0ba4`;
+`https-final/result.json` SHA-256 is
+`f8507756304e2e6747b621c8884a2726109d2782126629cbad64998185e51555`.
+A review copy is `out/windows-x64-20261101/crt-cli.exe`; committed `bin/`,
+`.sdk.json` and the unresolved root lock are unchanged.
+
+Windows/x64 only. Complete D0/D1 acceptance remains open on owned-descendant
+cleanup, the aborted suite's remaining cases, host-tool/environment integration
+and release trust/resource policy. No producer source fix, binary refresh,
+official trust registration, SDK promotion, commit or publication was made.
+
+## Windows/x64 Owned-descendant Timeout Fix (2026-11-01)
+
+**Pass, local/unpromoted Windows/x64.** The preceding timeout failure is fixed
+in CRT's Windows PAL, not through a CLI OS-specific workaround. Public Bionic
+signatures and compiler-policy format 1 are unchanged. A new-group spawn is
+attached to an unnamed Job Object before its CRT or native child can execute.
+`kill(-leader_pid, SIGKILL)` cancels that owned tree, including descendants of
+a leader already reaped by `waitpid`. A retained leader handle prevents PID
+reuse; the locked bounded registry reclaims failed/empty jobs. Foreign group
+joining, general/post-fork membership and catchable cross-process signals
+remain explicitly unsupported. Normal parent exit does not imply group kill.
+
+Producer base is `fa5dc305efa3cf3c807786550dd727023cad8bd3` plus the uncommitted
+PAL/test delta. Its implementation SHA-256 is
+`0bf953484cbad0152ed545966580905f2fc897db2069191415591d1f11339589`.
+The exact three-file source manifest, tracked patch and new test source are
+retained under `out/windows-timeout-fix-20261101/`; a new producer commit is
+not invented. The scope is defined in the producer's source comments and
+regression. CRT's contract, producer acceptance, history and queue are now committed with
+the fix as [`8db69f4`](https://github.com/webos21/crt/commit/8db69f404dcfa70b5aa0569cae51a962fd0615d2).
+See the [owned-spawn contract](https://github.com/webos21/crt/blob/8db69f404dcfa70b5aa0569cae51a962fd0615d2/docs/design/job_control.md#owned-spawn-cancellation-2026-11-01)
+and [producer evidence](https://github.com/webos21/crt/blob/8db69f404dcfa70b5aa0569cae51a962fd0615d2/docs/acceptance/sdk_split_acceptance.md#windowsx64-owned-spawn-cancellation-2026-11-01).
+The original producer receipts remain in this run's evidence.
+CLI product sources remain those of
+`e66abf2e96a19c6c8c5b3ad59ffcbec48f666b1c`; the export also includes the existing
+scope/evidence documentation edits.
+
+### Exact Candidate and Producer Tests
+
+The final fresh producer clone is
+`C:/Users/Lee/AppData/Local/Temp/crt-timeout-final-20261101/producer`, output
+`out/timeout-fix/build`. CMake uses `--fresh --preset windows-host-ninja-debug
+-B <build> -DCRT_RELEASE_TAG=development`, then builds
+`crt-development-sdk-test` and `crt-c-test` with `--parallel 8`.
+The local `development` identity permits dirty-source assets explicitly;
+producer/base/compile provenance is dirty and is never relabeled clean.
+LLVM is 22.1.8, Windows SDK import libraries `10.0.28000.0/um/x64`.
+Only pinned source/download caches are reused; compiled libraries are fresh.
+
+Core: **167 pass, one skip, no failures** among 168 tests. The existing
+`fork_heap_snapshot_test_runs` skip remains a skip. The new Windows test covers
+ordinary/native spawn, live/reaped leaders, descendant termination, separate
+sibling survival, 80 failed/successful-spawn cycles and rejected group joins.
+The final focused run passes in 12.37 seconds. Dev static/shared HTTPS,
+inflate and trust-negative consumers also pass.
+
+| Identity | SHA-256 |
+| --- | --- |
+| CLI source export | `a07448dbdae5638c7588a6ee4470456759b1a17085eedfdfd29d7811b858f079` |
+| SDK inventory | `252ff44b22ab222692f84c29522ce4f2f9b971d0f1d111baf9ac31e9b33441de` |
+| SDK content selection | `7c04cfffe0b2faabe1cc149d0914f5ada6432b8cfae93a594ab1771f5d0b3b1e` |
+| Provider | `b8fa1e9ab171732add99d696d48ed9ded4d1c5c21946238e9dd6cc3e21fca48f` |
+| Final executable (19,180,032 bytes) | `c9707454fe451ae3ad7cad4f70f4d7e743399c51dc5be5fac300b8a39ef09b9d` |
+
+### Native Consumer, Isolation and Fetch
+
+The unchanged producer replay driver runs from the final clone with explicit
+LLVM paths, `CRT_WINDOWS_SDK_LIBPATH` above, test-host `PYTHONUTF8=1`,
+`--hidden <original CRT>`, `--output <evidence>/replay` and
+`--work "C:/Users/Lee/AppData/Local/Temp/crt fixed 한글 é 20261101"`.
+The public SDK is copied outside the producer tree before consumption.
+
+All stages pass: provider/probe, seed compile/link, configure, build,
+cold self-build **10 executed / 0 reused**, warm
+**0 / 10**, and **788 native checks**.
+The original positive-control/timeout-marker assertion is unchanged and now
+passes; the suite continues through Unicode C/C++ workflows, typed static/
+shared targets, cache invalidation, invalid pins/JSON, SDK store selection,
+timeouts and bounded output. This is an execution pass, not just compilation.
+The job-based audit records 431 declared native/OS processes
+and no forbidden image; it is accounting, not executable-launch denial.
+
+Bare help/version/doctor and PE audit pass with SDK/source/provider roots
+unreadable. Direct imports remain only `kernel32.dll` and
+`api-ms-win-core-synch-l1-2-0.dll`. UTF-8 narrow strings, C++ allocation/exception,
+zlib and HTTP/TLS initialization pass; integrity remains `not_verified` and
+doctor's network field remains `not_run`.
+
+Separately, all **32 SDK-free controlled HTTPS/integrity/signature cases pass**
+with new disposable identities in Unicode/space paths. The existing test-host
+adapter uses a restricted token, empty PATH and 64
+CLI/OS process records. Its visibility probe proves eight SDK/source/provider/
+build roots inaccessible under that same SID. No Python/OpenSSL/shell is
+executed by product fetch; those tools only serve/generate the fixture. The
+explicit test-host OpenSSL config/relative extension filename and Python UTF-8
+mode remain the previously recorded tooling prerequisites, not product fallbacks.
+Private keys remain outside tracked sources and no system trust is changed.
+
+### Retention and Limits
+
+Original and relocated SDK inventories remain unchanged. Final receipts,
+source hashes, argv, native process records and logs are in
+`out/windows-timeout-fix-20261101/final/`; `replay/result.json` SHA-256 is
+`50b1827b48919b812c1f2f80916e3d34f2cfa0201dbea4b2b737cda70b0d8dfd`.
+The pre-fix failure, initial cache-copy long-path failure and preliminary
+candidate before PID hardening are retained separately and not adopted.
+`bin/win-x64/crt-cli.exe` is refreshed to this self-built binary, with its
+previous bytes backed up under the ignored evidence root. Local `.sdk.json`
+selects the exact handoff/provider with dirty-SDK opt-in; the tracked root
+lock remains unresolved. No SDK installer or production lock is implemented
+by this local selection, and byte reproducibility is not claimed.
+
+Windows/x64 only; Windows/arm64 needs its native replay of this producer fix.
+General signal/job control, full D1 environment/resource/trust qualification,
+official publisher policy, producer promotion and release remain open.
+At validation time, no commit/push, release publication or STATUS change was made.
+
+### Committed Source Reconciliation (2026-11-01)
+
+The producer fix and its documentation were committed and pushed as
+`8db69f404dcfa70b5aa0569cae51a962fd0615d2`. Its three implementation/test
+Git blobs hash exactly to the inputs of the passing replay. This is source
+reconciliation, not a new SDK build: the exercised SDK and CLI retain their
+original `fa5dc30` plus dirty-delta provenance and all original artifact hashes.
+The Windows binary and consumer records are committed separately; the root
+lock stays unresolved. No promoted SDK, release tag or GitHub Release is
+created by these source/binary repository pushes.

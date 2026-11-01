@@ -11,6 +11,43 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-01
 
+### Fix Windows/x64 owned-descendant timeout cleanup and refresh the local binary
+
+CRT now manages new owned spawn groups with Job Objects before child resume,
+retains group/leader identity after waitpid and prevents PID reuse. A fresh
+local development SDK passes 167 core tests with one skip and static/shared
+transport consumers. The SDK-only CLI self-build/cache audit and all
+788 native checks pass, including the previously failing
+descendant marker; 32 SDK-free HTTPS/signature cases pass again.
+
+Refreshed the Windows/x64 binary and ignored local SDK config, preserving the
+old binary, SDKs and failed attempts. CLI product sources and the unresolved
+root lock are unchanged. Exact inputs, producer delta, commands and limits:
+[Windows fix acceptance](docs/acceptance/bootstrap_acceptance.md#windowsx64-owned-descendant-timeout-fix-2026-11-01).
+Windows/arm64 and full D1/job-control gates remain open. The producer fix and
+documents are committed as `8db69f404dcfa70b5aa0569cae51a962fd0615d2`; its source
+inputs match the tested delta. Existing dirty SDK/binary identities are retained,
+without SDK promotion or a public release.
+
+### Revalidate current Windows/x64 sources and retain the process-tree failure
+
+Remote and local main agree at CRT `fa5dc30` and CLI `e66abf2`. A fresh clean
+Dev SDK passes its static/shared transport consumers; core has 166 passes and
+one skip. Latest CLI build/self-build and cold/warm cache checks pass in a
+Unicode path, but the native suite exits 1: an owned descendant survives its
+timeout and writes the marker. CRT's Windows process-group kill remains
+`ENOSYS`; no assertion was disabled or full regression pass claimed.
+
+Independent SDK-hidden help/version/doctor, Unicode C++ new/configure/build/
+test/run, CRT host-tool startup probes and all 32 disposable-identity HTTPS/
+signature cases pass. Retained test-host findings include Python's CP949
+JSON default and OpenSSL's missing default config/non-ASCII extension path.
+Exact identities, commands, failed attempts and limits are in
+[Windows/x64 acceptance](docs/acceptance/bootstrap_acceptance.md#windowsx64-latest-source-revalidation-2026-11-01).
+Original producer sources, committed binaries, local SDK config and root lock
+are unchanged. Full Windows acceptance needs a producer fix and fresh replay;
+no SDK promotion, trust registration, commit or publication was performed.
+
 ### Select disposable test identities for Linux authentication validation
 
 The owner selected test certificates instead of supplying official publisher

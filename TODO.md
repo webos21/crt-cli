@@ -24,11 +24,14 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
 
 ### D0/D1 - SDK Consumer Contracts, Bootstrap and Trust
 
-Current focus: remaining Linux D1 environment/resource gates. The owner selected
+Current focus: remaining D1 host-environment/resource gates and the Windows/arm64
+replay of the owned-spawn fix. Windows/x64 now passes the full native suite
+with the producer fix; see [acceptance](docs/acceptance/bootstrap_acceptance.md#windowsx64-owned-descendant-timeout-fix-2026-11-01).
+The Linux D1 environment/resource gates remain open. The owner selected
 disposable test CA/signing identities on 2026-11-01; their authentication replay
 passes without waiting for official release keys/URLs. Official trust remains
 separate release qualification; host-tools/env/shell contracts are still open.
-Windows/macOS are Not run for this Linux-only increment. Linux/x86_64 passes against a fresh clean-source Dev SDK with
+The earlier Linux-only trust increment retains its separate host scope. Linux/x86_64 passes against a fresh clean-source Dev SDK with
 `crt-narrow-encoding-1`; the exact scope is in
 [the latest Linux record](docs/acceptance/bootstrap_acceptance.md#linux-latest-source-revalidation-2026-10-31).
 Temporary: each host's final executable is committed under `bin/` (`macos`, `linux-x64`,
@@ -54,9 +57,9 @@ Public SDK release is not a prerequisite; CLI consumption stays SDK-only.
 - [ ] **D0.5** Implement bounded help/version/bootstrap diagnosis and check
   single-executable link feasibility for the chosen CRT/C++/HTTP/TLS stack.
   All five native pairs pass at their recorded local/unpromoted snapshots.
-  Linux/x86_64 now replays the latest fetch/encoding sources and CRT `fcntl.h`/PAL
-  changes (2026-10-31); the latest-source Windows/x64, macOS and Linux/aarch64
-  replays remain open.
+  Linux/x86_64 and Windows/x64 replay the latest sources; x64 owned-descendant
+  cleanup now passes (2026-11-01). Latest macOS/Linux/aarch64 and the
+  Windows/arm64 process-fix replay remain open.
 - [ ] **D0.6** Validate relocated build/run/imports with producer trees unavailable;
   Linux, macOS/arm64 and Windows/x64 pass ([Windows evidence](docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-windowsx64-2026-10-29));
   [macOS evidence](docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-macosarm64-2026-10-29).
@@ -79,11 +82,13 @@ These are future increments, not implemented features.
   environment/project diagnosis, env/shell and per-child environments.
 - [ ] Verify actual CRT mksh/toybox/awk/make, SDK-free CLI execution, paths,
   private DLL resolution, and bounded owned-process cleanup.
-- [ ] Windows UTF-8 narrow strings are implemented and pass on Windows/arm64
-  ([record](docs/acceptance/bootstrap_acceptance.md#windows-utf-8-narrow-strings-implemented-2026-10-31)); replay on Windows/x64,
-  run CRT's host tools in Unicode directories, and rebuild the remaining Linux/aarch64
+- [ ] Windows UTF-8 narrow strings pass scoped workflows on Windows/arm64
+  ([record](docs/acceptance/bootstrap_acceptance.md#windows-utf-8-narrow-strings-implemented-2026-10-31)) and Windows/x64
+  ([record](docs/acceptance/bootstrap_acceptance.md#windowsx64-latest-source-revalidation-2026-11-01)); x64 host-tool Unicode startup probes pass.
+  Full port-tool workflows remain open. Rebuild the remaining Linux/aarch64
   and macOS SDKs with the new capability before replaying there. Linux/x86_64 passes.
-- [ ] Replay `fetch` and the new sources on macOS, Linux/aarch64 and Windows/x64.
+- [ ] Replay `fetch` and the new sources on macOS and Linux/aarch64; Windows/x64
+  passes 32 SDK-free transport/signature cases and 788 native checks.
 - [ ] Pass [D1-07 HTTPS bootstrap](docs/acceptance/bootstrap_acceptance.md#sdk-free-https-bootstrap-gate)
   with only the shipped CLI runtime/trust inputs; exercise invalid trust and
   tampered metadata/artifacts without SDK/global DLL fallback. Partial: `fetch` and 17 loopback cases pass on
@@ -96,6 +101,8 @@ These are future increments, not implemented features.
   [owner-selected test-identity replay](docs/acceptance/bootstrap_acceptance.md#linux-test-identity-replay-2026-11-01)
   passes 32 cases; official key distribution, release metadata and anti-replay
   policy remain later qualification rather than prerequisites for this test run.
+  Windows/x64 also passes all 32 with disposable identities and inaccessible
+  SDK/source/provider roots (2026-11-01); owned-descendant cleanup now passes on x64.
 - [ ] Define the independent host-tools contract and CLI port-build adapter;
   retain the measured make `SHELL` space-path failure and declare its temporary
   native-tool bridge. Qualify the notices/trust package and remaining D1 negatives.

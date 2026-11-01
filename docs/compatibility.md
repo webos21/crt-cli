@@ -371,7 +371,12 @@ consumer commit records documentation and the verified Linux test executable.
 There is **no promoted production combination yet**. Local bootstrap replays
 exist for all five native pairs at their recorded source/SDK identities;
 the latest fetch/encoding sources pass on Windows/arm64 and Linux/x86_64.
-Windows/x64, macOS/arm64 and Linux/aarch64 still need those latest changes.
+macOS/arm64 and Linux/aarch64 still need those latest changes.
+The earlier [Windows/x64 replay](acceptance/bootstrap_acceptance.md#windowsx64-latest-source-revalidation-2026-11-01)
+builds and passes UTF-8/HTTPS checks, but fails owned-descendant timeout cleanup;
+that failed combination is retained. The subsequent
+[owned-spawn fix](acceptance/bootstrap_acceptance.md#windowsx64-owned-descendant-timeout-fix-2026-11-01) passes
+the full native suite with a new local SDK.
 Complete D1 and Studio S0/S1 remain open. Use the owning acceptance ledgers for scope, not a general
 claim that the SDK/CLI/Studio product combination is compatible.
 
@@ -434,3 +439,47 @@ through `.sdk.json`; the two builds match in code and data segments but not in
 [macOS revalidation](acceptance/bootstrap_acceptance.md#macos-revalidation-after-windows-and-linux-changes-2026-10-30).
 No production lock is adopted and the root lock stays unresolved.
 
+## Windows/x64 Latest-source Review (2026-11-01)
+
+**Partial pass; full native regression fails.** CLI
+`e66abf2e96a19c6c8c5b3ad59ffcbec48f666b1c` plus a scope-only TODO edit consumes
+a fresh clean CRT `fa5dc305efa3cf3c807786550dd727023cad8bd3` Development SDK,
+local version `v0.4.0-cli.20261101`. It provides the implemented
+`crt-narrow-encoding-1` capability and native-provider format 1; no new schema
+is introduced. Exact SDK/provider/tool/source hashes, producer tests and raw
+receipts belong to [Windows acceptance](acceptance/bootstrap_acceptance.md#windowsx64-latest-source-revalidation-2026-11-01).
+
+Build/self-build, Unicode app workflows, SDK-hidden runtime/import checks and
+32 controlled HTTPS/signature cases pass. The aborting native suite proves a
+descendant survives timeout: Windows PAL process-group kill is `ENOSYS`.
+Later suite cases are Not run. The producer owns the required process fix;
+test-host Python/OpenSSL limitations are recorded separately. Earlier passing
+snapshots remain historical and do not qualify this combination. Committed
+host binaries and the unresolved root lock are retained; no production pin,
+official trust anchor, release or complete D0/D1 approval is adopted.
+
+
+## Windows/x64 Owned-spawn Fix Review (2026-11-01)
+
+**Pass, local/unpromoted Windows/x64.** CLI implementation base `e66abf2`
+consumes CRT `fa5dc30` plus the identified uncommitted PAL/test delta via a new
+`development` Dev SDK. Public Bionic signatures and native-provider format 1
+are unchanged. Job-backed owned spawn cancellation fixes the preceding failure;
+general groups/catchable signals remain unsupported. Exact source, SDK/tool,
+provider and binary hashes and producer/consumer receipts are in
+[acceptance](acceptance/bootstrap_acceptance.md#windowsx64-owned-descendant-timeout-fix-2026-11-01).
+
+The full 788-check native suite, SDK-hidden runtime/import
+audits and 32 transport/signature cases pass. The original failed combination
+is retained. The Windows/x64 binary/local defaults are refreshed with backups;
+no production lock or promoted SDK is adopted. Windows/arm64 replay, broader
+D1 environment/resource gates and official release trust remain open.
+
+### Committed Producer Reconciliation (2026-11-01)
+
+Producer source/contract/evidence commit
+[`8db69f404dcfa70b5aa0569cae51a962fd0615d2`](https://github.com/webos21/crt/commit/8db69f404dcfa70b5aa0569cae51a962fd0615d2)
+contains the exact three code/test inputs of the passing Windows/x64 candidate.
+It was committed after testing; the SDK's `fa5dc30` plus dirty-delta build
+identity, provider, binary and failed snapshots are not relabeled. No clean
+SDK rebuild, producer promotion or production-lock adoption is claimed.

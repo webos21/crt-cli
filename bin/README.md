@@ -12,7 +12,7 @@ release artifacts.
 | macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `e1d65adafc806c21b227c61d966947bdbc45003f15d80f072b1c6b9af8d6de44` (3,023,032 bytes; 2026-10-30 replay of `754ca29`) |
 | Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `2a84c61debf31ce87c441f21ca4b0111701e6773567199aa5a2ec71a34e79967` (12,066,824 bytes; 2026-10-31 D1 experiment, base `36c6f65` plus signature/test delta, clean local CRT `f826397`) |
 | Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `94ba0f0c37159e6aa07fe78ea637fd202b658cab45daca70680c380f12450eea` (10,994,232 bytes; 2026-10-30 replay, dirty local SDK) |
-| Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `183e1e6c7f60cfc823ca0e4e260ff913b252798b5b0d0daebe82c9f3a7529806` (16,883,200 bytes, built `-O1 -g`) |
+| Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `c9707454fe451ae3ad7cad4f70f4d7e743399c51dc5be5fac300b8a39ef09b9d` (19,180,032 bytes, built `-O1 -g`; 2026-11-01 owned-spawn fix, dirty local CRT `fa5dc30` plus PAL/test delta) |
 | Windows/arm64 | `bin/win-arm64/crt-cli.exe` | present; SHA-256 `2cfd57291e983cf2a171c29271a3319aac05c558f0586a5b30c69a50005e03a5` (18,779,136 bytes, built `-O1 -g`; 2026-10-31 replay with `fetch` and UTF-8 narrow strings, SDK extracted from a local release-asset ZIP of CRT `85546d9`) |
 
 macOS ships only arm64, so it keeps the single `bin/macos/` directory. Linux and
@@ -22,8 +22,11 @@ The macOS binary imports only `/usr/lib/libSystem.B.dylib` and has no RPATH. Evi
 [macOS acceptance](../docs/acceptance/bootstrap_acceptance.md#macos-revalidation-after-windows-and-linux-changes-2026-10-30).
 
 The Windows/x64 binary imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`; it was built by the CLI itself
-against a clean local Dev SDK (CRT `d054a66`). Evidence:
-[Windows acceptance](../docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-windowsx64-2026-10-29).
+against a local `development` Dev SDK (CRT `fa5dc30` plus the recorded build-time uncommitted owned-spawn PAL/test fix).
+The same producer inputs are now committed as [`8db69f4`](https://github.com/webos21/crt/commit/8db69f404dcfa70b5aa0569cae51a962fd0615d2);
+this does not relabel the SDK as a clean build.
+Evidence: [Windows fix acceptance](../docs/acceptance/bootstrap_acceptance.md#windowsx64-owned-descendant-timeout-fix-2026-11-01).
+The previous binary and failed candidate records are retained under ignored `out/`.
 Rebuild outputs and intermediate objects live in the ignored `out/` directory.
 
 The Windows/arm64 binary imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll` (PE machine `0xAA64`). It is the
