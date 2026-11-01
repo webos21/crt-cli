@@ -24,7 +24,14 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
 
 ### D0/D1 - SDK Consumer Contracts, Bootstrap and Trust
 
-Current focus: remaining D1 host-environment/resource gates and the Windows/arm64
+Next increment: define/adopt the independent producer host-tools contract before
+implementing the CLI `port-build` adapter. Experimental control/app-build/app-run
+`env` and shared child construction pass fresh Linux/x86_64 verification
+([evidence](docs/acceptance/bootstrap_acceptance.md#linux-child-environment-diagnostics-2026-11-02));
+replay this increment on the other native hosts. Earlier host passes retain
+their own revisions. `port-build`, shell and environment/project doctor remain open.
+
+Remaining focus: D1 host-environment/resource gates and the Windows/arm64
 replay of the owned-spawn fix. Windows/x64 now passes the full native suite
 with the producer fix. Latest macOS/arm64 native, bootstrap and SDK-hidden
 HTTPS/signature replay also passes
@@ -33,7 +40,7 @@ HTTPS/signature replay also passes
 The Linux D1 environment/resource gates remain open. The owner selected
 disposable test CA/signing identities on 2026-11-01; their authentication replay
 passes without waiting for official release keys/URLs. Official trust remains
-separate release qualification; host-tools/env/shell contracts are still open.
+separate release qualification; independent host-tools, port-build and shell remain open.
 The earlier Linux-only trust increment retains its separate host scope. Linux/x86_64 passes against a fresh clean-source Dev SDK with
 `crt-narrow-encoding-1`; the exact scope is in
 [the latest Linux record](docs/acceptance/bootstrap_acceptance.md#linux-latest-source-revalidation-2026-10-31).
@@ -82,8 +89,10 @@ These are future increments, not implemented features.
 
 - [ ] Validate the single CLI executable and self-doctor without a Dev SDK;
   settle trust/data/notices/helper policy and inspect actual OS/runtime imports.
-- [ ] Consume/validate the separate CRT host-tools/rootfs contract; define
-  environment/project diagnosis, env/shell and per-child environments.
+- [ ] Consume/validate the separate CRT host-tools/rootfs contract; implement
+  environment/project diagnosis, port-build and shell. Control/app-build/app-run
+  diagnostics share actual child construction; their first native replay passes
+  on Linux ([evidence](docs/acceptance/bootstrap_acceptance.md#linux-child-environment-diagnostics-2026-11-02)).
 - [ ] Verify actual CRT mksh/toybox/awk/make, SDK-free CLI execution, paths,
   private DLL resolution, and bounded owned-process cleanup.
 - [ ] Windows UTF-8 narrow strings pass scoped workflows on Windows/arm64

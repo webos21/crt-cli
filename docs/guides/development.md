@@ -48,6 +48,20 @@ require explicit `--allow-dirty-sdk true`; this is recorded in the local lock,
 not relabeled as a clean release. Sources and library bytes must still match
 the exact provider inventory and provenance.
 
+Inspect child environments without changing the shell or project binding:
+
+```text
+/absolute/crt-cli env --profile control --json
+/absolute/crt-cli env --profile app-build --project /absolute/hello --json
+/absolute/crt-cli env --profile app-run --project /absolute/hello --json
+```
+
+Control works without an SDK. Project profiles validate the existing local
+SDK/tool binding (including a compiler resource query), but build nothing.
+Inherited values are redacted; these diagnostics are not shell export scripts.
+`port-build` and `shell` remain unsupported. See the
+[format-0 environment contract](../reference/bootstrap_contract.md#child-environment-diagnostics-experimental-format-0).
+
 For native macOS, CRT supplies a producer-side acceptance driver that builds
 the initial CRT-native seed from provider argv, then runs native self-build,
 tests and bare-binary checks under Seatbelt:

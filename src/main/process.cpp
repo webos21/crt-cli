@@ -1,14 +1,13 @@
 #include <crtcli/core.h>
 #include <cerrno>
 #include <cstdio>
-#include <crt/platform.h>
+#include <crtcli/environment.h>
 #include <spawn.h>
 #include <unistd.h>
 #include <signal.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <fcntl.h>
-#include <cstdlib>
 namespace crtcli {
 ProcessResult execute(const std::vector<std::string>& argv, unsigned timeout_seconds, bool relay, bool host_tool, const std::vector<std::string>& runtime_path) {
     require(!argv.empty(), "empty process argv");
@@ -18,18 +17,9 @@ ProcessResult execute(const std::vector<std::string>& argv, unsigned timeout_sec
     std::vector<char*> raw;
     for (const auto& arg : argv) raw.push_back(const_cast<char*>(arg.c_str()));
     raw.push_back(nullptr);
-    const bool windows = std::string(crt_get_platform_info()->os) == "windows";
-    std::string search = "/nonexistent";
-    if (windows && !runtime_path.empty()) {
-        search.clear();
-        for (const auto& directory : runtime_path) search += (search.empty() ? "" : ";") + directory;
-    }
-    std::vector<std::string> values{"PATH=" + search, "LC_ALL=C"};
-    if (host_tool && windows) values.push_back("CRT_SPAWN_NATIVE_WINDOWS=1");
-    for (const auto& key : {"HOME", "USERPROFILE", "TMPDIR", "SystemRoot"})
-        if (const char* value = std::getenv(key)) values.push_back(std::string(key) + "=" + value);
+    auto child = child_environment(host_tool, runtime_path);
     std::vector<char*> environment;
-    for (auto& value : values) environment.push_back(value.data());
+    for (auto& value : child.values) environment.push_back(value.data());
     environment.push_back(nullptr);
     int descriptors[2];
     require(pipe(descriptors) == 0, "cannot create process output pipe");

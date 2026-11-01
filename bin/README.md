@@ -45,16 +45,18 @@ one's loop was not repeated. See
 [fetch, Unicode and release-asset record](../docs/acceptance/bootstrap_acceptance.md#windowsarm64-https-fetch-unicode-paths-and-release-asset-sdk-2026-10-31) and
 [UTF-8 narrow strings](../docs/acceptance/bootstrap_acceptance.md#windows-utf-8-narrow-strings-implemented-2026-10-31).
 
-The Linux/x86_64 binary is the 2026-10-31 D1 audit replay's bare executable:
+The Linux/x86_64 binary is the 2026-11-02 environment replay's bare executable:
 no DT_NEEDED/RPATH/RUNPATH, interpreter `/lib64/ld-linux-x86-64.so.2` only.
 With SDK/source/provider/compiler access hidden, help/version/doctor pass;
 PAL images are the CLI, loader and vdso. It uses a fresh clean CRT `f826397` Dev
-SDK with `crt-narrow-encoding-1`. The native suite passes 692 checks, including
-owned-descendant timeout control, and 32 HTTPS/signature cases pass with SDKs,
+SDK with `crt-narrow-encoding-1`. The native suite passes 754 checks, including
+owned-descendant timeout control and shared child-environment diagnostics;
+SDK-hidden control/value-redaction checks and 32 HTTPS/signature cases pass with SDKs,
 sources and providers hidden. Explicit-key signatures are experimental; no
 official publisher key or complete D1 acceptance is claimed. See
-[D1 audit](../docs/acceptance/bootstrap_acceptance.md#d1-publisher-and-host-environment-audit-2026-10-31).
-The prior `a611f6c5...` executable/config are retained under the D1 evidence root;
+[environment acceptance](../docs/acceptance/bootstrap_acceptance.md#linux-child-environment-diagnostics-2026-11-02).
+The prior `2a84c61d...` executable/config are retained under `out/d1-env-20261102/previous/`;
+the `a611f6c5...` executable/config remain under the earlier D1 evidence root;
 the earlier `a4419776...` result remains in the preceding revalidation record.
 
 The Linux/aarch64 binary is the 2026-10-30 replay's bare executable: no DT_NEEDED/RPATH/RUNPATH,

@@ -515,3 +515,21 @@ The producer evidence is committed as
 That documentation commit records the existing clean `8db69f4` build; the SDK
 provenance, content and provider identities above are unchanged. This consumer
 commit records the reviewed evidence and verified macOS executable.
+
+## Experimental Child-environment Diagnostics (2026-11-02)
+
+The consumer adds format-0 `env` diagnostics for control, app-build and app-run
+using the same environment builder as process execution. This is a CLI-owned
+command/result addition; it changes no producer compiler-policy schema, SDK
+inventory or pinned design baseline. Project profiles reuse the existing exact
+SDK/tool binding, with build host and target recorded separately. No independent
+host-tools identity, rootfs layout or port-build adapter is inferred from SDK
+contents. `port-build` is rejected until a producer-owned contract is adopted.
+
+Linux validation retains the clean CRT `f826397` handoff/provider from the
+preceding Linux record. Source export, new binary, isolation boundaries and
+native outcomes belong to the
+[environment acceptance record](acceptance/bootstrap_acceptance.md#linux-child-environment-diagnostics-2026-11-02).
+Earlier Windows/macOS passes apply to their recorded sources; this command
+increment needs its own native replay there. Official trust, SDK promotion and
+complete D1 acceptance remain separate.

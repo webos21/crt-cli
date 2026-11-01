@@ -15,7 +15,9 @@ macOS/arm64, Windows/x64 and Windows/arm64 at their exact source/SDK snapshots.
 The native C++ builder
 reads `crt.json` and invokes LLVM directly. `new` creates separate C/C++ files
 under `src/main/` and `src/test/`, with headers in `include/`; bounded configure/build/test/run and bootstrap
-doctor are implemented. CMake, Python and shell are excluded from this app path.
+doctor are implemented. `env --profile control|app-build|app-run` inspects the
+shared child-environment policy without changing the shell or project binding.
+CMake, Python and shell are excluded from this app path.
 The SDK installer, dependency resolver, self-upgrade, complete current-source
 native matrix and public release remain pending.
 `fetch` can verify a detached RSA-PSS signature against an explicitly supplied

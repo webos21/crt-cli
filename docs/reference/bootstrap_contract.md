@@ -208,6 +208,42 @@ expiry/replay protection, official key distribution/rotation/revocation and
 executable self-integrity are not implemented. No production trust policy or
 new SDK schema is assigned by this experimental primitive.
 
+### Child environment diagnostics (experimental format 0)
+
+`env --profile control|app-build|app-run [--project <directory>]` reports the
+same environment construction used by `execute`, without launching a shell,
+building targets, writing project bindings or changing the parent environment.
+It uses the normal result envelope; `data.environment_format` is `0`.
+Human output is the diagnostic JSON, not a shell script to evaluate.
+
+| Profile | Prerequisites | Child environment |
+| --- | --- | --- |
+| `control` | None; `--project` is rejected | Fixed PATH `/nonexistent`, locale `C`, bounded inheritance |
+| `app-build` | Configured local project, verified SDK/provider/tools | Control values plus `CRT_SPAWN_NATIVE_WINDOWS=1` for Windows vendor tools; compiler roles use absolute executable paths |
+| `app-run` | Same verified project binding | Control values; Windows PATH contains only the selected SDK's `bin` and `lib` runtime directories |
+
+`fixed` contains computed variable values; `inherited_names` lists only present
+names from `HOME`, `USERPROFILE`, `TMPDIR`, `SystemRoot`. Inherited values are
+never printed. Other ambient variables, including PATH, compiler/loader inputs
+and credentials, are excluded from children. `control` describes helper-child
+construction, not the environment of the already-running CLI. This filtering
+is not an OS sandbox; inherited home paths can still affect tool behavior.
+Windows runtime directories must be absolute UTF-8 paths without semicolons;
+search-list delimiters cannot represent a semicolon inside a directory name.
+
+Project profiles include the exact existing `selection`, separate `build_host`
+and canonical project path. Only `app-build` lists compiler executable roles.
+Validation reuses `Toolchain::load`, including SDK inventory, provider and tool
+digests and the native compiler resource-directory query; it requires installed
+development inputs even for the `app-run` diagnostic. It does not inspect a
+packaged application's runtime closure. Runtime-only package acceptance remains
+separate. No SDK acquisition, tool discovery or host-tools identity is invented.
+
+`port-build` fails explicitly: an independent producer-owned host-tools bundle
+contract is still required. `shell`, interactive terminal handling, environment
+doctor and general port execution remain unimplemented. This increment adopts
+no new producer SDK schema or official trust policy.
+
 `--json` emits one `crt-cli.bootstrap-result`, format 1, with command/ok/data.
 Child stdout is bounded at 8 MiB and relayed to stderr; result JSON remains
 parseable. Private child environments preserve only explicit user-home/temp/OS

@@ -2052,3 +2052,82 @@ verified macOS binary without promoting the SDK, adopting a production pin or
 creating a public release. STATUS is unchanged. Linux/aarch64 latest-source and
 Windows/arm64 owned-spawn-fix replays, independent host-tools/env/shell,
 shipping trust/notices and general installation/upgrade gates remain open.
+
+## Linux Child-environment Diagnostics (2026-11-02)
+
+Scope: experimental `env --profile control|app-build|app-run`, shared with the
+actual child execution environment. This is one consumer-owned D1 increment,
+not completion of the independent host-tools, shell or installer gates.
+`port-build` fails explicitly. The implemented behavior and prerequisites are
+in the [format-0 contract](../reference/bootstrap_contract.md#child-environment-diagnostics-experimental-format-0).
+
+### Exact Inputs and Reproduction
+
+- CLI base `78669d968028ff735425432c3b74985cdafc73ea` plus this increment;
+  exported source inventory SHA-256
+  `99fbcd0a359aa664385027866c782d3f423f803e48fa56a7122ec1259b1d1f80`.
+  `inputs.json` retains each file hash. Documentation was finalized afterwards;
+  all current `src/`, `include/`, bootstrap tool and manifest bytes match the
+  tested export (`bare-env-summary.json`).
+- Clean SDK producer `f826397399eec66153451a18ba4fd0f7a1b5cbc0`, version
+  `v0.4.0-cli.20261031`, profile `dev`, build host/target Linux/x86_64.
+  SDK content `b8f18ff52270a9da0de69ce9c4b4f7eddda696c7ae1b751267579b079b9803c1`;
+  complete driver inventory `ba9d34b4f45d6b35203fc35daf8d0e74d3ca5005fdc870a227c16a35d664db87`.
+- Provider `d8b9a223194e95915a0ee61d774ba1ed1527912196c2d5223036c454458fcb16`;
+  external Clang/LLD/LLVM ar 21.1.8. Native provider/SDK schema is unchanged.
+  The generic replay retains its explicit `allow_dirty_sdk: true` option;
+  producer compile/source provenance remains clean. The ignored local config
+  keeps dirty opt-in disabled.
+- Final binary SHA-256
+  `d03f06a02fb3a7595f78fe38ad68b5b37c365c937f7a5d8b5361d55d79b1178a`,
+  12,364,280 bytes. No public release or SDK promotion.
+
+```sh
+python3 /home/syszone/GitLocal/crt/tools/replay_cli_contract_linux.py \
+  --cli-source /home/syszone/GitLocal/crt-cli \
+  --sdk-root '/home/syszone/GitLocal/crt-cli-replay/crt-cli-contract-7e8opmjl/SDK space 한글/dev' \
+  --output /home/syszone/GitLocal/crt-cli/out/d1-env-20261102/replay-r1 \
+  --clang /usr/bin/clang --clangxx /usr/bin/clang++ \
+  --linker /usr/bin/ld.lld --ar /usr/bin/llvm-ar-21
+python3 /home/syszone/GitLocal/crt-cli/out/d1-env-20261102/check-bare-env.py
+python3 /home/syszone/GitLocal/crt-cli/out/d1-env-20261102/run-https.py
+```
+
+Use fresh output directories when repeating these commands. The latter two
+retained test-host adapters consume the replay receipts. Python, Bubblewrap,
+strace and OpenSSL orchestrate acceptance outside the product path.
+
+### Measured Outcomes
+
+- **754 native checks pass**, including exact spawned-environment parity,
+  compiler/loader/credential sentinel exclusion, invalid/duplicate profiles,
+  SDK-free control, missing/tampered project binding rejection, separate host
+  and SDK target identities, and no lock/local binding/output changes from env.
+  C/C++, static/shared targets, cache invalidation, child statuses, bounded
+  output, descendant timeout and spaces/Hangul/metacharacter paths also pass.
+- Cold self-build **11 executed / 0 reused**; warm **0 / 11**. Product jobs run
+  under Bubblewrap with network, producer/consumer repositories and host
+  interpreters/build drivers unavailable. Execve audit reports no unexpected
+  executable. Original and relocated SDK inventories remain unchanged.
+- Bare help/version/doctor pass with SDK/source/provider/compiler inputs hidden.
+  ELF has no DT_NEEDED, RPATH or RUNPATH; interpreter is
+  `/lib64/ld-linux-x86-64.so.2`. Existing integrity/network doctor limits remain.
+- Under the same bare boundary, `env --profile control` succeeds and lists the
+  inherited HOME name without revealing its injected harmless value sentinel.
+  Only the CLI executes. Unsupported `port-build` returns a failing JSON result.
+- **32/32 HTTPS/integrity/RSA-PSS cases pass** using a new disposable CA and
+  independent test signing key. The complete home tree is hidden except the
+  fresh test work; visibility checks confirm repositories, SDK, provider and
+  replay source are unavailable. Successful execve paths are only test-host
+  Python/OpenSSL and the bare CLI. System trust is unchanged; private test keys
+  remain outside tracked sources. Official publisher trust is not asserted.
+
+Raw receipts, scripts and logs are under `out/d1-env-20261102/`; retained replay
+work is `/home/syszone/GitLocal/crt-cli-replay/crt-cli-contract-_sac6l7b` and TLS
+work is `/home/syszone/GitLocal/crt-cli-replay/crt-cli-env-tls-srfzgb7r`.
+The verified bare executable replaces `bin/linux-x64/crt-cli`; previous binary
+and local config are retained in the evidence root's `previous/` directory.
+Tracked `crt.lock` remains unresolved. Windows/macOS and other architectures
+are **Not run for this increment**; their preceding passes retain their exact
+revisions. Independent host-tools/rootfs, port-build, shell/diagnostics,
+shipping resource/notices qualification and complete D1 remain open.

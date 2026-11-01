@@ -1,4 +1,5 @@
 #include <crtcli/toolchain.h>
+#include <crtcli/environment.h>
 #include <set>
 #include <map>
 #include <cctype>
@@ -197,6 +198,38 @@ Reply create(const std::vector<std::string>& args) {
     write_text(root / ("src/test/greeting_test." + suffix), "#include <greeting.h>\n#include <string.h>\nint main(void) { return strcmp(greeting(), \"Hello from CRT\") != 0; }\n");
     return {0, "new", {{"path", root.string()}, {"sdk_acquired", false}}, "created " + root.string()};
 }
+}
+
+Reply environment_report(const std::vector<std::string>& args) {
+    std::map<std::string, std::string> options;
+    for (size_t i = 1; i < args.size(); i += 2) {
+        require(i + 1 < args.size() && (args[i] == "--profile" || args[i] == "--project"), "unsupported/missing env option");
+        require(options.emplace(args[i], args[i + 1]).second, "duplicate env option");
+    }
+    require(options.count("--profile"), "env requires --profile control|app-build|app-run");
+    const auto& profile = options.at("--profile");
+    require(profile != "port-build", "port-build requires an independent host-tools contract; not implemented");
+    require(profile == "control" || profile == "app-build" || profile == "app-run", "unsupported environment profile");
+    Json data{{"environment_format", 0}, {"profile", profile}, {"build_host", native_target()}, {"scope", "child-process"}};
+    std::vector<std::string> runtime;
+    if (profile == "control") {
+        require(!options.count("--project"), "control does not accept --project");
+    } else {
+        auto root = fs::canonical(options.count("--project") ? fs::path(options.at("--project")) : fs::current_path());
+        auto manifest = project(root);
+        auto toolchain = Toolchain::load(root);
+        match_request(manifest, toolchain);
+        data["project"] = root.string();
+        data["selection"] = toolchain.selection;
+        if (profile == "app-build") data["executables"] = {{"cc", toolchain.cc.string()}, {"cxx", toolchain.cxx.string()},
+                                                         {"linker", toolchain.linker.string()}, {"ar", toolchain.archiver.string()}};
+        else runtime = {(toolchain.sdk / "bin").string(), (toolchain.sdk / "lib").string()};
+    }
+    auto environment = child_environment(profile == "app-build", runtime);
+    data["fixed"] = environment.fixed;
+    data["inherited_names"] = environment.inherited_names;
+    data["other_inheritance"] = "none";
+    return {0, "env", data, data.dump(2)};
 }
 
 Reply workflow(const std::vector<std::string>& args) {

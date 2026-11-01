@@ -9,6 +9,24 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-02
+
+### Share child environments and expose bounded native diagnostics
+
+Implemented experimental `env --profile control|app-build|app-run` through the
+same environment builder as actual child execution. Control needs no SDK;
+project profiles validate exact existing bindings without changing locks or
+building targets. Diagnostics print fixed values and inherited names only.
+Independent host-tools/port-build and interactive shell remain unsupported.
+
+A fresh Linux/x86_64 export passes 754 native checks, cold/warm self-build
+11/0 and 0/11, bare/import/execve audits, SDK-hidden control/redaction and
+32 disposable-identity HTTPS/signature cases. Refreshed the Linux binary,
+retained its previous bytes/config, and kept the root lock unresolved. Other
+hosts require replay of this increment; no producer schema, SDK promotion,
+official trust or complete D1 acceptance is assigned. Evidence:
+[Linux environment acceptance](docs/acceptance/bootstrap_acceptance.md#linux-child-environment-diagnostics-2026-11-02).
+
 ## 2026-11-01
 
 ### Revalidate current macOS/arm64 sources with a clean Dev SDK

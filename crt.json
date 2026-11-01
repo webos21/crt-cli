@@ -20,6 +20,7 @@
       "src/main/bootstrap.cpp",
       "src/main/core.cpp",
       "src/main/process.cpp",
+      "src/main/environment.cpp",
       "src/main/toolchain.cpp",
       "src/main/project.cpp",
       "src/main/http.cpp",
@@ -42,7 +43,8 @@
       "sources": [
         "src/test/native_test.cpp",
         "src/main/core.cpp",
-        "src/main/process.cpp"
+        "src/main/process.cpp",
+        "src/main/environment.cpp"
       ],
       "sdk_libraries": ["mbedcrypto"]
     }

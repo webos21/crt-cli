@@ -1,10 +1,12 @@
 #include <crtcli/core.h>
+#include <crtcli/environment.h>
 #include <crt/platform.h>
 #include <cstdio>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <spawn.h>
 #include <cstdlib>
+#include <map>
 using namespace crtcli;
 namespace {
 size_t checks = 0;
@@ -19,6 +21,16 @@ Json invoke(const std::string& cli, std::vector<std::string> args, bool success 
 }
 }
 int main(int argc, char** argv) {
+    if (argc == 2 && std::string(argv[1]) == "--environment-probe") {
+        Json values = Json::object();
+        for (char** entry = environ; *entry; ++entry) {
+            std::string value(*entry);
+            auto equals = value.find('=');
+            if (equals != std::string::npos) values[value.substr(0, equals)] = value.substr(equals + 1);
+        }
+        std::printf("%s\n", values.dump().c_str());
+        return 0;
+    }
     if (argc == 3 && std::string(argv[1]) == "--tree-child") { sleep(2); write_text(argv[2], "descendant ran\n"); return 0; }
     if (argc == 3 && std::string(argv[1]) == "--tree-parent") {
         char* child_args[] = {argv[0], const_cast<char*>("--tree-child"), argv[2], nullptr};
@@ -85,6 +97,42 @@ int main(int argc, char** argv) {
         // the Windows loader also splits its DLL search path at ';', so a program importing a DLL beside it cannot start from a
         // directory whose name contains one: the semicolon is exercised on the other hosts only.
         const bool windows_host = std::string(crt_get_platform_info()->os) == "windows";
+        // Compare the actual spawned environment with the shared builder while the parent carries hostile inputs.
+        std::map<std::string, Json> saved;
+        for (const auto& name : {"CRT_CLI_TEST_SECRET", "CPATH", "LIBRARY_PATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH"}) {
+            const char* old = std::getenv(name);
+            saved[name] = old ? Json(old) : Json(nullptr);
+            require(setenv(name, "must-not-reach-child", 1) == 0, "set environment sentinel");
+        }
+        for (bool host_tool : {false, true}) {
+            // A CRT child must use CRT descriptor propagation on Windows; the native-host hint is for vendor tools.
+            if (windows_host && host_tool) {
+                check(child_environment(true).fixed.at("CRT_SPAWN_NATIVE_WINDOWS") == "1", "native Windows host-tool spawn hint");
+                continue;
+            }
+            auto expected = child_environment(host_tool);
+            auto child = execute({fs::canonical(argv[0]).string(), "--environment-probe"}, 30, false, host_tool);
+            Json actual = Json::parse(child.output), wanted = Json::object();
+            for (const auto& value : expected.values) {
+                auto equals = value.find('=');
+                wanted[value.substr(0, equals)] = value.substr(equals + 1);
+            }
+            check(child.exit_code == 0 && actual == wanted, "spawn environment exactly matches shared builder");
+            check(actual.at("PATH") == "/nonexistent" && actual.at("LC_ALL") == "C", "fixed PATH and locale");
+            for (const auto& entry : saved) check(!actual.contains(entry.first), "injection and credential sentinel removed");
+        }
+        auto environment = invoke(cli, {"env", "--profile", "control"});
+        check(environment.at("environment_format") == 0 && environment.at("fixed") == child_environment().fixed &&
+              environment.at("inherited_names") == child_environment().inherited_names && !environment.contains("selection"), "SDK-free control diagnostic parity");
+        check(environment.dump().find("must-not-reach-child") == std::string::npos, "diagnostic does not expose ambient values");
+        for (const auto& entry : saved) {
+            if (entry.second.is_null()) unsetenv(entry.first.c_str());
+            else setenv(entry.first.c_str(), entry.second.get<std::string>().c_str(), 1);
+        }
+        for (const auto& args : std::vector<std::vector<std::string>>{{"env"}, {"env", "--profile"}, {"env", "--profile", "unknown"},
+             {"env", "--profile", "port-build"}, {"env", "--profile", "control", "--project", fixture.string()},
+             {"env", "--profile", "control", "--profile", "app-run"}, {"env", "--profile", "control", "--bad", "x"}})
+            invoke(cli, args, false);
         auto hostile = fixture / (windows_host ? "space 한글 é @ $(touch never-execute)" : "space 한글 @ ; $(touch never-execute)");
         fs::create_directories(hostile);
         write_text(fixture / "duplicate.json", "{\"x\":1,\"x\":2}");
@@ -113,6 +161,7 @@ int main(int argc, char** argv) {
             check(fs::is_regular_file(root / "include/greeting.h") && !fs::exists(root / "src/main/greeting.h"), "headers belong to include");
             invoke(cli, {"new", root.string()}, false);
             invoke(cli, {"build", "--project", root.string()}, false);
+            invoke(cli, {"env", "--profile", "app-run", "--project", root.string()}, false);
             std::vector<std::string> configure{"configure", "--project", root.string(), "--sdk-root", local.at("sdk_root"), "--sdk-contract", local.at("sdk_contract"), "--contract-sha256", lock.at("selection").at("contract_sha256"), "--cc", local.at("cc"), "--cxx", local.at("cxx"), "--linker", local.at("linker")};
             configure.insert(configure.end(), {"--ar", local.at("ar")});
             if (lock.at("selection").value("allow_dirty_sdk", false)) configure.insert(configure.end(), {"--allow-dirty-sdk", "true"});
@@ -120,6 +169,16 @@ int main(int argc, char** argv) {
             invoke(cli, wrong, false);
             auto configured = invoke(cli, configure);
             check(configured.at("selection") == lock.at("selection"), "exact shared SDK selection");
+            auto before_lock = read_text(root / "crt.lock"), before_local = read_text(root / ".crt/local.json");
+            for (const auto& profile : {"app-build", "app-run"}) {
+                auto report = invoke(cli, {"env", "--profile", profile, "--project", root.string()});
+                auto runtime = std::string(profile) == "app-run" ? std::vector<std::string>{(fs::path(local.at("sdk_root").get<std::string>()) / "bin").string(),
+                    (fs::path(local.at("sdk_root").get<std::string>()) / "lib").string()} : std::vector<std::string>{};
+                check(report.at("fixed") == child_environment(std::string(profile) == "app-build", runtime).fixed, "project environment matches actual execution policy");
+                check(report.at("selection") == configured.at("selection") && report.at("build_host") == native_target(), "exact SDK and separate host identity");
+                check(report.contains("executables") == (std::string(profile) == "app-build"), "compiler roles limited to build profile");
+            }
+            check(read_text(root / "crt.lock") == before_lock && read_text(root / ".crt/local.json") == before_local && !fs::exists(root / "out"), "environment diagnostics preserve binding and create no build output");
             if (std::string(language) == "cxx") {
                 auto provider = read_json(fs::path(local.at("sdk_contract").get<std::string>()));
                 for (const auto& change : {"format", "target", "producer"}) {
@@ -168,6 +227,7 @@ int main(int argc, char** argv) {
             write_text(root / "crt.json", manifest.dump());
             auto bad_lock = read_json(root / "crt.lock"); bad_lock["selection"]["sdk_content_sha256"] = std::string(64, '0');
             write_text(root / "crt.lock", bad_lock.dump()); invoke(cli, {"build", "--project", root.string()}, false);
+            invoke(cli, {"env", "--profile", "app-run", "--project", root.string()}, false);
             check(read_json(root / "crt.lock") == bad_lock, "failed build preserves lock");
         }
         for (const auto& language : {"c", "cxx"}) {

@@ -40,6 +40,7 @@ ProcessResult execute(const std::vector<std::string>& argv, unsigned timeout_sec
                       const std::vector<std::string>& runtime_path = {});
 int print_reply(const Reply& reply, bool json);
 Reply workflow(const std::vector<std::string>& args);
+Reply environment_report(const std::vector<std::string>& args);
 Reply fetch(const std::vector<std::string>& args);
 Reply bootstrap_doctor();
 }
