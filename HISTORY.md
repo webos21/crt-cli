@@ -11,6 +11,21 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-01
 
+### Revalidate current macOS/arm64 sources with a clean Dev SDK
+
+A fresh clean CRT `8db69f4` Development SDK passes its producer gates; unchanged
+CLI `a9d43c6` passes 732 isolated native checks, cold/warm self-build 10/0
+and 0/10, the previous-binary bootstrap loop and SDK-hidden bare/import audits.
+All 32 disposable-identity HTTPS/signature cases and a real pinned-repository
+HTTPS probe pass. Unicode-path clean-SDK selection also passes without dirty opt-in.
+
+Refreshed the local macOS binary/config and retained previous bytes, failed
+attempts and exact identities. CRT host-tool probes retain make's direct
+space-containing SHELL failure and the passing explicit symlink bridge; complete
+D1 and production promotion remain open. Product implementation and root lock
+are unchanged; SDK promotion, release and STATUS updates remain separate. Evidence:
+[macOS acceptance](docs/acceptance/bootstrap_acceptance.md#macos-latest-source-revalidation-2026-11-01).
+
 ### Fix Windows/x64 owned-descendant timeout cleanup and refresh the local binary
 
 CRT now manages new owned spawn groups with Job Objects before child resume,

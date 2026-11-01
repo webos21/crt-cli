@@ -370,8 +370,9 @@ consumer commit records documentation and the verified Linux test executable.
 
 There is **no promoted production combination yet**. Local bootstrap replays
 exist for all five native pairs at their recorded source/SDK identities;
-the latest fetch/encoding sources pass on Windows/arm64 and Linux/x86_64.
-macOS/arm64 and Linux/aarch64 still need those latest changes.
+the latest fetch/encoding sources pass at the recorded Windows/arm64,
+Linux/x86_64, Windows/x64 and [macOS/arm64](acceptance/bootstrap_acceptance.md#macos-latest-source-revalidation-2026-11-01) snapshots.
+Linux/aarch64 still needs those latest changes.
 The earlier [Windows/x64 replay](acceptance/bootstrap_acceptance.md#windowsx64-latest-source-revalidation-2026-11-01)
 builds and passes UTF-8/HTTPS checks, but fails owned-descendant timeout cleanup;
 that failed combination is retained. The subsequent
@@ -483,3 +484,34 @@ contains the exact three code/test inputs of the passing Windows/x64 candidate.
 It was committed after testing; the SDK's `fa5dc30` plus dirty-delta build
 identity, provider, binary and failed snapshots are not relabeled. No clean
 SDK rebuild, producer promotion or production-lock adoption is claimed.
+
+## macOS Latest-source Review (2026-11-01)
+
+**Pass, local/unpromoted macOS/arm64.** Unchanged CLI product sources at
+`a9d43c661f73be2081300695c0337e9e57b60c18` consume a fresh clean CRT
+`8db69f404dcfa70b5aa0569cae51a962fd0615d2` Dev SDK, local version
+`v0.4.0-cli.20261101`, with `crt-narrow-encoding-1`. The separately hashed
+native compiler provider remains format 1; no shared schema or ownership
+change is introduced. CLI bootstrap/project formats remain experimental 0.
+
+SDK content `a438a4a08bc0bec98d53ad95d3cbc196525d655428086088508a3df9ea0f2f16`, provider
+`489ebea23e8531cfdd57cd3ba526a163f18c42616e9a856961af49ace673a21d` and binary
+`72577b9b7dd1e602635ccdabef0fe728e66441c7bd9b07607ae8994ff2de949e` bind the measured combination. Native tests, the
+old-binary self-bootstrap loop, SDK-hidden doctor/imports, 32 controlled
+HTTPS/signature cases and pinned-repository HTTPS pass. Full product-input
+and runtime details belong to
+[macOS acceptance](acceptance/bootstrap_acceptance.md#macos-latest-source-revalidation-2026-11-01).
+
+The local binary and ignored config are refreshed; clean provenance is
+explicitly exercised without dirty opt-in. Root lock remains unresolved and
+no production artifact is adopted. Previous identities are retained. The
+SDK-derived make space-SHELL failure remains a host-environment limit;
+independent host-tools, shipping trust/resources, general D1 and release
+qualification are not approved by this bounded replay. Original immutable
+design baselines and earlier host records remain unchanged.
+
+The producer evidence is committed as
+[`c4e19f3`](https://github.com/webos21/crt/commit/c4e19f3e47f6fd37f3d0d03c027bec5cfe251677).
+That documentation commit records the existing clean `8db69f4` build; the SDK
+provenance, content and provider identities above are unchanged. This consumer
+commit records the reviewed evidence and verified macOS executable.

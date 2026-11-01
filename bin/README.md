@@ -9,7 +9,7 @@ release artifacts.
 
 | Host | Path | Status |
 | --- | --- | --- |
-| macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `e1d65adafc806c21b227c61d966947bdbc45003f15d80f072b1c6b9af8d6de44` (3,023,032 bytes; 2026-10-30 replay of `754ca29`) |
+| macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `72577b9b7dd1e602635ccdabef0fe728e66441c7bd9b07607ae8994ff2de949e` (3,538,040 bytes; 2026-11-01 replay of `a9d43c6`, clean local CRT `8db69f4`) |
 | Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `2a84c61debf31ce87c441f21ca4b0111701e6773567199aa5a2ec71a34e79967` (12,066,824 bytes; 2026-10-31 D1 experiment, base `36c6f65` plus signature/test delta, clean local CRT `f826397`) |
 | Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `94ba0f0c37159e6aa07fe78ea637fd202b658cab45daca70680c380f12450eea` (10,994,232 bytes; 2026-10-30 replay, dirty local SDK) |
 | Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `c9707454fe451ae3ad7cad4f70f4d7e743399c51dc5be5fac300b8a39ef09b9d` (19,180,032 bytes, built `-O1 -g`; 2026-11-01 owned-spawn fix, dirty local CRT `fa5dc30` plus PAL/test delta) |
@@ -18,8 +18,13 @@ release artifacts.
 macOS ships only arm64, so it keeps the single `bin/macos/` directory. Linux and
 Windows are split by architecture: `linux-x64`, `linux-arm64`, `win-x64`, `win-arm64`.
 
-The macOS binary imports only `/usr/lib/libSystem.B.dylib` and has no RPATH. Evidence:
-[macOS acceptance](../docs/acceptance/bootstrap_acceptance.md#macos-revalidation-after-windows-and-linux-changes-2026-10-30).
+The macOS binary imports only `/usr/lib/libSystem.B.dylib` and has no RPATH.
+The current-source native suite passes 732 checks; cold/warm self-build, the
+previous-binary bootstrap loop, SDK-hidden help/version/doctor and all 32
+HTTPS/signature cases pass against a fresh clean CRT `8db69f4` Dev SDK.
+The direct make space-SHELL limitation remains separate from the CLI workflow.
+Evidence: [macOS acceptance](../docs/acceptance/bootstrap_acceptance.md#macos-latest-source-revalidation-2026-11-01).
+Previous binary/config bytes are retained under ignored `out/macos-revalidation-20261101/previous/`.
 
 The Windows/x64 binary imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`; it was built by the CLI itself
 against a local `development` Dev SDK (CRT `fa5dc30` plus the recorded build-time uncommitted owned-spawn PAL/test fix).

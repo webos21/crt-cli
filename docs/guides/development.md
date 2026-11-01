@@ -65,8 +65,13 @@ python3 /absolute/crt/tools/replay_cli_contract_macos.py \
 That Python process is a build-host test orchestrator outside the product
 sandbox, not a CLI prerequisite. All CLI/generated build commands remain
 native argv. Select actual Xcode tools (`xcrun -f <tool>` before isolation),
-not `/usr/bin` discovery launchers or an assumed installed LLD. The producer
-captures explicit vendor `-isysroot` while retaining CRT standard headers;
+not `/usr/bin` discovery launchers or an assumed installed LLD. When producing
+the Dev SDK with actual Xcode compiler paths, set `SDKROOT` from
+`xcrun --sdk macosx --show-sdk-path` for that producer job so its wrapper links
+can find libSystem. This is a producer prerequisite; isolated consumer jobs
+receive their vendor SDK path through the hashed compiler policy. See the
+[latest macOS replay](../acceptance/bootstrap_acceptance.md#macos-latest-source-revalidation-2026-11-01).
+The producer captures explicit vendor `-isysroot` while retaining CRT standard headers;
 never add host include paths to CLI manifests.
 
 CRT supplies the policy using `tools/export_cli_toolchain.py --sdk-root <dev>

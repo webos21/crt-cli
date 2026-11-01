@@ -1924,3 +1924,131 @@ original `fa5dc30` plus dirty-delta provenance and all original artifact hashes.
 The Windows binary and consumer records are committed separately; the root
 lock stays unresolved. No promoted SDK, release tag or GitHub Release is
 created by these source/binary repository pushes.
+
+## macOS Latest-source Revalidation (2026-11-01)
+
+**Pass, native macOS/arm64; local/unpromoted.** CLI
+`a9d43c661f73be2081300695c0337e9e57b60c18` (product sources unchanged;
+export includes the scope-only TODO edit) consumes a fresh clean Development
+SDK from CRT `8db69f404dcfa70b5aa0569cae51a962fd0615d2`. No runtime or CLI
+implementation change was needed. The earlier macOS records remain scoped to
+their original SDKs and sources.
+
+### Exact Inputs and Producer Prerequisites
+
+Native macOS 27.0.1 (26A434), arm64; Apple Clang 21.0.0
+(`clang-2100.4.1.1`), ld64 `ld-27106.1`, Xcode `ar`, macOS 27.2 vendor SDK.
+`tool-identities.json` records executable paths, resolved paths and hashes.
+The producer uses a fresh output at `/Users/jocheolmin/GitRepo/crt/out/cli-macos-revalidation-20261101`, reusing only pinned LLVM
+source directories and verified download archives, with upper stages disabled.
+Version `v0.4.0-cli.20261101` is a local build parameter, not a Git tag or release.
+Producer/base/compile provenance all name clean CRT `8db69f4`;
+`crt-platform-queries-1`, `json-sha2-1` and `crt-narrow-encoding-1` are present.
+The producer's static/shared transport consumers, core and imported-C++ tests
+pass; their owning record is
+[CRT acceptance](https://github.com/webos21/crt/blob/c4e19f3e47f6fd37f3d0d03c027bec5cfe251677/docs/acceptance/sdk_split_acceptance.md#macosarm64-latest-source-cli-replay-2026-11-01).
+
+The installed SDK is copied with its symlinks outside both repositories to
+`/private/var/folders/p3/z_1_279n4bq6kgrrs25d8bdc0000gn/T/crt-cli-contract-6cjvlogl/SDK space 한글/dev` (2,587 file/symlink entries).
+Its compiler policy is separately exported as native-toolchain format 1.
+The exporter captures an explicit vendor `-isysroot` and preserves CRT standard
+headers; consumer processes do not inherit producer `SDKROOT`.
+
+| Identity | SHA-256 |
+| --- | --- |
+| CLI export inventory | `31aac259164e50c55b2399ce30855c4f2b068e6a9863829d05c340c522ddd093` |
+| SDK inventory (driver dictionary) | `7e187c845a9bdc65166f697f08fe13642f8f0dd98c3e6e159c26102febab30c4` |
+| SDK content selection (provider array) | `a438a4a08bc0bec98d53ad95d3cbc196525d655428086088508a3df9ea0f2f16` |
+| Compiler provider | `489ebea23e8531cfdd57cd3ba526a163f18c42616e9a856961af49ace673a21d` |
+| Bare CLI (3,538,040 bytes) | `72577b9b7dd1e602635ccdabef0fe728e66441c7bd9b07607ae8994ff2de949e` |
+| Native replay result | `44adb8a762bacb2f47985613d8b45da92a947b2ce436b62282853affa53f242f` |
+| HTTPS/signature result | `a24ae35069d4424a209f581a44e4d0c59f8eeca5667c70b315d12931b934d4b7` |
+
+### Isolated Consumer and Bootstrap Loop
+
+CRT's unchanged `tools/replay_cli_contract_macos.py` runs with explicit Xcode
+clang/clang++/ld/ar paths, `--previous-cli bin/macos/crt-cli`, the SDK above and
+a fresh evidence directory. Exact argv and per-step exits are retained in
+`consumer-command.json` and `replay/commands.json`. Seatbelt denies original
+CRT/CLI tree access and networking, and allows only the selected native tools,
+CRT-native CLIs and generated fixture executables. Visibility probes prove
+that shell, Python, CMake, Ninja, make and SDK-wrapper execution is denied.
+This is executable denial and file isolation, not an execve trace.
+
+- **732 native checks pass**, including C/C++ generation, six typed
+  static/shared variants, Unicode/space/shell-metacharacter paths, cache
+  invalidation, SDK selection, invalid input/pins, child exit status, bounded
+  output and the unchanged owned-descendant timeout control/regression.
+- Cold self-build **10 executed / 0 reused**; warm build **0 / 10**.
+- The previous committed executable (`e1d65ada...`) builds stage1; stage1
+  rebuilds from cleared objects/configuration using `.sdk.json`, again **10/0**.
+  Code/data and all other regions match; differences are confined to
+  **15 LC_UUID bytes and 201 __LINKEDIT bytes**, the
+  existing macOS linker metadata allowance. Complete byte identity is not claimed.
+  `replay/bootstrap-loop.json` retains both hashes and the classification.
+- Bare help/version/doctor pass with relocated SDK/source/provider and compiler
+  execution denied. Mach-O imports only `/usr/lib/libSystem.B.dylib`, has no
+  RPATH and owns its allocator. PAL runtime image enumeration, CRT C++
+  allocation/exceptions, zlib, HTTP/TLS initialization and UTF-8 narrow strings
+  pass. Mapped images include Apple shared-cache libraries such as libc++,
+  libobjc and libunwind; the collected list and passing binding/allocation audit
+  are retained. Doctor reports integrity `not_verified` and HTTPS `not_run`.
+- An additional isolated C++ workflow uses `allow_dirty_sdk: false` and a parent
+  path containing spaces, Hangul and `é`: new/configure/build/test/run pass.
+  The generic replay driver retains its existing dirty opt-in, but this SDK's
+  recorded provenance is clean. The final local config disables that opt-in.
+
+### SDK-hidden HTTPS and Host-tools Probes
+
+The unchanged producer `tools/test_cli_fetch_https.py --publisher-cases` passes
+**32/32** controlled transport/integrity/RSA-PSS cases with fresh disposable
+identities. `run-https-hidden.py` is a test-host adapter: each product invocation
+runs under Seatbelt, with the complete user home, both repositories, original
+producer build, replay source, SDK and provider unreadable; the bare CLI is the
+only product executable allowed. A native visibility probe verifies file and
+executable denials (`https-visibility.json`). Python/OpenSSL 4.1.0 generate PKI
+and serve loopback outside the product sandbox; the CLI has empty PATH and no
+SDK argument. Test keys remain outside tracked sources; system trust is unchanged.
+
+The same boundary permits a real HTTPS probe of the immutable CRT `8db69f4`
+`LICENSE.md` on raw.githubusercontent.com with an explicit copy of
+`/etc/ssl/cert.pem`: HTTP 200, Mbed TLS 3.6.7, 15,554 bytes, digest
+`174b701101302ce196b907224aaf632e0299b0b26122c33aba261b719c20ec79`, equal to
+the Git blob. It reports publisher authentication `not_verified`; this is
+repository-source transport evidence, not signed release metadata.
+
+SDK-derived CRT mksh/sh, toybox (enumerated applets), separate awk and make
+execute with only the SDK tool directory on PATH, host executable fallbacks
+and networking denied, and the SDK read-only. Direct make `SHELL=<spaced mksh>`
+**fails with exit 2** by splitting the path at its first space, matching the
+retained Linux result. An explicit temporary real symlink to that same mksh
+passes. Both results remain in `host-tools.json`; no upstream patch or CLI
+port-build adapter is introduced. These are SDK-derived tool probes, not an
+independently versioned Host Tools Bundle or complete D1-02 acceptance.
+
+### Retention and Limits
+
+Raw receipts, scripts, argv, source checks, policies and logs are retained in
+`out/macos-revalidation-20261101/`; original orchestration work is
+`/private/tmp/crt-macos-revalidation-20261101`. Producer compiled output remains
+at the path above, and the relocated handoff remains at `/private/var/folders/p3/z_1_279n4bq6kgrrs25d8bdc0000gn/T/crt-cli-contract-6cjvlogl`.
+`validation-summary.json` verifies current product inputs against the executed
+export, unchanged original/relocated SDK inventories after all runs, installed
+Apache license bytes and both stage-source archives.
+
+Initial failures are retained: an external output directory mapped the producer
+port preset to `out/build`; a direct Xcode compiler invocation without explicit
+producer `SDKROOT` could not link libSystem; an empty tool PATH left mksh without
+its external printf applet; and an invalid package basename was rejected before
+using a valid `hello` basename under a Unicode parent. These do not weaken any
+product assertion. Seatbelt execution requires leaving the enclosing agent
+sandbox; no system security setting was changed.
+
+`bin/macos/crt-cli` is refreshed from the passing self-built bare executable;
+the previous bytes and ignored local SDK config are backed up in `previous/`.
+The ignored `.sdk.json` points to the exact clean handoff/provider; tracked
+`crt.lock` remains unresolved. Repository commits record documentation and the
+verified macOS binary without promoting the SDK, adopting a production pin or
+creating a public release. STATUS is unchanged. Linux/aarch64 latest-source and
+Windows/arm64 owned-spawn-fix replays, independent host-tools/env/shell,
+shipping trust/notices and general installation/upgrade gates remain open.
