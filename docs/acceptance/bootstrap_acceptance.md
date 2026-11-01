@@ -1616,3 +1616,57 @@ local SDK configuration are backed up under this evidence root. The ignored
 `.sdk.json` selects the replayed handoff/provider with dirty-SDK opt-in disabled.
 The tracked root lock stays unresolved. Other committed host binaries are older
 snapshots without this signature primitive; they have not been rebuilt here.
+
+## Linux Test-identity Replay (2026-11-01)
+
+**Pass for the selected Linux test-authentication scope; complete D1 remains
+open.** The owner selected test certificates instead of supplying official
+publisher keys/URLs. Windows/macOS stay **Not run** for this increment. This
+decision permits the controlled tests below without making official release
+trust a prerequisite, and does not register a production publisher identity.
+
+The TLS server uses a newly generated test CA/server certificate. Payload
+authentication uses an independent RSA test key through the existing explicit
+public-key interface; this is not X.509 publisher-certificate validation.
+Product trust remains per invocation through `--ca-file` and the paired
+`--publisher-key`/`--signature` options, with no system trust-store changes.
+
+- Consumer: committed CLI `bd5359e`, executable SHA-256
+  `2a84c61debf31ce87c441f21ca4b0111701e6773567199aa5a2ec71a34e79967`.
+- Producer-side test driver: CRT `fa5dc30`,
+  `tools/test_cli_fetch_https.py --publisher-cases`; OpenSSL/Python are
+  declared test PKI/server tools, not CLI prerequisites.
+- **32/32** TLS, integrity and signature cases pass, including invalid trust,
+  expired/incorrect-host certificates, tampering, interrupted/oversized
+  transfers, wrong keys/signatures/padding/salt, invalid key inputs and
+  preservation of existing output. All failed candidates leave no staging file.
+- Bubblewrap hides all of `/home` and binds back only the fresh test work
+  directory. Visibility checks confirm repositories, the selected SDK/provider
+  and original source export do not exist in the consumer view. The host
+  network namespace is shared for controlled loopback endpoints.
+- Test files live under `case work 한글`; real space/Unicode key, signature,
+  certificate and output paths are exercised. The execve trace contains only
+  `/usr/bin/python3`, `/usr/bin/openssl` and the copied CLI. Each CLI invocation
+  has empty PATH. No host download/signature helper is invoked by the product.
+
+| Public evidence | SHA-256 |
+| --- | --- |
+| Disposable TLS test CA | `68683d4ff6e216a938a9430f228310b262dcc4afba707ca022edfbc9b0210a27` |
+| Disposable publisher public key (DER SPKI) | `5f23f91dbcbdeaee2d18efe1707a5f5627f64900f46981591858fda100d03271` |
+| 32-case result | `3e25ea324b0c8a598fb0a87066a526cadbae41fcc3073972687c32e80627d9f6` |
+
+Evidence: `out/d1-test-identity-20261101/` in this repository contains
+`inputs.json` (exact commits, binary/driver hashes, argv and external work
+directory), `visibility.json`, `execve.log`, `cases/` outputs and `summary.json`.
+The fresh test directory is
+`/home/syszone/GitLocal/crt-cli-replay/crt-cli-test-ca-20261101-eco8720l`.
+Private fixture keys stay there, outside tracked sources; only public
+fingerprints are recorded here. They are disposable identities, not default
+roots, retrievable release assets or production pins.
+
+No implementation, binary, SDK or root-lock change was needed. The earlier
+692-check native replay and exact `f826397` SDK evidence are retained rather
+than relabeled or rerun for this trust-scope choice. Remaining Linux D1
+host-tools/env/shell/resource gates and release metadata/anti-replay policy
+are not closed by these 32 tests. Official publisher qualification is deferred
+separately, not requested again as an input to this test-only scope.

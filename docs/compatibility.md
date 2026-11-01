@@ -328,6 +328,17 @@ Complete D1 remains open, including the independent host-tools/CLI environment
 contract and current-source Windows/macOS results. No official signing key,
 release publication or production combination is established by this experiment.
 
+## Owner-selected Test Identities on Linux (2026-11-01)
+
+The owner selected disposable test certificates/keys for the current Linux
+authentication scope, with Windows/macOS Not run. CLI `bd5359e` and producer
+test driver `fa5dc30` pass all 32 controlled TLS/integrity/signature cases with
+fresh identities and the original home tree hidden. This needs no official
+key/URL and does not adopt a production trust anchor, SDK pin or new schema.
+See [the exact replay](acceptance/bootstrap_acceptance.md#linux-test-identity-replay-2026-11-01).
+The existing binary/SDK identities and earlier native replay remain unchanged;
+full Linux D1 environment/resource work is still open.
+
 ## Linux Merged-source Revalidation (2026-10-30)
 
 **Pass, local/unpromoted Linux/x86_64**, CLI `ddaf288322e3292fbba53bc2bc4946c701ab5241`.

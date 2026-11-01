@@ -9,6 +9,26 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-01
+
+### Select disposable test identities for Linux authentication validation
+
+The owner selected test certificates instead of supplying official publisher
+keys/URLs and retained Linux-only execution, with Windows/macOS Not run.
+Replayed committed CLI `bd5359e` using CRT test driver `fa5dc30`, a newly
+generated test CA/server certificate and an independent RSA publisher test key.
+All 32 TLS/integrity/signature cases pass with `/home` hidden except the fresh
+test work directory; original repositories, SDK/provider and source export are
+unavailable. Test certificate/key paths include spaces and Hangul. Successful
+execve paths are only the test Python/OpenSSL and CLI.
+
+Exact public fingerprints, inputs, argv and receipt hashes are in
+[the test-identity acceptance record](docs/acceptance/bootstrap_acceptance.md#linux-test-identity-replay-2026-11-01).
+Official trust registration remains separate; private test keys stay outside
+tracked sources. The binary, SDK, project lock and implementation are unchanged,
+so the earlier 692-check native replay is retained without a redundant rebuild.
+The remaining Linux D1 host-tools/env/shell/resource gates remain open.
+
 ## 2026-10-31
 
 ### Add experimental publisher signatures and audit the D1 gates

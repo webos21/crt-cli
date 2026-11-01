@@ -150,6 +150,11 @@ verification uses the selected CRT SDK's Mbed TLS directly, with no OpenSSL,
 Python or shell subprocess. See the [authentication contract](../reference/bootstrap_contract.md#commands-and-results)
 and the [D1 audit](../acceptance/bootstrap_acceptance.md#d1-publisher-and-host-environment-audit-2026-10-31)
 for exact scope and prerequisites still missing from complete D1 acceptance.
+The owner selected disposable test CA/signing identities for the current Linux
+acceptance scope on 2026-11-01. Official publisher keys/URLs are not required for
+these local test cases. The [fresh replay](../acceptance/bootstrap_acceptance.md#linux-test-identity-replay-2026-11-01)
+records full-home isolation and leaves Windows/macOS Not run. No test CA/key is
+installed as a system default or promoted to an official release trust anchor.
 Keep the producer worktree under the user profile (a path that
 public Users grants can read cannot be hidden this way) and prefer short work paths. With an SDK that has the
 `crt-narrow-encoding-1` capability, Windows narrow strings are UTF-8 (CRT's UTF-8 manifest, Windows 10 1903 or later) and Unicode

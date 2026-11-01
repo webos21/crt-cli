@@ -24,10 +24,11 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
 
 ### D0/D1 - SDK Consumer Contracts, Bootstrap and Trust
 
-Current focus: remaining D1 trust/environment gates after the Linux audit.
-Explicit-key signature verification is implemented; official trust anchors,
-host-tools/env/shell contracts and unavailable native Windows/macOS cases remain
-open. Linux/x86_64 passes against a fresh clean-source Dev SDK with
+Current focus: remaining Linux D1 environment/resource gates. The owner selected
+disposable test CA/signing identities on 2026-11-01; their authentication replay
+passes without waiting for official release keys/URLs. Official trust remains
+separate release qualification; host-tools/env/shell contracts are still open.
+Windows/macOS are Not run for this Linux-only increment. Linux/x86_64 passes against a fresh clean-source Dev SDK with
 `crt-narrow-encoding-1`; the exact scope is in
 [the latest Linux record](docs/acceptance/bootstrap_acceptance.md#linux-latest-source-revalidation-2026-10-31).
 Temporary: each host's final executable is committed under `bin/` (`macos`, `linux-x64`,
@@ -91,8 +92,10 @@ These are future increments, not implemented features.
   all 17 controlled-endpoint cases with SDK/source/provider hidden (2026-10-31);
   Windows/arm64's SDK-hidden HTTPS run and the other native hosts remain open.
   The [D1 audit](docs/acceptance/bootstrap_acceptance.md#d1-publisher-and-host-environment-audit-2026-10-31)
-  adds explicit-key signature cases and a real repository HTTPS probe; qualify
-  official key ownership/distribution, signed-release metadata and anti-replay policy.
+  adds explicit-key signature cases and a real repository HTTPS probe. The
+  [owner-selected test-identity replay](docs/acceptance/bootstrap_acceptance.md#linux-test-identity-replay-2026-11-01)
+  passes 32 cases; official key distribution, release metadata and anti-replay
+  policy remain later qualification rather than prerequisites for this test run.
 - [ ] Define the independent host-tools contract and CLI port-build adapter;
   retain the measured make `SHELL` space-path failure and declare its temporary
   native-tool bridge. Qualify the notices/trust package and remaining D1 negatives.
