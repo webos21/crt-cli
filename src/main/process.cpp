@@ -10,6 +10,10 @@
 #include <fcntl.h>
 namespace crtcli {
 ProcessResult execute(const std::vector<std::string>& argv, unsigned timeout_seconds, bool relay, bool host_tool, const std::vector<std::string>& runtime_path) {
+    return execute_child(argv, child_environment(host_tool, runtime_path), {}, timeout_seconds, relay);
+}
+ProcessResult execute_child(const std::vector<std::string>& argv, const ChildEnvironment& child,
+                            const fs::path& directory, unsigned timeout_seconds, bool relay) {
     require(!argv.empty(), "empty process argv");
     native_executable(argv.front());
     // posix_spawn is the one process-creation path on every host: CRT's Windows PAL provides it natively, while a
@@ -17,9 +21,8 @@ ProcessResult execute(const std::vector<std::string>& argv, unsigned timeout_sec
     std::vector<char*> raw;
     for (const auto& arg : argv) raw.push_back(const_cast<char*>(arg.c_str()));
     raw.push_back(nullptr);
-    auto child = child_environment(host_tool, runtime_path);
     std::vector<char*> environment;
-    for (auto& value : child.values) environment.push_back(value.data());
+    for (const auto& value : child.values) environment.push_back(const_cast<char*>(value.c_str()));
     environment.push_back(nullptr);
     int descriptors[2];
     require(pipe(descriptors) == 0, "cannot create process output pipe");
@@ -32,6 +35,7 @@ ProcessResult execute(const std::vector<std::string>& argv, unsigned timeout_sec
     bool prepared = posix_spawn_file_actions_adddup2(&actions, descriptors[1], STDOUT_FILENO) == 0 &&
                     posix_spawn_file_actions_addclose(&actions, descriptors[0]) == 0 &&
                     posix_spawnattr_setflags(&attributes, POSIX_SPAWN_SETPGROUP) == 0 && posix_spawnattr_setpgroup(&attributes, 0) == 0;
+    if (!directory.empty()) prepared = prepared && posix_spawn_file_actions_addchdir_np(&actions, directory.string().c_str()) == 0;
     pid_t pid = -1;
     int launch = prepared ? posix_spawn(&pid, raw[0], &actions, &attributes, raw.data(), environment.data()) : EINVAL;
     posix_spawn_file_actions_destroy(&actions);
@@ -60,7 +64,12 @@ ProcessResult execute(const std::vector<std::string>& argv, unsigned timeout_sec
     for (;;) {
         drain();
         pid_t state = waitpid(pid, &status, WNOHANG);
-        if (state == pid) break;
+        if (state == pid) {
+            // A completed owned job must not leave background descendants alive.
+            // Each launch owns its own process group; never kill by executable name.
+            kill(-pid, SIGKILL);
+            break;
+        }
         if (state < 0 && errno != EINTR) { close(descriptors[0]); throw Error("waitpid failed"); }
         clock_gettime(CLOCK_MONOTONIC, &now);
         if (now.tv_sec - start.tv_sec >= timeout_seconds) {

@@ -44,6 +44,9 @@ from the SDK build baseline:
   self-upgrade/activation/recovery, per-project SDK/new, scoped doctor and
   shipping-artifact gates. Complete lifecycle gates remain Not run; partial
   project-generation/self-build evidence is linked to native D0 acceptance.
+- [D1 Host Environment and Bootstrap Resources](acceptance/host_environment_acceptance.md):
+  independently pinned CRT tools, scoped doctor, non-interactive shell, resource
+  pin/signature negatives and SDK-free Linux HTTPS; other native replays remain open.
 - [Implemented Bootstrap Contract](reference/bootstrap_contract.md): SDK input
   and command/result formats, experimental project fixtures and actual limits.
 

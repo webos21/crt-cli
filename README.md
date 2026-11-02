@@ -17,6 +17,9 @@ reads `crt.json` and invokes LLVM directly. `new` creates separate C/C++ files
 under `src/main/` and `src/test/`, with headers in `include/`; bounded configure/build/test/run and bootstrap
 doctor are implemented. `env --profile control|app-build|app-run` inspects the
 shared child-environment policy without changing the shell or project binding.
+Local experimental `port-build`/non-interactive `shell` consume a separately
+pinned CRT host-tools bundle. Scoped `doctor` checks self, environment or project
+bindings; explicit resource pins can also check executable/notices/trust bytes.
 CMake, Python and shell are excluded from this app path.
 The SDK installer, dependency resolver, self-upgrade, complete current-source
 native matrix and public release remain pending.
@@ -27,8 +30,10 @@ records the measured scope and remaining gates.
 
 See the [build guide](docs/guides/development.md#build-and-test-the-bootstrap)
 and [implemented contract](docs/reference/bootstrap_contract.md) for actual
-entry points and limitations. Bootstrap doctor reports integrity as not verified
-and HTTPS as not run; it is not complete installation/project health acceptance.
+entry points and limitations. Plain bootstrap doctor reports integrity as not
+verified and HTTPS as not run. New host-tools/resource behavior has bounded
+[Linux evidence](docs/acceptance/host_environment_acceptance.md); other native
+hosts must replay it before complete D1 acceptance.
 
 ## Intended Experience
 
@@ -55,8 +60,8 @@ The CLI itself is intended to use CRT and ship as one executable per supported
 host, able to start before a development SDK is installed. Full three-host validation remains pending. The selected policy allows OS
 dependencies, data/cache/certificates, previous versions and temporary update
 helpers; no permanent auxiliary launcher is used. Planned
-`upgrade` updates the CLI itself; `doctor` distinguishes self, environment and
-project health. Projects pin their own SDK version/profile independently of
+`upgrade` updates the CLI itself; implemented `doctor` scopes provide the bounded
+checks described above. Projects pin their own SDK version/profile independently of
 CLI updates. SDK payloads use shared immutable storage with exact project references;
 first configure/build acquires a missing SDK, while new only creates sources.
 Automatic acquisition and shared-store installation remain planned; the current

@@ -1,4 +1,5 @@
 #include <crtcli/toolchain.h>
+#include <crtcli/host_tools.h>
 #include <crtcli/environment.h>
 #include <set>
 #include <map>
@@ -201,6 +202,8 @@ Reply create(const std::vector<std::string>& args) {
 }
 
 Reply environment_report(const std::vector<std::string>& args) {
+    for (size_t i = 1; i + 1 < args.size(); ++i)
+        if (args[i] == "--profile" && args[i + 1] == "port-build") return host_environment(args);
     std::map<std::string, std::string> options;
     for (size_t i = 1; i < args.size(); i += 2) {
         require(i + 1 < args.size() && (args[i] == "--profile" || args[i] == "--project"), "unsupported/missing env option");
@@ -208,7 +211,6 @@ Reply environment_report(const std::vector<std::string>& args) {
     }
     require(options.count("--profile"), "env requires --profile control|app-build|app-run");
     const auto& profile = options.at("--profile");
-    require(profile != "port-build", "port-build requires an independent host-tools contract; not implemented");
     require(profile == "control" || profile == "app-build" || profile == "app-run", "unsupported environment profile");
     Json data{{"environment_format", 0}, {"profile", profile}, {"build_host", native_target()}, {"scope", "child-process"}};
     std::vector<std::string> runtime;

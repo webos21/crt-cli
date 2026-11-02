@@ -233,16 +233,17 @@ Do not silently substitute Git Bash/MSYS/native tools for a target port's
 CRT shell/make.
 
 Existing `CRT_SYSROOT` identifies the **target SDK**; `CRT_ROOTFS` identifies
-the **process filesystem namespace**. Initially, prepare an execution view
-that preserves read-only bundle/SDK files and provides separate writable
-scratch space. Resolve current port-driver coupling between `CRT_ROOTFS` and
-the SDK root through adapters/contract tests before separating host tools.
-Two environment variables alone do not prove cross-host separation works.
+the **process filesystem namespace**. The local D1 adapter prepares a separate
+job overlay and independently pinned host-tools view; its implemented scope is
+in the [bootstrap contract](../reference/bootstrap_contract.md#independent-host-environment-experimental-format-1).
+Source-port compiler/recipe adapters must still resolve the older port-driver
+coupling; two environment variables alone do not prove cross-target operation.
 
-Distinguish the Windows shell's guest PATH, `/system/bin:/bin:/usr/bin`, from
-native LLVM paths. Delegate approved native-tool invocation to the
-existing bridge and preserve paths containing spaces or Korean characters in
-actual argv. Pin exact environment construction to an SDK contract version.
+For future source-port execution, distinguish virtual shell paths from native
+LLVM/generator paths. The current non-interactive adapter uses physical bundle
+PATH and virtual shell/make/awk entry points, without a compiler bridge. The
+recipe adapter must preserve spaces/Korean text in actual argv and pin approved
+generator/compiler environments to their exact producer contract.
 
 The environment/project scopes of `doctor` must diagnose host/target identity,
 Developer Mode and symlinks, LLVM/LLD/OS SDK and explicitly declared
@@ -440,9 +441,10 @@ gate.
 - Project: manifest/lock compatibility, exact SDK/profile/capabilities and port
   identities, selected paths and readiness for the requested build/run action.
 
-The initial implemented scope is `doctor --bootstrap`, described in the
-[bootstrap contract](../reference/bootstrap_contract.md). Full self/environment/project
-scopes remain later work. Diagnose by default without
+Bounded self/environment/project scopes and explicit file-resource integrity
+are implemented as described in the [bootstrap contract](../reference/bootstrap_contract.md#scoped-doctor-and-bootstrap-resource-pins);
+`doctor --bootstrap` remains compatible. Complete installation/port readiness,
+automatic probes and release lifecycle health remain later work. Diagnose by default without
 installing tools, changing security settings or rewriting locks. A self-check
 on an SDK-free machine must not fail merely because an unrelated project
 compiler is absent. Candidate self-checks participate in upgrade validation;

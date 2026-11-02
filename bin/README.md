@@ -2,15 +2,16 @@
 
 For hands-on testing and to steer the contract, the final executable of each host is
 committed here until a release process exists. These are **local, unpromoted**
-builds, not releases: they are built by the CLI itself (`crt-cli build`) from the
-committed `src/` and `include/` against a locally produced Development SDK whose
+builds, not releases: they are built by the CLI itself (`crt-cli build`) from
+identified `src/` and `include/` snapshots (including explicitly recorded local
+working-tree candidates) against a locally produced Development SDK whose
 provenance is recorded per host below (some require `--allow-dirty-sdk`). Do not treat them as signed or reproducible
 release artifacts.
 
 | Host | Path | Status |
 | --- | --- | --- |
 | macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `72577b9b7dd1e602635ccdabef0fe728e66441c7bd9b07607ae8994ff2de949e` (3,538,040 bytes; 2026-11-01 replay of `a9d43c6`, clean local CRT `8db69f4`) |
-| Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `6457b1a60038860d02452e5216df8fbcee9297e5e011b26050f4aee203c6efc8` (12,371,496 bytes; 2026-11-02 common-source replay of `7cab48e`, clean local CRT `49879bf`) |
+| Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `9b82bd300379b45be4cb36becfbef56bf41b1ff5cc3d2cb510b9e60447b10284` (13,889,400 bytes; 2026-11-02 D1 working-tree candidate based on `adc03b0`, clean local CRT `49879bf`) |
 | Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `9e250db8589077f376091e4b506259601b1ec12b96713db9aef9059e41bbc9cf` (12,444,248 bytes; 2026-11-02 replay of `9e0110f`, clean local CRT `c4e19f3`) |
 | Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `a04ff851fb1156a161f01f308c368648ba1b091a001977e449fb86009820237a` (20,404,224 bytes, built `-O1 -g`; 2026-11-02 replay of `1499a7b`, clean local CRT `b4c5b5a`) |
 | Windows/arm64 | `bin/win-arm64/crt-cli.exe` | present; SHA-256 `6fce97e028c9956716ad1729d8655532282944f8dfd7f9ec33f44d92cf0e787c` (20,286,976 bytes, built `-O1 -g`; 2026-11-02 replay of the latest sources against a clean local SDK from CRT `d12e210`) |
@@ -50,19 +51,18 @@ one's loop was not repeated. See
 The 2026-11-02 refresh adds the shared child-environment, publisher-signature and owned-descendant timeout sources; see
 [Windows/arm64 latest-source record](../docs/acceptance/bootstrap_acceptance.md#windowsarm64-latest-source-revalidation-and-spawn-environment-fix-2026-11-02).
 
-The Linux/x86_64 binary is the selected 2026-11-02 common-source replay's bare
-executable. It uses the clean CRT `49879bf` Development SDK derived from the
-actual isolated 02 build (`v0.4.0-sourcefix.20261102.5`). All 754 native checks,
-cold 11/0 and warm 0/11, SDK-hidden help/version/bootstrap doctor and the
-ELF/PAL runtime audit pass: no DT_NEEDED/RPATH/RUNPATH, only the declared OS
-loader and vdso. An isolated previous-binary -> new-SDK -> self-build loop also
-passes with byte-identical stage1/stage2. See
-[common-source acceptance](../docs/acceptance/bootstrap_acceptance.md#common-source-candidate-replay-2026-11-02).
-The previous `d03f06a0...` binary and local config are retained under
-`out/d0-common-source-20261102/previous/`. Older D1 HTTPS/signature evidence
-retains its own SDK/binary identities; this refresh does not rerun those cases
-or qualify a production release. Bootstrap doctor keeps HTTPS/integrity
-unavailable results explicit.
+The Linux/x86_64 binary is the selected D1 source snapshot
+`2aa32f07ea920ee4405970f194ccdf1183608f3ba8675ca28e60e80920930155`.
+It uses the same clean CRT `49879bf` Development SDK
+(`v0.4.0-sourcefix.20261102.5`) with dirty opt-in disabled. All 767 native
+checks, cold 13/0 and warm 0/13, 31 isolated host-tools/resource cases and 32
+SDK-free HTTPS/signature cases pass. No DT_NEEDED/RPATH/RUNPATH; only the OS
+loader and vdso are mapped. New scoped doctor, non-interactive shell and
+resource-pin checks have [D1 evidence](../docs/acceptance/host_environment_acceptance.md).
+The previous `6457b1a6...` binary and config remain under
+`out/tranche2-20261102/previous/`. Plain doctor keeps HTTPS/integrity
+unavailable results explicit. This is not a production release; native replay
+of these new features on the other hosts remains open.
 
 The Linux/aarch64 binary is the 2026-11-02 replay's bare executable, SHA-256
 `9e250db8589077f376091e4b506259601b1ec12b96713db9aef9059e41bbc9cf`

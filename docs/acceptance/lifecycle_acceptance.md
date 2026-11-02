@@ -8,6 +8,11 @@ SDK-only/single-executable/HTTPS bootstrap to
 implementation and its partial project evidence belong to bootstrap acceptance.
 No release lifecycle is accepted here.
 
+Bounded self/environment/project diagnosis and explicit local resource-file
+pin/signature checks now have [Linux D1 evidence](host_environment_acceptance.md).
+They do not implement the full installation/port readiness, self-upgrade or
+release lifecycle criteria below.
+
 ## Prerequisite Decisions
 
 The owner choices in [product decisions](../design/crt_cli.md#10-decisions-for-the-first-implementation)

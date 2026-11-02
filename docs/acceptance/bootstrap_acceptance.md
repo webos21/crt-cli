@@ -5,6 +5,10 @@ the initial CRT-native CLI and host environment. The dependency order and
 architecture belong to [the CLI design](../design/crt_cli.md); current work
 belongs to [TODO](../../TODO.md).
 
+The new independent host-tools/scoped-doctor/resource increment has its own
+[D1 acceptance record](host_environment_acceptance.md). Its Linux proof does
+not upgrade the older native combinations below or close the new host matrix.
+
 ## Scope and Meaning of Completion
 
 D0 proves SDK-only CLI consumption and explicit identities/contracts.

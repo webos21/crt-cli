@@ -27,31 +27,22 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
 D0 is complete for the recorded local technical scope; completed work and exact
 candidate selection remain in [HISTORY](HISTORY.md) and
 [compatibility](docs/compatibility.md#common-source-candidate-selection-2026-11-02).
-D1 remains open. Next increment: define/adopt the independent producer
-host-tools contract before implementing the CLI `port-build` adapter.
+D1 remains open for new native-host replay. The independent host-tools adapter,
+scoped doctor, non-interactive shell and resource/HTTPS Linux increment are
+implemented; exact scope is in [D1 acceptance](docs/acceptance/host_environment_acceptance.md).
 Use the [local Dev SDK candidate loop](docs/guides/development.md#local-dev-sdk-candidate-loop);
 CLI consumption stays SDK-only, without requiring a public SDK release.
 
-- [ ] Define and consume the separate CRT host-tools/rootfs contract, then
-  implement the CLI `port-build` adapter with exact host-tool and SDK identities.
-- [ ] Implement environment/project diagnosis and shell support. Existing
-  control/app-build/app-run `env` diagnostics share actual child construction;
-  retain their [implemented scope](docs/reference/bootstrap_contract.md#child-environment-diagnostics-experimental-format-0).
-- [ ] Validate full CRT mksh/toybox/awk/make workflows, spaces/Unicode paths,
-  aliases, private DLL resolution and owned-process cleanup without host-tool
-  fallbacks or global PATH changes. Retain the measured make `SHELL` space-path
-  failure and explicitly declared temporary native-tool bridge.
-- [ ] Qualify the single-executable bootstrap trust/data/notices/helper package
-  and remaining resource/negative cases without development SDK/build inputs.
-  Preserve the [D1 audit's measured results and limits](docs/acceptance/bootstrap_acceptance.md#d1-publisher-and-host-environment-audit-2026-10-31).
-- [ ] Complete [D1-07 HTTPS bootstrap](docs/acceptance/bootstrap_acceptance.md#sdk-free-https-bootstrap-gate)
-  with the selected package/runtime/trust inputs and tampered metadata/artifact
-  cases. Disposable test CA/signing identities are owner-selected; official
-  publisher trust and release-metadata policy remain separate qualification.
-- [ ] Replay new D1 increments on native Windows/x64, Linux/x86_64 and
-  macOS/arm64; retain other architectures and earlier passes at their exact
-  recorded combinations in [acceptance](docs/acceptance/bootstrap_acceptance.md).
-  Do not treat existing bootstrap passes as complete host-tools/port acceptance.
+- [ ] Replay the new host-tools/scoped-doctor/shell/resource increment on native
+  Windows/x64: real directory links, initial private DLL resolution/collisions,
+  aliases, Unicode paths, cwd and normal/timeout owned-process cleanup.
+- [ ] Replay the same increment on native macOS/arm64, including actual dylib
+  closure; existing SDK-derived tool probes do not qualify the new artifact.
+- [ ] Run D1-07 HTTPS/signature negatives with each host's selected package and
+  trust bytes; record exact combinations before closing the native matrix.
+  Disposable test CA/signing identities are owner-selected; official publisher
+  trust/release-metadata policy remains separate. Source recipe/compiler bridges
+  stay D3; interactive terminal handling is outside this non-interactive increment.
 
 ## Planned
 

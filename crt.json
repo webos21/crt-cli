@@ -25,9 +25,13 @@
       "src/main/project.cpp",
       "src/main/http.cpp",
       "src/main/fetch.cpp",
-      "src/main/publisher.cpp"
+      "src/main/publisher.cpp",
+      "src/main/host_tools.cpp",
+      "src/main/diagnostics.cpp"
     ],
-    "sdk_consumer_option_sources": ["src/main/http.cpp"],
+    "sdk_consumer_option_sources": [
+      "src/main/http.cpp"
+    ],
     "sdk_libraries": [
       "curl",
       "mbedtls",
@@ -46,7 +50,9 @@
         "src/main/process.cpp",
         "src/main/environment.cpp"
       ],
-      "sdk_libraries": ["mbedcrypto"]
+      "sdk_libraries": [
+        "mbedcrypto"
+      ]
     }
   ]
 }

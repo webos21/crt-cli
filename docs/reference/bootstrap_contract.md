@@ -165,7 +165,7 @@ headers. It is not permission to add host standard headers or a host C++ runtime
 
 `new <dir> [--language c|cxx] [--kind executable|static-library|shared-library]
 [--runtime-linkage static|shared]` creates sources only. Existing commands are
-`--help`, `--version`, `doctor --bootstrap`, `fetch`, `configure`, `build`, `test`, `run`.
+`--help`, `--version`, `doctor`, `env`, `shell`, `fetch`, `configure`, `build`, `test`, `run`.
 Configure requires SDK selection, provider path/hash, `--cc`, `--cxx`, `--linker`
 and `--ar`. Subsequent commands use the locked local binding.
 
@@ -205,7 +205,8 @@ selected key; it does not label that key an official CRT publisher. Unsigned
 fetch remains available and reports `not_verified`. Metadata may be fetched
 and authenticated this way, but release-metadata schema, artifact binding,
 expiry/replay protection, official key distribution/rotation/revocation and
-executable self-integrity are not implemented. No production trust policy or
+in-memory executable attestation are not implemented. The local resource pin
+check below compares executable file bytes. No production trust policy or
 new SDK schema is assigned by this experimental primitive.
 
 ### Child environment diagnostics (experimental format 0)
@@ -241,16 +242,16 @@ development inputs even for the `app-run` diagnostic. It does not inspect a
 packaged application's runtime closure. Runtime-only package acceptance remains
 separate. No SDK acquisition, tool discovery or host-tools identity is invented.
 
-`port-build` fails explicitly: an independent producer-owned host-tools bundle
-contract is still required. `shell`, interactive terminal handling, environment
-doctor and general port execution remain unimplemented. This increment adopts
-no new producer SDK schema or official trust policy.
+The independent `port-build` profile and non-interactive `shell` are described
+below. Interactive terminal handling and the general source-port recipe engine
+remain unimplemented. No producer SDK schema or official trust policy changes.
 
 `--json` emits one `crt-cli.bootstrap-result`, format 1, with command/ok/data.
 Child stdout is bounded at 8 MiB and relayed to stderr; result JSON remains
 parseable. Private child environments preserve only explicit user-home/temp/OS
 root variables plus fixed PATH/locale, not loader/compiler injection variables.
 Timeouts own a process group and retain child exit/signal/truncation outcomes.
+Normal completion also kills remaining members of that owned process group.
 Broader Windows and interactive cancellation acceptance remains open.
 
 `out/native/last-build.json` records target kinds/linkage, artifact hashes,
@@ -261,3 +262,78 @@ the network, so its HTTPS check stays `not_run` (`fetch` is exercised separately
 authenticated executable integrity stays `not_verified`. SDK installation,
 self-upgrade, general package resolution/deployment and public release are not
 implemented by this contract increment.
+
+### Independent host environment (experimental format 1)
+
+CRT owns [`crt.experimental.host-tools`, format 1](https://github.com/webos21/crt/blob/main/docs/design/host_tools_contract.md).
+It is independently versioned and contains CRT-native mksh, toybox, separate awk,
+make, explicit applet aliases, runtime dependencies and notices. The CLI validates
+the explicit manifest pin, execution host, complete payload, alias dispatchers and
+executable permissions before constructing an environment. Unknown schema/host,
+changed bytes, missing tools and escaping links fail without a host fallback.
+This local-only artifact does not alter the target SDK/provider formats.
+
+```sh
+crt-cli env --profile port-build --host-tools /path/to/tools \
+  --host-tools-sha256 <manifest-sha256> --work-root /path/to/new-job
+crt-cli shell --host-tools /path/to/tools --host-tools-sha256 <manifest-sha256> \
+  --work-root /path/to/new-job --script /path/to/script.sh \
+  --directory /path/to/existing-working-directory --timeout 180
+```
+
+`env` validates and reports; it creates no job. `shell` requires a script, a new
+work directory with an existing parent, and a timeout in 1..3600 seconds (default
+180). The fresh job rootfs links `system`, `bin`, `usr` to the immutable bundle
+and creates writable `tmp`, `data/local`, `data/local/tmp`. Parent-directory links
+are resolved before rejecting jobs inside immutable inputs. Windows requires
+real directory links/Developer Mode; the CLI never changes that setting.
+The job remains caller-owned scratch after execution; no automatic store GC.
+
+PATH contains only the bundle's physical `system/bin`. `CRT_ROOTFS` selects the
+job overlay; `SHELL`/`CONFIG_SHELL`, `MAKE`, `AWK` use the bundle's virtual
+`/system/bin` paths. GNU make also receives `MAKEFLAGS=SHELL=/system/bin/sh`
+(`sh.exe` on Windows), avoiding physical shell-path splitting. Temp variables
+point inside the job; ambient PATH, MAKEFLAGS, CRT_ROOTFS and compiler/credential
+variables are excluded. As for other profiles, home/OS-root names are bounded
+inheritance and their values are not printed. Filtering/rootfs mapping is not
+an OS sandbox for scripts.
+
+Optional `--project <configured-dir>` verifies the existing native SDK/provider
+binding, records its exact selection separately from host-tools identity and
+sets `CRT_SYSROOT`. Without it the environment is SDK-free. No compiler-wrapper
+bridge, recipe engine, target execution or cross-target build support is implied;
+those belong to D3. Child cwd uses `posix_spawn_file_actions_addchdir_np`, leaving
+the parent unchanged. JSON data retains child stdout, exit_code, timed_out and
+output_truncated; exit 124 denotes timeout, other child exits propagate. This is
+non-interactive; terminal/session UX and adversarial process escapes are outside
+the bounded owned-process-group contract.
+
+### Scoped doctor and bootstrap resource pins
+
+`doctor` defaults to `--scope self`, requiring no SDK/compiler. `doctor --bootstrap`
+retains its existing result for old callers. Plain self diagnosis reports
+integrity `not_verified` and HTTPS `not_run`. Additional scopes are read-only:
+
+- `doctor --scope environment --host-tools <dir> --host-tools-sha256 <hex>` checks
+  the selected tools and aliases, with execution `not_run`; it needs no target SDK.
+- `doctor --scope project [--project <dir>]` validates the current manifest,
+  SDK/provider/tool binding through app-build diagnostics. It does not compile,
+  repair locks, acquire an SDK or diagnose a packaged application's closure.
+- `doctor --scope self --resources <dir> --resources-sha256 <hex>` validates a
+  `crt-cli.bootstrap-resources`, format 1 manifest and its complete regular-file
+  inventory, target, executable filename and explicit trust-data declaration.
+  The running executable's file hash must match the selected package. Success
+  reports `executable_integrity: pinned-file-match`; this is not memory attestation.
+  Paired `--publisher-key`/`--signature` authenticate the exact manifest with the
+  same explicit RSA-PSS policy as fetch. Without them publisher authentication
+  remains `not_verified`; a local pin alone is not publisher identity.
+
+The producer-only `tools/create_bootstrap_resources.py` assembles one executable,
+dependency notices/provenance and optional `share/trust/ca.pem`, refusing named
+output replacement, symlinks or overlap with immutable inputs. It is not executed
+by the product. External pins/public keys/signatures remain separate from the
+inventory. `fetch` still requires an explicit `--ca-file`; it never implicitly
+adopts a package CA. No helper/launcher is needed by this package. Installation,
+self-upgrade, official release metadata/expiry/key policy and native release
+qualification remain separate gates. Evidence and exact limits are in
+[D1 host-environment acceptance](../acceptance/host_environment_acceptance.md).

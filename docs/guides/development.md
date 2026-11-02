@@ -340,6 +340,33 @@ D1 host-tools/environment work independently of public release qualification.
 
 ## Cross-repository Work
 
+### Local host-tools and bootstrap data candidates
+
+Use CRT's independent host-tools assembler/CMake entry point with a verified
+native public C SDK, then supply that bundle's manifest SHA-256 explicitly to
+the [implemented env/shell/doctor commands](../reference/bootstrap_contract.md#independent-host-environment-experimental-format-1).
+The source SDK is a producer input; running those tools needs no SDK. Optional
+`--project` adds the separately verified native SDK identity and CRT_SYSROOT;
+it does not install ports or construct a compiler-wrapper bridge.
+
+For a local bootstrap data package, producer tooling can run:
+
+```sh
+python3 tools/create_bootstrap_resources.py --binary <native-crt-cli> \
+  --sdk-root <verified-dev-sdk> --output <new-package> --ca-file <explicit-ca.pem>
+```
+
+Record the emitted manifest SHA-256 independently. Diagnose with
+`doctor --scope self --resources <package> --resources-sha256 <pin>`;
+optional paired public-key/signature inputs authenticate that exact manifest.
+Private keys are test-host inputs, never package contents. `fetch` still needs
+an explicit CA file. This local assembler is not a shipped Python dependency,
+installer, updater or release-publishing command. New output paths preserve
+prior candidates; the Linux replay entry point and remaining native-host
+checks are in [D1 acceptance](../acceptance/host_environment_acceptance.md).
+
+### Review and authorization
+
 Producer-owned SDK/ABI/host-tool changes belong to CRT, with a minimal
 reproducer and explicit authorization for that repository. Link the producer
 change and immutable artifact to the consumer result. Validate/promote the

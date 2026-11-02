@@ -1,4 +1,5 @@
 #include <crtcli/core.h>
+#include <crtcli/host_tools.h>
 #include <set>
 int main(int argc, char** argv) {
     using namespace crtcli;
@@ -9,11 +10,23 @@ int main(int argc, char** argv) {
             if (std::string(argv[i]) == "--json") { require(!json, "duplicate --json"); json = true; }
             else args.emplace_back(argv[i]);
         }
-        if (args.empty() || args == std::vector<std::string>{"--help"}) return print_reply({0, "help", {{"usage", "crt-cli [--json] --help|--version|doctor --bootstrap|fetch|env|new|configure|build|test|run"}}, "crt-cli: --help | --version | doctor --bootstrap | fetch --url <https-url> --ca-file <pem> --output <file> --sha256 <hex> --size <bytes> | env --profile control|app-build|app-run [--project <dir>] | new <dir> [--language c|cxx] | configure/build/test/run [--project <dir>]"}, json);
+        if (args.empty() || args == std::vector<std::string>{"--help"}) return print_reply({0, "help", {{"usage", "crt-cli [--json] --help|--version|doctor|shell|fetch|env|new|configure|build|test|run"}},
+            "crt-cli [--json]\n"
+            "  --help | --version\n"
+            "  doctor [--scope self] [--resources <dir> --resources-sha256 <hex>] [--publisher-key <pem> --signature <file>]\n"
+            "  doctor --scope project [--project <dir>]\n"
+            "  doctor --scope environment --host-tools <dir> --host-tools-sha256 <hex>\n"
+            "  env --profile control|app-build|app-run [--project <dir>]\n"
+            "  env --profile port-build --host-tools <dir> --host-tools-sha256 <hex> --work-root <new-dir> [--project <dir>]\n"
+            "  shell --host-tools <dir> --host-tools-sha256 <hex> --work-root <new-dir> --script <file> [--directory <dir>] [--timeout <seconds>] [--project <dir>]\n"
+            "  fetch --url <https-url> --ca-file <pem> --output <file> --sha256 <hex> --size <bytes> [--publisher-key <pem> --signature <file>]\n"
+            "  new <dir> [--language c|cxx]\n"
+            "  configure/build/test/run [--project <dir>]"}, json);
         check_arguments(args);
         command = args.front();
         if (args == std::vector<std::string>{"--version"}) return print_reply({0, "version", {{"version", "0.1.0-dev"}}, "crt-cli 0.1.0-dev"}, json);
-        if (args == std::vector<std::string>{"doctor", "--bootstrap"}) return print_reply(bootstrap_doctor(), json);
+        if (command == "doctor") return print_reply(doctor(args), json);
+        if (command == "shell") return print_reply(shell(args), json);
         if (command == "fetch") return print_reply(fetch(args), json);
         if (command == "env") return print_reply(environment_report(args), json);
         if (!std::set<std::string>{"new", "configure", "build", "test", "run"}.count(command)) throw Error("unsupported command or arguments; use --help", 2);

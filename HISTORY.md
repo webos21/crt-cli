@@ -11,6 +11,26 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-02
 
+### Implement D1 independent tools, scoped doctor and bootstrap resources on Linux
+
+Adopted CRT's separately pinned host-tools bundle and added `env --profile
+port-build`, bounded non-interactive `shell`, and self/environment/project doctor.
+Job rootfs/cwd and SDK identities stay distinct; the shared process runner now
+stops owned background descendants on normal completion as well as timeout.
+Virtual make SHELL paths handle spaces/Unicode without upstream patches or a
+permanent helper. Added producer-only executable/notices/CA packaging and
+explicit resource pin/signature checks; plain doctor keeps unavailable checks
+honest. Native application builds still execute no shell/Python/CMake.
+
+The final clean-SDK build passes 767 native checks, 31 isolated tool/resource
+cases and 32 isolated HTTPS/signature cases with the selected package CA.
+Three packaging fixtures pass. Refreshed the local Linux test binary with a
+backup. Original failures and the exact uncommitted source/artifact combination
+remain in [D1 acceptance](docs/acceptance/host_environment_acceptance.md) and
+[compatibility](docs/compatibility.md#independent-host-tools-and-d1-linux-adoption-2026-11-02).
+Native Windows/macOS replay remains in TODO; D1 is not closed. No production
+lock, artifact promotion/publication, official trust policy or STATUS change.
+
 ### Close D0.7 with the canonical common-source technical candidate
 
 CRT repaired libc++abi patch/cache validation and regenerated common Linux

@@ -642,3 +642,47 @@ shipping resources/trust and later installation/upgrade gates retain their own
 scope. The root lock stays unresolved, old source variants are not overwritten,
 and no tag, upload or public release is performed. Producer promotion must
 precede any future production consumer pin. STATUS is untouched.
+
+## Independent Host-tools and D1 Linux Adoption (2026-11-02)
+
+Reviewed CRT `8616fd64b13fa41925c1fce2b08f4937b7e8dcf1` and CLI
+`adc03b04ed124c71f0726a895da2cc2cde98b78d` before this working-tree increment.
+CRT owns the implemented local-only `crt.experimental.host-tools`, format 1,
+[contract](https://github.com/webos21/crt/blob/main/docs/design/host_tools_contract.md)
+and [producer evidence](https://github.com/webos21/crt/blob/main/docs/acceptance/host_tools_acceptance.md).
+CLI adopts exact caller-selected manifest pins and owns `port-build`, bounded
+script execution, scoped doctor and `crt-cli.bootstrap-resources`, format 1.
+The latter is an executable/notices/trust inventory, not a new SDK format,
+release-metadata schema or publisher key policy. Unknown format/host, altered
+payload/aliases and missing execute permission fail before a job; no host
+fallback or implicit SDK upgrade is introduced.
+
+The Linux technical combination uses the same clean `49879bf` Dev SDK/provider
+and LLVM identities as the common-source selection above. The source snapshot
+`2aa32f07ea920ee4405970f194ccdf1183608f3ba8675ca28e60e80920930155` is
+uncommitted, and produces CLI
+`9b82bd300379b45be4cb36becfbef56bf41b1ff5cc3d2cb510b9e60447b10284`.
+Independent C-only-derived host-tools `v0.1.0-hosttools.20261102.4` use manifest
+`59bdf8f83ce7817175010953abe652fe6f52852f8aff9a5528f2ce8b64812652` and payload
+`3b75fb9bbab8c9e9a1c7a542f5ced227f1c66bb92ed875e87d78f86e1aba11bf`.
+The resource manifest is
+`654e31b1ca2e7a37072d59fcf9ecbc8b997ff346dde3ca6930617acc2645cf05`.
+Its pinned CA and explicit resource/fetch signing identities are disposable
+tests; they are not official publisher credentials.
+
+[D1 Linux evidence](acceptance/host_environment_acceptance.md) records 767 native
+checks, cold/warm build, 31 isolated host-tools/resource cases and 32 isolated
+HTTPS/signature cases using the selected package CA. Actual imports, argv,
+source lists, old failures and artifact hashes remain there. CLI diagnostics
+separate execution host, tools and optional native project SDK; they do not
+implement a cross-target recipe/compiler adapter. `bin/linux-x64/crt-cli` is
+refreshed with a backup. Other hosts' committed test binaries remain at their
+recorded earlier source snapshots and do not inherit these new features.
+
+This is Linux local adoption only. Native Windows/x64 and macOS/arm64 replay
+of the new tool/resource/scoped-doctor/process boundary remains open, including
+private initial-load resolution. Root locks and SDKs stay unchanged; no product
+or host-tools artifact is promoted/published. Producer promotion remains required
+before any future production consumer lock. Interactive terminals, source-port
+compiler bridges, installer/upgrade transactions and official release trust
+retain their separate owners/gates. STATUS is untouched.

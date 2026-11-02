@@ -32,13 +32,14 @@ int main(int argc, char** argv) {
         return 0;
     }
     if (argc == 3 && std::string(argv[1]) == "--tree-child") { sleep(2); write_text(argv[2], "descendant ran\n"); return 0; }
-    if (argc == 3 && std::string(argv[1]) == "--tree-parent") {
+    if (argc == 3 && (std::string(argv[1]) == "--tree-parent" || std::string(argv[1]) == "--tree-exit")) {
         char* child_args[] = {argv[0], const_cast<char*>("--tree-child"), argv[2], nullptr};
         pid_t child;
         if (posix_spawn(&child, argv[0], nullptr, nullptr, child_args, environ) != 0) return 17;
-        sleep(10);
+        if (std::string(argv[1]) == "--tree-parent") sleep(10);
         return 0;
     }
+    if (argc == 2 && std::string(argv[1]) == "--cwd-probe") { std::printf("%s", fs::current_path().string().c_str()); return 0; }
     if (argc == 2 && std::string(argv[1]) == "--sleeper") { sleep(10); return 0; }
     if (argc == 2 && std::string(argv[1]) == "--flood") {
         std::string block(65536, 'x');
@@ -63,7 +64,8 @@ int main(int argc, char** argv) {
         check(doctor.at("checks").at("https_network") == "not_run", "honest network result");
         check(doctor.at("runtime_maps").at("status") == "collected", "PAL image enumeration");
         check(fs::path(doctor.at("sdk_store").get<std::string>()).filename() == "sdks", "common SDK store basename");
-        for (const auto& args : std::vector<std::vector<std::string>>{{"upgrade"}, {"doctor"}, {"--version", "extra"}, {"--json"}, {"new"}, {"build", "--bad"}, {"configure", "--project"}})
+        check(invoke(cli, {"doctor"}).at("scope") == "self", "default SDK-free self doctor");
+        for (const auto& args : std::vector<std::vector<std::string>>{{"upgrade"}, {"doctor", "--scope", "unknown"}, {"doctor", "--scope", "environment"}, {"--version", "extra"}, {"--json"}, {"new"}, {"build", "--bad"}, {"configure", "--project"}})
             invoke(cli, args, false);
         // fetch validates every input before any network use: plain HTTP, URL credentials, a malformed digest or size and
         // a missing trust file are all rejected without a connection attempt.
@@ -157,6 +159,13 @@ int main(int argc, char** argv) {
         auto tree = execute({fs::canonical(argv[0]).string(), "--tree-parent", marker.string()}, 1, false);
         sleep(3);
         check(tree.timed_out && tree.exit_code == 124 && !fs::exists(marker), "timeout kills owned descendants before delayed writes");
+        auto completed = execute({fs::canonical(argv[0]).string(), "--tree-exit", marker.string()}, 10, false);
+        sleep(3);
+        check(completed.exit_code == 0 && !completed.timed_out && !fs::exists(marker), "normal completion also stops owned background descendants");
+        auto parent_cwd = fs::current_path();
+        auto changed_cwd = execute_child({fs::canonical(argv[0]).string(), "--cwd-probe"}, child_environment(), hostile, 30, false);
+        check(changed_cwd.exit_code == 0 && changed_cwd.output == fs::canonical(hostile).string() && fs::current_path() == parent_cwd,
+              "child cwd handles spaced Unicode paths without changing parent cwd");
         auto flood = execute({fs::canonical(argv[0]).string(), "--flood"}, 30, false);
         check(flood.exit_code == 0 && flood.output_truncated && flood.output.size() == 8 * 1024 * 1024, "bounded stdout capture without pipe deadlock");
         auto local = read_json(project_root / ".crt/local.json");
@@ -179,6 +188,7 @@ int main(int argc, char** argv) {
             auto configured = invoke(cli, configure);
             check(configured.at("selection") == lock.at("selection"), "exact shared SDK selection");
             auto before_lock = read_text(root / "crt.lock"), before_local = read_text(root / ".crt/local.json");
+            check(invoke(cli, {"doctor", "--scope", "project", "--project", root.string()}).at("checks").at("manifest_sdk_tool_binding") == "pass", "read-only project doctor");
             for (const auto& profile : {"app-build", "app-run"}) {
                 auto report = invoke(cli, {"env", "--profile", profile, "--project", root.string()});
                 auto runtime = std::string(profile) == "app-run" ? std::vector<std::string>{(fs::path(local.at("sdk_root").get<std::string>()) / "bin").string(),
