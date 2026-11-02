@@ -11,7 +11,7 @@ release artifacts.
 | --- | --- | --- |
 | macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `72577b9b7dd1e602635ccdabef0fe728e66441c7bd9b07607ae8994ff2de949e` (3,538,040 bytes; 2026-11-01 replay of `a9d43c6`, clean local CRT `8db69f4`) |
 | Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `2a84c61debf31ce87c441f21ca4b0111701e6773567199aa5a2ec71a34e79967` (12,066,824 bytes; 2026-10-31 D1 experiment, base `36c6f65` plus signature/test delta, clean local CRT `f826397`) |
-| Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `94ba0f0c37159e6aa07fe78ea637fd202b658cab45daca70680c380f12450eea` (10,994,232 bytes; 2026-10-30 replay, dirty local SDK) |
+| Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `9e250db8589077f376091e4b506259601b1ec12b96713db9aef9059e41bbc9cf` (12,444,248 bytes; 2026-11-02 replay of `9e0110f`, clean local CRT `c4e19f3`) |
 | Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `c9707454fe451ae3ad7cad4f70f4d7e743399c51dc5be5fac300b8a39ef09b9d` (19,180,032 bytes, built `-O1 -g`; 2026-11-01 owned-spawn fix, dirty local CRT `fa5dc30` plus PAL/test delta) |
 | Windows/arm64 | `bin/win-arm64/crt-cli.exe` | present; SHA-256 `2cfd57291e983cf2a171c29271a3319aac05c558f0586a5b30c69a50005e03a5` (18,779,136 bytes, built `-O1 -g`; 2026-10-31 replay with `fetch` and UTF-8 narrow strings, SDK extracted from a local release-asset ZIP of CRT `85546d9`) |
 
@@ -59,9 +59,12 @@ The prior `2a84c61d...` executable/config are retained under `out/d1-env-2026110
 the `a611f6c5...` executable/config remain under the earlier D1 evidence root;
 the earlier `a4419776...` result remains in the preceding revalidation record.
 
-The Linux/aarch64 binary is the 2026-10-30 replay's bare executable: no DT_NEEDED/RPATH/RUNPATH,
-interpreter `/lib/ld-linux-aarch64.so.1` only. It was built against a local Dev SDK from CRT `641b034`
-plus an uncommitted fix to the aarch64 `O_NOFOLLOW`/`O_DIRECTORY` values and a Linux/aarch64 toolchain-export
-allowance (explicit dirty local candidate). The first aarch64 build has no earlier aarch64 binary, so the
-bootstrap loop proves a stage1/stage2 fixed point, not a bootstrap from a previous release. See
-[Linux/aarch64 replay](../docs/acceptance/bootstrap_acceptance.md#linuxaarch64-native-replay-2026-10-30).
+The Linux/aarch64 binary is the 2026-11-02 replay's bare executable, SHA-256
+`9e250db8589077f376091e4b506259601b1ec12b96713db9aef9059e41bbc9cf`
+(12,444,248 bytes). It uses a fresh clean CRT `c4e19f3` Development SDK with
+`crt-narrow-encoding-1`; no DT_NEEDED/RPATH/RUNPATH, interpreter
+`/lib/ld-linux-aarch64.so.1` only. All 766 native checks, SDK-hidden control/
+redaction and 32 HTTPS/signature cases pass. The previous aarch64 executable
+bootstraps current sources to a byte-identical stage1/stage2 fixed point.
+Previous bytes remain under `out/linux-arm64-revalidation-20261102/previous/`.
+Evidence: [Linux/aarch64 acceptance](../docs/acceptance/bootstrap_acceptance.md#linuxaarch64-latest-source-revalidation-2026-11-02).

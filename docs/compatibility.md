@@ -372,7 +372,7 @@ There is **no promoted production combination yet**. Local bootstrap replays
 exist for all five native pairs at their recorded source/SDK identities;
 the latest fetch/encoding sources pass at the recorded Windows/arm64,
 Linux/x86_64, Windows/x64 and [macOS/arm64](acceptance/bootstrap_acceptance.md#macos-latest-source-revalidation-2026-11-01) snapshots.
-Linux/aarch64 still needs those latest changes.
+Linux/aarch64 passes the latest sources in the [2026-11-02 replay](acceptance/bootstrap_acceptance.md#linuxaarch64-latest-source-revalidation-2026-11-02).
 The earlier [Windows/x64 replay](acceptance/bootstrap_acceptance.md#windowsx64-latest-source-revalidation-2026-11-01)
 builds and passes UTF-8/HTTPS checks, but fails owned-descendant timeout cleanup;
 that failed combination is retained. The subsequent
@@ -533,3 +533,23 @@ native outcomes belong to the
 Earlier Windows/macOS passes apply to their recorded sources; this command
 increment needs its own native replay there. Official trust, SDK promotion and
 complete D1 acceptance remain separate.
+
+
+## Linux/aarch64 Latest-source Review (2026-11-02)
+
+**Pass, local/unpromoted Linux/aarch64.** CLI `9e0110ff2bc9f7030ab66c726bac2286e5526cc2`
+consumes a fresh clean CRT `c4e19f3e47f6fd37f3d0d03c027bec5cfe251677` Development
+SDK at local version `v0.4.0-cli.20261102`, with `crt-narrow-encoding-1`.
+Native-policy format 1, existing profile formats and original immutable design
+baselines are unchanged. No producer/consumer code change was needed.
+
+Exact SDK/content/provider/source/binary identities, 766 native checks,
+previous-binary bootstrap fixed point, bare import/mapping and SDK-free
+32-case HTTPS/signature evidence belong to
+[acceptance](acceptance/bootstrap_acceptance.md#linuxaarch64-latest-source-revalidation-2026-11-02).
+The clean SDK is selected without dirty opt-in in the bootstrap loop. Local
+binary/defaults are refreshed with previous bytes retained. This closes this
+pair's latest fetch/encoding/environment replay, without promoting an SDK,
+adopting a production lock or approving complete Tranche 1/D1. Windows/arm64
+process-fix replay, coherent exact assets and broader D1/resource gates remain
+open. Producer records remain owned by CRT SDK split acceptance.

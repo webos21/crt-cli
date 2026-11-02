@@ -11,6 +11,21 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-02
 
+### Revalidate latest Linux/aarch64 sources against a clean Dev SDK
+
+Fresh clean CRT `c4e19f3` passes 147 core tests, imported-C++ static/shared
+smokes and static/shared transport consumers. CLI `9e0110f` passes 766 isolated
+native checks, cold/warm self-build, bare ELF/mapping audits, SDK-free env
+control/redaction and 32 disposable-identity HTTPS/signature cases. The previous
+aarch64 binary bootstraps a byte-identical stage1/stage2 fixed point; stage2
+passes its suite and warm rebuild. No product implementation change was needed.
+
+Refreshed the local aarch64 binary and ignored SDK config, preserving previous
+bytes and exact source/SDK/provider identities. No production lock, SDK
+promotion, full Tranche 1/D1 completion or public release is claimed. Windows/
+arm64 process-fix and asset-coherence gates remain open. Evidence:
+[Linux/aarch64 acceptance](docs/acceptance/bootstrap_acceptance.md#linuxaarch64-latest-source-revalidation-2026-11-02).
+
 ### Share child environments and expose bounded native diagnostics
 
 Implemented experimental `env --profile control|app-build|app-run` through the

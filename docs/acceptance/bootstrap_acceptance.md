@@ -2131,3 +2131,111 @@ Tracked `crt.lock` remains unresolved. Windows/macOS and other architectures
 are **Not run for this increment**; their preceding passes retain their exact
 revisions. Independent host-tools/rootfs, port-build, shell/diagnostics,
 shipping resource/notices qualification and complete D1 remain open.
+
+## Linux/aarch64 Latest-source Revalidation (2026-11-02)
+
+**Pass, native Linux/aarch64, local/unpromoted.** CLI
+`9e0110ff2bc9f7030ab66c726bac2286e5526cc2` consumes a fresh clean CRT
+`c4e19f3e47f6fd37f3d0d03c027bec5cfe251677` Development SDK. No product code
+change was needed. This closes the latest fetch/encoding and child-environment
+replay for this native pair; it does not complete the cross-host Tranche 1,
+asset promotion or full D1 gates.
+
+### Inputs and Producer Gates
+
+Host `u2404`, native aarch64 Linux `7.0.0-42-generic`; Clang/LLD/llvm-ar
+21.1.8. Producer output is fresh
+`/home/cmjo/GitLocal/crt/out/cli-linux-aarch64-20261102`, with Debug,
+`CRT_USE_IMPORTED_LIBCXX=ON`, upper Skia/FFmpeg/curl/LVGL options OFF and local
+version `v0.4.0-cli.20261102` (not a Git tag or release). Pinned LLVM source
+and verified download archives were reused; no compiled runtime was copied.
+Producer/base/compile provenance all name clean `c4e19f3` and the profile
+provides `crt-narrow-encoding-1`. Original immutable design baselines remain
+unchanged; native compiler policy remains experimental format 1.
+
+Producer `crt-development-sdk-test` passes static/shared HTTPS+inflate and
+wrong/missing/malformed CA cases. Fresh core CTest is **147/147**, no skips;
+`crt-cxx-test` passes static/shared exception/allocation, string ABI and iostream
+smokes. Exporter/profile fixtures: **36 pass, two Windows-only skips**. No full
+WebKit/media/device replay was needed or claimed. Producer evidence remains
+owned by CRT's `docs/acceptance/sdk_split_acceptance.md`.
+
+The complete SDK is copied with real symlinks outside the producer tree into
+`out/linux-arm64-revalidation-20261102/work/crt-cli-contract-wqk8w3hx/SDK space 한글/dev`
+in this repository's ignored output. SDK inventories remain unchanged.
+
+| Identity | SHA-256 / value |
+| --- | --- |
+| SDK inventory, 2,597 entries | `ae32504f7b1e7439275f867d4e7ee199a31bafa7767f20d20584fe3a2ca0b560` |
+| SDK provider content | `a1d2028cd734743ebb76190066f7225759a74a7bcf783197574095670e317874` |
+| Provider JSON | `d256ccab539f4b9b65d1057e29a326119c499a58d4053b07e9fb5b11f339c306` |
+| Exported CLI source inventory | `be8352a51fede255c76a3ab2534608e02a7decf138bccb7ffc23e158e9ffe6ae` |
+| Final bare CLI, 12,444,248 bytes | `9e250db8589077f376091e4b506259601b1ec12b96713db9aef9059e41bbc9cf` |
+
+### Reproduction and Measured Consumer Outcomes
+
+```sh
+python3 /home/cmjo/GitLocal/crt/tools/replay_cli_contract_linux.py \
+  --cli-source /home/cmjo/GitLocal/crt-cli \
+  --sdk-root /home/cmjo/GitLocal/crt/out/cli-linux-aarch64-20261102/dist/dev \
+  --output /home/cmjo/GitLocal/crt-cli/out/linux-arm64-revalidation-20261102/replay \
+  --work-parent /home/cmjo/GitLocal/crt-cli/out/linux-arm64-revalidation-20261102/work \
+  --clang /usr/bin/clang --clangxx /usr/bin/clang++ \
+  --linker /usr/bin/ld.lld --ar /usr/bin/llvm-ar-21
+python3 /home/cmjo/GitLocal/crt-cli/out/linux-arm64-revalidation-20261102/check-env.py
+python3 /home/cmjo/GitLocal/crt-cli/out/linux-arm64-revalidation-20261102/run-https.py
+python3 /home/cmjo/GitLocal/crt-cli/out/linux-arm64-revalidation-20261102/run-loop.py
+```
+
+Use fresh evidence/work directories on replay. The last three scripts are
+retained test-host adapters, not product prerequisites.
+
+- **766 native checks pass**, including C/C++ static/shared app/library
+  workflows, spaces/Hangul/metacharacters, cache changes, child status/output,
+  owned-descendant timeout and shared child-environment diagnostics.
+- Cold self-build **11 executed / 0 reused**, warm **0 / 11**. Bubblewrap hides
+  both repositories and original SDK, isolates network, clears environment and
+  masks host interpreters/build drivers. Strace records **448 successful execve
+  calls / 22 distinct paths**, with no unexpected executable. No shell/Python/
+  CMake/Ninja/make/SDK compiler wrapper executes in the consumer path.
+- Bare help/version/doctor pass with relocated SDK/source/provider/compiler
+  inputs hidden. ELF has no DT_NEEDED, RPATH or RUNPATH; interpreter is
+  `/lib/ld-linux-aarch64.so.1`. PAL reports only CLI, loader and vdso images.
+  Allocation ownership, C++ exceptions, zlib, HTTP/TLS linkage and UTF-8 pass.
+  Doctor retains `executable_integrity: not_verified` and `https_network: not_run`;
+  the separate fetch cases below do not change that command's scope.
+- SDK-free control environment and harmless inherited-value redaction pass;
+  unsupported `port-build` returns a failing structured result.
+- **32/32 controlled HTTPS/integrity/RSA-PSS cases pass** with fresh disposable
+  CA/signing identities. Bubblewrap hides `/home` and `/tmp`, exposing only the
+  temporary test capsule. Native loopback networking is retained. Python and
+  OpenSSL serve/generate test inputs; CLI runs with empty PATH. Real spaces and
+  Hangul certificate/key/output paths pass. This introduces no official trust
+  anchor, system trust change or signed-release/anti-replay policy.
+
+Raw receipts, exact argv/tool hashes, producer logs, fixture logs, isolation
+probes, execve traces and test-host adapters live under
+`out/linux-arm64-revalidation-20261102/`. The complete clean handoff and provider
+are retained there. No Development-profile archive was cut; directory inventory
+and provenance identify this candidate. No production lock, promotion, public
+release or STATUS change is implied. Windows/arm64 process-fix replay and
+coherent exact release-asset selection remain open. Independent host-tools,
+port-build/shell, shipping notices/trust resources and full D1 remain open.
+
+### Previous-binary Bootstrap Loop
+
+The retained 2026-10-30 aarch64 executable (`94ba0f0c...`) configures the
+current source export with `.sdk.json`, clean-SDK selection and
+`allow_dirty_sdk: false`. It builds stage1 (11/0), which reconfigures and
+rebuilds with the output cache removed (11/0). Stage1 and stage2 are
+byte-identical: SHA-256 `928a83deab00bf84e0ebaedbf2a1889d49d15588e4eeaf3db8c68bb2bb7500a7`,
+12,446,768 bytes. Stage2 passes 766 native checks and a warm 0/11 rebuild.
+This extra loop uses empty PATH and the external SDK, without Bubblewrap or
+execve accounting; the separate replay above supplies those isolation gates.
+The source path differs from the replay, so its debug-bearing bytes are not
+expected to match the separately audited bare executable.
+
+The verified bare executable refreshes `bin/linux-arm64/crt-cli`; previous bytes
+are preserved under `out/linux-arm64-revalidation-20261102/previous/`. The new
+ignored `.sdk.json` selects the retained clean handoff/provider explicitly.
+The tracked root `crt.lock` remains unresolved and unchanged.

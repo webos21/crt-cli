@@ -28,6 +28,8 @@ Next increment: define/adopt the independent producer host-tools contract before
 implementing the CLI `port-build` adapter. Experimental control/app-build/app-run
 `env` and shared child construction pass fresh Linux/x86_64 verification
 ([evidence](docs/acceptance/bootstrap_acceptance.md#linux-child-environment-diagnostics-2026-11-02));
+Linux/aarch64 also passes
+([evidence](docs/acceptance/bootstrap_acceptance.md#linuxaarch64-latest-source-revalidation-2026-11-02));
 replay this increment on the other native hosts. Earlier host passes retain
 their own revisions. `port-build`, shell and environment/project doctor remain open.
 
@@ -70,7 +72,9 @@ Public SDK release is not a prerequisite; CLI consumption stays SDK-only.
   Linux/x86_64 and Windows/x64 replay the latest sources; x64 owned-descendant
   cleanup now passes (2026-11-01). Latest macOS/arm64 also passes
   ([evidence](docs/acceptance/bootstrap_acceptance.md#macos-latest-source-revalidation-2026-11-01)).
-  Latest Linux/aarch64 and the Windows/arm64 process-fix replay remain open.
+  Latest Linux/aarch64 passes
+  ([evidence](docs/acceptance/bootstrap_acceptance.md#linuxaarch64-latest-source-revalidation-2026-11-02));
+  Windows/arm64 process-fix replay remains open.
 - [ ] **D0.6** Validate relocated build/run/imports with producer trees unavailable;
   Linux, macOS/arm64 and Windows/x64 pass ([Windows evidence](docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-windowsx64-2026-10-29));
   [macOS evidence](docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-macosarm64-2026-10-29).
@@ -98,18 +102,16 @@ These are future increments, not implemented features.
 - [ ] Windows UTF-8 narrow strings pass scoped workflows on Windows/arm64
   ([record](docs/acceptance/bootstrap_acceptance.md#windows-utf-8-narrow-strings-implemented-2026-10-31)) and Windows/x64
   ([record](docs/acceptance/bootstrap_acceptance.md#windowsx64-latest-source-revalidation-2026-11-01)); x64 host-tool Unicode startup probes pass.
-  Full port-tool workflows remain open. Rebuild the remaining Linux/aarch64
-  SDK with the new capability before replaying there. Linux/x86_64 and macOS/arm64 pass.
-- [ ] Replay `fetch` and the new sources on Linux/aarch64; current Windows/x64
-  and macOS/arm64 native/SDK-free cases pass at their recorded snapshots
-  ([macOS evidence](docs/acceptance/bootstrap_acceptance.md#macos-latest-source-revalidation-2026-11-01)).
+  Full port-tool workflows remain open. Linux/aarch64 now passes with a fresh clean
+  SDK ([evidence](docs/acceptance/bootstrap_acceptance.md#linuxaarch64-latest-source-revalidation-2026-11-02)); Linux/x86_64 and macOS/arm64 retain their recorded passes.
 - [ ] Pass [D1-07 HTTPS bootstrap](docs/acceptance/bootstrap_acceptance.md#sdk-free-https-bootstrap-gate)
   with only the shipped CLI runtime/trust inputs; exercise invalid trust and
   tampered metadata/artifacts without SDK/global DLL fallback. Partial: `fetch` and 17 loopback cases pass on
   Windows/arm64 ([record](docs/acceptance/bootstrap_acceptance.md#windowsarm64-https-fetch-unicode-paths-and-release-asset-sdk-2026-10-31));
   a signed-metadata policy and a real publisher remain. Linux/x86_64 also passes
   all 17 controlled-endpoint cases with SDK/source/provider hidden (2026-10-31);
-  Windows/arm64's SDK-hidden HTTPS run and Linux/aarch64 remain open;
+  Windows/arm64's SDK-hidden HTTPS run remains open; Linux/aarch64 passes 32 cases
+  ([evidence](docs/acceptance/bootstrap_acceptance.md#linuxaarch64-latest-source-revalidation-2026-11-02));
   macOS/arm64 passes 32 SDK-hidden cases ([evidence](docs/acceptance/bootstrap_acceptance.md#macos-latest-source-revalidation-2026-11-01)).
   The [D1 audit](docs/acceptance/bootstrap_acceptance.md#d1-publisher-and-host-environment-audit-2026-10-31)
   adds explicit-key signature cases and a real repository HTTPS probe. The
