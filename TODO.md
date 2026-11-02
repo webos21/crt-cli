@@ -24,6 +24,11 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
 
 ### D0/D1 - SDK Consumer Contracts, Bootstrap and Trust
 
+Work-queue D0.5/D0.6 are complete at the five recorded native combinations
+([technical review](docs/acceptance/bootstrap_acceptance.md#technical-bootstrap-gate-review-2026-11-02)).
+D0.7 remains open for common-source asset coherence and final candidate selection;
+this is not full D0/D1 or production adoption.
+
 Next increment: define/adopt the independent producer host-tools contract before
 implementing the CLI `port-build` adapter. Experimental control/app-build/app-run
 `env` and shared child construction pass fresh Linux/x86_64 verification
@@ -67,23 +72,17 @@ Public SDK release is not a prerequisite; CLI consumption stays SDK-only.
   producer/CLI snapshots, hashes, host/target/tools and public wrapper/import/rootfs inputs.
 - [x] **D0.4** Implement bootstrap SDK/result records and experimental format-0
   manifest/lock inputs; the general SDK/project contracts remain distinct.
-- [ ] **D0.5** Implement bounded help/version/bootstrap diagnosis and check
-  single-executable link feasibility for the chosen CRT/C++/HTTP/TLS stack.
-  All five native pairs pass at their recorded local/unpromoted snapshots.
-  Linux/x86_64 and Windows/x64 replay the latest sources; x64 owned-descendant
-  cleanup now passes (2026-11-01). Latest macOS/arm64 also passes
-  ([evidence](docs/acceptance/bootstrap_acceptance.md#macos-latest-source-revalidation-2026-11-01)).
-  Latest Linux/aarch64 passes
-  ([evidence](docs/acceptance/bootstrap_acceptance.md#linuxaarch64-latest-source-revalidation-2026-11-02));
-  Windows/arm64 passes the process-fix replay with a clean SDK ([evidence](docs/acceptance/bootstrap_acceptance.md#windowsarm64-latest-source-revalidation-and-spawn-environment-fix-2026-11-02)).
-- [ ] **D0.6** Validate relocated build/run/imports with producer trees unavailable;
-  Linux, macOS/arm64 and Windows/x64 pass ([Windows evidence](docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-windowsx64-2026-10-29));
-  [macOS evidence](docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-macosarm64-2026-10-29).
-  [Earlier Linux merged-source replay](docs/acceptance/bootstrap_acceptance.md#linux-revalidation-after-windows-changes-2026-10-30), [macOS merged-source replay](docs/acceptance/bootstrap_acceptance.md#macos-revalidation-after-windows-and-linux-changes-2026-10-30), [Linux/aarch64 replay](docs/acceptance/bootstrap_acceptance.md#linuxaarch64-native-replay-2026-10-30) and [Windows/arm64 replay](docs/acceptance/bootstrap_acceptance.md#windowsarm64-native-replay-2026-10-30) pass at their recorded snapshots.
-  The [latest Linux D1 audit](docs/acceptance/bootstrap_acceptance.md#d1-publisher-and-host-environment-audit-2026-10-31)
-  additionally covers the experimental signature primitive.
+- [x] **D0.5** Validate bounded help/version/bootstrap diagnosis and one-executable
+  feasibility on the five recorded native pairs
+  ([technical review](docs/acceptance/bootstrap_acceptance.md#technical-bootstrap-gate-review-2026-11-02)).
+- [x] **D0.6** Review relocated SDK-only build/run/imports and producer-tree
+  isolation at those recorded combinations; not production adoption
+  ([technical review](docs/acceptance/bootstrap_acceptance.md#technical-bootstrap-gate-review-2026-11-02)).
 - [ ] **D0.7** Link exact candidate/case evidence in [compatibility](docs/compatibility.md),
   resolve asset coherence with CRT and adopt final pins only after producer promotion.
+  The common version/OS/stage source-asset naming policy is accepted; source-cache
+  repair, asset/recipe regeneration, affected validation and final selection remain
+  producer work ([review](docs/compatibility.md#technical-bootstrap-gates-and-common-source-contract-review-2026-11-02)).
 
 ## Planned
 

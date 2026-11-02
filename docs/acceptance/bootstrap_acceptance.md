@@ -18,6 +18,37 @@ ledger and dated records. A contract, fixture or compile-only result does not
 satisfy runtime acceptance. SDK management and full workflows continue in D2-D6;
 this document is not a claim that those later features are implemented.
 
+## Technical Bootstrap Gate Review (2026-11-02)
+
+The owner accepts **work-queue D0.5 and D0.6 as complete at the recorded
+local/unpromoted combinations**, matching CRT's scoped 1.5/1.6 closure.
+These dotted work-queue items are not acceptance case IDs D0-05/D0-06 and do
+not constitute approval of every D0/D1 criterion.
+
+| Native pair | Original consumer evidence |
+| --- | --- |
+| Linux/x86_64 | [Clean SDK/latest-source replay](#linux-latest-source-revalidation-2026-10-31) and [child-environment increment](#linux-child-environment-diagnostics-2026-11-02) |
+| Linux/aarch64 | [Clean SDK/latest-source replay](#linuxaarch64-latest-source-revalidation-2026-11-02) |
+| macOS/arm64 | [Clean SDK/latest-source replay](#macos-latest-source-revalidation-2026-11-01) |
+| Windows/x64 | [Clean SDK replay with the spawn-environment fix](#windowsx64-latest-source-revalidation-and-spawn-environment-fix-2026-11-02) |
+| Windows/arm64 | [Clean SDK replay with the spawn-environment fix](#windowsarm64-latest-source-revalidation-and-spawn-environment-fix-2026-11-02) |
+
+Reviewed existing startup/link, bounded diagnosis, single-executable feasibility,
+relocated SDK-only build/run, producer-tree isolation and ABI/import evidence;
+no native execution was added by this documentation review. Exact per-host
+SDK/provider/tool/CLI identities, earlier bootstrap runs, conditional skips,
+failed attempts and limitations remain in the dated records. There is no claim
+of one common latest revision or re-execution of every older case by each
+latest binary. Windows process accounting is not an execution-denial sandbox.
+
+The [producer review](https://github.com/webos21/crt/blob/1537a9183419f238d03d6307aa991fc3e0959a0e/docs/acceptance/sdk_split_acceptance.md#sdkcli-technical-bootstrap-gate-review-2026-11-02)
+and [consumer contract record](../compatibility.md#technical-bootstrap-gates-and-common-source-contract-review-2026-11-02)
+preserve this scope. D0.7 stays open for canonical-source/cache repair, common
+asset/recipe generation, affected validation and final selection. The source
+finding does not invalidate scoped runtime passes, but regenerated artifacts
+need their own validation. No SDK promotion, production pin, full D1/resource
+acceptance, public release or binary refresh is assigned by this review.
+
 ## D0 - SDK Consumer and Minimal CLI
 
 | ID | Required evidence |

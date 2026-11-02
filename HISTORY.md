@@ -11,6 +11,22 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-02
 
+### Close the recorded D0.5/D0.6 technical bootstrap gates
+
+Reviewed the five native pairs' existing startup/link, bounded diagnosis,
+one-executable and relocated SDK-only build/run/ABI/import evidence; marked
+work-queue D0.5/D0.6 complete at their recorded local/unpromoted combinations.
+The [technical review](docs/acceptance/bootstrap_acceptance.md#technical-bootstrap-gate-review-2026-11-02)
+keeps exact identities, isolation limits, skips and prior failures in the original
+records. This is not new execution or complete D0/D1 acceptance.
+
+Reviewed CRT `1537a9183419f238d03d6307aa991fc3e0959a0e` and accepted its
+common version/OS/stage source-asset naming policy in
+[compatibility](docs/compatibility.md#technical-bootstrap-gates-and-common-source-contract-review-2026-11-02).
+D0.7 remains open for producer repair/regeneration, affected validation and final
+selection before promotion/pin adoption. No CLI code, committed binary, SDK
+payload, lock, schema or STATUS change.
+
 ### Replay the Windows/arm64 changes on Windows/x64
 
 CLI `1499a7b` replays on native Windows/x64 against a fresh clean CRT `b4c5b5a` Development SDK (contains the `d12e210` spawn-environment fix; `crt-c-test` 168 of 169, one skip). All 844 native checks pass (cold 11/0, warm 0/11), the bare PE/doctor audit and all 32 restricted-token HTTPS/signature cases; CRT's mksh, toybox, awk and make start from a Unicode SDK path. Windows/x64 does not add `PROCESSOR_ARCHITECTURE` (measured with Python), so the arm64 test tolerance is not exercised there and no CLI source changed. `bin/win-x64/crt-cli.exe` is refreshed. The bootstrap loop for this binary and ports in Unicode directories were not run. [Acceptance](docs/acceptance/bootstrap_acceptance.md#windowsx64-latest-source-revalidation-and-spawn-environment-fix-2026-11-02).

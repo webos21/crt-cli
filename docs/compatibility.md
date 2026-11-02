@@ -6,6 +6,37 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## Technical Bootstrap Gates and Common Source Contract Review (2026-11-02)
+
+Reviewed producer documentation/tool commit
+[`1537a9183419f238d03d6307aa991fc3e0959a0e`](https://github.com/webos21/crt/commit/1537a9183419f238d03d6307aa991fc3e0959a0e)
+against consumer baseline `8fca58af136cfc50efed196529e23cf9b6572629`.
+The owner closes work-queue D0.5/D0.6 at the five existing native combinations,
+matching producer 1.5/1.6. The
+[consumer technical review](acceptance/bootstrap_acceptance.md#technical-bootstrap-gate-review-2026-11-02)
+links the original per-host identities and scoped execution evidence. This is
+not a new runtime combination, a common latest-revision matrix, complete D0/D1
+acceptance, or selection of a production SDK/provider/CLI pin.
+
+Accepted the producer's
+[common source-stage naming contract](https://github.com/webos21/crt/blob/1537a9183419f238d03d6307aa991fc3e0959a0e/docs/design/sdk_development_contract.md#common-source-stage-assets-adopted-2026-11-02):
+one `crt-<version>-<os>-<stage>-source.tar.xz`, with the same selected bytes and
+recipe size/SHA-256 across target architectures. Binary SDK archives remain
+architecture-specific. This is policy adoption, not an implemented resolver
+change or a new source-asset lock. Old candidate names/hashes remain historical
+identities; they are not overwritten or silently replaced.
+
+The [producer comparison](https://github.com/webos21/crt/blob/1537a9183419f238d03d6307aa991fc3e0959a0e/docs/acceptance/release_qualification.md#source-asset-comparison-checkpoint-2026-11-02)
+records different supplied baselines and preserved stale libc++abi patch state;
+it does not establish the cause of the missing original collision pair.
+Canonical-source/cache repair, common asset/recipe regeneration, affected
+validation and final candidate selection remain CRT 1.7 / CLI D0.7 work.
+Regenerated inputs do not inherit the old artifacts' runtime acceptance.
+Promote producer artifacts before adopting production consumer pins. This
+review changes no executable, SDK payload, schema, provider format or lock,
+and grants no public-release approval. Original immutable baselines and all
+previous exercised-combination records remain unchanged.
+
 ## Review Baseline, Not an Artifact Lock
 
 The 2026-10-21 documentation review inspected these local pre-change revisions:
