@@ -11,6 +11,16 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-02
 
+### Replay the latest sources on Windows/arm64 and fix the spawn-environment leak
+
+The first replay of CLI `f36e858` against a clean `ee0b5e3` SDK failed the shared child-environment check. The OS adds
+`PROCESSOR_ARCHITECTURE=ARM64` to ARM64 processes (a CRT-free program shows it), so the test now allows that one name with the host's value; and the
+Windows PAL left its `CRT_*` bootstrap variables in every CRT child's environment, fixed in CRT `d12e210` with a regression test that fails on the old
+runtime. Against a clean `d12e210` SDK the replay passes 845 native checks (cold 11/0, warm 0/11), the bare PE/doctor audit and all 32
+restricted-token HTTPS/signature cases (new CRT runner), and CRT's mksh, toybox, awk and make start from a Unicode SDK path.
+`bin/win-arm64/crt-cli.exe` is refreshed. Windows/x64 has not run the fix; the bootstrap loop for this binary and ports in Unicode
+directories were not run. [Acceptance](docs/acceptance/bootstrap_acceptance.md#windowsarm64-latest-source-revalidation-and-spawn-environment-fix-2026-11-02).
+
 ### Revalidate latest Linux/aarch64 sources against a clean Dev SDK
 
 Fresh clean CRT `c4e19f3` passes 147 core tests, imported-C++ static/shared

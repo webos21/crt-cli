@@ -339,6 +339,15 @@ See [the exact replay](acceptance/bootstrap_acceptance.md#linux-test-identity-re
 The existing binary/SDK identities and earlier native replay remain unchanged;
 full Linux D1 environment/resource work is still open.
 
+## Windows/arm64 Latest-source Revalidation (2026-11-02)
+
+**Pass, local/unpromoted Windows/arm64.** CLI `f36e858972c3342292a6bb09dc5fc18cb55eb8ef` plus one test edit replays against a clean CRT
+[`d12e210`](https://github.com/webos21/crt/commit/d12e21013c1da6eed0d9238100df93c8febdba1c) Development SDK (`v0.4.0-cli.20261102`, not a tag). The earlier clean
+`ee0b5e3` SDK does **not** combine with these sources: its Windows PAL leaves the `CRT_*` bootstrap variables in a CRT child's environment, which the CLI's
+child-environment contract rejects. `d12e210` is the first CRT revision known to combine on this pair; Windows/x64 has not run it. The OS adds
+`PROCESSOR_ARCHITECTURE` to ARM64 processes and the CLI tolerates only that name. No pin or promoted combination is adopted. Details:
+[acceptance](acceptance/bootstrap_acceptance.md#windowsarm64-latest-source-revalidation-and-spawn-environment-fix-2026-11-02).
+
 ## Linux Merged-source Revalidation (2026-10-30)
 
 **Pass, local/unpromoted Linux/x86_64**, CLI `ddaf288322e3292fbba53bc2bc4946c701ab5241`.

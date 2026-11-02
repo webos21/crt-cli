@@ -33,9 +33,10 @@ Linux/aarch64 also passes
 replay this increment on the other native hosts. Earlier host passes retain
 their own revisions. `port-build`, shell and environment/project doctor remain open.
 
-Remaining focus: D1 host-environment/resource gates and the Windows/arm64
-replay of the owned-spawn fix. Windows/x64 now passes the full native suite
-with the producer fix. Latest macOS/arm64 native, bootstrap and SDK-hidden
+Remaining focus: D1 host-environment/resource gates and the Windows/x64 replay
+of the CRT spawn-environment fix. Windows/arm64 now passes the latest sources
+([evidence](docs/acceptance/bootstrap_acceptance.md#windowsarm64-latest-source-revalidation-and-spawn-environment-fix-2026-11-02));
+Windows/x64 passed the full native suite with the owned-spawn fix. Latest macOS/arm64 native, bootstrap and SDK-hidden
 HTTPS/signature replay also passes
 ([macOS evidence](docs/acceptance/bootstrap_acceptance.md#macos-latest-source-revalidation-2026-11-01),
 [Windows evidence](docs/acceptance/bootstrap_acceptance.md#windowsx64-owned-descendant-timeout-fix-2026-11-01)).
@@ -74,7 +75,7 @@ Public SDK release is not a prerequisite; CLI consumption stays SDK-only.
   ([evidence](docs/acceptance/bootstrap_acceptance.md#macos-latest-source-revalidation-2026-11-01)).
   Latest Linux/aarch64 passes
   ([evidence](docs/acceptance/bootstrap_acceptance.md#linuxaarch64-latest-source-revalidation-2026-11-02));
-  Windows/arm64 process-fix replay remains open.
+  Windows/arm64 passes the process-fix replay with a clean SDK ([evidence](docs/acceptance/bootstrap_acceptance.md#windowsarm64-latest-source-revalidation-and-spawn-environment-fix-2026-11-02)).
 - [ ] **D0.6** Validate relocated build/run/imports with producer trees unavailable;
   Linux, macOS/arm64 and Windows/x64 pass ([Windows evidence](docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-windowsx64-2026-10-29));
   [macOS evidence](docs/acceptance/bootstrap_acceptance.md#native-json-builder-on-macosarm64-2026-10-29).
@@ -110,7 +111,7 @@ These are future increments, not implemented features.
   Windows/arm64 ([record](docs/acceptance/bootstrap_acceptance.md#windowsarm64-https-fetch-unicode-paths-and-release-asset-sdk-2026-10-31));
   a signed-metadata policy and a real publisher remain. Linux/x86_64 also passes
   all 17 controlled-endpoint cases with SDK/source/provider hidden (2026-10-31);
-  Windows/arm64's SDK-hidden HTTPS run remains open; Linux/aarch64 passes 32 cases
+  Windows/arm64 now passes 32 SDK-hidden cases ([evidence](docs/acceptance/bootstrap_acceptance.md#windowsarm64-latest-source-revalidation-and-spawn-environment-fix-2026-11-02)); Linux/aarch64 passes 32 cases
   ([evidence](docs/acceptance/bootstrap_acceptance.md#linuxaarch64-latest-source-revalidation-2026-11-02));
   macOS/arm64 passes 32 SDK-hidden cases ([evidence](docs/acceptance/bootstrap_acceptance.md#macos-latest-source-revalidation-2026-11-01)).
   The [D1 audit](docs/acceptance/bootstrap_acceptance.md#d1-publisher-and-host-environment-audit-2026-10-31)

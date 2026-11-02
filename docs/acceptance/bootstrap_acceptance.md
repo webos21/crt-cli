@@ -2239,3 +2239,80 @@ The verified bare executable refreshes `bin/linux-arm64/crt-cli`; previous bytes
 are preserved under `out/linux-arm64-revalidation-20261102/previous/`. The new
 ignored `.sdk.json` selects the retained clean handoff/provider explicitly.
 The tracked root `crt.lock` remains unresolved and unchanged.
+
+## Windows/arm64 Latest-source Revalidation and Spawn-environment Fix (2026-11-02)
+
+**Pass, native Windows/arm64; local/unpromoted.** The latest CLI sources (`f36e858`) with the shared child-environment
+diagnostics, publisher-signature verification, owned-descendant timeout and UTF-8 narrow strings replay on this host pair against a fresh
+clean SDK. The first replay **failed**, which exposed one CRT PAL defect (fixed in CRT) and one OS behaviour (tolerated in a CLI
+test). Producer details, including the baseline gate, are in CRT's
+[acceptance record](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#windowsarm64-latest-source-cli-replay-and-spawn-environment-fix-2026-11-02).
+
+### Inputs
+
+| Input | Identity |
+| --- | --- |
+| Host | Windows 11 Pro on Arm64, LLVM/Clang 22.1.8, Windows SDK `10.0.28000.0/um/arm64`, Developer Mode on (not changed) |
+| Failing baseline SDK | clean CRT [`ee0b5e3`](https://github.com/webos21/crt/commit/ee0b5e35ba91e8acd1a96ab9f2136243ac1b9adf), `crt-c-test` 167 of 168, one skip |
+| Replayed SDK | clean CRT [`d12e210`](https://github.com/webos21/crt/commit/d12e21013c1da6eed0d9238100df93c8febdba1c), version `v0.4.0-cli.20261102` (a local version, not a tag), `crt-c-test` 168 of 169, one skip; inventory `8a44f8a72511915a7da49b9a98ba085ffe20cc15c02aaa67c9e97696b2c6950b`, content `f86084868afe3e1e349f9407975cb4ebc20fdeaa49826fc0e5e7cdcd63b5ca71` |
+| Provider | `86786a22aa555b67bb6e71b6c5041df683daeca2154dd615fbf50fd842c8becb` |
+| CLI | base `f36e858972c3342292a6bb09dc5fc18cb55eb8ef` plus the test edit below, committed afterwards; driver source SHA-256 `1f4729d9c02064fa6811c28e8f8fe5667763f3ebd8c0139b2783783c03e9c43c` |
+
+### The Failure and Its Two Causes
+
+The native suite stopped at `spawn environment exactly matches shared builder` (the check compares the environment of a spawned
+child with the shared builder's). Minimal reproducers separated the causes:
+
+- **The OS adds `PROCESSOR_ARCHITECTURE`.** A kernel32-only ARM64 program (no CRT) started with just `LC_ALL`, `PATH` and `SystemRoot` receives
+  `PROCESSOR_ARCHITECTURE=ARM64`; so does a native ARM64 Python. The CLI cannot remove it, so the test now allows that single name, only
+  with the value for the host architecture (`ARM64` or `AMD64`), and still fails on anything else. Native Windows/x64 was not measured.
+- **CRT's Windows PAL leaked its bootstrap variables.** A CRT child spawned from a CRT parent found `CRT_CHILD_BOOTSTRAP`, `CRT_BOOTSTRAP_CWD`,
+  `CRT_BOOTSTRAP_SIGMASK`, `CRT_BOOTSTRAP_SIGDEFAULT` and `CRT_FD_SNAPSHOT_PIPE` in `environ`, so the CLI's "exactly the environment I
+  passed" contract did not hold for the programs it runs on Windows. Fixed in CRT `d12e210`, with a regression test that fails on the old runtime.
+
+The retained failing attempts are `replay/` (before the CLI tolerance) and `replay2/` (after it). A scratch copy of the suite that also ignored the
+`CRT_*` names, run on the unfixed runtime, passes **845** checks, the same count as the final run, so no further failure was hidden.
+
+### Final Replay
+
+The unchanged producer driver `tools/replay_cli_contract_windows.py` runs with `PYTHONUTF8=1`, a Hangul/accented/space work path and explicit LLVM
+paths, with the original CRT checkout hidden. All steps exit 0:
+
+- ten seed compiles and link, configure, build, cold self-build **11 executed / 0 reused**, warm **0 / 11**;
+- **845 native checks**, including the original owned-descendant timeout control and marker assertion, the child-environment and `env`
+  diagnostics, the publisher-signature argument cases and the Unicode C/C++ workflows;
+- 404 recorded native/OS processes with no forbidden image (accounting, not launch denial);
+- bare help/version/doctor with SDK, source and provider unreadable: direct imports only `kernel32.dll` and
+  `api-ms-win-core-synch-l1-2-0.dll`, `narrow_encoding: utf-8`, C++ allocation/exception, zlib and HTTP/TLS checks pass, integrity
+  `not_verified`, network `not_run`.
+
+The bare executable is 20,286,976 bytes, SHA-256 `6fce97e028c9956716ad1729d8655532282944f8dfd7f9ec33f44d92cf0e787c`, and replaces
+`bin/win-arm64/crt-cli.exe`; `replay3/result.json` has SHA-256 `e911ffcdc8083564d1c8718b8333066bae714b374ea583aa505d5d5f0a6727db`. Original
+and relocated SDK inventories are unchanged. Byte reproducibility is not claimed.
+
+### SDK-hidden HTTPS and Signatures
+
+CRT's new `tools/test_cli_fetch_https_windows.py` runs the unchanged 32 cases of `test_cli_fetch_https.py --publisher-cases` with each CLI call under a
+restricted token naming a per-run SID, an empty `PATH` and a job object, in a private Hangul/accented/space directory. A native probe built with the
+SDK under test confirms **eight roots unreadable** under that SID (both checkouts, both producer worktrees, the SDK build, the exported source, the
+relocated SDK and the provider). **All 32 cases pass** with fresh disposable CA, server and RSA publisher identities: trust, expiry, host name,
+digest, size, interruption, timeout, HTTP and redirect, existing output, and signature, key, padding, salt and argument negatives fail closed
+with no staging leftovers. 32 CLI calls, 64 recorded processes (the CLI and `conhost.exe`); product fetch starts no Python, OpenSSL or shell.
+`https-final/cases/result.json` SHA-256 `08b7fb946440e828b79964cbf85b028edfef41b24cf29ded23bae7af10509efa`.
+This closes the Windows/arm64 SDK-hidden HTTPS gap that the 2026-10-31 record left open.
+
+### CRT Host Tools
+
+From the relocated Unicode SDK path with an empty `PATH`, CRT's `mksh -c 'echo'`, `toybox echo`, `awk 'BEGIN{...}'` and `make --version` each start and exit 0 and
+are ARM64 PE images. These are startup checks, not configure/make port acceptance; `make` prints "Built for x86_64-pc-linux-gnu", the triple text
+its recipe passed to configure.
+
+### Evidence and Limits
+
+Raw evidence is under CRT's ignored `out/cli-windows-arm64-20261102/` (build and test logs, the three replay attempts, `https-final/`, probes, fixture and
+host-tool results). `bin/win-arm64/crt-cli.exe` is refreshed; the tracked root lock stays unresolved.
+
+Windows/arm64 only. Native Windows/x64 has not run the spawn-environment fix or measured the OS-added variable (its 2026-11-01 pass predates the
+check); Linux and macOS hosts need an SDK with the fix before any Windows-specific claim carries over (the PAL change is Windows-only). Not run: the
+bootstrap loop for this binary, ports in Unicode directories, Windows before 10 version 1903, a promoted SDK. No official publisher policy, release,
+production lock or STATUS change.

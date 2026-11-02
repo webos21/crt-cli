@@ -13,7 +13,7 @@ release artifacts.
 | Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `2a84c61debf31ce87c441f21ca4b0111701e6773567199aa5a2ec71a34e79967` (12,066,824 bytes; 2026-10-31 D1 experiment, base `36c6f65` plus signature/test delta, clean local CRT `f826397`) |
 | Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `9e250db8589077f376091e4b506259601b1ec12b96713db9aef9059e41bbc9cf` (12,444,248 bytes; 2026-11-02 replay of `9e0110f`, clean local CRT `c4e19f3`) |
 | Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `c9707454fe451ae3ad7cad4f70f4d7e743399c51dc5be5fac300b8a39ef09b9d` (19,180,032 bytes, built `-O1 -g`; 2026-11-01 owned-spawn fix, dirty local CRT `fa5dc30` plus PAL/test delta) |
-| Windows/arm64 | `bin/win-arm64/crt-cli.exe` | present; SHA-256 `2cfd57291e983cf2a171c29271a3319aac05c558f0586a5b30c69a50005e03a5` (18,779,136 bytes, built `-O1 -g`; 2026-10-31 replay with `fetch` and UTF-8 narrow strings, SDK extracted from a local release-asset ZIP of CRT `85546d9`) |
+| Windows/arm64 | `bin/win-arm64/crt-cli.exe` | present; SHA-256 `6fce97e028c9956716ad1729d8655532282944f8dfd7f9ec33f44d92cf0e787c` (20,286,976 bytes, built `-O1 -g`; 2026-11-02 replay of the latest sources against a clean local SDK from CRT `d12e210`) |
 
 macOS ships only arm64, so it keeps the single `bin/macos/` directory. Linux and
 Windows are split by architecture: `linux-x64`, `linux-arm64`, `win-x64`, `win-arm64`.
@@ -44,6 +44,8 @@ one's loop was not repeated. See
 [Windows/arm64 replay](../docs/acceptance/bootstrap_acceptance.md#windowsarm64-native-replay-2026-10-30) and the
 [fetch, Unicode and release-asset record](../docs/acceptance/bootstrap_acceptance.md#windowsarm64-https-fetch-unicode-paths-and-release-asset-sdk-2026-10-31) and
 [UTF-8 narrow strings](../docs/acceptance/bootstrap_acceptance.md#windows-utf-8-narrow-strings-implemented-2026-10-31).
+The 2026-11-02 refresh adds the shared child-environment, publisher-signature and owned-descendant timeout sources; see
+[Windows/arm64 latest-source record](../docs/acceptance/bootstrap_acceptance.md#windowsarm64-latest-source-revalidation-and-spawn-environment-fix-2026-11-02).
 
 The Linux/x86_64 binary is the 2026-11-02 environment replay's bare executable:
 no DT_NEEDED/RPATH/RUNPATH, interpreter `/lib64/ld-linux-x86-64.so.2` only.

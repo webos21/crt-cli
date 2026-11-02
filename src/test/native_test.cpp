@@ -117,6 +117,15 @@ int main(int argc, char** argv) {
                 auto equals = value.find('=');
                 wanted[value.substr(0, equals)] = value.substr(equals + 1);
             }
+            // On Windows the OS itself adds PROCESSOR_ARCHITECTURE to a new process whose environment lacks it (measured on
+            // Windows/arm64 with a kernel32-only program that includes no CRT, so it is not the CLI's or CRT's doing). Only
+            // that one name is tolerated, and only with the value for this architecture; anything else is still an error.
+            if (windows_host && actual.is_object() && actual.contains("PROCESSOR_ARCHITECTURE")) {
+                const std::string architecture = crt_get_platform_info()->arch;
+                check(actual.at("PROCESSOR_ARCHITECTURE") == (architecture == "aarch64" ? "ARM64" : architecture == "x86_64" ? "AMD64" : "?") &&
+                      !wanted.contains("PROCESSOR_ARCHITECTURE"), "OS-added PROCESSOR_ARCHITECTURE matches the host architecture");
+                actual.erase("PROCESSOR_ARCHITECTURE");
+            }
             check(child.exit_code == 0 && actual == wanted, "spawn environment exactly matches shared builder");
             check(actual.at("PATH") == "/nonexistent" && actual.at("LC_ALL") == "C", "fixed PATH and locale");
             for (const auto& entry : saved) check(!actual.contains(entry.first), "injection and credential sentinel removed");
