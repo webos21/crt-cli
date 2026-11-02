@@ -30,7 +30,9 @@ The [producer comparison](https://github.com/webos21/crt/blob/1537a9183419f238d0
 records different supplied baselines and preserved stale libc++abi patch state;
 it does not establish the cause of the missing original collision pair.
 Canonical-source/cache repair, common asset/recipe regeneration, affected
-validation and final candidate selection remain CRT 1.7 / CLI D0.7 work.
+validation and final candidate selection remained CRT 1.7 / CLI D0.7 work at
+that review; the later [candidate selection](#common-source-candidate-selection-2026-11-02)
+closes those items with new affected-scope evidence.
 Regenerated inputs do not inherit the old artifacts' runtime acceptance.
 Promote producer artifacts before adopting production consumer pins. This
 review changes no executable, SDK payload, schema, provider format or lock,
@@ -601,3 +603,42 @@ pair's latest fetch/encoding/environment replay, without promoting an SDK,
 adopting a production lock or approving complete Tranche 1/D1. Windows/arm64
 process-fix replay, coherent exact assets and broader D1/resource gates remain
 open. Producer records remain owned by CRT SDK split acceptance.
+
+## Common-source Candidate Selection (2026-11-02)
+
+**Selected local technical combination; CRT 1.7 / CLI D0.7 complete.** Producer
+[acceptance](https://github.com/webos21/crt/blob/8616fd64b13fa41925c1fce2b08f4937b7e8dcf1/docs/acceptance/release_qualification.md#common-source-candidate-selection-2026-11-02)
+selects canonical common Linux 02/03 archives from clean CRT
+`49879bf82e2742baeb1878e492d42c7d561b6f7a`, version
+`v0.4.0-sourcefix.20261102.5`, after rejecting polluted caches and regenerating
+new candidates. It owns upstream/recipe/asset identities, ordinary C++/Dev
+consumer evidence, exact nested-recipe validation and aarch64 cross-build scope.
+Producer closure documentation is reviewed at `8616fd6`; it does not relabel
+the SDK built from `49879bf`. Same version/OS/stage means the same source archive and recipe hash on either
+CPU; startup, loader and compiled code still follow the SDK's target identity.
+
+Consumer code baseline is `7cab48e03957b603e010738429a9226129af37e4` (unchanged
+product inputs). The selected external Linux/x86_64 Development SDK content is
+`cf2eaf9912ff66594dc0c9d403fddfd25cae620f91d46e2ab01fc7a9aa53f658`, native
+provider `60ea71f7e55defec6a4faaeb0862e0e01a42dc35bbc39a5a5c43ffe9b15f5185`;
+Clang/LLD/LLVM ar 21.1.8. The selected bare binary is
+`6457b1a60038860d02452e5216df8fbcee9297e5e011b26050f4aee203c6efc8`.
+SDK/base/compile provenance is clean at the producer commit above. Existing
+SDK/profile, experimental native-provider format 1 and project/lock format 0
+are unchanged; this is no new general SDK contract or installer/resolver API.
+
+The original [consumer replay](acceptance/bootstrap_acceptance.md#common-source-candidate-replay-2026-11-02)
+records exact inventory/result hashes, 754 native checks, cold/warm cache,
+producer-tree-hidden SDK consumption, ELF/PAL imports and the previous-binary
+bootstrap fixed point. `bin/linux-x64/crt-cli` and ignored local defaults now
+select that handoff, with backups. Product-input reconciliation distinguishes
+later documentation/binary edits from executed source exports.
+
+This selects a bounded **technical candidate**, not a promoted production
+combination. Historical five-pair native results keep their own identities;
+the new ARM result is cross compile/package/link only, and no new macOS/Windows
+SDK execution is claimed. D1 HTTPS/signature, independent host-tools/port-build,
+shipping resources/trust and later installation/upgrade gates retain their own
+scope. The root lock stays unresolved, old source variants are not overwritten,
+and no tag, upload or public release is performed. Producer promotion must
+precede any future production consumer pin. STATUS is untouched.

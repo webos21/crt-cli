@@ -24,10 +24,10 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
 
 ### D0/D1 - SDK Consumer Contracts, Bootstrap and Trust
 
-Work-queue D0.5/D0.6 are complete at the five recorded native combinations
-([technical review](docs/acceptance/bootstrap_acceptance.md#technical-bootstrap-gate-review-2026-11-02)).
-D0.7 remains open for common-source asset coherence and final candidate selection;
-this is not full D0/D1 or production adoption.
+D0 is complete for the recorded local technical scope: D0.5/D0.6 retain their
+[five native combinations](docs/acceptance/bootstrap_acceptance.md#technical-bootstrap-gate-review-2026-11-02),
+and D0.7 now selects the [canonical common-source candidate](docs/compatibility.md#common-source-candidate-selection-2026-11-02).
+Current work is D1; production adoption remains separate.
 
 Next increment: define/adopt the independent producer host-tools contract before
 implementing the CLI `port-build` adapter. Experimental control/app-build/app-run
@@ -78,11 +78,10 @@ Public SDK release is not a prerequisite; CLI consumption stays SDK-only.
 - [x] **D0.6** Review relocated SDK-only build/run/imports and producer-tree
   isolation at those recorded combinations; not production adoption
   ([technical review](docs/acceptance/bootstrap_acceptance.md#technical-bootstrap-gate-review-2026-11-02)).
-- [ ] **D0.7** Link exact candidate/case evidence in [compatibility](docs/compatibility.md),
-  resolve asset coherence with CRT and adopt final pins only after producer promotion.
-  The common version/OS/stage source-asset naming policy is accepted; source-cache
-  repair, asset/recipe regeneration, affected validation and final selection remain
-  producer work ([review](docs/compatibility.md#technical-bootstrap-gates-and-common-source-contract-review-2026-11-02)).
+- [x] **D0.7** Select coherent common-source assets and the exact local SDK/provider/
+  CLI/toolchain combination, with original consumer evidence and explicit limits
+  ([selection](docs/compatibility.md#common-source-candidate-selection-2026-11-02)).
+  Root production lock remains unresolved; promote producer artifacts before any adoption.
 
 ## Planned
 

@@ -11,6 +11,30 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-02
 
+### Close D0.7 with the canonical common-source technical candidate
+
+CRT repaired libc++abi patch/cache validation and regenerated common Linux
+02/03 source assets at clean `49879bf`, local version
+`v0.4.0-sourcefix.20261102.5`. Actual isolated source builds, C++ and Development
+consumers plus the same-asset aarch64 cross-build belong to
+[producer acceptance](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#common-source-candidate-selection-2026-11-02).
+
+Unchanged CLI product inputs at `7cab48e` pass the new SDK-only Linux replay:
+754 native checks, cold 11/0 and warm 0/11, strict bare-runtime/import and
+execve audits. The previous committed binary builds current sources with the
+new clean SDK; stage1/stage2 are byte-identical under the same isolation
+boundary, with dirty opt-in disabled. Exact provider/SDK/source/binary/tool
+identities and scope remain in
+[acceptance](docs/acceptance/bootstrap_acceptance.md#common-source-candidate-replay-2026-11-02)
+and [compatibility](docs/compatibility.md#common-source-candidate-selection-2026-11-02).
+
+Selected the local technical combination, refreshed the Linux test binary and
+ignored local SDK defaults with backups, and closed D0.7. No production lock,
+public release or SDK promotion is adopted; new native ARM/macOS/Windows
+qualification and full D1 stay separate. D1's independent host-tools/port-build
+contract is next. STATUS and CLI product sources are unchanged.
+
+
 ### Close the recorded D0.5/D0.6 technical bootstrap gates
 
 Reviewed the five native pairs' existing startup/link, bounded diagnosis,

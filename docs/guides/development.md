@@ -321,6 +321,23 @@ defined in [lifecycle acceptance](../acceptance/lifecycle_acceptance.md).
 Define the interfaces in D0, implement self-upgrade with D2 transactions, connect
 generated-project SDK acquisition in D5 and repeat real shipping checks in D6.
 
+## Selected Common-source Technical Candidate
+
+The [D0.7 selection](../compatibility.md#common-source-candidate-selection-2026-11-02)
+binds a clean producer SDK, a separately hashed provider and the exercised CLI
+inputs. Its [consumer record](../acceptance/bootstrap_acceptance.md#common-source-candidate-replay-2026-11-02)
+contains the actual Linux replay and old-binary bootstrap-loop commands/receipts.
+The producer owns [source/cache validation and regeneration](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#common-source-candidate-selection-2026-11-02).
+
+Use the exact copied SDK/provider in the ignored `.sdk.json` for this local
+candidate; do not turn an unpromoted candidate into a production root lock.
+Source-stage regeneration uses the frozen clean producer revision and a new
+version/output, never a mutable checkout or replacement of old evidence.
+A common archive selects CPU-specific code/options from the SDK target;
+binary SDKs remain specific to the target architecture. The ARM result in
+this increment is cross compile/package/link, not native execution. Continue
+D1 host-tools/environment work independently of public release qualification.
+
 ## Cross-repository Work
 
 Producer-owned SDK/ABI/host-tool changes belong to CRT, with a minimal

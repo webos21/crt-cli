@@ -10,7 +10,7 @@ release artifacts.
 | Host | Path | Status |
 | --- | --- | --- |
 | macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `72577b9b7dd1e602635ccdabef0fe728e66441c7bd9b07607ae8994ff2de949e` (3,538,040 bytes; 2026-11-01 replay of `a9d43c6`, clean local CRT `8db69f4`) |
-| Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `2a84c61debf31ce87c441f21ca4b0111701e6773567199aa5a2ec71a34e79967` (12,066,824 bytes; 2026-10-31 D1 experiment, base `36c6f65` plus signature/test delta, clean local CRT `f826397`) |
+| Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `6457b1a60038860d02452e5216df8fbcee9297e5e011b26050f4aee203c6efc8` (12,371,496 bytes; 2026-11-02 common-source replay of `7cab48e`, clean local CRT `49879bf`) |
 | Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `9e250db8589077f376091e4b506259601b1ec12b96713db9aef9059e41bbc9cf` (12,444,248 bytes; 2026-11-02 replay of `9e0110f`, clean local CRT `c4e19f3`) |
 | Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `a04ff851fb1156a161f01f308c368648ba1b091a001977e449fb86009820237a` (20,404,224 bytes, built `-O1 -g`; 2026-11-02 replay of `1499a7b`, clean local CRT `b4c5b5a`) |
 | Windows/arm64 | `bin/win-arm64/crt-cli.exe` | present; SHA-256 `6fce97e028c9956716ad1729d8655532282944f8dfd7f9ec33f44d92cf0e787c` (20,286,976 bytes, built `-O1 -g`; 2026-11-02 replay of the latest sources against a clean local SDK from CRT `d12e210`) |
@@ -50,19 +50,19 @@ one's loop was not repeated. See
 The 2026-11-02 refresh adds the shared child-environment, publisher-signature and owned-descendant timeout sources; see
 [Windows/arm64 latest-source record](../docs/acceptance/bootstrap_acceptance.md#windowsarm64-latest-source-revalidation-and-spawn-environment-fix-2026-11-02).
 
-The Linux/x86_64 binary is the 2026-11-02 environment replay's bare executable:
-no DT_NEEDED/RPATH/RUNPATH, interpreter `/lib64/ld-linux-x86-64.so.2` only.
-With SDK/source/provider/compiler access hidden, help/version/doctor pass;
-PAL images are the CLI, loader and vdso. It uses a fresh clean CRT `f826397` Dev
-SDK with `crt-narrow-encoding-1`. The native suite passes 754 checks, including
-owned-descendant timeout control and shared child-environment diagnostics;
-SDK-hidden control/value-redaction checks and 32 HTTPS/signature cases pass with SDKs,
-sources and providers hidden. Explicit-key signatures are experimental; no
-official publisher key or complete D1 acceptance is claimed. See
-[environment acceptance](../docs/acceptance/bootstrap_acceptance.md#linux-child-environment-diagnostics-2026-11-02).
-The prior `2a84c61d...` executable/config are retained under `out/d1-env-20261102/previous/`;
-the `a611f6c5...` executable/config remain under the earlier D1 evidence root;
-the earlier `a4419776...` result remains in the preceding revalidation record.
+The Linux/x86_64 binary is the selected 2026-11-02 common-source replay's bare
+executable. It uses the clean CRT `49879bf` Development SDK derived from the
+actual isolated 02 build (`v0.4.0-sourcefix.20261102.5`). All 754 native checks,
+cold 11/0 and warm 0/11, SDK-hidden help/version/bootstrap doctor and the
+ELF/PAL runtime audit pass: no DT_NEEDED/RPATH/RUNPATH, only the declared OS
+loader and vdso. An isolated previous-binary -> new-SDK -> self-build loop also
+passes with byte-identical stage1/stage2. See
+[common-source acceptance](../docs/acceptance/bootstrap_acceptance.md#common-source-candidate-replay-2026-11-02).
+The previous `d03f06a0...` binary and local config are retained under
+`out/d0-common-source-20261102/previous/`. Older D1 HTTPS/signature evidence
+retains its own SDK/binary identities; this refresh does not rerun those cases
+or qualify a production release. Bootstrap doctor keeps HTTPS/integrity
+unavailable results explicit.
 
 The Linux/aarch64 binary is the 2026-11-02 replay's bare executable, SHA-256
 `9e250db8589077f376091e4b506259601b1ec12b96713db9aef9059e41bbc9cf`

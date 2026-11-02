@@ -43,11 +43,13 @@ latest binary. Windows process accounting is not an execution-denial sandbox.
 
 The [producer review](https://github.com/webos21/crt/blob/1537a9183419f238d03d6307aa991fc3e0959a0e/docs/acceptance/sdk_split_acceptance.md#sdkcli-technical-bootstrap-gate-review-2026-11-02)
 and [consumer contract record](../compatibility.md#technical-bootstrap-gates-and-common-source-contract-review-2026-11-02)
-preserve this scope. D0.7 stays open for canonical-source/cache repair, common
+preserve this scope. At that review D0.7 stayed open for canonical-source/cache repair, common
 asset/recipe generation, affected validation and final selection. The source
 finding does not invalidate scoped runtime passes, but regenerated artifacts
 need their own validation. No SDK promotion, production pin, full D1/resource
-acceptance, public release or binary refresh is assigned by this review.
+acceptance, public release or binary refresh is assigned by this review. The later
+[common-source replay](#common-source-candidate-replay-2026-11-02) closes D0.7
+with a separately identified technical candidate.
 
 ## D0 - SDK Consumer and Minimal CLI
 
@@ -2404,3 +2406,111 @@ Raw evidence is under the ignored `out/windows-x64-20261102/` (`ev/` replay and 
 `.sdk.json` was not changed. Windows/x64 only. Not run: the bootstrap loop for this binary, ports in Unicode directories, Windows before 10 version 1903, a
 promoted SDK. The CRT fix is in the Windows PAL only; it changes nothing on Linux or macOS. No official publisher policy, release, production
 lock or STATUS change; byte reproducibility is not claimed.
+
+## Common-source candidate replay (2026-11-02)
+
+**Pass, local technical candidate; D0.7 complete.** CLI product sources at
+`7cab48e03957b603e010738429a9226129af37e4` consume a new Development SDK built
+from the actual isolated 01->02 source-stage output. The producer's
+[canonical-source repair and selection](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#common-source-candidate-selection-2026-11-02)
+owns upstream/patch inputs, common Linux 02/03 archive hashes, actual source
+builds, C++/Dev consumer tests and the aarch64 cross-build scope. Those source
+assets replace neither the old rehearsal bytes nor old test identities.
+
+### Exact selected combination
+
+| Input | Identity |
+| --- | --- |
+| Clean CRT producer/base/compile commit | `49879bf82e2742baeb1878e492d42c7d561b6f7a` |
+| SDK version / profile / target | `v0.4.0-sourcefix.20261102.5` / `dev` / Linux x86_64 |
+| SDK content SHA-256 (provider array inventory) | `cf2eaf9912ff66594dc0c9d403fddfd25cae620f91d46e2ab01fc7a9aa53f658` |
+| SDK replay inventory SHA-256 (driver dictionary) | `d82cbc52f15d55e11110d305a68d04f2e8444962bbfb7ce77e200f7245c63036` |
+| Native provider SHA-256 | `60ea71f7e55defec6a4faaeb0862e0e01a42dc35bbc39a5a5c43ffe9b15f5185` |
+| CLI source-export SHA-256 | `708921b682199b3bc265c27f3da50e6eab912b8e9f80c2a21d0b04da1073374b` |
+| Bare binary bytes / SHA-256 | 12,371,496 / `6457b1a60038860d02452e5216df8fbcee9297e5e011b26050f4aee203c6efc8` |
+| Result receipt SHA-256 | `ea426ff04b22c69bb7331afeca2b5eadde2d1d77d1d2b08f3d8d8cd5cd2f743f` |
+
+External Clang, LLD and LLVM ar are **21.1.8**, using `/usr/bin/clang`,
+`/usr/bin/clang++`, `/usr/bin/ld.lld`, `/usr/bin/llvm-ar-21`. Their resolved paths,
+versions and binary hashes are in producer `out/tranche17-20261102/frozen-inputs.json`
+and the provider. SDK/profile, experimental native-provider format 1 and CLI
+manifest/lock format 0 are unchanged; no general SDK contract v1 is introduced.
+Producer/base/compile dirty flags are all false. The generic replay retains its
+explicit dirty opt-in flag, while the separate old-binary loop uses
+`allow_dirty_sdk: false` and the local defaults keep it false.
+
+### Isolated consumer and bootstrap
+
+Evidence: `out/d0-common-source-20261102/replay-r5/` in this repository;
+external work: `/home/syszone/GitLocal/crt-cli-replay/crt-cli-contract-f259bjkj`.
+The SDK is copied unchanged to `SDK space 한글/dev` outside producer trees, with
+its separately hashed `native-toolchain-v1.json`. Reproduction:
+
+```sh
+python3 /home/syszone/GitLocal/crt/tools/replay_cli_contract_linux.py \
+  --cli-source /home/syszone/GitLocal/crt-cli \
+  --sdk-root /home/syszone/GitLocal/crt/out/tranche17-20261102/dev5 \
+  --output <new-evidence-directory> \
+  --clang /usr/bin/clang --clangxx /usr/bin/clang++ \
+  --linker /usr/bin/ld.lld --ar /usr/bin/llvm-ar-21 \
+  --hide /home/syszone/.codex/worktrees/release-aarch64/crt
+```
+
+Bubblewrap denies network access, hides producer/CLI checkouts (including the
+extra frozen worktree), masks interpreters/build drivers and clears the child
+environment. The provider supplies SDK policy; the CRT-native seed compiles ten
+source modules and links directly with LLVM. Native workflows execute no shell,
+Python, CMake, Ninja, make or `crt-cc`/`crt-c++` wrapper.
+
+- **754 native checks pass**, covering C/C++ generated projects, typed targets,
+  dependency-file/cache invalidation, local SDK defaults and exact binding,
+  shared child-environment diagnostics, hostile paths, failure/exit reporting,
+  timeout/owned descendants and bounded output.
+- Cold self-build **11 executed / 0 reused**; unchanged build **0 / 11 reused**.
+- **448 successful execve calls / 22 distinct files**, no forbidden or unexpected
+  executable (`execve-summary.json`). SDK inventories remain unchanged.
+- Bare help/version/bootstrap doctor pass with SDK, source, provider and compiler
+  access additionally hidden. ELF has no DT_NEEDED, RPATH or RUNPATH;
+  interpreter `/lib64/ld-linux-x86-64.so.2`. PAL maps contain only CLI, loader and
+  vdso, and new/delete allocation owners are the CLI itself.
+
+`run-loop.py` in the evidence root reuses that Bubblewrap boundary with a
+separate source export and trace files. The previous committed Linux binary
+`d03f06a02fb3a7595f78fe38ad68b5b37c365c937f7a5d8b5361d55d79b1178a`
+configures from `.sdk.json` and builds current sources with the new clean SDK;
+its stage1 repeats configure/build with objects removed. Stage1/stage2 are
+byte-identical:
+`2e5c70c2429e406145b0fbd7216f3db74d0ef68ba7c8c788aee76df503713c04`.
+Cold 11/0, warm 0/11 and bootstrap doctor pass (`loop-result.json`,
+`loop-commands.json`, per-step output and separate execve logs). This fixed
+point is for this same build path, not a cross-path reproducibility claim; the
+bare replay executable above has a different debug/build path.
+
+The selected bare binary refreshes `bin/linux-x64/crt-cli`; ignored `.sdk.json`
+selects the identified handoff/provider with dirty opt-in disabled. Previous
+binary/config are retained in `out/d0-common-source-20261102/previous/`.
+Documentation and binary changes after execution do not relabel the source
+export or the immutable SDK. Product input hashes are reconciled separately.
+
+`out/d0-common-source-20261102/final-review.json` reconciles all **18** product
+inputs against the executed export, rechecks the unchanged SDK/provider and
+selected binary, audits the loop's 35 execve calls (five distinct declared
+executables), and verifies that the root lock and STATUS remain unchanged.
+
+### Closure and limits
+
+D0.7 selects this **local technical combination**, together with the producer's
+common-source set. Previously accepted D0.5/D0.6 native combinations remain at
+their recorded identities. The new aarch64 evidence is compile/package/link
+only; this candidate was not executed natively on ARM, macOS or Windows.
+Producer fixtures and source-generation checks exercise common tooling for the
+other OSes without assigning native SDK/runtime acceptance to them.
+
+This pass covers D0/bootstrap/ABI; it does not repeat CLI HTTPS/signature cases.
+The ordinary SDK consumer exercises static/shared HTTPS and trust negatives,
+while bootstrap doctor correctly reports HTTPS `not_run` and integrity
+`not_verified`. Earlier D1 transport records retain their own SDKs/binaries.
+Independent host-tools, port-build/shell, full D1 resource/trust qualification,
+installer and upgrade remain separate work. Root `crt.lock` stays unresolved:
+no production pin, artifact promotion, tag, upload or public release. Promotion
+must precede any later production consumer lock. STATUS is unchanged.
