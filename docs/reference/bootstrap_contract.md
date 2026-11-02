@@ -228,7 +228,7 @@ never printed. Other ambient variables, including PATH, compiler/loader inputs
 and credentials, are excluded from children. `control` describes helper-child
 construction, not the environment of the already-running CLI. This filtering
 is not an OS sandbox; inherited home paths can still affect tool behavior. The list is what the CLI passes: the operating system may add its own
-variables to a new process (Windows/arm64 adds `PROCESSOR_ARCHITECTURE`), and CRT's Windows runtime removes its own spawn-bootstrap variables from a child's
+variables to a new process (Windows/arm64 adds `PROCESSOR_ARCHITECTURE`; Windows/x64 did not in the measured run), and CRT's Windows runtime removes its own spawn-bootstrap variables from a child's
 environment (CRT `d12e210`). The native suite tolerates only the OS-added name.
 Windows runtime directories must be absolute UTF-8 paths without semicolons;
 search-list delimiters cannot represent a semicolon inside a directory name.

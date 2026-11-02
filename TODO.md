@@ -33,10 +33,10 @@ Linux/aarch64 also passes
 replay this increment on the other native hosts. Earlier host passes retain
 their own revisions. `port-build`, shell and environment/project doctor remain open.
 
-Remaining focus: D1 host-environment/resource gates and the Windows/x64 replay
-of the CRT spawn-environment fix. Windows/arm64 now passes the latest sources
+Remaining focus: D1 host-environment/resource gates. Windows/x64 now also passes the latest sources with the CRT spawn-environment fix
+([evidence](docs/acceptance/bootstrap_acceptance.md#windowsx64-latest-source-revalidation-and-spawn-environment-fix-2026-11-02)). Windows/arm64 passes the latest sources
 ([evidence](docs/acceptance/bootstrap_acceptance.md#windowsarm64-latest-source-revalidation-and-spawn-environment-fix-2026-11-02));
-Windows/x64 passed the full native suite with the owned-spawn fix. Latest macOS/arm64 native, bootstrap and SDK-hidden
+Latest macOS/arm64 native, bootstrap and SDK-hidden
 HTTPS/signature replay also passes
 ([macOS evidence](docs/acceptance/bootstrap_acceptance.md#macos-latest-source-revalidation-2026-11-01),
 [Windows evidence](docs/acceptance/bootstrap_acceptance.md#windowsx64-owned-descendant-timeout-fix-2026-11-01)).

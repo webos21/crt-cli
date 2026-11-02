@@ -11,6 +11,10 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-02
 
+### Replay the Windows/arm64 changes on Windows/x64
+
+CLI `1499a7b` replays on native Windows/x64 against a fresh clean CRT `b4c5b5a` Development SDK (contains the `d12e210` spawn-environment fix; `crt-c-test` 168 of 169, one skip). All 844 native checks pass (cold 11/0, warm 0/11), the bare PE/doctor audit and all 32 restricted-token HTTPS/signature cases; CRT's mksh, toybox, awk and make start from a Unicode SDK path. Windows/x64 does not add `PROCESSOR_ARCHITECTURE` (measured with Python), so the arm64 test tolerance is not exercised there and no CLI source changed. `bin/win-x64/crt-cli.exe` is refreshed. The bootstrap loop for this binary and ports in Unicode directories were not run. [Acceptance](docs/acceptance/bootstrap_acceptance.md#windowsx64-latest-source-revalidation-and-spawn-environment-fix-2026-11-02).
+
 ### Replay the latest sources on Windows/arm64 and fix the spawn-environment leak
 
 The first replay of CLI `f36e858` against a clean `ee0b5e3` SDK failed the shared child-environment check. The OS adds

@@ -344,7 +344,7 @@ full Linux D1 environment/resource work is still open.
 **Pass, local/unpromoted Windows/arm64.** CLI `f36e858972c3342292a6bb09dc5fc18cb55eb8ef` plus one test edit replays against a clean CRT
 [`d12e210`](https://github.com/webos21/crt/commit/d12e21013c1da6eed0d9238100df93c8febdba1c) Development SDK (`v0.4.0-cli.20261102`, not a tag). The earlier clean
 `ee0b5e3` SDK does **not** combine with these sources: its Windows PAL leaves the `CRT_*` bootstrap variables in a CRT child's environment, which the CLI's
-child-environment contract rejects. `d12e210` is the first CRT revision known to combine on this pair; Windows/x64 has not run it. The OS adds
+child-environment contract rejects. `d12e210` is the first CRT revision known to combine on this pair; Windows/x64 later combined with it too (see the next section). The OS adds
 `PROCESSOR_ARCHITECTURE` to ARM64 processes and the CLI tolerates only that name. No pin or promoted combination is adopted. Details:
 [acceptance](acceptance/bootstrap_acceptance.md#windowsarm64-latest-source-revalidation-and-spawn-environment-fix-2026-11-02).
 
@@ -374,6 +374,14 @@ The exercised SDK remains the recorded `a46e430` plus dirty patch candidate;
 committing/pushing the fix does not relabel it as a clean SDK build or adopt a
 production lock. CLI source inputs remain byte-identical to `ddaf288`; the
 consumer commit records documentation and the verified Linux test executable.
+
+## Windows/x64 Latest-source Revalidation (2026-11-02)
+
+**Pass, local/unpromoted Windows/x64.** CLI `1499a7b5675105a7db5301b17d406832e2962a0d` replays against a clean CRT
+[`b4c5b5a`](https://github.com/webos21/crt/commit/b4c5b5a63196c48ea21a35bad8e73423488dd046) Development SDK (`v0.4.0-cli.20261102`, not a tag), which contains
+the `d12e210` PAL fix. No CLI source change was needed: Windows/x64 does not add `PROCESSOR_ARCHITECTURE` (measured with Python), so the arm64 test tolerance is
+unused there. The earlier x64 SDK (`fa5dc30` plus dirty delta) predates the child-environment check and is not the combination to cite for these sources.
+No pin or promoted combination is adopted. Details: [acceptance](acceptance/bootstrap_acceptance.md#windowsx64-latest-source-revalidation-and-spawn-environment-fix-2026-11-02).
 
 ## Adoption and Exercised Combinations
 

@@ -2316,3 +2316,60 @@ Windows/arm64 only. Native Windows/x64 has not run the spawn-environment fix or 
 check); Linux and macOS hosts need an SDK with the fix before any Windows-specific claim carries over (the PAL change is Windows-only). Not run: the
 bootstrap loop for this binary, ports in Unicode directories, Windows before 10 version 1903, a promoted SDK. No official publisher policy, release,
 production lock or STATUS change.
+
+## Windows/x64 Latest-source Revalidation and Spawn-environment Fix (2026-11-02)
+
+**Pass, native Windows/x64; local/unpromoted.** The CLI at `1499a7b5675105a7db5301b17d406832e2962a0d` (it contains the Windows/arm64
+`PROCESSOR_ARCHITECTURE` test tolerance) replays on this host pair against a fresh clean CRT
+[`b4c5b5a`](https://github.com/webos21/crt/commit/b4c5b5a63196c48ea21a35bad8e73423488dd046) Development SDK. `b4c5b5a` contains the PAL fix
+[`d12e210`](https://github.com/webos21/crt/commit/d12e21013c1da6eed0d9238100df93c8febdba1c) (CRT's bootstrap variables removed from a CRT child's environment)
+and only documentation/tool changes after it. This closes the "Windows/x64 has not run the fix" gap of the
+[Windows/arm64 record](#windowsarm64-latest-source-revalidation-and-spawn-environment-fix-2026-11-02); the Windows changes made on arm64 are valid on x64 without a CLI source change.
+
+### Inputs
+
+| Input | Identity |
+| --- | --- |
+| Host | Windows 11 Pro 10.0.26100 x64, LLVM/Clang 22.1.8, Windows SDK imports `10.0.28000.0/um/x64`, Developer Mode unchanged |
+| Producer | clean CRT `b4c5b5a`, fresh clone, `windows-host-ninja-debug`, `CRT_RELEASE_TAG=v0.4.0-cli.20261102` (a local version, not a tag); producer, base and compile provenance clean |
+| Reused inputs | only pinned LLVM-runtime source trees and download archives from the previous x64 build; no compiled libraries or objects |
+| Producer gate | `crt-development-sdk-test` exit 0; `crt-c-test` 168 of 169 pass, **no failure, one skip** (`fork_heap_snapshot_test_runs`), 280 s |
+| SDK (relocated, inventory unchanged after the run) | SHA-256 `c3def6cc25f3d4cf0c6522f0292a04fba55014e8fc1a8b3f2c9ebb9ff33d26c3`; content `0361a7494e1c98f0a81ff58eae2280a6f9e328ae19671cbd91204ee82b364380` |
+| Provider | `ce07aac6f3b68d79de1c0b52bb92f8f11ef862f530c53f39d0012098722e25c2` |
+| CLI source export | `324fa48805733265b98e74799ef32f033f792065776e870ceba10f481926a5a4` |
+| Final executable (20,404,224 bytes) | `a04ff851fb1156a161f01f308c368648ba1b091a001977e449fb86009820237a` |
+| `replay/result.json` | `740e320c4e4f8e88ca649779af56d71d75bc0b908e3dcb56fb62df7378f14547` |
+
+### Consumer Replay
+
+The unchanged producer driver `tools/replay_cli_contract_windows.py` runs from the clean clone with `PYTHONUTF8=1`, a Hangul/accented/space work path,
+explicit LLVM paths and the original CRT checkout hidden. All steps exit 0: provider and boundary probe, ten seed compiles and link, configure, build,
+cold self-build **11 executed / 0 reused**, warm **0 / 11**, and **844 native checks**; 460 native/OS processes are recorded with no forbidden image
+(accounting, not launch denial). The count is one lower than the Windows/arm64 run's 845 because the check that validates an OS-added
+`PROCESSOR_ARCHITECTURE` only runs when the variable is present. A native x64 Python started with only `LC_ALL`, `PATH` and `SystemRoot` received just
+those three (`SYSTEMROOT` upper-cased), so **Windows/x64 does not add the variable** unlike Windows/arm64; this was measured with Python, not with a CRT-free
+kernel32-only program. The shared child-environment check (`spawn environment exactly matches shared builder`) therefore passes with no tolerance and
+confirms that CRT `d12e210` leaves no `CRT_*` transport names in a child.
+
+Bare help/version/doctor pass with SDK, source and provider unreadable. Direct imports are only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`;
+doctor reports `narrow_encoding: utf-8`, C++ allocation/exception, zlib and HTTP/TLS checks passing, integrity `not_verified` and network `not_run`.
+
+### SDK-hidden HTTPS and Signatures
+
+`tools/test_cli_fetch_https_windows.py --publisher-cases` runs the 32 unchanged cases with each CLI call under a restricted token, an empty `PATH` and a
+job object, in a private Hangul/accented/space directory. The SDK-built probe proves the hidden roots (both CRT checkouts, the CLI checkout, both producer
+clones, relocated SDK, exported source, provider, home) unreadable under that SID. **All 32 cases pass** with fresh disposable identities: 32 CLI calls,
+64 process records (`crt-cli.exe`, `conhost.exe`), no Python, OpenSSL or shell started by product fetch.
+
+### CRT Host Tools
+
+From the relocated Unicode SDK path with an empty environment, `mksh -c 'echo ok'`, `toybox echo ok` (`system/bin`), `awk` and `make --version` each start
+and exit 0 and are x86-64 PE images. `make` prints "Built for x86_64-pc-linux-gnu", its recipe's triple text. These are startup checks, not port acceptance.
+
+### Evidence and Limits
+
+Raw evidence is under the ignored `out/windows-x64-20261102/` (`ev/` replay and HTTPS, `logs/` producer build, `previous/` prior binary).
+`bin/win-x64/crt-cli.exe` is refreshed (the previous `c9707454...` bytes are retained there); the tracked root lock stays unresolved and the ignored
+`.sdk.json` was not changed. Windows/x64 only. Not run: the bootstrap loop for this binary, ports in Unicode directories, Windows before 10 version 1903, a
+promoted SDK. The CRT fix is in the Windows PAL only; it changes nothing on Linux or macOS. No official publisher policy, release, production
+lock or STATUS change; byte reproducibility is not claimed.
