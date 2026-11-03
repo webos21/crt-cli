@@ -32,8 +32,8 @@ See the [build guide](docs/guides/development.md#build-and-test-the-bootstrap)
 and [implemented contract](docs/reference/bootstrap_contract.md) for actual
 entry points and limitations. Plain bootstrap doctor reports integrity as not
 verified and HTTPS as not run. New host-tools/resource behavior has bounded
-[Linux evidence](docs/acceptance/host_environment_acceptance.md); other native
-hosts must replay it before complete D1 acceptance.
+[Linux and macOS evidence](docs/acceptance/host_environment_acceptance.md);
+Windows/x64 must replay it before complete D1 acceptance.
 
 ## Intended Experience
 

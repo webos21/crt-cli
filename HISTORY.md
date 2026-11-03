@@ -9,6 +9,26 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-03
+
+### Replay independent D1 host tools and resources on macOS/arm64
+
+Consumer `095afbc` replays against the retained clean `8db69f4` public Dev SDK
+and a new independent bundle assembled by clean CRT `518953f`. Fresh self-build
+passes 13/0 cold, 0/13 warm and 807 native checks; the previous-binary bootstrap
+has identical code/data, with UUID/link metadata differences retained. Imports
+and CRT symbol ownership pass, without private CRT dylibs or foreign bindings.
+
+Added the macOS Seatbelt test-host driver and portable policy fixtures. It
+passes 31 environment/resource/cleanup cases, plus explicit SDK project
+diagnosis/shell. CRT's HTTPS driver gains macOS isolation and canonical work
+paths; 32 packaged-CA HTTPS/signature cases pass after retaining an initial
+policy-path failure. Six resource/policy fixtures pass. No product/PAL/upstream
+code, committed binary, local SDK default, production pin or STATUS changed.
+Windows/x64 replay remains open. Exact receipts, source/SDK/tool/package hashes
+and native limits belong to [D1 acceptance](docs/acceptance/host_environment_acceptance.md#macosarm64-independent-host-environment-replay-2026-11-03)
+and the [compatibility review](docs/compatibility.md#independent-host-tools-macos-replay-2026-11-03).
+
 ## 2026-11-02
 
 ### Implement D1 independent tools, scoped doctor and bootstrap resources on Linux

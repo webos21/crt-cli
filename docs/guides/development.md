@@ -59,8 +59,21 @@ Inspect child environments without changing the shell or project binding:
 Control works without an SDK. Project profiles validate the existing local
 SDK/tool binding (including a compiler resource query), but build nothing.
 Inherited values are redacted; these diagnostics are not shell export scripts.
-`port-build` and `shell` remain unsupported. See the
-[format-0 environment contract](../reference/bootstrap_contract.md#child-environment-diagnostics-experimental-format-0).
+`port-build` diagnostics and non-interactive `shell` require a separately pinned
+host-tools bundle; they do not implement source recipe execution. See the
+[format-0 environment contract](../reference/bootstrap_contract.md#child-environment-diagnostics-experimental-format-0)
+and [independent host environment](../reference/bootstrap_contract.md#independent-host-environment-experimental-format-1).
+
+For independent macOS host-tools/resource verification, use this repository's
+`tools/replay_host_environment_macos.py` with fresh output/work paths and
+identified CLI/bundle/package inputs. It uses Seatbelt to deny original
+source/SDK/toolchain access and non-selected executable paths; Python, Clang
+and OpenSSL are test-host prerequisites outside the product boundary. The
+[macOS D1 record](../acceptance/host_environment_acceptance.md#macosarm64-independent-host-environment-replay-2026-11-03)
+owns exact commands, package/trust pins and limits. CRT's HTTPS test supports
+`--isolate-macos --hide <path>`; selected CA data must be outside denied roots
+with the same pinned package bytes. Do not claim an execve trace or a new
+SDK build from this replay.
 
 For native macOS, CRT supplies a producer-side acceptance driver that builds
 the initial CRT-native seed from provider argv, then runs native self-build,

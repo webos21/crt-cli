@@ -158,11 +158,151 @@ publisher. Plain doctor still reports network `not_run`; these are explicit
 network tests. Earlier `https-final` passes the same binary/CA before adding
 the package's OS-prerequisite declaration and is retained separately.
 
+## macOS/arm64 independent host-environment replay (2026-11-03)
+
+**Pass for this new local macOS combination**, reviewed at producer
+`518953f4d9ecc48c1d082644414e0a409a5a49ad` and consumer
+`095afbcde4b0501267520381b24ba8114315d89a`. The same 21 product/test inputs
+as the Linux increment produce the new native executable; their compact sorted
+`[path, SHA-256]` list (original unresolved `crt.lock`, `crt.json`, `src`,
+`include`) hashes to `2aa32f07ea920ee4405970f194ccdf1183608f3ba8675ca28e60e80920930155`.
+The full exported checkout's separate inventory is
+`b0b5f47361a3e7b7e8d124cdef39c800aefb20838bc2657ad8c0ca20f55152ab`.
+New changes are test-host replay tools and documentation, not product code.
+Execution host: native arm64, macOS 27.2 build `26B123`.
+
+| Selected input / output | Identity |
+| --- | --- |
+| Public build SDK | Retained clean CRT `8db69f404dcfa70b5aa0569cae51a962fd0615d2`, `v0.4.0-cli.20261101`, Development/macOS/aarch64 |
+| Dev manifest SHA-256 | `c0cd45bed2623b89f8e57ff95cc38bf47fea04998aecca6363e2eab41a51c764` |
+| SDK content / provider SHA-256 | `a438a4a08bc0bec98d53ad95d3cbc196525d655428086088508a3df9ea0f2f16` / `489ebea23e8531cfdd57cd3ba526a163f18c42616e9a856961af49ace673a21d` |
+| New CLI | `3aec79f15ec1b86d8abb23a9406549d7057c8b9fdbc6a0308b095d18f7d8b898`, 3,675,736 bytes |
+| Independent host tools | `v0.1.0-hosttools.20261103.macos.1`, manifest `0a81db3eacb89b54c106d8f57bfd5a0e6bb57a24977e124f583e7c81751f1160` |
+| Host-tools payload | `6e6984bb1edd573132ad2bbff01ea8828485be4a7fb239c029f686f53b58608e` |
+| Resource manifest | `e3ea7042fef2258120c1e4bb0a3766c36e6c733196ecb9e6ffd0943c97dfe689` |
+| Explicit disposable CA | `ab6d34458652dfc88b7760453a41698e03587357cf6199d39e8489379f85aa3f` |
+
+This is a new CLI/tools replay against a retained verified SDK, **not** a fresh
+SDK build at `518953f`, replay of Linux's `49879bf` bytes, canonical macOS source
+asset regeneration or production adoption. The producer's
+[macOS record](https://github.com/webos21/crt/blob/9d8be12e27802b87e0bca61fa562a281b1c7319b/docs/acceptance/host_tools_acceptance.md#macosarm64-independent-bundle-replay-2026-11-03)
+owns C-only tool extraction, licenses, actual native imports and CMake cold/cache
+assembly. The selected tool manifest records clean `518953f`. Formats remain
+experimental host-tools/resource/native-provider 1 and existing project formats.
+
+### Native self-build and runtime boundary
+
+CRT's `tools/replay_cli_contract_macos.py` exports the SDK/source outside the
+repositories, denies original producer/CLI reads, denies network and permits
+only the selected native toolchain/CLI/generated test images. Its probes prove
+host shell/Python/make/CMake/Ninja/wrapper execution is denied. Bare probes
+additionally prove relocated SDK/source/provider reads and compiler execution
+are denied. Clang/Clang++/ld/ar come from the explicit Xcode toolchain; exact
+argv, tool hashes and vendor SDK path are in `cli-replay-r1/`.
+
+Fresh self-build passes **13/0 cold**, **0/13 warm** and **807 native checks**,
+including project doctor, cwd/Unicode paths, child environments, normal and
+timeout descendant cleanup, C/C++ static/shared targets and generated tests.
+The SDK inventories remain unchanged. The legacy replay driver passes its
+dirty-SDK opt-in flag, but both producer/compile provenance are clean; the
+separate `clean-selection.json` also verifies a fresh project can select this
+same SDK **without** the opt-in. No dirty input is relabeled clean.
+
+The previous committed macOS CLI (`72577b9b7dd1e602635ccdabef0fe728e66441c7bd9b07607ae8994ff2de949e`)
+bootstraps stage1/stage2 with identical code/data. Bytes differ only in LC_UUID
+(16 bytes) and __LINKEDIT (267 bytes); this is **not** whole-file byte equality.
+The selected ordinary self-build executable above, not either loop artifact,
+is the package/host-environment/HTTPS consumer.
+
+Mach-O imports contain only `/usr/lib/libSystem.B.dylib`, no LC_RPATH; the CLI
+owns malloc/new/delete and the CRT-owned binding audit has no foreign provider.
+PAL runtime maps also enumerate Apple's transitive shared-cache images,
+including `/usr/lib/libc++.1.dylib`; their presence is retained, not suppressed
+or confused with CLI standard-library symbol bindings. The four host tools
+likewise statically own CRT and have no private dylib dependencies. Thus this
+proves the selected closure, **not** a private-dylib collision/load scenario.
+
+### Independent tools, resources and selected project
+
+New producer-only `tools/replay_host_environment_macos.py` runs the corresponding
+**31 cases**, all passing in `host-environment-r2`. Bundle/package/script/cwd/job
+paths contain spaces and Korean text. Seatbelt denies the original repositories,
+the entire relocated source/SDK/provider worktree and Xcode toolchain; only the
+copied CLI, native bundle roles and a dedicated boundary probe may execute.
+Tools and package are read-only to consumers, while the test orchestrator mutates
+its disposable copies for negative cases. Actual read/exec denial is probed;
+no Linux execve trace or Windows accounting mechanism is claimed.
+
+Pipeline, command substitution, heredoc, awk arithmetic, toybox copy/compare/remove,
+make and recursive make pass. Ambient PATH/CPATH/secret/MAKEFLAGS/CRT_ROOTFS and
+DYLD path sentinels do not reach shell jobs. Physical cwd is verified; virtual
+SHELL/MAKEFLAGS avoid make's space-containing physical-shell problem without an
+upstream patch or launcher. Normal and timed-out shell jobs stop the delayed
+background marker, exit 7 is preserved and stdout is capped at 8 MiB.
+
+Wrong host/pin, changed/missing/extra tools, removed alias execute permission,
+immutable linked-parent job paths and job reuse fail without host fallback.
+Pinned resources, explicit RSA-PSS signatures and their wrong-key/signature,
+schema/target, missing input/notice, changed executable/notice/CA negatives pass.
+The package contains one executable plus notices/trust data, no SDK/compiler,
+interpreter, private signing key or permanent launcher. Orchestrator-only private
+test keys are not packaged. Six portable resource/policy fixtures also pass.
+An interrupted replay receipt cannot report final success.
+
+`selected-project/result.json` separately permits the **explicit** relocated
+SDK and resource-query compiler while still denying original repositories and
+host shell/build-driver execution. Project doctor, port-build environment and
+actual shell validate CRT_SYSROOT plus the unchanged `crt.lock`/`.crt/local.json`.
+That phase is not labeled SDK-free; the 31-case tools phase needs no SDK.
+
+### Packaged trust, failure preservation and reproduction
+
+`https-r2` passes all **32** D1-07 HTTPS/integrity/RSA-PSS cases using the exact
+selected package CA, copied outside denied inputs without changing its bytes.
+The consumer has empty PATH, SDK/source/provider/Xcode/tools hidden and a Seatbelt
+allowlist containing **only its copied CLI**. The Python/OpenSSL loopback server
+and disposable issuer/signing material are test-host inputs, not dependencies
+or official publisher trust. Consumer networking remains enabled for the
+controlled endpoints; this is not a network-namespace claim.
+
+The initial `https-r1` never executed the CLI: tempfile returned `/var/...`, but
+Seatbelt matches canonical `/private/var/...`, so execvp returned 71. The test
+driver now resolves the work directory before building the policy; failed logs
+are retained rather than described as TLS/product failures. The selected CA
+must also be accessible as explicit package data, not via the hidden original
+producer directory. No CRT/PAL or upstream fix was needed.
+
+Receipts are retained in **CRT** `out/tranche2-macos-20261103/`, particularly
+`cli-replay-r1/{inputs,commands,result,bootstrap-loop}.json`, `selected-inputs-final.json`,
+`product-inputs.json`, `host-tools-bindings.json`, `host-environment-r2/`,
+`selected-project/`, `clean-selection.json`, `https-r{1,2}/` and producer logs.
+Work copies are outside both repositories in the recorded temporary paths.
+The first successful tools run r1 remains retained; r2 uses the final driver
+with explicit completion reporting. All receipts identify the actually used
+SDK/provider/package/tool bytes, not later documentation edits.
+
+Reproduce with new output/work paths:
+
+```sh
+python3 tools/replay_host_environment_macos.py \
+  --cli <new-native-cli> --host-tools <selected-independent-tools> \
+  --resources <selected-bootstrap-package> --output <fresh-evidence> \
+  --work-parent /private/tmp \
+  --hide <crt-checkout> --hide <cli-checkout> --hide <sdk-source-provider-worktree> \
+  --hide <xcode-toolchain-usr>
+```
+
+Then use CRT's `tools/test_cli_fetch_https.py --publisher-cases --isolate-macos`,
+the selected `--trusted-ca-file`, matching `--test-ca-directory` on the test host
+and the same hidden input roots. Exact invocations are in the retained receipts.
+No committed binary/local SDK defaults, production pin, release or STATUS changes
+were made. Windows/x64 replay of this new increment still gates Tranche 2/D1.
+
 ## Remaining qualification
 
-This closes the feasible Linux D1 implementation/validation increment. Replay
-the **new** artifact/adapter on native Windows/x64 and macOS/arm64, including
-initial private DLL/dylib resolution/collision, real aliases/Windows links,
+The Linux increment and the [macOS replay](#macosarm64-independent-host-environment-replay-2026-11-03)
+have their own identified native evidence. Replay the **new** artifact/adapter
+on native Windows/x64, including initial private DLL resolution/collision, real aliases/Windows links,
 Unicode paths, scoped doctor, cwd, normal/timeout cleanup, packaged resources
 and HTTPS/signature negatives. Existing binaries on those hosts retain their
 earlier source identities. Other architectures likewise need their own replay.

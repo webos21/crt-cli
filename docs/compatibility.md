@@ -39,6 +39,46 @@ review changes no executable, SDK payload, schema, provider format or lock,
 and grants no public-release approval. Original immutable baselines and all
 previous exercised-combination records remain unchanged.
 
+## Independent Host-tools macOS Replay (2026-11-03)
+
+Reviewed committed producer
+[`518953f4d9ecc48c1d082644414e0a409a5a49ad`](https://github.com/webos21/crt/commit/518953f4d9ecc48c1d082644414e0a409a5a49ad)
+and consumer `095afbcde4b0501267520381b24ba8114315d89a`. The previously adopted
+experimental host-tools/resource/native-provider format 1 and project formats
+are unchanged. New edits are replay tooling/documentation, not an SDK ABI,
+consumer command/schema or product implementation change.
+
+**Local macOS/arm64 technical replay passes.** The build SDK remains the verified
+clean `8db69f4` Development/macOS/aarch64 `v0.4.0-cli.20261101`, content
+`a438a4a08bc0bec98d53ad95d3cbc196525d655428086088508a3df9ea0f2f16`, provider
+`489ebea23e8531cfdd57cd3ba526a163f18c42616e9a856961af49ace673a21d`.
+Clean `518953f` assembles new independently pinned host tools from that SDK's
+C-only predecessor; this is not a fresh SDK build at the assembler revision.
+Selected tool manifest
+`0a81db3eacb89b54c106d8f57bfd5a0e6bb57a24977e124f583e7c81751f1160`, resource
+manifest `e3ea7042fef2258120c1e4bb0a3766c36e6c733196ecb9e6ffd0943c97dfe689` and CLI
+`3aec79f15ec1b86d8abb23a9406549d7057c8b9fdbc6a0308b095d18f7d8b898` bind this
+combination, not another host's candidate or a newly promoted lock.
+
+The [consumer record](acceptance/host_environment_acceptance.md#macosarm64-independent-host-environment-replay-2026-11-03)
+owns product input reconciliation, isolated self-build/807 native checks,
+previous-binary bootstrap, 31 tools/resource cases, explicit SDK selection,
+32 packaged-CA HTTPS/signature cases and their limits. The producer's
+[macOS record](https://github.com/webos21/crt/blob/9d8be12e27802b87e0bca61fa562a281b1c7319b/docs/acceptance/host_tools_acceptance.md#macosarm64-independent-bundle-replay-2026-11-03)
+owns assembly/native binding/license evidence. No private dylib collision
+scenario is claimed for the actual static-tool/libSystem-only closure.
+
+Producer replay tooling and evidence are committed as
+[`9d8be12e27802b87e0bca61fa562a281b1c7319b`](https://github.com/webos21/crt/commit/9d8be12e27802b87e0bca61fa562a281b1c7319b).
+That commit records the existing execution; the tested SDK, assembler and
+bundle identities above are unchanged, not relabeled as builds of this commit.
+
+This extends the bounded Linux adoption to an identified macOS combination,
+not complete D1, production promotion, installer/source-port support or release
+trust. Windows/x64 must replay the new increment. Historical combinations and
+failed receipts remain intact; committed binaries/defaults, original immutable
+design baselines, production locks and STATUS are unchanged.
+
 ## Review Baseline, Not an Artifact Lock
 
 The 2026-10-21 documentation review inspected these local pre-change revisions:
