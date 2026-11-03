@@ -1,6 +1,7 @@
 """Producer-only resource packaging regressions; fixtures do not prove native execution."""
 import importlib.util
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -14,7 +15,9 @@ class Resources(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(); self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name); self.sdk = self.root / 'sdk'; self.sdk.mkdir()
-        (self.sdk / 'manifest.json').write_text(json.dumps({'target': {'os': 'linux', 'arch': 'x86_64'}}))
+        target = {'os': 'windows' if os.name == 'nt' else 'linux', 'arch': 'x86_64'}
+        self.executable = 'crt-cli.exe' if target['os'] == 'windows' else 'crt-cli'
+        (self.sdk / 'manifest.json').write_text(json.dumps({'target': target}))
         (self.sdk / 'LICENSE.md').write_text('fixture notice')
         for component in resources.COMPONENTS:
             for prefix in ('share/licenses', 'share/crt/dependencies'):
@@ -29,7 +32,9 @@ class Resources(unittest.TestCase):
         manifest = json.loads((self.output / 'manifest.json').read_text())
         self.assertEqual(pin, resources.digest(self.output / 'manifest.json'))
         self.assertEqual(manifest['trust']['ca_file'], 'share/trust/ca.pem')
-        self.assertEqual([p.name for p in self.output.rglob('*') if p.is_file() and p.stat().st_mode & 0o111], ['crt-cli'])
+        self.assertEqual(manifest['executable'], self.executable)
+        self.assertEqual((self.output / self.executable).read_bytes(), self.binary.read_bytes())
+        self.assertEqual([p.name for p in self.output.rglob('*') if p.is_file() and p.stat().st_mode & 0o111], [self.executable])
         self.assertIn(['share/trust/ca.pem', 'file', resources.digest(ca)], manifest['inventory'])
         before = (self.output / 'manifest.json').read_bytes()
         with self.assertRaisesRegex(ValueError, 'already exists'):
