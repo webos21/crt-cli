@@ -298,18 +298,143 @@ and the same hidden input roots. Exact invocations are in the retained receipts.
 No committed binary/local SDK defaults, production pin, release or STATUS changes
 were made. Windows/x64 replay of this new increment still gates Tranche 2/D1.
 
+## Windows/x64 independent host-environment replay (2026-11-03)
+
+**Pass for the recorded local Windows combination.** Reviewed CRT
+`9d8be12e27802b87e0bca61fa562a281b1c7319b` with the producer patches subsequently
+committed as `b6bf52be64047e718dc0f2870472a5ffece913f9`, and CLI
+`0b40a7087e567e8b7bfae2aa880d9f4f2e1abdb3` with two portable Python fixture
+corrections. CLI product code is unchanged: its 21 pre-configure product inputs
+hash to `2aa32f07ea920ee4405970f194ccdf1183608f3ba8675ca28e60e80920930155`, matching the Linux/macOS increment.
+Use `inputs.json` for the original unresolved `crt.lock`; configure creates a
+different, resolved lock in the disposable export. No committed lock/binary is
+changed. Windows/x64 is native, not WSL or an ARM compile-only result.
+
+| Selected input/output | SHA-256 / identity |
+| --- | --- |
+| Development SDK manifest | `31bcc5d0b2874bda33c17198f0c391c588ad9be32b9a59bbd57cf6f6a194b421` |
+| SDK content | `8c3e90fe4fcaeda0e00e9748d6e90ec671af251b469d56cbc188be963a6a7057` |
+| Native compiler policy | `fdb73e4c11389b1085d90e0ba94a96c0f6ac0d9c0a1616f201f7e01c68e9b38a` |
+| New CLI | `a9d922ef71fb042a8b2ed7419db7da3d5b078700937b661f14dd63d4c1bb223c`, 24,328,192 bytes |
+| Independent host tools | `v0.1.0-hosttools.20261103.windows.5`, `513eab805ed0753b67d00939fd8b00e03a577f6f14cbe74b2ad4e3862691b1cf` |
+| Host-tools payload | `69a725081e93134cdd2b16d7a9a6a08f14d5a4d061d883fc430f7609a87f8b16` |
+| Resource manifest | `d0f25131acba0fdaead34606aeaf6abefe556fe513009299f3bd9419c2f58602` |
+| Explicit disposable package CA | `68d4d79773112ce918f0449b479667dca38eaf527b808e1fdff4b3728c56ccb3` |
+
+The final public SDK is CRT `out/tranche2-windows-20261103/dev-rootfs-fix`,
+version `development`, producer/base/compile `9d8be12` with **dirty=true**.
+That provenance is preserved, not relabeled as a clean build of the eventual
+commit. New C/host tools and fresh Development ports include the Windows PAL
+corrections; unchanged imported C++ artifacts retain their pin/source identity
+and pass static/shared smokes against the new base. The
+[producer record](https://github.com/webos21/crt/blob/b6bf52be64047e718dc0f2870472a5ffece913f9/docs/acceptance/host_tools_acceptance.md#windowsx64-independent-bundle-replay-2026-11-03) owns source/cache repair, runtime/shell fixes,
+UTF-8 manifest installation, licenses, direct/CMake bundle identity and limits.
+Formats remain experimental host-tools/resources/native-provider 1 and existing
+project formats. These are local candidates, not production adoption.
+
+### Native build, isolation and independent tools
+
+CRT's existing Windows replay driver exports SDK/source outside both repositories,
+runs each consumer under a private restricted token, probes producer-tree read
+denial, clears PATH and records job-process images. Fresh native self-build
+passes **13 executed/0 reused**, then **0 executed/13 reused**, and **857
+native checks**. It covers Unicode/punctuation paths, native C/C++ static/shared
+targets, generated tests and process cleanup. The original and relocated SDK
+inventories remain unchanged. Clang/Clang++/LLD/llvm-ar and Windows SDK
+10.0.28000.0/um/x64 are declared build-host tools; no host shell/Python/CMake/Ninja
+or SDK shell wrapper executes in the native app build path.
+
+Bare help/version/self-doctor additionally deny the relocated source, SDK and
+provider through a second SID. Direct PE imports are only `kernel32.dll` and
+`api-ms-win-core-synch-l1-2-0.dll`; allocation ownership and UTF-8 doctor checks
+pass. Runtime maps include Windows' transitive OS images, including msvcrt;
+that is not a direct host-libc/C++ dependency or a hidden private runtime bundle.
+The previous committed Windows CLI `a04ff851fb1156a161f01f308c368648ba1b091a001977e449fb86009820237a` also builds
+stage 1, which builds stage 2 with all 13 work items cold. The two files are
+**not byte-identical**; successful bootstrap is not a reproducible-binary claim.
+The ordinary self-build CLI above is selected for packaging and D1 tests.
+
+New CRT producer-side `tools/replay_host_environment_windows.py` passes **32
+cases** in `host-environment-r4` with separately selected r5 tools. Tool/package,
+script/cwd/job names contain spaces and Hangul. Real rootfs directory symlinks
+are checked; Developer Mode was already enabled and no setting was changed.
+Private ACLs apply only to newly created fixture copies. Tools/resources are
+read-only to the consumer; orchestrator mutations test rejection in disposable
+copies. Process records require exact selected image paths plus OS conhost,
+including rejection of missing/unknown images. This is **Windows accounting,
+not per-executable launch denial or a hostile-code sandbox**. Public LLVM/OS
+files are not claimed unreadable; no compiler executes in this SDK-free phase.
+
+Pipeline/substitution/heredoc, awk arithmetic, toybox copy/compare/remove, make
+and recursive make pass. The child PATH is exactly its declared single selected
+tool directory; original PATH/CPATH/credential/MAKEFLAGS/rootfs sentinels do not
+become job policy. Physical cwd and virtual SHELL are verified. Normal and
+timeout cleanup both start a background child and prevent its delayed marker;
+child exit 7, timeout 124 and the 8 MiB stdout limit are preserved. Wrong pins,
+hosts, missing/changed/extra tools, linked immutable job parents and reused jobs
+fail without fallback. A POSIX execute-bit mutation is not claimed on Windows.
+
+Pinned resources and explicit RSA-PSS test signatures pass, along with wrong
+key/signature, unpaired input, schema/host, executable/notice/CA tamper and
+missing-notice rejections. Restored package/tool inventories pass again. The
+package contains one executable, declared notices/provenance and trust data;
+no SDK/compiler, interpreter, private signing key or permanent launcher.
+File integrity checks are not memory attestation or official publisher trust.
+
+`selected-project-r4` separately allows an explicit copied SDK/provider and
+compiler resource query while denying original producer/source trees. Project
+doctor, port-build env and actual shell verify CRT_SYSROOT and unchanged
+`crt.lock`/`.crt/local.json`. This is **not** the SDK-free tools phase.
+
+### Selected trust, retained failures and reproduction
+
+`https-r2` passes all **32 D1-07 cases** under a new restricted SID with empty
+PATH and source/SDK/provider hidden. The adapter copies the exact selected
+package CA outside the denied producer tree, records its SHA-256 and requires
+it match the test issuer certificate. Every fetch process is the copied CLI
+or OS conhost, with full process records retained. Tests cover real HTTPS and
+RSA-PSS positives, certificate/metadata/size/digest/signature failures,
+interruption, timeout, HTTP/redirect rejection and preservation of prior output
+with no published staging leftovers. Python/OpenSSL and disposable issuers/keys
+belong to the loopback test host; this establishes explicit test-identity trust,
+not official release-key/expiry/revocation policy.
+
+Initial SDK `d054a66` is correctly rejected for missing narrow-encoding capability.
+An intermediate new CLI passes 857 checks/32 HTTPS cases, but its old PAL
+overrides a selected child rootfs; those receipts remain historical. Failed D1
+r1-r3 reveal the Windows PATH fixture assumption, async status255, directory
+search/TMPDIR and bootstrap-env defects; the producer owns minimal reproductions
+and repairs. No hostile sentinels or guards were removed to obtain the final
+pass. The initial selected-project fixture used a Unicode/space basename where
+`new` requires a package identifier; retries retain Unicode in the parent and
+use `hello` as the basename. The API is unchanged. Strawberry OpenSSL's compiled
+default config path is absent; the test host supplies only a local explicit
+`OPENSSL_CONF`, never a CLI dependency or global trust-store change.
+
+Receipts stay in CRT `out/tranche2-windows-20261103/`: `final-result.json`,
+`cli-replay-r3/`, `host-environment-r4/`, `https-r2/`, `bootstrap-loop-r2/`,
+`selected-project-r4/`, `bootstrap-r2/`, `candidate-final-status.json` and producer
+records. The full copied work paths/argv and source/tool fingerprints are in
+`inputs.json`, `commands.json` and the respective results. Earlier failed or
+different identities are retained, not overwritten. Six Python resource/policy
+fixtures pass on Windows after native suffix/PurePosixPath corrections; CRT's
+existing CI tooling selection passes 174/178 with four conditional skips.
+
+Use CRT's `replay_cli_contract_windows.py`, then its new
+`replay_host_environment_windows.py --cli <new-cli> --host-tools <pinned-bundle>
+--resources <pinned-package> --probe <sdk-built-visibility-probe> --output <fresh>
+--hide <producer> --hide <cli-source> --hide <build-work>` with fresh work paths.
+Run `test_cli_fetch_https_windows.py` separately with `--publisher-cases`,
+`--trusted-ca-file <package-ca>` and `--test-ca-directory <matching-test-issuer>`.
+All are producer/test-host tools, not product prerequisites. No committed binary,
+SDK default, production lock, release, original design baseline or STATUS changes.
+
 ## Remaining qualification
 
-The Linux increment and the [macOS replay](#macosarm64-independent-host-environment-replay-2026-11-03)
-have their own identified native evidence. Replay the **new** artifact/adapter
-on native Windows/x64, including initial private DLL resolution/collision, real aliases/Windows links,
-Unicode paths, scoped doctor, cwd, normal/timeout cleanup, packaged resources
-and HTTPS/signature negatives. Existing binaries on those hosts retain their
-earlier source identities. Other architectures likewise need their own replay.
-
-Complete Tranche 2/D1 remains open. The current shell is non-interactive;
-terminal/interactive cancellation is unimplemented. Source-port recipe/compiler
-bridges and cross-target builds belong to D3. D2 owns installation/selection and
-self-upgrade recovery; official release metadata, expiry/key rotation/revocation
-and production release qualification remain separate. Neither successful local
-signatures nor the producer Python tests adopt a production pin or public release.
+The recorded Linux/x86_64, macOS/arm64 and Windows/x64 combinations close the
+bounded non-interactive local Tranche 2/D1 increment. Their actual artifacts,
+source revisions and limits remain separate; this is not a common latest SDK
+or new ARM runtime replay. Interactive terminal/job control remains outside
+this increment. D2 owns installation/selection/self-upgrade; D3 owns source
+recipes/compiler bridges and cross-target work. Official release metadata/key
+lifecycle and production artifact promotion remain separate from test signatures.

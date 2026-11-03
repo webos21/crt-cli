@@ -22,28 +22,9 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
 
 ## In Progress
 
-### D1 - Windows Host Environment and CLI Bootstrap
-
-D0 is complete for the recorded local technical scope; completed work and exact
-candidate selection remain in [HISTORY](HISTORY.md) and
-[compatibility](docs/compatibility.md#common-source-candidate-selection-2026-11-02).
-D1 remains open for new native-host replay. The independent host-tools adapter,
-scoped doctor, non-interactive shell and resource/HTTPS Linux increment are
-implemented; exact scope is in [D1 acceptance](docs/acceptance/host_environment_acceptance.md).
-The [macOS/arm64 replay passes](docs/acceptance/host_environment_acceptance.md#macosarm64-independent-host-environment-replay-2026-11-03);
-native Windows/x64 remains for this new increment.
-Use the [local Dev SDK candidate loop](docs/guides/development.md#local-dev-sdk-candidate-loop);
-CLI consumption stays SDK-only, without requiring a public SDK release.
-
-- [ ] Replay the new host-tools/scoped-doctor/shell/resource increment on native
-  Windows/x64: real directory links, initial private DLL resolution/collisions,
-  aliases, Unicode paths, cwd and normal/timeout owned-process cleanup.
-- [ ] Run D1-07 HTTPS/signature negatives with each host's selected package and
-  trust bytes on Windows/x64; Linux and macOS/arm64 pass at their recorded
-  combinations. Record exact combinations before closing the native matrix.
-  Disposable test CA/signing identities are owner-selected; official publisher
-  trust/release-metadata policy remains separate. Source recipe/compiler bridges
-  stay D3; interactive terminal handling is outside this non-interactive increment.
+No active implementation tranche. D1 local replay is recorded in
+[HISTORY](HISTORY.md) and [acceptance](docs/acceptance/host_environment_acceptance.md#windowsx64-independent-host-environment-replay-2026-11-03).
+The next bounded implementation scope is D2 below; installation is not implemented.
 
 ## Planned
 

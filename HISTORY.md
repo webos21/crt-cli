@@ -11,6 +11,24 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-03
 
+### Complete the bounded D1 native replay on Windows/x64
+
+Fresh producer candidates and a new SDK-only self-build pass 857 native
+checks, 13 cold/13 cached work items, bare PE/ownership/UTF-8 checks and the
+previous-binary bootstrap. Exact Windows r5 tools pass 32 isolated
+environment/resource cases; selected package CA passes all 32 HTTPS/signature
+cases. Explicit project diagnosis/shell preserves SDK and project pins.
+
+Producer fixes address LF fetch, async status, directory search/TMPDIR,
+private rootfs environment transport and first-make UTF-8 installation. Retain
+failed/intermediate identities; the final CLI uses the repaired runtime.
+Correct two Python-only fixture assumptions (native executable suffix and
+POSIX policy paths); six fixtures pass. Product sources, committed binaries,
+locks/defaults, releases and STATUS are unchanged. The local three-primary-host
+D1 scope closes; next is D2. Exact inputs and limits belong to
+[Windows D1 acceptance](docs/acceptance/host_environment_acceptance.md#windowsx64-independent-host-environment-replay-2026-11-03) and the
+[compatibility review](docs/compatibility.md#independent-host-tools-windows-replay-2026-11-03).
+
 ### Replay independent D1 host tools and resources on macOS/arm64
 
 Consumer `095afbc` replays against the retained clean `8db69f4` public Dev SDK

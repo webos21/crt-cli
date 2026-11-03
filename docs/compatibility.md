@@ -39,6 +39,34 @@ review changes no executable, SDK payload, schema, provider format or lock,
 and grants no public-release approval. Original immutable baselines and all
 previous exercised-combination records remain unchanged.
 
+## Independent Host-tools Windows Replay (2026-11-03)
+
+Reviewed CRT `9d8be12e27802b87e0bca61fa562a281b1c7319b` plus the local producer
+fixes, committed as [`b6bf52be64047e718dc0f2870472a5ffece913f9`](https://github.com/webos21/crt/commit/b6bf52be64047e718dc0f2870472a5ffece913f9),
+against CLI `0b40a7087e567e8b7bfae2aa880d9f4f2e1abdb3` plus Python fixture/doc
+edits. Product input hash `2aa32f07ea920ee4405970f194ccdf1183608f3ba8675ca28e60e80920930155` is unchanged from the
+Linux/macOS increment. SDK/provider/host-tools/resources formats remain their
+existing experimental versions; no new command/schema or production lock.
+
+**Local native Windows/x64 replay passes.** Selected SDK is Development/windows/
+x86_64 `development`, producer/base/compile `9d8be12` **dirty=true**, manifest
+`31bcc5d0b2874bda33c17198f0c391c588ad9be32b9a59bbd57cf6f6a194b421`, content `8c3e90fe4fcaeda0e00e9748d6e90ec671af251b469d56cbc188be963a6a7057` and provider
+`fdb73e4c11389b1085d90e0ba94a96c0f6ac0d9c0a1616f201f7e01c68e9b38a`. Independent tools `513eab805ed0753b67d00939fd8b00e03a577f6f14cbe74b2ad4e3862691b1cf`,
+resources `d0f25131acba0fdaead34606aeaf6abefe556fe513009299f3bd9419c2f58602` and CLI `a9d922ef71fb042a8b2ed7419db7da3d5b078700937b661f14dd63d4c1bb223c` bind
+this exact combination, not the intermediate failed candidates or a release.
+
+The [producer record](https://github.com/webos21/crt/blob/b6bf52be64047e718dc0f2870472a5ffece913f9/docs/acceptance/host_tools_acceptance.md#windowsx64-independent-bundle-replay-2026-11-03) owns C/C++/tool assembly, runtime repairs,
+licenses and build checks. The [Windows consumer record](acceptance/host_environment_acceptance.md#windowsx64-independent-host-environment-replay-2026-11-03)
+owns isolated native/bootstrap/imports, independent tools/resources, selected
+SDK/project and package-CA HTTPS results. Original artifact provenance remains
+dirty; the implementation commit is not substituted for the build identity.
+
+Together with the original Linux/macOS records, this closes the bounded local
+three-primary-host D1 increment. It is not production promotion, a new ARM
+replay, interactive terminal/source-port acceptance, installer support or
+official publisher trust. D2 is next in the queue. Preserve prior combinations,
+design baselines, failed receipts, committed binaries/defaults and locks.
+
 ## Independent Host-tools macOS Replay (2026-11-03)
 
 Reviewed committed producer

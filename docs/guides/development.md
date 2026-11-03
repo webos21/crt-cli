@@ -75,6 +75,23 @@ owns exact commands, package/trust pins and limits. CRT's HTTPS test supports
 with the same pinned package bytes. Do not claim an execve trace or a new
 SDK build from this replay.
 
+For independent Windows D1 replay, CRT owns
+`tools/replay_host_environment_windows.py` and
+`tools/test_cli_fetch_https_windows.py`. Supply the selected native CLI,
+independent bundle, resource package, SDK-built visibility probe and fresh
+output/work paths. Repeat `--hide` (environment) or `--hidden` (HTTPS) for both
+repositories and the exported SDK/source/provider worktree. The Windows adapter
+uses restricted tokens plus exact job-image accounting, not executable-launch
+denial. Python/OpenSSL are test-host tools only. Developer Mode and Windows
+10 1903+ are prerequisites for real links and the UTF-8 image policy.
+
+For HTTPS, select the exact package CA with `--trusted-ca-file` and the matching
+disposable issuer using `--test-ca-directory`; the adapter copies/verifies CA
+bytes into its private work. An OpenSSL installation with a missing default
+config requires an explicit **test-host-only** `OPENSSL_CONF`. No global PATH,
+trust-store, registry or ACL changes are required. Full actual argv, evidence
+and limits belong to the [Windows D1 record](../acceptance/host_environment_acceptance.md#windowsx64-independent-host-environment-replay-2026-11-03).
+
 For native macOS, CRT supplies a producer-side acceptance driver that builds
 the initial CRT-native seed from provider argv, then runs native self-build,
 tests and bare-binary checks under Seatbelt:

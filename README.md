@@ -31,9 +31,8 @@ records the measured scope and remaining gates.
 See the [build guide](docs/guides/development.md#build-and-test-the-bootstrap)
 and [implemented contract](docs/reference/bootstrap_contract.md) for actual
 entry points and limitations. Plain bootstrap doctor reports integrity as not
-verified and HTTPS as not run. New host-tools/resource behavior has bounded
-[Linux and macOS evidence](docs/acceptance/host_environment_acceptance.md);
-Windows/x64 must replay it before complete D1 acceptance.
+verified and HTTPS as not run. Native host-tools/resource verification and its exact per-host scope are
+[recorded separately](docs/acceptance/host_environment_acceptance.md).
 
 ## Intended Experience
 
