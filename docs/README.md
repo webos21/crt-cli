@@ -47,6 +47,8 @@ from the SDK build baseline:
 - [D1 Host Environment and Bootstrap Resources](acceptance/host_environment_acceptance.md):
   independently pinned CRT tools, scoped doctor, non-interactive shell, resource
   pin/signature negatives and SDK-free Linux/macOS HTTPS; Windows/x64 replay remains open.
+- [D2 Local SDK Installer](acceptance/sdk_install_acceptance.md):
+  Linux isolated replay of `sdk install|list|verify|recover` on tar.xz and zip.
 - [Implemented Bootstrap Contract](reference/bootstrap_contract.md): SDK input
   and command/result formats, experimental project fixtures and actual limits.
 

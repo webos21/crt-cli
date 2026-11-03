@@ -27,7 +27,10 @@
       "src/main/fetch.cpp",
       "src/main/publisher.cpp",
       "src/main/host_tools.cpp",
-      "src/main/diagnostics.cpp"
+      "src/main/diagnostics.cpp",
+      "src/main/archive.cpp",
+      "src/main/sdk_store.cpp",
+      "src/main/sdk_command.cpp"
     ],
     "sdk_consumer_option_sources": [
       "src/main/http.cpp"
@@ -37,7 +40,8 @@
       "mbedtls",
       "mbedx509",
       "mbedcrypto",
-      "z"
+      "z",
+      "lzma"
     ]
   },
   "tests": [
@@ -51,6 +55,39 @@
         "src/main/environment.cpp"
       ],
       "sdk_libraries": [
+        "mbedcrypto"
+      ]
+    },
+    {
+      "name": "archive-test",
+      "timeout_seconds": 600,
+      "sources": [
+        "src/test/archive_test.cpp",
+        "src/main/archive.cpp",
+        "src/main/core.cpp",
+        "src/main/process.cpp",
+        "src/main/environment.cpp"
+      ],
+      "sdk_libraries": [
+        "lzma",
+        "z",
+        "mbedcrypto"
+      ]
+    },
+    {
+      "name": "sdk-store-test",
+      "timeout_seconds": 600,
+      "sources": [
+        "src/test/sdk_store_test.cpp",
+        "src/main/sdk_store.cpp",
+        "src/main/archive.cpp",
+        "src/main/core.cpp",
+        "src/main/process.cpp",
+        "src/main/environment.cpp"
+      ],
+      "sdk_libraries": [
+        "lzma",
+        "z",
         "mbedcrypto"
       ]
     }

@@ -11,6 +11,22 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-03
 
+### D2 local SDK installer on Linux/x86_64 (tar.xz and zip)
+
+`sdk install --archive --archive-sha256 [--content-sha256]`, `sdk list`, `sdk verify <dir>` and `sdk recover` work on
+a store (`--store` or `$USER_HOME/.crt/sdks`). `archive.cpp` decodes tar.xz itself (liblzma from the Dev-SDK `xz`
+port, capability `archive-xz-1`) and rejects traversal, absolute/drive/reserved names, case collisions, escaping
+symlinks, links to devices/hard links and size/entry abuse (100 checks). `sdk_store.cpp` verifies the archive digest,
+extracts into same-filesystem staging, checks stage/target/profile, derives `<version>-<content12>` from the inventory
+hash, serializes on a per-identity lock directory (dead owners are taken over), publishes with one rename, never
+replaces an installed SDK and removes dead transactions (34 checks). zip (zlib raw inflate) is read from the central directory, checks CRC-32 and local/central agreement, keeps Unix
+symlinks and exec bits, and refuses zip64, multi-disk, encrypted and non-stored/deflate entries; a zip and a tar.xz of one SDK
+have the same identity. Verified through the seed dev loop only (native 767 + archive 158 + store 35 checks, a CLI
+smoke, and mutation checks on the CRC rule). `sdk install --release-manifest <file> --release-manifest-sha256 <hex>` takes the archive digest, size and CRT install
+metadata from a pinned manifest, bounds extraction by it and requires the extracted counts, bytes, root, identity,
+version, stage, profile and target to match (66 store checks; the real 186 MB dev SDK installs and verifies). Linux isolated bubblewrap replay: 48/48 checks ([acceptance](docs/acceptance/sdk_install_acceptance.md)). Not yet verified: macOS/Windows
+(including the `lzma` import-library name and `kill(pid,0)` lock-owner semantics).
+
 ### Complete the bounded D1 native replay on Windows/x64
 
 Fresh producer candidates and a new SDK-only self-build pass 857 native

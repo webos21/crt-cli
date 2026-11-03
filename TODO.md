@@ -22,9 +22,15 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
 
 ## In Progress
 
-No active implementation tranche. D1 local replay is recorded in
-[HISTORY](HISTORY.md) and [acceptance](docs/acceptance/host_environment_acceptance.md#windowsx64-independent-host-environment-replay-2026-11-03).
-The next bounded implementation scope is D2 below; installation is not implemented.
+Active increment (opened 2026-11-03, with CRT Tranche 3): **D2 local SDK installer**. In scope: `sdk install` of a
+local `tar.xz`/`zip` archive (digest check, safe extraction, inventory validation, per-identity lock, atomic
+same-filesystem publication, interrupted-install recovery, immutability) and `sdk list`/`sdk verify`, replayed on
+Linux first. Out of scope for this increment: network acquisition, updates, project-lock migration, CLI self-upgrade,
+GC. The xz decoder comes from a CRT Development-SDK port; CRT 3.1 defines the install metadata. Linux/x86_64: tar.xz and zip
+install/list/verify/recover, manifest install metadata and the isolated replay are done ([acceptance](docs/acceptance/sdk_install_acceptance.md));
+remaining: macOS/Windows replay and a replay with a self-built SDK-only CLI. D1 local replay is recorded in [HISTORY](HISTORY.md) and
+[acceptance](docs/acceptance/host_environment_acceptance.md#windowsx64-independent-host-environment-replay-2026-11-03).
+Installation is recorded as passing on Linux/x86_64 only; other hosts are not claimed.
 
 Follow [D0-D7 dependency order](docs/design/crt_cli.md#9-joint-development-sequence).
 These are future increments, not implemented features.

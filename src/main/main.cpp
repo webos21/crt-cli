@@ -1,5 +1,6 @@
 #include <crtcli/core.h>
 #include <crtcli/host_tools.h>
+#include <crtcli/sdk_store.h>
 #include <set>
 int main(int argc, char** argv) {
     using namespace crtcli;
@@ -10,7 +11,7 @@ int main(int argc, char** argv) {
             if (std::string(argv[i]) == "--json") { require(!json, "duplicate --json"); json = true; }
             else args.emplace_back(argv[i]);
         }
-        if (args.empty() || args == std::vector<std::string>{"--help"}) return print_reply({0, "help", {{"usage", "crt-cli [--json] --help|--version|doctor|shell|fetch|env|new|configure|build|test|run"}},
+        if (args.empty() || args == std::vector<std::string>{"--help"}) return print_reply({0, "help", {{"usage", "crt-cli [--json] --help|--version|doctor|shell|fetch|sdk|env|new|configure|build|test|run"}},
             "crt-cli [--json]\n"
             "  --help | --version\n"
             "  doctor [--scope self] [--resources <dir> --resources-sha256 <hex>] [--publisher-key <pem> --signature <file>]\n"
@@ -20,6 +21,9 @@ int main(int argc, char** argv) {
             "  env --profile port-build --host-tools <dir> --host-tools-sha256 <hex> --work-root <new-dir> [--project <dir>]\n"
             "  shell --host-tools <dir> --host-tools-sha256 <hex> --work-root <new-dir> --script <file> [--directory <dir>] [--timeout <seconds>] [--project <dir>]\n"
             "  fetch --url <https-url> --ca-file <pem> --output <file> --sha256 <hex> --size <bytes> [--publisher-key <pem> --signature <file>]\n"
+            "  sdk install --archive <file> --archive-sha256 <hex> [--content-sha256 <hex>] [--store <dir>] [--lock-wait <seconds>]\n"
+            "  sdk install --archive <file> --release-manifest <file> --release-manifest-sha256 <hex> [--store <dir>] [--lock-wait <seconds>]\n"
+            "  sdk list|recover [--store <dir>]; sdk verify <sdk-directory> [--store <dir>]\n"
             "  new <dir> [--language c|cxx]\n"
             "  configure/build/test/run [--project <dir>]"}, json);
         check_arguments(args);
@@ -28,6 +32,7 @@ int main(int argc, char** argv) {
         if (command == "doctor") return print_reply(doctor(args), json);
         if (command == "shell") return print_reply(shell(args), json);
         if (command == "fetch") return print_reply(fetch(args), json);
+        if (command == "sdk") return print_reply(sdk_command(args), json);
         if (command == "env") return print_reply(environment_report(args), json);
         if (!std::set<std::string>{"new", "configure", "build", "test", "run"}.count(command)) throw Error("unsupported command or arguments; use --help", 2);
         return print_reply(workflow(args), json);
