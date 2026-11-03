@@ -26,8 +26,6 @@ No active implementation tranche. D1 local replay is recorded in
 [HISTORY](HISTORY.md) and [acceptance](docs/acceptance/host_environment_acceptance.md#windowsx64-independent-host-environment-replay-2026-11-03).
 The next bounded implementation scope is D2 below; installation is not implemented.
 
-## Planned
-
 Follow [D0-D7 dependency order](docs/design/crt_cli.md#9-joint-development-sequence).
 These are future increments, not implemented features.
 
@@ -83,6 +81,8 @@ These are future increments, not implemented features.
   Studio frontend; coordinate only consumer-driven generic CRT API changes.
   D7 formally approves exercised combinations; it does not block SDK-only S0
   PoCs or earlier live experiments using actually implemented capabilities.
+
+## Planned
 
 ### Deferred Beyond the Initial Workflow
 
