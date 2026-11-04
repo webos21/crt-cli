@@ -11,6 +11,20 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-04
 
+### D2 project SDK selection from the store (Stage 1, Linux/x86_64)
+
+`configure --sdk <ref>` selects an SDK published by `sdk install` by directory name or an identity prefix (>= 8 hex);
+without a named SDK the only installed dev SDK for the host and the manifest's `sdk.version` is used, and none or
+several fail with the candidates listed (no moving default). The directory name must equal the version and content
+identity that `inspect_sdk` proves. `crt.lock` is now format 1 and records `source` (`store` + `sdk_directory`, or
+`handoff`); a store selection leaves no `sdk_root` in `.crt/local.json` and is found again through the store by its locked
+identity. Format 0 locks are refused with an instruction to run `configure` again and are never migrated. Verified
+with the dev-loop CLI: native tests 800 (33 new: selection by name/prefix/automatic, handoff copy and short or unknown
+refs refused, `--sdk` with `--sdk-id`, two fitting SDKs, renamed directory, format-0 lock untouched, locked SDK
+uninstalled, then restored), archive 158, store 66. Not done: the toolchain contract is still an external
+`--sdk-contract` file (Stage 2: host-independent contract with an `@OS_SDK@` placeholder, shipped in the release and
+kept beside the installed SDK), macOS/Windows replays, DLL/path collisions, explicit updates.
+
 ### D2 local SDK installer on Windows/arm64
 
 Replayed the installer natively on the Windows/arm64 VM with a self-built, SDK-only CLI (cold 16/0, warm 0/16; 870 native, 151 archive and 66 SDK-store

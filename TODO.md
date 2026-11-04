@@ -44,7 +44,9 @@ These are future increments, not implemented features.
   verification, transactions, interrupted-install recovery, and explicit updates.
   - [x] Immutable installation from a local `tar.xz`/`zip`, verification, transactions and interrupted-install
     recovery ([acceptance](docs/acceptance/sdk_install_acceptance.md)).
-  - [ ] Stage/profile resolution and project selection of an installed SDK.
+  - [x] Stage 1 (Linux/x86_64): project selection of an installed SDK by name/identity or the only fit; `crt.lock` format 1
+    records identity only ([HISTORY](HISTORY.md)). Open: Stage 2 (contract stored with the SDK, needs the CRT release to
+    ship a host-independent contract), then macOS/Windows replays.
   - [ ] Explicit updates (network acquisition is a later increment).
 - [ ] Replay installation failures and path/tool collisions on the three
   initial native host pairs; never migrate project locks implicitly.
@@ -53,7 +55,7 @@ These are future increments, not implemented features.
 - [ ] Implement/validate shared immutable SDK storage and project references;
   version/profile/target/content pins remain project-specific.
   - [x] Shared immutable store (`sdk list|verify|recover`).
-  - [ ] Project references and pins.
+  - [ ] Project references and pins: the lock identity is done on Linux; replays on the other four pairs and Stage 2 remain.
 - [ ] Implement verified CLI self-upgrade with candidate health checks,
   OS-specific activation, interruption/rollback and unchanged project SDK/port pins
   ([lifecycle gates](docs/acceptance/lifecycle_acceptance.md)).

@@ -351,6 +351,45 @@ int main(int argc, char** argv) {
         write_text(root / ".sdk.json", sdk_config.dump());
         invoke(cli, {"configure", "--project", root.string(), "--sdk-id", "local-candidate"});
         check(fs::path(read_json(root / ".crt/local.json").at("sdk_root").get<std::string>()) == fs::canonical(installed), "--sdk-id overrides .sdk.json sdk_root");
+        // A published store SDK is selected by name or identity prefix, locked by identity alone (lock format 1) and found
+        // again through the store; ambiguity, renamed directories and a missing SDK are refused rather than guessed.
+        const std::string version = lock.at("selection").at("version"), content = lock.at("selection").at("sdk_content_sha256");
+        const std::string identity = version + "-" + content.substr(0, 12);
+        const auto published = sdk_store_root() / identity;
+        fs::copy(installed, published, fs::copy_options::recursive | fs::copy_options::copy_symlinks);
+        auto select = [&](const std::string& flag, const std::string& value) { auto args = configure; args[3] = flag; args[4] = value; return args; };
+        invoke(cli, select("--sdk", identity));
+        auto stored = read_json(root / "crt.lock");
+        check(stored.at("lock_format") == 1 && stored.at("selection").at("source") == "store" && stored.at("selection").at("sdk_directory") == identity, "store selection is locked by identity");
+        check(!read_json(root / ".crt/local.json").contains("sdk_root"), "a store selection keeps no machine path");
+        invoke(cli, {"test", "--project", root.string()});
+        invoke(cli, select("--sdk", content.substr(0, 10)));
+        check(read_json(root / "crt.lock").at("selection").at("sdk_directory") == identity, "identity prefix selects the same SDK");
+        fs::remove(root / ".sdk.json");                                           // its sdk_root would name the SDK
+        auto automatic = select("--sdk", identity); automatic.erase(automatic.begin() + 3, automatic.begin() + 5);
+        invoke(cli, automatic);
+        check(read_json(root / "crt.lock").at("selection").at("sdk_directory") == identity, "the only fitting SDK is selected automatically");
+        invoke(cli, select("--sdk", "local-candidate"), false);                  // a handoff copy is not a published SDK
+        invoke(cli, select("--sdk", content.substr(0, 7)), false);               // too short to identify
+        invoke(cli, select("--sdk", std::string(64, 'a')), false);               // nothing matches
+        auto both = select("--sdk", identity); both.insert(both.end(), {"--sdk-id", "local-candidate"});
+        invoke(cli, both, false);
+        const auto copy = sdk_store_root() / (version + "-aaaaaaaaaaaa");
+        fs::copy(published, copy, fs::copy_options::recursive | fs::copy_options::copy_symlinks);
+        invoke(cli, automatic, false);                                           // two fit: never pick one silently
+        invoke(cli, select("--sdk", copy.filename().string()), false);           // the name does not match the content
+        fs::remove_all(copy);
+        invoke(cli, select("--sdk", identity));
+        const auto lock_text = read_text(root / "crt.lock");
+        auto legacy = read_json(root / "crt.lock"); legacy["lock_format"] = 0; write_text(root / "crt.lock", legacy.dump());
+        invoke(cli, {"build", "--project", root.string()}, false);               // format 0 is refused, not migrated
+        check(read_json(root / "crt.lock").at("lock_format") == 0, "a refused lock is left untouched");
+        write_text(root / "crt.lock", lock_text);
+        const auto away = sdk_store_root() / "moved-away";
+        fs::rename(published, away);
+        invoke(cli, {"build", "--project", root.string()}, false);               // the locked SDK is no longer installed
+        fs::rename(away, published);
+        invoke(cli, {"build", "--project", root.string()});
         if (old_home.empty()) unsetenv("HOME"); else setenv("HOME", old_home.c_str(), 1);
         if (old_profile.empty()) unsetenv("USERPROFILE"); else setenv("USERPROFILE", old_profile.c_str(), 1);
         check(!fs::exists(hostile / "never-execute"), "shell metacharacters stay literal");

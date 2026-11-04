@@ -1,4 +1,6 @@
 #include <crtcli/toolchain.h>
+#include <crtcli/sdk_store.h>
+#include <cctype>
 #include <chrono>
 #include <set>
 namespace crtcli {
@@ -11,6 +13,30 @@ std::string selected(const std::map<std::string, std::string>& options, const st
 void replace(std::string& value, const std::string& from, const std::string& to) {
     size_t pos = 0;
     while ((pos = value.find(from, pos)) != std::string::npos) { value.replace(pos, from.size(), to); pos += to.size(); }
+}
+
+// A directory published by `sdk install`: `<version>-<content12>`. Anything else in the store is a local handoff copy.
+bool published_name(const StoreEntry& entry) {
+    const auto& name = entry.directory;
+    if (entry.version.empty() || name.size() != entry.version.size() + 13 || name.compare(0, entry.version.size() + 1, entry.version + "-") != 0) return false;
+    for (unsigned char c : entry.content12) if (!(std::isdigit(c) || (c >= 'a' && c <= 'f'))) return false;
+    return entry.content12.size() == 12;
+}
+std::string describe(const std::vector<StoreEntry>& entries) {
+    std::string text;
+    for (const auto& entry : entries) text += "\n  " + entry.directory;
+    return text.empty() ? " (none)" : text;
+}
+fs::path store_sdk(const std::string& reference) {
+    require(!reference.empty(), "--sdk must not be empty");
+    const bool prefix = reference.size() >= 8 && reference.size() <= 64 && reference.find_first_not_of("0123456789abcdef") == std::string::npos;
+    std::vector<StoreEntry> published, matches;
+    for (const auto& entry : SdkStore(sdk_store_root()).list()) if (published_name(entry)) published.push_back(entry);
+    for (const auto& entry : published)
+        if (entry.directory == reference || (prefix && entry.content12.compare(0, std::min<size_t>(12, reference.size()), reference, 0, 12) == 0)) matches.push_back(entry);
+    require(!matches.empty(), "no installed SDK matches '" + reference + "'; installed:" + describe(published));
+    require(matches.size() == 1, "'" + reference + "' matches several installed SDKs:" + describe(matches));
+    return matches.front().path;
 }
 
 bool under(const fs::path& path, const fs::path& directory) {
@@ -90,7 +116,7 @@ Json inspect_sdk(const fs::path& sdk, const Json& contract, bool allow_dirty) {
 }
 std::map<std::string, std::string> Toolchain::read_sdk_config(const fs::path& file) {
     require(fs::is_regular_file(file), "SDK config is not a regular file: " + file.string());
-    const std::map<std::string, std::string> roles{{"sdk_root", "--sdk-root"}, {"sdk_id", "--sdk-id"}, {"sdk_contract", "--sdk-contract"}, {"contract_sha256", "--contract-sha256"},
+    const std::map<std::string, std::string> roles{{"sdk_root", "--sdk-root"}, {"sdk_id", "--sdk-id"}, {"sdk", "--sdk"}, {"sdk_contract", "--sdk-contract"}, {"contract_sha256", "--contract-sha256"},
         {"cc", "--cc"}, {"cxx", "--cxx"}, {"linker", "--linker"}, {"ar", "--ar"}};
     const std::set<std::string> absolute_paths{"sdk_root", "sdk_contract", "cc", "cxx", "linker", "ar"};
     auto config = read_json(file);
@@ -119,8 +145,10 @@ std::map<std::string, std::string> Toolchain::read_sdk_config(const fs::path& fi
 }
 Toolchain Toolchain::configure(const std::map<std::string, std::string>& options) {
     Toolchain result;
-    require(!(options.count("--sdk-root") && options.count("--sdk-id")), "choose --sdk-root or --sdk-id, not both");
-    result.sdk = options.count("--sdk-id") ? inside(sdk_store_root(), options.at("--sdk-id")) : fs::canonical(selected(options, "--sdk-root"));
+    require(options.count("--sdk-root") + options.count("--sdk-id") + options.count("--sdk") <= 1, "choose one of --sdk, --sdk-id or --sdk-root");
+    const bool from_store = options.count("--sdk") != 0;
+    result.sdk = from_store ? fs::canonical(store_sdk(options.at("--sdk")))
+        : options.count("--sdk-id") ? inside(sdk_store_root(), options.at("--sdk-id")) : fs::canonical(selected(options, "--sdk-root"));
     result.contract_path = fs::canonical(selected(options, "--sdk-contract"));
     auto hash = selected(options, "--contract-sha256");
     require(hash.size() == 64 && file_sha256(result.contract_path) == hash, "toolchain contract digest mismatch");
@@ -128,6 +156,13 @@ Toolchain Toolchain::configure(const std::map<std::string, std::string>& options
     bool allow_dirty = options.count("--allow-dirty-sdk") && options.at("--allow-dirty-sdk") == "true";
     require(!options.count("--allow-dirty-sdk") || allow_dirty, "--allow-dirty-sdk accepts only true");
     result.selection = inspect_sdk(result.sdk, result.contract, allow_dirty);
+    if (from_store) {
+        // The directory name is derived from the content identity; a renamed or substituted directory is not that SDK.
+        const std::string expected = result.selection.at("version").get<std::string>() + "-" + result.selection.at("sdk_content_sha256").get<std::string>().substr(0, 12);
+        require(result.sdk.filename().string() == expected, "installed SDK directory name does not match its content identity: " + result.sdk.filename().string());
+        result.selection["source"] = "store";
+        result.selection["sdk_directory"] = expected;
+    } else result.selection["source"] = "handoff";
     result.selection["contract_sha256"] = hash;
     result.cc = fs::canonical(selected(options, "--cc"));
     result.cxx = fs::canonical(selected(options, "--cxx"));
@@ -141,18 +176,35 @@ Toolchain Toolchain::configure(const std::map<std::string, std::string>& options
     result.resource = fs::canonical(query.output);
     result.selection["tools"] = Json{{"cc", file_sha256(result.cc)}, {"cxx", file_sha256(result.cxx)}, {"linker", file_sha256(result.linker)}, {"ar", file_sha256(result.archiver)}, {"resource_content_sha256", sha256(inventory(result.resource).dump())}};
     result.local = {{"sdk_root", result.sdk.string()}, {"sdk_contract", result.contract_path.string()}, {"cc", result.cc.string()}, {"cxx", result.cxx.string()}, {"linker", result.linker.string()}, {"ar", result.archiver.string()}, {"resource_dir", result.resource.string()}};
+    // A store SDK is found again through its lock identity; only handoff selections keep a machine path.
+    if (from_store) result.local.erase("sdk_root");
     return result;
+}
+std::string Toolchain::select_store_sdk(const std::string& version) {
+    std::vector<StoreEntry> published, candidates;
+    const Json target = native_target();
+    for (const auto& entry : SdkStore(sdk_store_root()).list()) if (published_name(entry)) published.push_back(entry);
+    for (const auto& entry : published)
+        if (entry.profile == "dev" && entry.stage == "02-cxx" && entry.target == target && (version == "*" || entry.version == version)) candidates.push_back(entry);
+    require(!candidates.empty(), "no installed SDK for this host (profile dev, version " + version + "); install one with `sdk install` or select with --sdk; installed:" + describe(published));
+    require(candidates.size() == 1, "several installed SDKs fit (version " + version + "); choose one with --sdk:" + describe(candidates));
+    return candidates.front().directory;
 }
 Toolchain Toolchain::load(const fs::path& root) {
     require(fs::exists(root / ".crt/local.json"), "project has no local SDK selection; run configure with explicit local inputs (SDK acquisition is pending)");
     auto local = read_json(root / ".crt/local.json");
     auto lock = read_json(root / "crt.lock");
-    require(lock.at("lock_format") == 0 && lock.at("state") == "local-experiment", "unsupported/unresolved project lock");
+    require(lock.at("lock_format") != 0, "project lock format 0 is no longer read and is never migrated implicitly; run configure again");
+    require(lock.at("lock_format") == 1 && lock.at("state") == "local-experiment", "unsupported/unresolved project lock");
     // Verify selected tool bytes before even a resource-directory query.
     for (const auto& role : {"cc", "cxx", "linker", "ar"})
         require(file_sha256(fs::path(local.at(role).get<std::string>())) == lock.at("selection").at("tools").at(role), "locked external tool digest mismatch");
-    std::map<std::string, std::string> options{{"--sdk-root", local.at("sdk_root")}, {"--sdk-contract", local.at("sdk_contract")}, {"--contract-sha256", lock.at("selection").at("contract_sha256")}, {"--cc", local.at("cc")}, {"--cxx", local.at("cxx")}, {"--linker", local.at("linker")}};
+    const auto& locked = lock.at("selection");
+    const bool from_store = locked.value("source", "") == "store";
+    std::map<std::string, std::string> options{{"--sdk-contract", local.at("sdk_contract")}, {"--contract-sha256", lock.at("selection").at("contract_sha256")}, {"--cc", local.at("cc")}, {"--cxx", local.at("cxx")}, {"--linker", local.at("linker")}};
     options["--ar"] = local.at("ar");
+    // A store selection is found again by its locked identity, never by a path remembered on this machine.
+    if (from_store) options["--sdk"] = locked.at("sdk_directory"); else options["--sdk-root"] = local.at("sdk_root");
     if (lock.at("selection").value("allow_dirty_sdk", false)) options["--allow-dirty-sdk"] = "true";
     auto result = configure(options);
     require(result.selection == lock.at("selection"), "locked SDK/toolchain identity mismatch");

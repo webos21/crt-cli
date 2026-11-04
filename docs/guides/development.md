@@ -133,9 +133,10 @@ New creates `include/greeting.h`, source and test directories. Add
 `--kind static-library` or `--kind shared-library` for library templates, or
 `--runtime-linkage shared` for a dynamically linked executable. Multiple
 targets/dependencies are declared in `crt.json`; use `build --target <name>`.
-The CLI itself still uses the single-executable policy. Installed SDK selection
-can use `configure --sdk-id <id>` under `$USER_HOME/.crt/sdks`; an explicit
-`--sdk-root` remains available for a local handoff, not an installer.
+The CLI itself still uses the single-executable policy. An SDK installed with
+`sdk install` is selected with `configure --sdk <directory-or-identity-prefix>`, or automatically when it is the only one
+that fits; the lock records its identity and no machine path. `--sdk-id <id>` (a copy under `$USER_HOME/.crt/sdks`) and
+`--sdk-root` remain local handoffs.
 
 Fresh isolated Linux replay must export sources and SDK outside producer trees,
 hide producer/original inputs, make Python/shell/CMake/Ninja executables unavailable,
