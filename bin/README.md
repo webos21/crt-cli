@@ -14,7 +14,7 @@ release artifacts.
 | Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `9b82bd300379b45be4cb36becfbef56bf41b1ff5cc3d2cb510b9e60447b10284` (13,889,400 bytes; 2026-11-02 D1 working-tree candidate based on `adc03b0`, clean local CRT `49879bf`) |
 | Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `fc7842f36199cf5947076b73f04c90d6ccc058c1ad9dc99b3872eab6c744172c` (15,974,328 bytes; 2026-11-04 D2 installer replay of `02c6735`, clean local CRT `ffd0405`) |
 | Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `9948bcd919d6f0a93f2564902124fbbcf9edaf9d3f785caba4ffcf5f1771fe2d` (29,552,640 bytes, built `-O1 -g`; 2026-11-04 D2 installer replay of `2df5610` plus the Windows edits, clean local CRT `1ee0379`) |
-| Windows/arm64 | `bin/win-arm64/crt-cli.exe` | present; SHA-256 `6fce97e028c9956716ad1729d8655532282944f8dfd7f9ec33f44d92cf0e787c` (20,286,976 bytes, built `-O1 -g`; 2026-11-02 replay of the latest sources against a clean local SDK from CRT `d12e210`) |
+| Windows/arm64 | `bin/win-arm64/crt-cli.exe` | present; SHA-256 `3f587b71177958b1c3bbfc03e8f695c48fe8a3144c33abcdf7737ef188032c52` (29,425,664 bytes, built `-O1 -g`; 2026-11-04 D2 installer replay of `13bba78`, clean local CRT `b20a460`) |
 
 macOS ships only arm64, so it keeps the single `bin/macos/` directory. Linux and
 Windows are split by architecture: `linux-x64`, `linux-arm64`, `win-x64`, `win-arm64`.
@@ -40,8 +40,11 @@ Evidence: [Windows fix acceptance](../docs/acceptance/bootstrap_acceptance.md#wi
 The previous binary and failed candidate records are retained under ignored `out/`.
 Rebuild outputs and intermediate objects live in the ignored `out/` directory.
 
-The Windows/arm64 binary imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll` (PE machine `0xAA64`). It is the
-2026-10-31 replay's bare executable; it includes the `fetch` command and embeds CRT's UTF-8 active-code-page manifest (the
+The Windows/arm64 binary is the 2026-11-04 D2 replay's bare executable (it adds `sdk install|list|verify|recover`; 870 native, 151 archive and 66 SDK-store
+checks, 62/62 installer checks, imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`, PE machine `0xAA64`; previous `6fce97e0...` bytes under ignored
+`out/windows-arm64-d2-20261104/previous/`; see the
+[D2 Windows/arm64 record](../docs/acceptance/sdk_install_acceptance.md#windowsarm64-isolated-replay-2026-11-04)). The following paragraph describes its
+predecessor, the 2026-10-31 replay's bare executable, whose method is unchanged: it imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll` (PE machine `0xAA64`); it includes the `fetch` command and embeds CRT's UTF-8 active-code-page manifest (the
 SDK's link policy supplies it), so it needs Windows 10 1903 or later for non-ASCII paths and its `doctor` reports
 `narrow_encoding`. The SDK was extracted from the locally collected `crt-dev-release` ZIP of a clean CRT `85546d9`
 (version `v0.4.0-rehearsal.20261031`, not published or promoted). The earlier

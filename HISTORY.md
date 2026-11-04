@@ -11,6 +11,16 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-04
 
+### D2 local SDK installer on Windows/arm64
+
+Replayed the installer natively on the Windows/arm64 VM with a self-built, SDK-only CLI (cold 16/0, warm 0/16; 870 native, 151 archive and 66 SDK-store
+checks) against a rehearsal `crt-dev-release` of clean CRT `b20a460`. The unchanged Windows restricted-token driver passes 62/62 (pinned-manifest install,
+immutability, tampered inputs, fifteen hostile archives, interruption and recovery, concurrency, read-only store, tar.xz of the installed SDK). The first
+producer exposed a CRT toolchain defect, not a CLI one: with `-fhosted`, clang's default asynchronous unwind tables make LLVM 22.1.8 omit the CFA adjustment
+after the `__chkstk` probe on aarch64-w64-mingw32, so exceptions thrown through `extract_archive` (a ~149 KB frame) terminated; CRT now compiles Windows/aarch64
+with synchronous tables. No CLI code changed; `bin/win-arm64/crt-cli.exe` is replaced by the self-built executable.
+[Record](docs/acceptance/sdk_install_acceptance.md#windowsarm64-isolated-replay-2026-11-04).
+
 ### D2 local SDK installer on Linux/aarch64
 
 Replayed the installer natively on the aarch64 guest with a self-built, SDK-only CLI (cold 16/0, warm 0/16; 779 native, 158 archive and 66 SDK-store
