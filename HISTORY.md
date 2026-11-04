@@ -11,6 +11,14 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-04
 
+### D2 local SDK installer on Linux/aarch64
+
+Replayed the installer natively on the aarch64 guest with a self-built, SDK-only CLI (cold 16/0, warm 0/16; 779 native, 158 archive and 66 SDK-store
+checks) against a rehearsal `crt-dev-release` of clean CRT `ffd0405`. The unchanged Linux bubblewrap driver passes 48/48: pinned-manifest install with the
+promised identity, immutability, tampered inputs, hostile archives, interruption and recovery, concurrency, read-only store and zip. The 17 symlinks of the
+SDK survive installation. No CLI code changed; `bin/linux-arm64/crt-cli` is replaced by the self-built executable.
+[Record](docs/acceptance/sdk_install_acceptance.md#linuxaarch64-isolated-replay-2026-11-04).
+
 ### D2 local SDK installer on Windows/x64
 
 `sdk install|list|verify|recover` replayed natively on Windows/x64 with the new restricted-token driver

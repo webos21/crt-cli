@@ -12,7 +12,7 @@ release artifacts.
 | --- | --- | --- |
 | macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `f1d9f925da8c85ebb41a22a9d4a31eb5a37676af16557ebaa17869322b7cd688` (3,876,216 bytes; 2026-11-04 replay of `f056db0`, clean local CRT `53b1a80`) |
 | Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `9b82bd300379b45be4cb36becfbef56bf41b1ff5cc3d2cb510b9e60447b10284` (13,889,400 bytes; 2026-11-02 D1 working-tree candidate based on `adc03b0`, clean local CRT `49879bf`) |
-| Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `9e250db8589077f376091e4b506259601b1ec12b96713db9aef9059e41bbc9cf` (12,444,248 bytes; 2026-11-02 replay of `9e0110f`, clean local CRT `c4e19f3`) |
+| Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `fc7842f36199cf5947076b73f04c90d6ccc058c1ad9dc99b3872eab6c744172c` (15,974,328 bytes; 2026-11-04 D2 installer replay of `02c6735`, clean local CRT `ffd0405`) |
 | Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `9948bcd919d6f0a93f2564902124fbbcf9edaf9d3f785caba4ffcf5f1771fe2d` (29,552,640 bytes, built `-O1 -g`; 2026-11-04 D2 installer replay of `2df5610` plus the Windows edits, clean local CRT `1ee0379`) |
 | Windows/arm64 | `bin/win-arm64/crt-cli.exe` | present; SHA-256 `6fce97e028c9956716ad1729d8655532282944f8dfd7f9ec33f44d92cf0e787c` (20,286,976 bytes, built `-O1 -g`; 2026-11-02 replay of the latest sources against a clean local SDK from CRT `d12e210`) |
 
@@ -66,7 +66,11 @@ The previous `6457b1a6...` binary and config remain under
 unavailable results explicit. This is not a production release; native replay
 of these new features on the other hosts remains open.
 
-The Linux/aarch64 binary is the 2026-11-02 replay's bare executable, SHA-256
+The Linux/aarch64 binary is the 2026-11-04 D2 replay's bare executable (it adds `sdk install|list|verify|recover`; 779 native, 158 archive and 66 SDK-store
+checks, 48/48 installer checks, no DT_NEEDED/RPATH/RUNPATH, interpreter `/lib/ld-linux-aarch64.so.1` only, previous `9e250db8...` bytes under ignored
+`out/linux-arm64-d2-20261104/previous-crt-cli`; see the
+[D2 Linux/aarch64 record](../docs/acceptance/sdk_install_acceptance.md#linuxaarch64-isolated-replay-2026-11-04)). The following paragraph describes its
+predecessor, the 2026-11-02 replay's bare executable, SHA-256
 `9e250db8589077f376091e4b506259601b1ec12b96713db9aef9059e41bbc9cf`
 (12,444,248 bytes). It uses a fresh clean CRT `c4e19f3` Development SDK with
 `crt-narrow-encoding-1`; no DT_NEEDED/RPATH/RUNPATH, interpreter

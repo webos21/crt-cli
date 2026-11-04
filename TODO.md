@@ -29,9 +29,10 @@ Linux first. Out of scope for this increment: network acquisition, updates, proj
 GC. The xz decoder comes from a CRT Development-SDK port; CRT 3.1 defines the install metadata. Linux/x86_64: tar.xz and zip
 install/list/verify/recover, manifest install metadata and the isolated replay are done ([acceptance](docs/acceptance/sdk_install_acceptance.md));
 macOS/arm64 isolated replay (48/48, self-built SDK-only CLI) and Windows/x64 isolated replay (62/62, self-built SDK-only CLI;
-[evidence](docs/acceptance/sdk_install_acceptance.md#windowsx64-isolated-replay-2026-11-04)) are done; remaining: Windows/arm64. D1 local replay is recorded in [HISTORY](HISTORY.md) and
+[evidence](docs/acceptance/sdk_install_acceptance.md#windowsx64-isolated-replay-2026-11-04)) are done, as is Linux/aarch64 (48/48;
+[evidence](docs/acceptance/sdk_install_acceptance.md#linuxaarch64-isolated-replay-2026-11-04)); remaining: Windows/arm64. D1 local replay is recorded in [HISTORY](HISTORY.md) and
 [acceptance](docs/acceptance/host_environment_acceptance.md#windowsx64-independent-host-environment-replay-2026-11-03).
-Installation is recorded as passing on Linux/x86_64, macOS/arm64 and Windows/x64; Windows/arm64 and Linux/aarch64 are not claimed.
+Installation is recorded as passing on Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64; Windows/arm64 is not claimed.
 
 Follow [D0-D7 dependency order](docs/design/crt_cli.md#9-joint-development-sequence).
 These are future increments, not implemented features.
