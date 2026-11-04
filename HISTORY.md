@@ -9,6 +9,17 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-04
+
+### D2 local SDK installer on macOS/arm64
+
+Replayed `sdk install|list|verify|recover` natively on macOS/arm64 with the new Seatbelt driver
+`tools/replay_sdk_install_macos.py`: 48/48 checks against a rehearsal `crt-dev-release` of clean CRT `53b1a80` (install
+metadata format 1, 2,786 entries, `liblzma` in the SDK), using the self-built SDK-only CLI. Tamper, hostile-archive,
+interruption, concurrency, read-only-store and zip cases behave as on Linux, including refusal of case-colliding names on
+the case-insensitive default volume. The committed `bin/macos/crt-cli` is the self-built executable of that replay. See
+[acceptance](docs/acceptance/sdk_install_acceptance.md#macosarm64-isolated-replay-2026-11-04). No CLI code changed.
+
 ## 2026-11-03
 
 ### D2 local SDK installer on Linux/x86_64 (tar.xz and zip)

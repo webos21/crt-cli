@@ -10,7 +10,7 @@ release artifacts.
 
 | Host | Path | Status |
 | --- | --- | --- |
-| macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `72577b9b7dd1e602635ccdabef0fe728e66441c7bd9b07607ae8994ff2de949e` (3,538,040 bytes; 2026-11-01 replay of `a9d43c6`, clean local CRT `8db69f4`) |
+| macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `f1d9f925da8c85ebb41a22a9d4a31eb5a37676af16557ebaa17869322b7cd688` (3,876,216 bytes; 2026-11-04 replay of `f056db0`, clean local CRT `53b1a80`) |
 | Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `9b82bd300379b45be4cb36becfbef56bf41b1ff5cc3d2cb510b9e60447b10284` (13,889,400 bytes; 2026-11-02 D1 working-tree candidate based on `adc03b0`, clean local CRT `49879bf`) |
 | Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `9e250db8589077f376091e4b506259601b1ec12b96713db9aef9059e41bbc9cf` (12,444,248 bytes; 2026-11-02 replay of `9e0110f`, clean local CRT `c4e19f3`) |
 | Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `a04ff851fb1156a161f01f308c368648ba1b091a001977e449fb86009820237a` (20,404,224 bytes, built `-O1 -g`; 2026-11-02 replay of `1499a7b`, clean local CRT `b4c5b5a`) |
@@ -20,12 +20,12 @@ macOS ships only arm64, so it keeps the single `bin/macos/` directory. Linux and
 Windows are split by architecture: `linux-x64`, `linux-arm64`, `win-x64`, `win-arm64`.
 
 The macOS binary imports only `/usr/lib/libSystem.B.dylib` and has no RPATH.
-The current-source native suite passes 732 checks; cold/warm self-build, the
-previous-binary bootstrap loop, SDK-hidden help/version/doctor and all 32
-HTTPS/signature cases pass against a fresh clean CRT `8db69f4` Dev SDK.
+The current-source native suite passes 807 checks plus the archive and SDK-store suites; cold/warm self-build,
+the previous-binary bootstrap loop and SDK-hidden help/version/doctor pass against a clean CRT `53b1a80` Dev SDK,
+and the D2 install replay passes 48/48 with it
+([D2 acceptance](../docs/acceptance/sdk_install_acceptance.md#macosarm64-isolated-replay-2026-11-04)).
 The direct make space-SHELL limitation remains separate from the CLI workflow.
-Evidence: [macOS acceptance](../docs/acceptance/bootstrap_acceptance.md#macos-latest-source-revalidation-2026-11-01).
-Previous binary/config bytes are retained under ignored `out/macos-revalidation-20261101/previous/`.
+Earlier D1 evidence: [macOS acceptance](../docs/acceptance/bootstrap_acceptance.md#macos-latest-source-revalidation-2026-11-01).
 
 The Windows/x64 binary is the 2026-11-02 replay's bare executable: it imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`, was built by the CLI itself
 against a fresh clean Dev SDK from CRT `b4c5b5a` (`v0.4.0-cli.20261102`, includes `d12e210`), and passes 844 native checks, the bare audit and 32 SDK-hidden
