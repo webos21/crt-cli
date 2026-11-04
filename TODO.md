@@ -42,10 +42,18 @@ These are future increments, not implemented features.
 
 - [ ] Implement stage/profile resolution, immutable installation/selection,
   verification, transactions, interrupted-install recovery, and explicit updates.
+  - [x] Immutable installation from a local `tar.xz`/`zip`, verification, transactions and interrupted-install
+    recovery ([acceptance](docs/acceptance/sdk_install_acceptance.md)).
+  - [ ] Stage/profile resolution and project selection of an installed SDK.
+  - [ ] Explicit updates (network acquisition is a later increment).
 - [ ] Replay installation failures and path/tool collisions on the three
   initial native host pairs; never migrate project locks implicitly.
+  - [x] Installation failures replayed on all five native pairs (Linux x86_64/aarch64, macOS/arm64, Windows x64/arm64).
+  - [ ] Path/tool collisions with an installed SDK; no implicit lock migration (needs project selection).
 - [ ] Implement/validate shared immutable SDK storage and project references;
   version/profile/target/content pins remain project-specific.
+  - [x] Shared immutable store (`sdk list|verify|recover`).
+  - [ ] Project references and pins.
 - [ ] Implement verified CLI self-upgrade with candidate health checks,
   OS-specific activation, interruption/rollback and unchanged project SDK/port pins
   ([lifecycle gates](docs/acceptance/lifecycle_acceptance.md)).
