@@ -211,6 +211,28 @@ and spaces work in paths. Earlier binaries/SDKs retain their recorded ANSI limit
 current sources require the new encoding capability. Treat a directory name containing `;` as
 unsupported for programs that import a DLL beside them.
 
+## Replay the Local SDK Installer (D2)
+
+`crt-cli sdk install|list|verify|recover` is replayed per host with a driver in `tools/` that runs every CLI call in the host's
+isolation: `replay_sdk_install_linux.py` (bubblewrap), `replay_sdk_install_macos.py` (Seatbelt) and `replay_sdk_install_windows.py`
+(restricted token, private work directory, job-object process accounting). The input is the dev archive and manifest of a
+`crt-dev-release` run (a rehearsal tag such as `v0.0.1-rehearsal.3`; nothing is uploaded), and the CLI is the self-built SDK-only
+executable of that same SDK. The Windows driver needs the producer's `tools/` for `crt_windows_external`/`crt_windows_trace`:
+
+```powershell
+$env:PYTHONUTF8 = "1"
+python C:/absolute/crt-cli/tools/replay_sdk_install_windows.py `
+  --cli C:/absolute/bare/crt-cli.exe --release-dir C:/absolute/build/release/dev `
+  --probe C:/absolute/probe.exe --crt-tools C:/absolute/crt/tools `
+  --hide C:/absolute/crt --hide C:/absolute/crt-cli/src --hide C:/absolute/producer `
+  --work "C:/absolute/fresh work dir" --output C:/absolute/fresh-evidence
+```
+
+`--work` and `--output` must not exist. The probe is the SDK-built executable of the contract replay; it has to be denied every
+`--hide` root. On a Windows Development SDK the producer must first pass `crt-development-sdk-test`, which needs CRT with the
+xz runtime recorded as `bin/liblzma-5.dll` (`1ee0379` or later). Windows offers no network namespace, so the Windows record does not claim network denial. See the
+[Windows/x64 record](../acceptance/sdk_install_acceptance.md#windowsx64-isolated-replay-2026-11-04).
+
 ## Bootstrap Planning Order
 
 Start D0 with [product decisions](../design/crt_cli.md#10-decisions-for-the-first-implementation)

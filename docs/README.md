@@ -48,7 +48,7 @@ from the SDK build baseline:
   independently pinned CRT tools, scoped doctor, non-interactive shell, resource
   pin/signature negatives and SDK-free Linux/macOS HTTPS; Windows/x64 replay remains open.
 - [D2 Local SDK Installer](acceptance/sdk_install_acceptance.md):
-  Linux isolated replay of `sdk install|list|verify|recover` on tar.xz and zip.
+  Isolated replays of `sdk install|list|verify|recover` on tar.xz and zip: Linux/x86_64, macOS/arm64 and Windows/x64.
 - [Implemented Bootstrap Contract](reference/bootstrap_contract.md): SDK input
   and command/result formats, experimental project fixtures and actual limits.
 

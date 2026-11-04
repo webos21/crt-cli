@@ -484,6 +484,15 @@ the `d12e210` PAL fix. No CLI source change was needed: Windows/x64 does not add
 unused there. The earlier x64 SDK (`fa5dc30` plus dirty delta) predates the child-environment check and is not the combination to cite for these sources.
 No pin or promoted combination is adopted. Details: [acceptance](acceptance/bootstrap_acceptance.md#windowsx64-latest-source-revalidation-and-spawn-environment-fix-2026-11-02).
 
+## D2 Local SDK Installer on Windows/x64 (2026-11-04)
+
+**Pass, local/unpromoted Windows/x64.** CLI `2df5610` plus the Windows edits (archive streams opened by `path.string()`, POSIX mode checks skipped in the
+archive test) installs a rehearsal Development SDK zip (`v0.0.1-rehearsal.3`, install metadata format 1) built from clean CRT
+[`1ee0379`](https://github.com/webos21/crt/commit/1ee037923ef6a3460c6f99c6e426d294fe5b7025). CRT `a48000c` alone does **not** combine with these
+sources on Windows: its Development SDK build fails `verify_dist` (the xz DLL is recorded as `lib/lzma.dll`) and the shared consumer does not link
+liblzma; `1ee0379` is the first CRT revision known to combine on this pair. Install metadata format 1 and the SDK profile are unchanged. No pin or promoted
+combination is adopted. Details: [acceptance](acceptance/sdk_install_acceptance.md#windowsx64-isolated-replay-2026-11-04).
+
 ## Adoption and Exercised Combinations
 
 There is **no promoted production combination yet**. Local bootstrap replays

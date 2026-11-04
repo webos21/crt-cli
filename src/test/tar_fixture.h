@@ -156,7 +156,7 @@ struct Work {
     explicit Work(fs::path base) : root(std::move(base)) {}
     fs::path archive(const std::string& bytes) {
         auto path = root / ("a" + std::to_string(next++) + ".tar.xz");
-        std::ofstream(path, std::ios::binary).write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
+        std::ofstream(path.string(), std::ios::binary).write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
         return path;
     }
     fs::path fresh() {

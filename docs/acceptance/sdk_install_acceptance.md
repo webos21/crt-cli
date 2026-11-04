@@ -60,8 +60,74 @@ empty bookkeeping; a zip of the installed SDK reproduces the identity.
 An earlier invocation of the driver stopped at an argument error (its work directory was inside a hidden checkout); no CLI
 call had run. Nothing in the CLI changed for this replay.
 
+## Windows/x64 isolated replay (2026-11-04)
+
+**Pass, native Windows/x64; local/unpromoted.** `tools/replay_sdk_install_windows.py` is the Windows counterpart of the Linux and
+macOS drivers. Every CLI call runs through CRT's `crt_windows_trace`: a restricted token naming a per-run SID, an empty `PATH`,
+redirected stdio and a job object that records every process the call starts. The work directory (the store, a sentinel tree,
+hostile archives; Hangul and spaces in its name) is private to that SID, and a native probe built with the SDK under test
+proves the CRT checkout, the CLI sources, the producer clone and the SDK/source of the CLI build unreadable under it. Windows has
+no network namespace and no read-only root, so **network denial is not claimed**: the `sdk install` command has no network path,
+and the recorded images are only `crt-cli.exe` and `conhost.exe`. A read-only store is a directory whose ACL gives the run SID read
+access only. The interruption case reads the transaction's recorded PID from `.staging/*/txn.json` and kills it with `taskkill /F /T`.
+
+### Inputs
+
+| Input | Identity |
+| --- | --- |
+| Host | Windows 11 Pro 10.0.26100 x64, LLVM/Clang 22.1.8, Windows SDK imports `10.0.28000.0/um/x64`, Developer Mode on (not changed) |
+| Producer | clean CRT [`1ee0379`](https://github.com/webos21/crt/commit/1ee037923ef6a3460c6f99c6e426d294fe5b7025) (CRT `a48000c` plus the three Windows fixes below), fresh clone, `CRT_RELEASE_TAG=v0.0.1-rehearsal.3` (not a Git tag, nothing uploaded) |
+| Producer gate | `crt-development-sdk-test` exit 0; `crt-c-test` 168 of 169 pass, one skip (`fork_heap_snapshot_test_runs`), 317 s; `crt-dev-release` exit 0 |
+| Release asset | `crt-v0.0.1-rehearsal.3-windows-x86_64-dev.zip`, 146,453,507 bytes, SHA-256 `fc3eeb74...810b` |
+| Release manifest | `release-manifest-dev-windows-x86_64.json`, SHA-256 `fe86e1d1...5886`; install metadata format 1: `zip`, root `dev`, 2,917 entries (2,736 files, 181 directories, 0 symlinks), 402,317,041 bytes, identity `075d5eb3...2c4d` |
+| CLI | the **self-built, SDK-only** executable of the Windows contract replay of that SDK: SHA-256 `9948bcd9...fe2d`, 29,552,640 bytes, imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`; source `2df5610` plus the edits described below (source export `90e1ec49...4ad1`) |
+| CLI build | 16 sources; cold self-build 16 executed / 0 reused, warm 0 / 16; native suite 857 checks, archive test 151 and SDK-store test 66 checks; 503 recorded processes, no forbidden image; SDK-hidden help/version/doctor |
+
+### Result: 62/62 checks
+
+The same cases as the Linux and macOS tables, with Windows-specific hostile names, and the archive formats exchanged (the Windows
+release asset is a zip, so the variant is a tar.xz of the installed SDK): install from the pinned manifest gives the promised
+identity (`v0.0.1-rehearsal.3-075d5eb36d10`), one SDK directory and empty bookkeeping, list/verify pass, a reinstall is idempotent, and
+the host recomputation of the identity (CRT's `crt_sdk_install_metadata`) equals the manifest's; a flipped byte in an installed file
+is detected by `verify` and a reinstall refuses to replace it; a flipped archive byte, a trailing byte and a wrong pinned manifest
+digest are refused with nothing published. Fourteen hostile archives are refused with no SDK, staging or lock left and nothing outside
+the store: path traversal, absolute path, drive-letter path, reserved device name (`con.txt`), alternate data stream (`file.txt:stream`),
+absolute and escaping symlinks, write through a symlink, hard link, device node, case collision, not-an-SDK, and the zip forms
+(backslash traversal, drive letter, `NUL.txt`). Killing the installing process mid-extraction publishes nothing and leaves
+recoverable leftovers; `recover` removes them, then a new install and `verify` pass. Two parallel installs with `--lock-wait`
+give one new and one already-installed result, one SDK and empty bookkeeping. A read-only store is refused with nothing written, and
+a tar.xz of the installed SDK installs with the identical identity. The input files are unchanged by every run.
+
+**Windows lock-owner semantics.** Lock and transaction owners are PIDs checked with `kill(pid, 0)`. On CRT's Windows PAL it
+reports a killed owner as dead (`recover` and the next install take over its leftovers) and a live installer as alive (the second
+parallel install waits and then reports the SDK as already installed). The `lzma` link name resolves through the `lzma.lib` alias
+the xz port installs, and the runtime is `bin/liblzma-5.dll`.
+
+### What the replay found
+
+Three **producer** defects stopped the Windows Development SDK before any CLI call, so they are fixed in CRT with commits
+[`f9dc911`](https://github.com/webos21/crt/commit/f9dc911) and [`1ee0379`](https://github.com/webos21/crt/commit/1ee037923ef6a3460c6f99c6e426d294fe5b7025): `tools/build_dev_sdk.py` recorded the nonexistent
+`lib/lzma.dll` instead of `bin/liblzma-5.dll` as the xz runtime artifact, so `verify_dist` rejected the SDK ("missing xz shared
+runtime: liblzma"); the Windows shared consumer lane never linked `liblzma.dll.a`; and `crt_sdk_install_metadata` let Windows raise
+`OSError` instead of `ValueError` for an escaping symlink target. Two **CLI** items were needed: `archive.cpp` and the tar fixture passed a
+`std::filesystem::path` to `std::ifstream`/`std::ofstream`, which the imported libc++ rejects on Windows (the code now passes
+`path.string()`, as `core.cpp` already did), and `archive_test` asserted POSIX mode bits that CRT does not report on Windows
+(those checks now run on the other hosts only; the product still sets the bits where the host has them). Retained, not adopted:
+a producer build that reused an older libc++ source cache (rejected by CRT as non-canonical), and two CLI replays that stopped at the compile
+error and at the mode-bit assertion. The first two full installer runs were 61/62 because the driver's "nothing escaped" search
+matched the legitimate libc++ header `escaped_output_table.h` of the installed SDK; the driver now looks for the exact hostile name.
+
+### Evidence and limits
+
+Raw evidence (logs, `result.json`, per-call stdout/stderr, process images, the failed attempts) is under the ignored
+`out/windows-d2-20261104/`; `bin/win-x64/crt-cli.exe` is replaced by the self-built executable above and the previous
+bytes are kept there. Windows/x64 only. This is a rehearsal release asset, not a published release. Mode bits and
+execute permissions have no Windows counterpart in this record. The positive symlink path is covered only by `archive-test` (Developer
+Mode is on); the Windows Development SDK contains no symlinks. Not run: Windows/arm64, a restricted-token network boundary, disk-full and
+power-loss behavior, Full-stage archives and the path where Developer Mode is off.
+
 ## Not verified
 
-Windows replay (including Windows lock-owner liveness and the `lzma` import-library name); a release
+Windows/arm64 replay; a release
 candidate that is an actual published release; Full-stage archives; disk-full and
 power-loss behavior; very large archives beyond the 186 MB dev SDK.

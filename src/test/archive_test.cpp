@@ -76,9 +76,12 @@ int main() {
         check(read_text(destination / long_name) == "gnu", "GNU long name");
         check(read_text(destination / pax_name) == "pax", "pax path");
         check(fs::file_size(destination / "empty") == 0, "empty file");
-        check((fs::status(destination / "bin/tool").permissions() & fs::perms::owner_exec) != fs::perms::none, "execute bit kept");
-        check((fs::status(destination / "lib/libc.so").permissions() & fs::perms::owner_exec) == fs::perms::none, "no execute bit invented");
-        check((fs::status(destination / "bin/tool").permissions() & (fs::perms::group_write | fs::perms::others_write)) == fs::perms::none, "group/other write dropped");
+        // Windows has no POSIX mode bits: CRT reports the same permissions for every file, so the mode checks run on the other hosts only.
+        if (std::string(crt_get_platform_info()->os) != "windows") {
+            check((fs::status(destination / "bin/tool").permissions() & fs::perms::owner_exec) != fs::perms::none, "execute bit kept");
+            check((fs::status(destination / "lib/libc.so").permissions() & fs::perms::owner_exec) == fs::perms::none, "no execute bit invented");
+            check((fs::status(destination / "bin/tool").permissions() & (fs::perms::group_write | fs::perms::others_write)) == fs::perms::none, "group/other write dropped");
+        }
     }
     // Implicit parent directories and a directory named twice are fine.
     check(attempt(work, {make_file("a/b/c.txt", "x"), make_dir("a/"), make_dir("a/b/")}).empty(), "implicit parents and repeated directories");
@@ -169,8 +172,10 @@ int main() {
             check(report.format == "zip" && report.files == 4 && report.symlinks == 1 && report.directories == 1, "zip report");
             check(read_text(out / "sdk/a.txt") == std::string(5000, 'a'), "zip content");
             check(fs::is_symlink(out / "sdk/alias") && fs::read_symlink(out / "sdk/alias") == "a.txt", "zip symlink kept");
-            check((fs::status(out / "sdk/run").permissions() & fs::perms::owner_exec) != fs::perms::none, "zip exec bit kept");
-            check((fs::status(out / "sdk/a.txt").permissions() & fs::perms::owner_exec) == fs::perms::none, "zip plain file not executable");
+            if (std::string(crt_get_platform_info()->os) != "windows") {  // no POSIX mode bits there, as above
+                check((fs::status(out / "sdk/run").permissions() & fs::perms::owner_exec) != fs::perms::none, "zip exec bit kept");
+                check((fs::status(out / "sdk/a.txt").permissions() & fs::perms::owner_exec) == fs::perms::none, "zip plain file not executable");
+            }
             check(fs::file_size(out / "sdk/empty") == 0, "zip empty file");
         }
         { ZipOptions dos; dos.host = 0; auto out = work.fresh();

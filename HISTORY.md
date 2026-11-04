@@ -11,6 +11,17 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-04
 
+### D2 local SDK installer on Windows/x64
+
+`sdk install|list|verify|recover` replayed natively on Windows/x64 with the new restricted-token driver
+`tools/replay_sdk_install_windows.py`: 62/62 checks against a rehearsal `crt-dev-release` zip (install metadata format 1, 2,917 entries)
+of clean CRT `1ee0379`, using the self-built SDK-only CLI (857 native, 151 archive and 66 SDK-store checks, cold 16/0, warm 0/16). Tamper,
+fourteen hostile-archive (including drive-letter, reserved-name and stream names), kill-during-extraction, concurrency, read-only-store and tar.xz-of-a-zip cases behave as on
+Linux and macOS, and `kill(pid, 0)` lock-owner liveness works on CRT's Windows PAL. The replay exposed three Windows defects in the CRT producer (the xz DLL
+was recorded as `lib/lzma.dll`, the shared consumer never linked liblzma, install metadata raised `OSError` for an escaping symlink), fixed in CRT, and two CLI items
+(`ifstream` was given a `path`, and the archive test asserted POSIX mode bits). `bin/win-x64/crt-cli.exe` is the self-built executable. Network
+denial is not claimed on Windows. [Acceptance](docs/acceptance/sdk_install_acceptance.md#windowsx64-isolated-replay-2026-11-04).
+
 ### D2 local SDK installer on macOS/arm64
 
 Replayed `sdk install|list|verify|recover` natively on macOS/arm64 with the new Seatbelt driver

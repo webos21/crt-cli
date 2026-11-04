@@ -97,7 +97,7 @@ Json ExtractReport::to_json() const {
 }
 
 std::string detect_archive_format(const fs::path& archive) {
-    std::ifstream in(archive, std::ios::binary);
+    std::ifstream in(archive.string(), std::ios::binary);
     require(in.good(), "cannot open archive: " + archive.string());
     unsigned char head[6] = {0};
     in.read(reinterpret_cast<char*>(head), sizeof(head));
@@ -241,7 +241,7 @@ public:
 
 class XzSource : public ByteSource {
 public:
-    XzSource(const fs::path& path, const ArchiveLimits& limits) : in_(path, std::ios::binary), limits_(limits) {
+    XzSource(const fs::path& path, const ArchiveLimits& limits) : in_(path.string(), std::ios::binary), limits_(limits) {
         require(in_.good(), "cannot open archive: " + path.string());
         lzma_stream init = LZMA_STREAM_INIT;
         stream_ = init;
@@ -435,7 +435,7 @@ uint32_t le16(const unsigned char* p) { return static_cast<uint32_t>(p[0] | (p[1
 uint32_t le32(const unsigned char* p) { return le16(p) | (le16(p + 2) << 16); }
 
 void extract_zip(const fs::path& path, Sink& sink) {
-    std::ifstream in(path, std::ios::binary);
+    std::ifstream in(path.string(), std::ios::binary);
     require(in.good(), "cannot open archive: " + path.string());
     in.seekg(0, std::ios::end);
     const uint64_t file_size = static_cast<uint64_t>(in.tellg());
