@@ -580,3 +580,132 @@ Native Windows receipt replay remains open, as do installed-SDK path/tool/DLL
 collisions, automatic first build/acquisition and production trust/promotion.
 This is neither a latest-CRT-runtime qualification nor a five-pair receipt
 matrix. Root locks, defaults, committed binaries and STATUS are unchanged.
+
+## Installation receipts and explicit repair (Windows/x64, 2026-11-05)
+
+**Receipt/repair boundaries pass; the whole Windows replay remains open after
+one concurrent-install native crash.** This is native Windows/x64, OS build
+10.0.26100. It is not a five-pair receipt qualification or current-CRT runtime
+rebuild. The first failed run remains failed even though a continuation passes.
+
+### Inputs and identities
+
+Reviewed CRT `dc62e8db883ad0218b32c442915d7d76fe7f5b5e` and CLI
+`51f1dc092444b529cbddb01785727f8dbe9ff0b8`. Product/test input snapshot
+(`src`, `include`, `crt.json`, normalized LF, sorted path/hash compact JSON):
+`e380f275fffe299fcb6ab1fde1bea641e44ace9ef55c230554f51ed148f08694`,
+identical to implementation `502992e` and the Linux/macOS increment.
+
+| Input | Identity |
+| --- | --- |
+| Tested CLI | `086fba31a9beffb41faea65ac33b415d6c08a2e593b82064af04b1676b932cd8`, 30,440,960 bytes |
+| SDK producer | Clean CRT `436b4f2e18db4ce2ac5d1eb56d6f2c7b37606296`, native dev, `v0.0.1-rehearsal.8` |
+| Installed SDK identity | `e80fa143094eae0338716e0d1419bda07ea455ceadc21e0309c7e88622487159` |
+| Original archive | `crt-v0.0.1-rehearsal.8-windows-x86_64-dev.zip`, 146,110,051 bytes, `2575deb4cacc3144dbd9ad03165a5a2b85f9a1e597abd61525bfeb44d42cf304` |
+| Original portable contract | `crt-v0.0.1-rehearsal.8-windows-x86_64-dev-toolchain.json`, 440,297 bytes, `e9758d599f359949274ef69bd378b84a4973190970adfaf1fdf5984adbc9aeab` |
+| Original release manifest | `release-manifest-dev-windows-x86_64.json`, 1,696 bytes, `2ce6c779b83a0174cd57e7cd2b5539b592278a38cfd28578067df8b9070730f3` |
+| Explicit self-build provider | `aec144c03bbc3aa83cdbaa77d698096a54095117de910d9483167006ec4e7146` |
+
+Reused the producer's retained
+`C:/Users/Lee/s2/c/out/s2-windows-x64-20261105/build/dist/dev`
+and original `build/release/dev` inputs. No source/SDK bytes, release inputs or
+provenance were relabeled. The self-build provider has its local Windows SDK
+path; installation and repair use the original portable release contract,
+`os_sdk.kind=windows-um-import-libraries`. LLVM 22.1.8 is explicitly selected
+under `C:/Program Files/LLVM/bin`; Windows import libraries are
+`C:/Program Files (x86)/Windows Kits/10/Lib/10.0.28000.0/um/x64`.
+Exact tool/resource hashes and argv remain in the build receipts. No dirty-SDK
+opt-in or newly assembled release fixture is used.
+
+### Measured scope
+
+- SDK-only CLI self-build: cold **16 executed / 0 reused**, warm **0 / 16**.
+  `test --project <exported-source> --target sdk-store-test --json` passes
+  **113 checks**, including required/absent pins, immutable known pins,
+  malformed/legacy receipts, explicit repair, payload preservation and
+  live/dead receipt/contract temporary writers. The Windows source branch
+  excludes the symlink-receipt unit check, so 114 is not claimed.
+- A separate real Windows symlink fixture passes **3/3**: regular receipt
+  verifies, a host-created symlink to identical valid receipt bytes is refused,
+  then the restored regular receipt verifies. The copied SDK inventory and
+  link-target bytes remain unchanged. This uses the actual self-built CLI
+  under a restricted token; host Python only prepares the fixture. No security
+  setting or Developer Mode is changed.
+- Producer metadata/exporter fixtures: **14/14**. Bare help/version/doctor and
+  CRT allocation ownership pass with source/SDK/provider hidden. Imports are
+  only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`. The scoped build
+  records 101 processes, limited to declared tools, CLI/probe and generated
+  executables. Original and copied SDK inventories are unchanged.
+- The ordinary isolated replay records **93 passing checks** through
+  interrupted-install recovery. These include stored-contract project
+  new/configure/build/test/run, valid-looking policy edits, failed configure
+  preserving locks, original-release repair, legacy recovery, payload-preserving
+  repair refusal and hostile archives. It then fails in concurrent installation.
+- A fresh continuation of phases 7–9 passes **9/9**: boundary probe, two
+  concurrent installs (one new/one existing, one SDK, empty bookkeeping),
+  read-only store refusal and tar.xz identity/verify. The probe overlaps the
+  first run: there are **101 distinct cases covered across attempts**, not a
+  single passing 101/101 run or a waived concurrency failure.
+- Unchanged full native/archive/runtime suites are not rerun for this metadata
+  delta. Earlier Stage 2 evidence keeps its own code/artifact identities.
+
+Self-build uses a scoped copy of CRT's `replay_cli_contract_windows.py`, keeping
+its restricted-token probes, process accounting, cold/warm builds and inventory
+checks; only the selected native test and removal of dirty-SDK opt-in differ.
+Installation uses `tools/replay_sdk_install_windows.py` with the exact rebuilt
+CLI, original release directory, SDK-built probe, explicit LLVM tools and
+`--hide` roots for both checkouts, producer worktree and self-build handoff.
+Commands are retained in `status.json` and each phase's `commands.json`.
+
+All consumer calls have empty PATH, private HOME/store/temp and redirected
+stdio, with job-object process accounting. Original CRT/CLI/producer roots
+are proven unreadable. Windows does not enforce per-image launch denial or
+network denial here, and no read-only root is claimed. Installer HOME contains
+spaces and Hangul; the self-build SDK path contains spaces. The original SDK
+has zero symlinks. No real user SDK store or global environment is changed.
+
+### Retained failure and next action
+
+The first concurrent pair's `call-056.stderr` reports native `0xc0000005`
+(SIGSEGV) at `0x00007ff75d2c4b83`, with empty stdout; its peer successfully
+installs. The former checker then sorts `None` with a Boolean and raises
+TypeError, so `isolated/result.json` is incomplete. **Do not mark it passed.**
+The checker now retains raw concurrent traces, fails absent/non-Boolean values
+without throwing, and includes timeout/stray-image failures. Four focused
+reporting fixtures pass (success, empty crash, timeout, unknown process).
+This changes reporting only; it does not fix the native failure.
+
+The passing concurrent continuation does not establish a root cause. Five
+small missing/empty/malformed/dead/live lock-owner diagnostic fixtures behave
+as expected without a crash. A later base sample of the same failed executable
+(`0x7ff75d190000`) would map its earlier fault to RVA `0x134b83`,
+`free_unlocked` at `libc/src/malloc.c:431`. This is an **address candidate**,
+not fault-time module/stack evidence or proof that the allocator is defective.
+Capture a bounded concurrent reproduction with the actual module base, stack
+and invalid-pointer caller before changing CLI/PAL or replacing SDK inputs.
+
+Raw evidence stays in CRT's ignored `out/d2-receipts-windows-20261105/`:
+
+| Result | SHA-256 |
+| --- | --- |
+| `build/result.json` | `e051ad19e152b16cdc3790c15d1a115192cf439b9f3aff5b3bc0d8e885286f26` |
+| Failed/incomplete `isolated/result.json` | `b67427e63113e94f4a93b0a99826ca8989c8df5a280d01d5372fbc9b3f6d54e8` |
+| `remaining-r2/result.json` | `a52cfd852879b7cdc9c8e41e3986aafc07da7ad6537585fa2f34a899af82626a` |
+| `receipt-symlink/result.json` | `8d84db3009db54a0599838f1b964f0462c22bc90489cdd40166ad8a15382c92a` |
+
+`candidate.json`, invocation/status/logs, scoped/continuation drivers,
+`lock-owner-probe/`, `symbol-candidates.json` and `report-fixtures.json` are
+retained there. Self-build handoff:
+`C:/Users/Lee/AppData/Local/Temp/crt dev external lxutjgnb`;
+first installation work:
+`C:/Users/Lee/AppData/Local/Temp/crt receipts Windows 1793871858`;
+continuation:
+`C:/Users/Lee/AppData/Local/Temp/crt receipts Windows continuation 20261105 r2`.
+The first local continuation omitted a helper and failed with NameError before
+concurrent calls; it is preserved separately from the native failure and the
+passing corrected continuation.
+
+Windows/x64 native concurrency closure, Windows/arm64 receipt delta replay,
+installed-SDK collisions and automatic acquisition remain open. No SDK/runtime,
+committed binary, default selection, root/project lock, trust or STATUS refresh
+or public artifact promotion is performed.

@@ -6,6 +6,24 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## Installation Receipt Windows/x64 Scoped Replay (2026-11-05)
+
+Reviewed CRT `dc62e8db883ad0218b32c442915d7d76fe7f5b5e` and CLI
+`51f1dc092444b529cbddb01785727f8dbe9ff0b8`. The
+[bounded consumer evidence](acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-windowsx64-2026-11-05)
+uses clean CRT `436b4f2` Dev, original rehearsal.8 release inputs and installed
+identity `e80fa143094eae0338716e0d1419bda07ea455ceadc21e0309c7e88622487159`.
+Its product/test snapshot matches receipt implementation `502992e` and the
+Linux/macOS increment. Receipt format 1, pin enforcement, explicit repair and
+real Windows symlink refusal pass on this combination. Producer/native-policy/
+install-metadata/project-lock formats and SDK bytes remain unchanged.
+
+This is **not full Windows adoption/acceptance**: the first concurrent installer
+crashes natively; a passing continuation does not erase it. Exact inputs,
+partial/passing results and the reporting-only checker fix live in acceptance.
+Native crash investigation and Windows/arm64 receipt replay remain open. No
+production/default pin, committed binary, lock, trust or STATUS is refreshed.
+
 ## Installation Receipt macOS Replay Adoption (2026-11-05)
 
 Reviewed producer handoff CRT `c3daf0888882a70883b713b38728c8e54d8a8f9d`

@@ -29,7 +29,9 @@ native evidence on Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64/arm6
 Retain those exact per-host baselines in [SDK installation acceptance](docs/acceptance/sdk_install_acceptance.md);
 Windows/x64 Stage 2 is complete. The later receipt/pinned-repair increment has
 its own [Linux isolated evidence](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-linuxx86_64-2026-11-05)
-and [macOS replay](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-macosarm64-2026-11-05);
+and [macOS replay](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-macosarm64-2026-11-05).
+The [Windows/x64 receipt boundaries pass](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-windowsx64-2026-11-05), but its
+concurrent-install native crash keeps the whole Windows replay open;
 the earlier shape-only verify guard keeps its original developer/unit scope.
 [STATUS](STATUS.md) is the separately refreshed, dated baseline snapshot.
 
@@ -46,14 +48,19 @@ is claimed by this queue update.
 ### D2 - Close the bounded local installation/selection baseline first
 
 Installation-time receipts, required/absent contract pin checks and explicit
-release-based repair are implemented and verified on Linux and macOS; details
+release-based repair are verified on Linux/macOS and bounded Windows/x64 paths; details
 live in [Linux acceptance](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-linuxx86_64-2026-11-05),
 [macOS replay](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-macosarm64-2026-11-05)
 and [HISTORY](HISTORY.md).
 
-- [ ] Replay the receipt/repair delta on native Windows hosts,
-  including metadata replacement and dead/live writer handling, using existing
-  identified SDKs. Earlier Stage 2 evidence is not a replay of the new code.
+- [x] Replay the bounded receipt/repair delta on Windows/x64 with the existing
+  identified SDK, including pin replacement, dead/live metadata writers and an
+  actual symlink receipt; [evidence](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-windowsx64-2026-11-05).
+- [ ] Resolve the Windows/x64 concurrent-install native SIGSEGV from the first
+  replay. Capture fault-time module/stack evidence in a bounded reproducer;
+  the passing continuation does not qualify the failed whole replay.
+- [ ] Replay the receipt/repair delta on Windows/arm64 using its existing
+  identified SDK. Earlier Stage 2 evidence is not a replay of the new code.
 - [ ] Finish installed-SDK path/tool/DLL collision checks and prove explicit
   project selection keeps existing locks unchanged on failure or ambiguity.
 

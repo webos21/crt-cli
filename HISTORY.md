@@ -11,6 +11,20 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-05
 
+### Replay Windows/x64 receipts and retain the concurrent-install native failure
+
+Built CLI `51f1dc0` from the retained clean CRT `436b4f2` Dev SDK and original
+rehearsal.8 inputs. Cold/warm self-build, 113 Windows store checks, 14 producer
+fixtures and a real symlink-receipt probe pass. The isolated replay records
+93 passes before one concurrent child reports SIGSEGV; a continuation passes
+the remaining nine checks. The [record](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-windowsx64-2026-11-05)
+preserves both outcomes and five non-reproducing lock-owner diagnostics.
+Fixed Windows replay reporting so a crashed/empty reply fails the case rather
+than raising TypeError before saving native evidence; four focused reporting
+fixtures pass. No product/PAL fix, SDK rebuild or full Windows closure is
+claimed. Native crash investigation and Windows/arm64 delta replay remain
+in TODO; committed binaries, defaults, root locks and STATUS are unchanged.
+
 ### Replay installation receipts and pinned repair on macOS/arm64
 
 Rebuilt CLI `502992e` from the retained clean CRT `784389b` Development SDK,

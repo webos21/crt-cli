@@ -334,10 +334,17 @@ def main():
     threads = [threading.Thread(target=lambda: concurrent.append(launch(install_tail(s, ['--lock-wait', '300']), timeout=900))) for _ in range(2)]
     for t in threads: t.start()
     for t in threads: t.join()
+    # Preserve native exits even when a crashed child returned no JSON. Missing values fail the case;
+    # they must not raise TypeError and discard this phase's evidence before save().
+    (output / 'concurrent-traces.json').write_text(json.dumps([r for r, _, _ in concurrent], indent=2) + '\n', encoding='utf-8')
     replies = [reply_of(out, res) for res, out, stray in concurrent]
-    results.append({'case': 'concurrent installs both succeed', 'passed': len(replies) == 2 and all(r['exit_code'] == 0 for r, _, _ in concurrent) and all(r.get('ok') for r in replies),
-                    'detail': str([r.get('data', {}).get('already_installed') for r in replies])})
-    results.append({'case': 'concurrent installs: one new, one already installed', 'passed': sorted(r.get('data', {}).get('already_installed') for r in replies) == [False, True], 'detail': ''})
+    installed = [r.get('data', {}).get('already_installed') for r in replies]
+    results.append({'case': 'concurrent installs both succeed', 'passed': len(replies) == 2 and
+                    all(r['exit_code'] == 0 and not r['timed_out'] and not stray for r, _, stray in concurrent) and all(r.get('ok') for r in replies),
+                    'detail': str({'exits': [r['exit_code'] for r, _, _ in concurrent], 'already_installed': installed})})
+    results.append({'case': 'concurrent installs: one new, one already installed',
+                    'passed': len(installed) == 2 and all(type(value) is bool for value in installed) and sorted(installed) == [False, True],
+                    'detail': str(installed)})
     results.append({'case': 'concurrent installs: one SDK, bookkeeping empty', 'passed': published(s) == [sdk_dir] and not tree(s / '.staging') and not tree(s / '.locks'), 'detail': str(tree(s)[:4])})
     save()
 
