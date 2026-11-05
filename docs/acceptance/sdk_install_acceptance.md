@@ -481,10 +481,102 @@ candidate at `source/out/native/crt-cli` in the handoff above.
 
 ### Remaining scope
 
-Replay the receipt/repair delta on native macOS and Windows using their existing
+The subsequent [macOS replay](#installation-receipts-and-explicit-repair-macosarm64-2026-11-05)
+passes. Replay the receipt/repair delta on native Windows using existing
 identified SDKs, especially metadata replacement and writer recovery. Do not
 substitute the earlier Stage 2 runs for that new evidence. Installed-SDK host
 path/tool/DLL collisions remain a separate D2 task. Automatic first build,
 remote acquisition, generic profiles, official trust/promotion and self-upgrade
 remain planned. This result closes the Linux receipt implementation/validation
 slice, not all D2 or the first-user-flow preview.
+
+## Installation receipts and explicit repair (macOS/arm64, 2026-11-05)
+
+**Pass for the bounded native receipt/repair replay.** This exercises the Linux
+implementation on macOS 27.2 (26B123), arm64, using existing identified SDK
+bytes. It does not replace the original Stage 2 qualification or close all D2.
+
+### Inputs and provenance
+
+Reviewed CRT handoff `c3daf0888882a70883b713b38728c8e54d8a8f9d` and CLI
+`502992e76e58f271114dc4abf97930cd5979d17d`. The sorted `src`, `include`,
+`crt.json` input snapshot is
+`e380f275fffe299fcb6ab1fde1bea641e44ace9ef55c230554f51ed148f08694`,
+identical to the Linux receipt increment. No product/test source fix is needed.
+
+| Input | Identity |
+| --- | --- |
+| Tested CLI | `4e5ac5236fe81dac2dc94565909c95cbdc9cda051c6e3e12f09d11b083cd558d`, 3,946,616 bytes |
+| SDK | Clean CRT `784389b0aaad10545598eda4d2b7e3134e640a71`, `v0.0.1-rehearsal.6`, native dev |
+| SDK content | `72d1b37593abb2f5dd9d58a8338f44191b0b2023d6cbf2621cf7cd688ce80b4c` |
+| Original archive | `crt-v0.0.1-rehearsal.6-macos-aarch64-dev.tar.xz`, 6,675,764 bytes, `bf0d92a1948e8eb44b674bdf0cd6cf1c120fe2d2ede0735b231ad5712c26c1a9` |
+| Original portable contract | `crt-v0.0.1-rehearsal.6-macos-aarch64-dev-toolchain.json`, 402,864 bytes, `200d9a105283deaa6c23b31e451555208a930de23aaa4990efc246d5f070faec` |
+| Original release manifest | `release-manifest-dev-macos-aarch64.json`, 1,638 bytes, `c08c25e8abd3ba71d90db89690db40f5ccec8001402675f9d82a9991213d156b` |
+| Explicit self-build provider | `6ffbf5560c4932e6cc509056feea11cb4d6734141f063618849674558641d2e7` |
+
+The SDK is copied from CRT's retained `out/s2-macos/dev`, with symlinks
+preserved, to an external `SDK space 한글/dev`. It is read-only during build;
+both inventories remain unchanged. The SDK already provides liblzma. The
+committed macOS seed (`acb4f7e1...15b62`) cold-builds the current CLI using
+the SDK's explicit native policy. The self-build provider records a local
+Xcode SDK path; the separate original release contract is portable, declares
+`os_sdk.kind=macos-xcode-sdk`, and is what installation/repair pins.
+No dirty-SDK opt-in, fresh runtime build or newly assembled release fixture is
+used. Xcode Clang 21, `ld` and `ar` are explicit external tools; full paths,
+SHA-256s and command arrays are retained in `candidate.json` and build receipts.
+
+### Measured results
+
+- SDK-only self-build: cold **16 executed / 0 reused**, warm **0 / 16**.
+  `sdk-store-test` passes **114 checks**, including required/absent contract
+  pins, immutable known pins, legacy and malformed/symlinked receipts, explicit
+  repair, payload preservation and live/dead receipt/contract temporary writers.
+- `tools/replay_sdk_install_macos.py` with the current shared contract cases:
+  **87/87 pass**. Actual install/list/verify, stored-contract project
+  new/configure/build/test/run, valid-looking policy edits, fresh-configure
+  lock preservation, original-release repair and legacy recovery all pass.
+  The payload refusal cases included in this run leave the changed payload and
+  original metadata untouched; verify succeeds after fixture restoration.
+  Hostile archives, interruption/recovery, concurrent installs, read-only-store
+  rejection and ZIP identity also pass. This is the Linux 84-case replay plus
+  its three later payload-preservation cases, now executed together.
+- Existing CRT metadata/exporter fixtures: **14/14 pass**. No producer schema
+  or SDK identity changes. Unchanged full native/archive/runtime suites are
+  not rerun; the affected fresh-configure guards execute in the isolated cases.
+- Mach-O audit: only `/usr/lib/libSystem.B.dylib` is imported, no RPATH,
+  CRT-owned malloc and no foreign binding of audited CRT symbols. A bare
+  doctor run succeeds with source/SDK/provider reads and compiler execution denied.
+
+Self-build Seatbelt policies deny network, original CRT/CLI/producer-tree
+access and SDK writes; execution is restricted to the declared tools, CLI,
+boundary probe and generated native outputs. Boundary probes confirm source
+reads and undeclared shell/Python/make/CMake/Ninja execution are denied.
+The separate installation driver uses its existing Seatbelt profile: hidden
+original inputs, no network, cleared environment/empty PATH and writes only to
+scratch/private temp (plus `/dev`); it does not impose an exec allowlist.
+Its private HOME supplies `$HOME/.crt/sdks`; external Xcode tools and OS-SDK
+discovery are allowed. No real user SDK store or global environment is changed.
+
+### Evidence, retained failures and limits
+
+Evidence is in CRT's ignored `out/d2-receipts-macos-20261105/`:
+`candidate.json`, `build-r2/`, `isolated-invocation.json`, logs and
+`isolated/result.json` (SHA-256
+`c580cd5b380b08131e03db6d0b79fd45a4237a66099f64619a2e25294487b39f`).
+Self-build handoff:
+`/private/var/folders/p3/z_1_279n4bq6kgrrs25d8bdc0000gn/T/crt-receipts-macos-qml94nju`;
+installation work: `/private/tmp/crt-receipts-macos-20261105/d2-native-11s_4o3a`.
+The tested candidate is `bare/crt-cli` in the self-build handoff, not a refreshed
+committed `bin/macos` snapshot.
+
+Initial local build-harness attempts failed `Clang resource directory query`
+when stdout/stderr log FDs pointed into the denied original CRT tree. The same
+policy succeeds with pipe-captured output or logs in the visible work tree.
+The accepted continuation captures pipes in the host checker, then writes
+evidence outside the child. Failed attempts and diagnostic comparisons are
+retained; no sandbox rule, product code or SDK byte was relaxed to pass.
+
+Native Windows receipt replay remains open, as do installed-SDK path/tool/DLL
+collisions, automatic first build/acquisition and production trust/promotion.
+This is neither a latest-CRT-runtime qualification nor a five-pair receipt
+matrix. Root locks, defaults, committed binaries and STATUS are unchanged.

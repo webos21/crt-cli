@@ -6,6 +6,25 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## Installation Receipt macOS Replay Adoption (2026-11-05)
+
+Reviewed producer handoff CRT `c3daf0888882a70883b713b38728c8e54d8a8f9d`
+and CLI implementation `502992e76e58f271114dc4abf97930cd5979d17d`.
+The [macOS/arm64 consumer replay](acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-macosarm64-2026-11-05)
+uses the retained clean `784389b` Development SDK, content
+`72d1b37593abb2f5dd9d58a8338f44191b0b2023d6cbf2621cf7cd688ce80b4c`,
+and its original `v0.0.1-rehearsal.6` archive/portable contract/manifest.
+It owns the exact tested binary and input hashes, SDK-only build, store tests
+and isolated receipt/repair/project evidence. The product/test source snapshot
+is identical to the Linux increment below; the SDK/runtime combination differs.
+
+This adopts CLI-owned receipt format 1 and explicit repair on this recorded
+native combination, without changing producer/native-provider/install-metadata/
+project-lock formats or SDK bytes. It is not a current-HEAD runtime rebuild,
+a five-pair receipt qualification, artifact promotion or a default SDK/CLI pin.
+Native Windows receipt replay remains open. Committed binaries, root locks,
+default selection, trust roots and STATUS are unchanged.
+
 ## Installation Receipt Local Adoption (2026-11-05)
 
 Reviewed the producer planning baseline `6f2892d` and CLI `4aa9a81`.
@@ -33,9 +52,10 @@ verified contract. Handoff roots and explicitly pinned external policy remain
 explicit developer choices. Older clients do not enforce this store policy and
 are not qualified receipt readers. Unknown/malformed receipts fail closed.
 
-The new metadata replacement/recovery delta remains to be replayed on native
-macOS/Windows. The root SDK defaults, committed bin snapshots, project locks,
-trust roots and production adoption are unchanged. No release/promotion or
+The new metadata replacement/recovery delta has the subsequent
+[macOS replay](#installation-receipt-macos-replay-adoption-2026-11-05);
+native Windows replay remains open. The root SDK defaults, committed bin
+snapshots, project locks, trust roots and production adoption are unchanged. No release/promotion or
 STATUS refresh is performed by this implementation increment.
 
 ## First User Workflow Planning Review (2026-11-05)

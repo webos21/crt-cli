@@ -11,6 +11,18 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-05
 
+### Replay installation receipts and pinned repair on macOS/arm64
+
+Rebuilt CLI `502992e` from the retained clean CRT `784389b` Development SDK,
+under the producer handoff reviewed at `c3daf08`. SDK-only self-build/cache
+checks, 114 store checks and 87 isolated installation/repair/project cases
+pass; the producer metadata/exporter fixtures pass 14/14. The product/test
+source snapshot matches the Linux receipt increment. No product/PAL fix or
+SDK rebuild was needed. [Acceptance](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-macosarm64-2026-11-05)
+owns exact identities, the hidden-tree log-FD harness failure and passing
+evidence. Native Windows receipt replay and installed-SDK collision checks
+remain open. Committed binaries, defaults, root locks and STATUS are unchanged.
+
 ### Preserve installation-time contract pins and repair legacy metadata explicitly
 
 Implemented CLI-owned SDK receipts, required/absent contract state and fresh
