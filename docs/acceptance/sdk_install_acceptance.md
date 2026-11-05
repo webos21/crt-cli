@@ -254,3 +254,26 @@ in this change; they are written from the Linux script and checked only for synt
 accepts images from the tools' directories and the scratch tree during project calls. The macOS case expects the
 `macos-xcode-sdk` kind, the Windows case `windows-um-import-libraries`; discovery (`xcrun`, the variable) runs inside the
 sandbox, so a Seatbelt or token restriction that blocks it shows up as a failed `configure`, not as a skipped case.
+
+## Toolchain contract and project SDK selection replay (Stage 2, Linux/aarch64, 2026-11-05)
+
+**Pass, native Linux/aarch64; local/unpromoted.** The unchanged `tools/replay_sdk_install_linux.py` (with the shared
+`tools/replay_sdk_contract_cases.py`) runs in bubblewrap exactly as on x86_64; the store is the sandbox `$HOME/.crt/sdks`, and the
+project workflow runs the host `clang`, `ld.lld` and `llvm-ar-21` read-only from the root. Nothing in the CLI changed for this replay.
+
+| Input | Value |
+| --- | --- |
+| Host | Ubuntu 26.04 aarch64 QEMU guest (Linux 7.0.0-42), 4 CPU, Clang/LLD/llvm-ar 21.1.8 |
+| Release | `crt-dev-release` rehearsal `v0.0.1-rehearsal.5` of **committed** CRT [`78ed80f`](https://github.com/webos21/crt/commit/78ed80f20db967ddb5e9af90462705327fe61d35) (detached worktree, nothing uploaded): `crt-development-sdk-test` and `crt-dev-release` exit 0, `crt-c-test` 147/147. Assets: archive `crt-v0.0.1-rehearsal.5-linux-aarch64-dev.tar.xz` (9,059,308 bytes, SHA-256 `89f6437e...aa70`), contract `...-dev-toolchain.json` (403,527 bytes, SHA-256 `8dbb76b9...e9df`), manifest SHA-256 `cf246f85...7ca5`; install metadata format 1: 2,797 entries (2,602 files, 178 directories, 17 symlinks), identity `9f8f07ac...8191` |
+| CLI | the **self-built, SDK-only** executable of the Linux/aarch64 contract replay of that SDK, built from this checkout (`9d711d2`): SHA-256 `69118ac1...bfef`, 16,352,720 bytes, no `DT_NEEDED`; cold self-build 16 executed / 0 reused, warm 0 / 16; 841 native, 158 archive and 83 SDK-store checks; 24 distinct executed paths, none forbidden; SDK inventory unchanged |
+
+Result: **69/69** (the earlier 48 plus the 21 Stage 2 cases), first run: the installation kept the contract byte for byte; `sdk list`
+reports it; `configure` selects the only SDK and records identity, contract digest and `contract_source: store`, with no SDK or
+contract path and no machine path in the lock; `build`, `test` and `run` use the stored contract; a modified stored contract is
+refused by the lock and works again once restored; a missing one is reported; `--os-sdk` is refused because the Linux contract needs
+none; a release without its contract asset, with a flipped byte and with a trailing byte in it is refused with nothing published.
+Compared with the Linux/x86_64 record, the CLI here is built from the SDK under test rather than by a committed binary against a
+dirty-marked SDK, and the release comes from committed code. The limit noted there still holds: `sdk verify` does not cover the stored
+contract.
+
+Evidence (ignored): `out/linux-arm64-s2-20261105/` (`replay/result.json`, `d2/result.json`, `d2.log`). Not run here: the macOS and Windows scripts.

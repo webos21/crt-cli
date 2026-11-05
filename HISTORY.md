@@ -9,6 +9,15 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-05
+
+### D2 Stage 2 replay on Linux/aarch64
+
+Replayed the toolchain-contract and project-selection cases natively on the aarch64 guest, from a release of committed CRT `78ed80f` and a CLI self-built
+from this checkout's latest sources (`9d711d2`; cold 16/0, warm 0/16; 841 native, 158 archive and 83 SDK-store checks). The unchanged Linux
+bubblewrap driver passes 69/69 on its first run. No CLI code changed; `bin/linux-arm64/crt-cli` is replaced by the self-built executable.
+[Record](docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-linuxaarch64-2026-11-05).
+
 ## 2026-11-04
 
 ### D2 Stage 2 replay scripts (Linux/x86_64 executed; macOS and Windows written, not run)

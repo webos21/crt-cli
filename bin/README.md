@@ -12,7 +12,7 @@ release artifacts.
 | --- | --- | --- |
 | macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `f1d9f925da8c85ebb41a22a9d4a31eb5a37676af16557ebaa17869322b7cd688` (3,876,216 bytes; 2026-11-04 replay of `f056db0`, clean local CRT `53b1a80`) |
 | Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `9b82bd300379b45be4cb36becfbef56bf41b1ff5cc3d2cb510b9e60447b10284` (13,889,400 bytes; 2026-11-02 D1 working-tree candidate based on `adc03b0`, clean local CRT `49879bf`) |
-| Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `fc7842f36199cf5947076b73f04c90d6ccc058c1ad9dc99b3872eab6c744172c` (15,974,328 bytes; 2026-11-04 D2 installer replay of `02c6735`, clean local CRT `ffd0405`) |
+| Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `69118ac17f998ea0cc42ff7fcf422155ee3fefd016a617374a5701dd439bbfef` (16,352,720 bytes; 2026-11-05 Stage 2 replay of `9d711d2`, clean local CRT `78ed80f`) |
 | Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `9948bcd919d6f0a93f2564902124fbbcf9edaf9d3f785caba4ffcf5f1771fe2d` (29,552,640 bytes, built `-O1 -g`; 2026-11-04 D2 installer replay of `2df5610` plus the Windows edits, clean local CRT `1ee0379`) |
 | Windows/arm64 | `bin/win-arm64/crt-cli.exe` | present; SHA-256 `3f587b71177958b1c3bbfc03e8f695c48fe8a3144c33abcdf7737ef188032c52` (29,425,664 bytes, built `-O1 -g`; 2026-11-04 D2 installer replay of `13bba78`, clean local CRT `b20a460`) |
 
@@ -69,7 +69,11 @@ The previous `6457b1a6...` binary and config remain under
 unavailable results explicit. This is not a production release; native replay
 of these new features on the other hosts remains open.
 
-The Linux/aarch64 binary is the 2026-11-04 D2 replay's bare executable (it adds `sdk install|list|verify|recover`; 779 native, 158 archive and 66 SDK-store
+The Linux/aarch64 binary is the 2026-11-05 Stage 2 replay's bare executable (project SDK selection and the stored toolchain contract; 841 native, 158 archive and 83 SDK-store
+checks, 69/69 installer checks, no DT_NEEDED/RPATH/RUNPATH, interpreter `/lib/ld-linux-aarch64.so.1` only, previous `fc7842f3...` bytes under ignored
+`out/linux-arm64-s2-20261105/previous-crt-cli`; see the
+[Stage 2 Linux/aarch64 record](../docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-linuxaarch64-2026-11-05)).
+The following paragraph describes its predecessor, the 2026-11-04 D2 replay's bare executable (it adds `sdk install|list|verify|recover`; 779 native, 158 archive and 66 SDK-store
 checks, 48/48 installer checks, no DT_NEEDED/RPATH/RUNPATH, interpreter `/lib/ld-linux-aarch64.so.1` only, previous `9e250db8...` bytes under ignored
 `out/linux-arm64-d2-20261104/previous-crt-cli`; see the
 [D2 Linux/aarch64 record](../docs/acceptance/sdk_install_acceptance.md#linuxaarch64-isolated-replay-2026-11-04)). The following paragraph describes its
