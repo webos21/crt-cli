@@ -95,7 +95,7 @@ def main():
     environment = {'HOME': str(home), 'PATH': '/nonexistent', 'TMPDIR': str(work / 'tmp'), 'LC_ALL': 'C'}
 
     def run(label, tail, store, expect_ok=True, expect_text=None, readonly=False, binds=(), check=None):
-        proc = subprocess.run(command(tail, store, readonly, binds), capture_output=True, text=True, timeout=600, env=environment)
+        proc = subprocess.run(command(tail, store, readonly, binds), capture_output=True, text=True, timeout=600, env=environment, cwd=work)
         try:
             reply = json.loads(proc.stdout)
         except Exception:
@@ -207,7 +207,7 @@ def main():
 
     # 6. Interruption: SIGKILL during extraction leaves no SDK; recover removes the leftovers; the next install succeeds.
     s = fresh_store('store-interrupted')
-    proc = subprocess.Popen(command(install_tail(s), s), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True, env=environment)
+    proc = subprocess.Popen(command(install_tail(s), s), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True, env=environment, cwd=work)
     deadline = time.time() + 120
     while time.time() < deadline and proc.poll() is None and not any((s / '.staging').glob('*/txn.json')):
         time.sleep(0.02)
@@ -236,7 +236,7 @@ def main():
 
     # 7. Two concurrent installs of the same SDK: both succeed, one SDK, no leftovers.
     s = fresh_store('store-concurrent')
-    procs = [subprocess.Popen(command(install_tail(s, ['--lock-wait', '300']), s), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True, env=environment) for _ in range(2)]
+    procs = [subprocess.Popen(command(install_tail(s, ['--lock-wait', '300']), s), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True, env=environment, cwd=work) for _ in range(2)]
     outs = [p.communicate(timeout=900) for p in procs]
     replies = [json.loads(o[0]) for o in outs]
     results.append({'case': 'concurrent installs both succeed', 'passed': all(p.returncode == 0 for p in procs) and all(r['ok'] for r in replies),

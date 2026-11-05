@@ -10,7 +10,7 @@ release artifacts.
 
 | Host | Path | Status |
 | --- | --- | --- |
-| macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `f1d9f925da8c85ebb41a22a9d4a31eb5a37676af16557ebaa17869322b7cd688` (3,876,216 bytes; 2026-11-04 replay of `f056db0`, clean local CRT `53b1a80`) |
+| macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `acb4f7e1abd0c2b1f7f0516326b46c1a351525cb2b55fdc0cc2a872647e15b62` (3,927,832 bytes; 2026-11-05 Stage 2 replay of `da3f3a9`, clean local CRT `784389b`) |
 | Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `9b82bd300379b45be4cb36becfbef56bf41b1ff5cc3d2cb510b9e60447b10284` (13,889,400 bytes; 2026-11-02 D1 working-tree candidate based on `adc03b0`, clean local CRT `49879bf`) |
 | Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `69118ac17f998ea0cc42ff7fcf422155ee3fefd016a617374a5701dd439bbfef` (16,352,720 bytes; 2026-11-05 Stage 2 replay of `9d711d2`, clean local CRT `78ed80f`) |
 | Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `9948bcd919d6f0a93f2564902124fbbcf9edaf9d3f785caba4ffcf5f1771fe2d` (29,552,640 bytes, built `-O1 -g`; 2026-11-04 D2 installer replay of `2df5610` plus the Windows edits, clean local CRT `1ee0379`) |
@@ -20,10 +20,10 @@ macOS ships only arm64, so it keeps the single `bin/macos/` directory. Linux and
 Windows are split by architecture: `linux-x64`, `linux-arm64`, `win-x64`, `win-arm64`.
 
 The macOS binary imports only `/usr/lib/libSystem.B.dylib` and has no RPATH.
-The current-source native suite passes 807 checks plus the archive and SDK-store suites; cold/warm self-build,
-the previous-binary bootstrap loop and SDK-hidden help/version/doctor pass against a clean CRT `53b1a80` Dev SDK,
-and the D2 install replay passes 48/48 with it
-([D2 acceptance](../docs/acceptance/sdk_install_acceptance.md#macosarm64-isolated-replay-2026-11-04)).
+The current-source native suite passes 869 checks plus the archive and SDK-store suites; cold/warm self-build,
+the previous-binary bootstrap loop and SDK-hidden help/version/doctor pass against a clean CRT `784389b` Dev SDK,
+and the D2 install, contract and project-selection replay passes 69/69 with it
+([D2 acceptance](../docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-macosarm64-2026-11-05)).
 The direct make space-SHELL limitation remains separate from the CLI workflow.
 Earlier D1 evidence: [macOS acceptance](../docs/acceptance/bootstrap_acceptance.md#macos-latest-source-revalidation-2026-11-01).
 

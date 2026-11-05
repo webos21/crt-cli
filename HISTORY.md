@@ -11,6 +11,15 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-05
 
+### D2 Stage 2 on macOS/arm64: toolchain contract and project SDK selection
+
+Replayed the Linux Stage 1/2 work natively: a rehearsal `crt-dev-release` of committed CRT `784389b` ships the portable
+toolchain contract (`os_sdk.kind` `macos-xcode-sdk`), `sdk install` keeps it beside the SDK and a project selects the only
+installed SDK with no `--sdk-contract`. The self-built SDK-only CLI passes the D2 Seatbelt replay 69/69 (48 installer plus 21
+contract cases); the OS SDK is discovered with `xcrun` inside the sandbox and only its kind is locked. One driver defect (a hidden
+working directory) was fixed. The committed `bin/macos/crt-cli` is refreshed. See
+[acceptance](docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-macosarm64-2026-11-05).
+
 ### D2 Stage 2 replay on Linux/aarch64
 
 Replayed the toolchain-contract and project-selection cases natively on the aarch64 guest, from a release of committed CRT `78ed80f` and a CLI self-built

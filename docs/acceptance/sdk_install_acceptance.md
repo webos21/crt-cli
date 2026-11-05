@@ -248,7 +248,8 @@ project, not by the store); a project that runs `configure` again would lock the
 ### Other hosts
 
 `replay_sdk_install_macos.py` and `replay_sdk_install_windows.py` run the same cases but were **not executed** on their hosts
-in this change; they are written from the Linux script and checked only for syntax. Both now need the native tools
+in this change; they are written from the Linux script and checked only for syntax. (Update 2026-11-05: the macOS script was
+then executed, see the macOS Stage 2 record below.) Both now need the native tools
 (`--cc --cxx --linker --ar`), and the release must come from a collector that had the OS SDK at collection time (Xcode;
 `CRT_WINDOWS_SDK_LIBPATH`). On Windows the same variable must be set for the replay itself, and the process accounting
 accepts images from the tools' directories and the scratch tree during project calls. The macOS case expects the
@@ -277,3 +278,36 @@ dirty-marked SDK, and the release comes from committed code. The limit noted the
 contract.
 
 Evidence (ignored): `out/linux-arm64-s2-20261105/` (`replay/result.json`, `d2/result.json`, `d2.log`). Not run here: the macOS and Windows scripts.
+
+## Toolchain contract and project SDK selection replay (Stage 2, macOS/arm64, 2026-11-05)
+
+**Pass, native macOS/arm64; local/unpromoted.** `tools/replay_sdk_install_macos.py` with the shared
+`tools/replay_sdk_contract_cases.py` runs every CLI call under Seatbelt (no network, writes only to the scratch and private
+temporary directories, the CRT and CLI checkouts and the producer worktree denied, cleared environment with an empty `PATH`).
+The store is the sandbox `$HOME/.crt/sdks`; the project workflow runs the Xcode `clang`, `clang++`, `ld` and `ar` from the real
+root, and `configure` discovers the OS SDK with `xcrun` inside the sandbox.
+
+| Input | Value |
+| --- | --- |
+| Host | native arm64, macOS 27.2 |
+| Release | `crt-dev-release` rehearsal `v0.0.1-rehearsal.6` of **committed** CRT [`784389b`](https://github.com/webos21/crt/commit/784389b) (detached worktree, nothing uploaded): archive (6,675,764 bytes, SHA-256 `bf0d92a1...c1a9`), toolchain contract `crt-v0.0.1-rehearsal.6-macos-aarch64-dev-toolchain.json` (402,864 bytes, SHA-256 `200d9a10...faec`, `os_sdk.kind` = `macos-xcode-sdk`), 02/03 stage-source assets; manifest SHA-256 `c08c25e8...156b`; install metadata format 1, 2,786 entries, identity `72d1b375...0b4c`; all four `SHA256SUMS` entries verify |
+| CLI | the **self-built, SDK-only** executable of the macOS contract replay of that SDK, built from this checkout (`da3f3a9`): SHA-256 `acb4f7e1...5b62`, 3,927,832 bytes, imports only `libSystem`; cold self-build 16 executed / 0 reused, warm 0 / 16; bootstrap loop from the previous committed binary (stage1 and stage2 identical in code and data, differing only in `LC_UUID` and `__LINKEDIT`); 869 native, 158 archive and 83 SDK-store checks |
+| Producer gate | `crt-development-sdk-test` and `crt-dev-release` exit 0; `crt-c-test` **146/146** (Linux counts 147; one test is host-conditional) |
+
+Result: **69/69**, the same cases as the Linux records: the 48 installer cases and the 21 contract and project-selection cases.
+On macOS `configure` selects the only installed SDK and its stored contract, records identity, contract digest, `contract_source:
+store` and the OS SDK **kind** (`macos-xcode-sdk`) in `crt.lock`, and keeps the OS SDK **location** (the Xcode `MacOSX.sdk` path)
+in the ignored local state only, with no machine path in the lock; `build`, `test` and `run` use the stored contract; a modified
+stored contract is refused and works again once restored; a missing one is reported; a non-existent `--os-sdk` directory is
+refused; a release without its contract asset, with a flipped byte and with a trailing byte is refused with nothing published.
+The limit noted for Linux holds: `sdk verify` does not cover the stored contract.
+
+The first invocation of the macOS driver (`install-replay-r1-cwd`) failed all nine project-workflow cases with `getcwd failed:
+Operation not permitted`: the driver ran the CLI from the CLI checkout, which its own profile hides, and the project workflow now
+reads the current directory. This is a driver defect, not a CLI one; the driver now starts every call from the work directory.
+Nothing else was changed to reach 69/69, and no CLI or producer code changed for this replay.
+
+Evidence (ignored): `out/s2-macos/` in the CRT checkout (`install-replay/result.json`, `replay-cli/result.json`, the failed
+`install-replay-r1-cwd/`) and the producer worktree `crt-s2-784389b/out/s2-macos-20261105/`. Not run here: Full-stage
+install metadata, a published release asset and promotion.
+

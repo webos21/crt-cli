@@ -48,7 +48,7 @@ These are future increments, not implemented features.
     records identity only ([HISTORY](HISTORY.md)). Stage 2 (Linux/x86_64): the release ships a portable toolchain contract
     that `sdk install` keeps beside the SDK, so `configure` needs no `--sdk-contract`. Linux/x86_64 replay 69/69; Linux/aarch64 replay 69/69 with a self-built CLI and a release from committed CRT
     `78ed80f` ([record](docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-linuxaarch64-2026-11-05));
-    the macOS/Windows replay scripts are written but not run. Open: running them (`@OS_SDK@` discovery).
+    macOS/arm64 replay 69/69 ([record](docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-macosarm64-2026-11-05)); the Windows script is written but not run. Open: Windows `@OS_SDK@` discovery.
   - [ ] Explicit updates (network acquisition is a later increment).
 - [ ] Replay installation failures and path/tool collisions on the three
   initial native host pairs; never migrate project locks implicitly.
@@ -57,7 +57,7 @@ These are future increments, not implemented features.
 - [ ] Implement/validate shared immutable SDK storage and project references;
   version/profile/target/content pins remain project-specific.
   - [x] Shared immutable store (`sdk list|verify|recover`).
-  - [ ] Project references and pins: the lock identity and Stage 2 are done on Linux/x86_64 and Linux/aarch64; replays on macOS/arm64 and Windows x64/arm64 remain.
+  - [ ] Project references and pins: the lock identity and Stage 2 are done on Linux/x86_64 and Linux/aarch64; macOS/arm64 replay passes; Windows x64/arm64 remain.
 - [ ] Implement verified CLI self-upgrade with candidate health checks,
   OS-specific activation, interruption/rollback and unchanged project SDK/port pins
   ([lifecycle gates](docs/acceptance/lifecycle_acceptance.md)).
