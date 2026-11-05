@@ -118,12 +118,52 @@ A contract that refers to the host's OS SDK (`@OS_SDK@`, `os_sdk.kind`) is compl
 `CRT_WINDOWS_SDK_LIBPATH`, or `--os-sdk <directory>`); the location is local state and never locked. Download and GC
 remain later work.
 
-`sdk verify` now also checks a present stored contract's format, portability
-and SDK content identity. The store does not yet retain the original contract
-digest or required-presence state: an existing project lock pins bytes, but a
-fresh configure computes its pin from the stored file. The latest guard has
-[Linux developer/unit evidence only](../acceptance/sdk_install_acceptance.md#sdk-verify-covers-the-stored-contract-linuxx86_64-2026-11-05).
-Installation-time receipt/pin handling is planned; this paragraph adds no format.
+### Installation receipt (CLI-owned format 1)
+
+New installations record `.receipts/<directory>.json` outside the immutable SDK
+payload. Schema `crt-cli.sdk-install-receipt`, format 1, contains `sdk` (the
+exact version, full content SHA-256 and directory) and `contract`: either null
+(explicitly none at installation) or `{"sha256":"<installation-time-pin>"}`
+(that file is required). The digest comes from the independently pinned release
+manifest/verified install request, not from reading the current stored file.
+This does not change SDK install metadata, native-provider or lock formats.
+
+`sdk verify` validates SDK content plus receipt identity, required presence,
+contract bytes/format/portability and SDK binding. Fresh store-based configure
+uses that receipt pin, so a valid-looking modified contract cannot be adopted
+as a new project pin. An explicit provider cannot replace a known installation
+pin; an installation without a contract can still use an explicitly pinned
+external provider. Local handoff roots remain explicit developer inputs.
+
+Ordinary reinstall is idempotent and preserves required contract state. A
+contract may be added to a receipt-marked installation that previously declared
+none, but an already known contract pin is immutable. The SDK is published by
+one directory rename; contract/receipt files use temporary writes and atomic
+renames, with the receipt as final commit record. A crash between publications
+fails closed rather than accepting partial metadata. `sdk recover` sweeps only
+dead-writer contract/receipt temporaries; it never invents missing trust pins.
+
+Existing SDK directories without receipts are legacy/untrusted for store-based
+selection. Explicit recovery is:
+
+```text
+crt-cli sdk repair <sdk-directory> --archive <original-archive> --release-manifest <original-manifest> --release-manifest-sha256 <trusted-pin> [--store <dir>]
+```
+
+Repair verifies the original manifest's archive/contract sizes/digests, extracts
+and validates the archive, and requires its full identity to equal the named
+existing SDK and actual installed bytes. It restores metadata only; SDK payload
+and project locks are unchanged. Raw archive SHA alone is insufficient for
+repair. A known receipt cannot be downgraded or assigned a different contract;
+it can gain the first contract after an interrupted explicit addition. Missing
+legacy receipts are established only from these pinned release inputs. Unknown,
+malformed or symlinked receipts are refused for manual diagnosis, not silently
+rewritten. Losing/changing a required contract can be repaired with its original
+pin. None of these local digests authenticates an official publisher.
+
+Older CLI versions do not enforce receipts; they are not qualified readers of
+this store policy. The earlier [shape-only guard](../acceptance/sdk_install_acceptance.md#sdk-verify-covers-the-stored-contract-linuxx86_64-2026-11-05)
+keeps its original evidence; the receipt increment has its own native record.
 
 `new` writes sources and an unresolved format-1 `crt.lock` without acquiring an
 SDK. Lock format 0 is no longer read: `build`/`test`/`run` refuse it and say to run `configure` again; a lock is never

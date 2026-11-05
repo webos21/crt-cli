@@ -358,6 +358,15 @@ int main(int argc, char** argv) {
         const auto published = sdk_store_root() / identity;
         fs::copy(installed, published, fs::copy_options::recursive | fs::copy_options::copy_symlinks);
         auto select = [&](const std::string& flag, const std::string& value) { auto args = configure; args[3] = flag; args[4] = value; return args; };
+        invoke(cli, select("--sdk", identity), false); // An arbitrary legacy copy is not an installation-time policy pin.
+        // Trusted synthetic store fixtures exercise selection independently of the archive installer tests.
+        auto fixture_receipt = [&](const std::string& hash) {
+            auto path = sdk_store_root() / ".receipts" / (identity + ".json"); fs::create_directories(path.parent_path());
+            write_text(path, Json{{"schema", "crt-cli.sdk-install-receipt"}, {"format", 1},
+                {"sdk", {{"version", version}, {"content_sha256", content}, {"directory", identity}}},
+                {"contract", hash.empty() ? Json(nullptr) : Json{{"sha256", hash}}}}.dump(2) + "\n");
+        };
+        fixture_receipt("");
         invoke(cli, select("--sdk", identity));
         auto stored = read_json(root / "crt.lock");
         check(stored.at("lock_format") == 1 && stored.at("selection").at("source") == "store" && stored.at("selection").at("sdk_directory") == identity, "store selection is locked by identity");
@@ -394,6 +403,7 @@ int main(int argc, char** argv) {
         const auto stored_contract = sdk_store_root() / ".contracts" / (identity + ".json");
         fs::create_directories(stored_contract.parent_path());
         fs::copy_file(local.at("sdk_contract").get<std::string>(), stored_contract, fs::copy_options::overwrite_existing);
+        fixture_receipt(lock.at("selection").at("contract_sha256"));
         std::vector<std::string> stored_args{"configure", "--project", root.string(), "--sdk", identity, "--cc", local.at("cc"), "--cxx", local.at("cxx"), "--linker", local.at("linker"), "--ar", local.at("ar")};
         if (lock.at("selection").value("allow_dirty_sdk", false)) stored_args.insert(stored_args.end(), {"--allow-dirty-sdk", "true"});
         invoke(cli, stored_args);
@@ -404,6 +414,12 @@ int main(int argc, char** argv) {
         auto bad_digest = stored_args; bad_digest.insert(bad_digest.end(), {"--contract-sha256", std::string(64, '0')});
         invoke(cli, bad_digest, false);
         const auto saved_contract = read_text(stored_contract);
+        const auto pinned_lock = read_text(root / "crt.lock"), pinned_local = read_text(root / ".crt/local.json");
+        auto plausible = Json::parse(saved_contract); plausible["changed_policy"] = true;
+        write_text(stored_contract, plausible.dump());
+        invoke(cli, stored_args, false); // A valid contract for this SDK must not be adopted as a fresh pin.
+        check(read_text(root / "crt.lock") == pinned_lock && read_text(root / ".crt/local.json") == pinned_local,
+              "receipt pin rejection preserves both project binding files");
         write_text(stored_contract, "{}");
         invoke(cli, stored_args, false);                                         // a tampered stored contract is not the SDK's
         fs::remove(stored_contract);
@@ -418,6 +434,7 @@ int main(int argc, char** argv) {
         derived["os_sdk"] = Json{{"kind", "test-only"}};
         for (const char* recipe : {"compile_c", "compile_cxx"}) derived["modes"]["executable-static"][recipe].push_back("-DCRT_OS_SDK=@OS_SDK@");
         write_text(stored_contract, derived.dump());
+        fixture_receipt(sha256(derived.dump())); // A separately approved synthetic installation, not implicit re-pinning.
         const auto os_sdk = hostile / "OS SDK \xed\x95\x9c";
         fs::create_directories(os_sdk);
         invoke(cli, stored_args, false);                                         // an unknown kind cannot be discovered

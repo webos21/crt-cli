@@ -48,6 +48,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--work-parent', type=Path, required=True)
     parser.add_argument('--hide', type=Path, action='append', default=[])
+    parser.add_argument('--allow-dirty-sdk', action='store_true', help='explicit local developer-candidate opt-in; never a release qualification')
     for name, candidates in (('cc', ('clang',)), ('cxx', ('clang++',)), ('linker', ('ld.lld',)), ('ar', ('llvm-ar', 'llvm-ar-21', 'llvm-ar-20', 'llvm-ar-19'))):
         parser.add_argument('--' + name, type=Path, default=next((Path(os.path.realpath(found)) if name in ('cc', 'cxx') else Path(found) for found in map(shutil.which, candidates) if found), None),
                             help=f'absolute native {name} for the project workflow (default: found on PATH)')
@@ -151,7 +152,8 @@ def main():
         return run(label, tail, kw.pop('store', store), **kw)
     contract_cases.contract_cases(call=call, results=results, store=store, sdk_dir=sdk_dir, contract=contract_asset, archive=archive,
                                   manifest_path=manifest_path, inputs=inputs, work=work, scratch=scratch, fresh_store=lambda n: fresh_store(n),
-                                  digest=digest, tree=tree, published=published, tools=tools, os_kind=None)
+                                  digest=digest, tree=tree, published=published, tools=tools, os_kind=None,
+                                  allow_dirty_sdk=args.allow_dirty_sdk)
 
     # 4. Tampered inputs never publish anything.
     def tampered(name, mutate):
@@ -266,6 +268,7 @@ def main():
 
     results.append({'case': 'inputs unchanged by every run', 'passed': {p.name: digest(p) for p in inputs.iterdir()} == sandbox_digest_before, 'detail': ''})
     summary = {'passed': all(r['passed'] for r in results), 'cases': results, 'sdk_directory': sdk_dir, 'cli_sha256': digest(cli),
+               'allow_dirty_sdk': args.allow_dirty_sdk,
                'archive': asset['name'], 'archive_sha256': asset['sha256'], 'work': str(work),
                'isolation': 'bwrap: user/ipc/uts/net namespaces, shared pid namespace, read-only root, hidden source trees, cleared env, private /tmp'}
     (output / 'result.json').write_text(json.dumps(summary, indent=2) + '\n')

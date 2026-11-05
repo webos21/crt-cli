@@ -11,6 +11,7 @@
 //     <version>-<content12>/       published SDK (read-only by convention, never modified)
 //     .staging/<txn>/              extraction in progress; txn.json records the owner process
 //     .locks/<content12>.lock/     per-identity lock (a directory: creation is atomic on every host)
+//     .receipts/<directory>.json installation-time SDK/contract pin (outside the SDK identity)
 #include "crtcli/archive.h"
 #include "crtcli/core.h"
 #include <optional>
@@ -52,6 +53,9 @@ struct InstallRequest {
     // selecting the SDK needs no other input. Never a host-specific contract (one that names a machine path).
     fs::path contract;
     std::string contract_sha256;
+    // Explicit repair of an existing SDK's bookkeeping, only from verified release metadata/archive/contract.
+    // Empty for ordinary install. SDK bytes and project locks are never replaced.
+    std::string repair_directory;
 };
 
 struct InstallResult {
@@ -59,6 +63,7 @@ struct InstallResult {
     fs::path path;
     bool already_installed = false;           // the identical SDK was published before; nothing was changed
     bool contract_stored = false;             // a toolchain contract was added to the store by this call
+    bool receipt_stored = false;
     ExtractReport extracted;
     Json to_json() const;
 };
@@ -80,6 +85,10 @@ public:
     const fs::path& root() const { return root_; }
     // Where the stored toolchain contract of the published SDK `directory` lives (it may not exist).
     fs::path contract_path(const std::string& directory) const { return root_ / ".contracts" / (directory + ".json"); }
+    fs::path receipt_path(const std::string& directory) const { return root_ / ".receipts" / (directory + ".json"); }
+    // Verify receipt schema/identity and required contract bytes. Does not hash the SDK payload.
+    // Missing legacy receipts fail closed; explicit sdk repair restores them from pinned release inputs.
+    Json verified_receipt(const std::string& directory) const;
 
     // Installs the archive. Throws Error on any failure; on failure no directory named like an SDK has been added.
     InstallResult install(const InstallRequest& request);

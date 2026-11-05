@@ -11,6 +11,22 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-05
 
+### Preserve installation-time contract pins and repair legacy metadata explicitly
+
+Implemented CLI-owned SDK receipts, required/absent contract state and fresh
+configure/verify pin enforcement. Added `sdk repair` from an independently
+pinned original manifest/archive/contract: metadata is restored while SDK
+identity and project locks remain unchanged. A known pin cannot be replaced or
+downgraded, and `recover` cleans only dead receipt/contract writers.
+
+Linux store/native tests and the isolated install/project/repair replay pass;
+[acceptance](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-linuxx86_64-2026-11-05)
+owns exact source/binary/input identities, counts and retained driver/fixture
+failures. Existing SDK bytes were reused with explicit dirty-local provenance;
+this is not a clean release or five-pair qualification. Native macOS/Windows
+delta replay, installed-SDK collisions and automatic acquisition remain open.
+Committed binaries/defaults, root locks and STATUS are unchanged by this increment.
+
 ### Adopt the first-user-flow sequence and refresh README/STATUS
 
 Reviewed CLI `3978ced` and CRT `433a7d6` with the owner. Reordered the queue to

@@ -65,6 +65,9 @@ int main() {
         check(store.list().size() == 1 && store.list()[0].directory == first.identity.directory(), "list shows exactly the SDK");
         check(store.list()[0].profile == "dev" && store.list()[0].stage == "02-cxx", "list reads manifest and profile");
         check(store.verify(first.identity.directory()) >= 4, "verify counts files");
+        auto plain_receipt = read_json(store.receipt_path(first.identity.directory()));
+        check(plain_receipt.at("contract").is_null() && plain_receipt.at("sdk") == first.identity.to_json(), "plain install records explicit absence of a contract");
+        check(first.receipt_stored, "first install reports the published receipt");
         check(directories_in(store.root() / ".staging") == 0, "staging is empty after success");
         check(directories_in(store.root() / ".locks") == 0, "locks are released after success");
 
@@ -191,7 +194,7 @@ int main() {
         // A release's toolchain contract is kept beside the SDK it belongs to and is as immutable as that SDK.
         {
             SdkStore contract_store(base / "contract-store");
-            auto identity_of = [&](const fs::path& archive) { auto probe = work.fresh(); extract_archive(archive, probe); return read_identity(probe).content_sha256; };
+            auto identity_of = [&](const fs::path& archive) { auto probe = work.fresh(); extract_archive(archive, probe); return read_identity(fs::exists(probe / "VERSION") ? probe : probe / "dev").content_sha256; };
             auto write_contract = [&](const std::string& name, const std::string& identity, const std::function<void(Json&)>& change) {
                 Json document{{"schema", "crt.experimental.native-toolchain"}, {"format", 1}, {"sdk_content_sha256", identity}};
                 change(document);
@@ -260,15 +263,97 @@ int main() {
             auto m_original = read_text(m_stored);
             Json m_json = Json::parse(m_original);
             m_json["external_os_sdk"] = "/x"; write_text(m_stored, m_json.dump());
-            check(verify_text(m_directory).find("machine path") != std::string::npos, "verify refuses a stored contract that names a machine path");
+            check(verify_text(m_directory).find("digest mismatch") != std::string::npos, "verify refuses a stored contract that names a machine path");
             m_json.erase("external_os_sdk"); m_json["sdk_content_sha256"] = std::string(64, '1'); write_text(m_stored, m_json.dump());
-            check(verify_text(m_directory).find("belongs to another SDK") != std::string::npos, "verify refuses a stored contract of another SDK");
+            check(verify_text(m_directory).find("digest mismatch") != std::string::npos, "verify refuses a stored contract of another SDK");
             m_json["sdk_content_sha256"] = m_identity; m_json["format"] = 2; write_text(m_stored, m_json.dump());
-            check(verify_text(m_directory).find("not a supported contract") != std::string::npos, "verify refuses an unsupported stored contract");
+            check(verify_text(m_directory).find("digest mismatch") != std::string::npos, "verify refuses an unsupported stored contract");
             write_text(m_stored, "not json");
-            check(verify_text(m_directory).find("unreadable") != std::string::npos, "verify refuses an unreadable stored contract");
+            check(verify_text(m_directory).find("digest mismatch") != std::string::npos, "verify refuses an unreadable stored contract");
             write_text(m_stored, m_original);
             check(verify_text(m_directory).empty(), "verify accepts the restored contract");
+
+            // A semantically valid edit must not become a new pin on verify or configure.
+            m_json = Json::parse(m_original); m_json["policy"] = "changed but still portable";
+            write_text(m_stored, m_json.dump());
+            check(verify_text(m_directory).find("digest mismatch") != std::string::npos, "a valid-looking policy edit is not trusted");
+            try { contract_store.verified_receipt(m_directory); check(false, "changed policy accepted"); }
+            catch (const Error& error) { check(std::string(error.what()).find("digest mismatch") != std::string::npos, "fresh selection cannot re-pin changed stored bytes"); }
+            fs::remove(m_stored);
+            check(verify_text(m_directory).find("no stored toolchain contract") != std::string::npos, "a required contract cannot disappear");
+            write_text(m_stored, m_original);
+
+            // Explicit repair uses a pinned wrapped release archive, never the current stored file's digest.
+            auto repair_archive = bytes_of(sdk_entries("dev", "02-cxx", native_target(), "m"));
+            auto repair_probe = work.fresh(); auto report = extract_archive(repair_archive, repair_probe);
+            auto repair = install_with(repair_archive, base / "m-contract.json");
+            InstallMetadata metadata;
+            metadata.archive_format = report.format; metadata.root = "dev"; metadata.version = "1.2.3";
+            metadata.stage = "02-cxx"; metadata.profile = "dev"; metadata.target = native_target(); metadata.content_sha256 = m_identity;
+            metadata.entries = report.entries; metadata.files = report.files; metadata.directories = report.directories;
+            metadata.symlinks = report.symlinks; metadata.uncompressed_bytes = report.bytes;
+            metadata.max_file_bytes = 1048576; metadata.max_path_bytes = 4096; metadata.max_depth = 64;
+            repair.metadata = metadata; repair.repair_directory = m_directory;
+            auto pinned_receipt = read_text(contract_store.receipt_path(m_directory));
+            auto before_sdk = read_identity(added.path).content_sha256;
+            write_text(m_stored, m_json.dump());
+            auto repaired = contract_store.install(repair);
+            check(repaired.already_installed && repaired.receipt_stored && repaired.contract_stored, "explicit repair restores trusted metadata");
+            check(read_text(m_stored) == m_original && read_identity(added.path).content_sha256 == before_sdk, "repair preserves SDK bytes and restores original contract");
+            check(read_text(contract_store.receipt_path(m_directory)) == pinned_receipt, "repair does not change the receipt pin");
+            auto wrong_repair = repair; wrong_repair.contract = write_contract("new-policy.json", m_identity, [](Json& d) { d["policy"] = "not the original"; });
+            wrong_repair.contract_sha256 = file_sha256(wrong_repair.contract);
+            check(failure(contract_store, wrong_repair).find("immutable") != std::string::npos, "repair cannot update a known contract pin");
+            auto downgrade = repair; downgrade.contract.clear(); downgrade.contract_sha256.clear();
+            check(failure(contract_store, downgrade).find("immutable") != std::string::npos, "repair cannot remove the original required-contract state");
+            auto wrong_directory = repair; wrong_directory.repair_directory = first.identity.directory();
+            check(failure(contract_store, wrong_directory).find("requested SDK identity") != std::string::npos, "repair cannot target another installed SDK");
+            auto no_release = repair; no_release.metadata.reset();
+            check(failure(contract_store, no_release).find("release install metadata") != std::string::npos, "repair without trusted release metadata is refused");
+
+            // A legacy/mid-publication SDK without its receipt is untrusted until an explicit repair.
+            fs::remove(contract_store.receipt_path(m_directory));
+            write_text(m_stored, m_json.dump());
+            check(verify_text(m_directory).find("receipt") != std::string::npos, "missing legacy receipt is not inferred from present files");
+            check(failure(contract_store, install_with(repair_archive, base / "m-contract.json")).find("receipt") != std::string::npos, "ordinary reinstall does not bless a legacy store");
+            check(read_text(m_stored) == m_json.dump(), "failed migration leaves unknown contract bytes untouched");
+            contract_store.install(repair);
+            check(verify_text(m_directory).empty() && read_text(m_stored) == m_original, "pinned-release repair migrates the legacy store");
+            check(read_identity(added.path).content_sha256 == before_sdk, "legacy repair preserves the SDK identity");
+            fs::remove(m_stored);
+            check(verify_text(m_directory).find("no stored toolchain contract") != std::string::npos, "required contract loss fails closed");
+            contract_store.install(repair);
+            check(verify_text(m_directory).empty(), "required contract loss can be explicitly repaired");
+            auto receipt_file = contract_store.receipt_path(m_directory);
+            auto receipt_json = read_json(receipt_file); receipt_json["format"] = 99; write_text(receipt_file, receipt_json.dump());
+            check(verify_text(m_directory).find("unsupported") != std::string::npos, "unknown receipt format is refused");
+            write_text(receipt_file, pinned_receipt);
+            if (native_target().at("os") != "windows") {
+                auto outside = base / "outside-receipt"; write_text(outside, pinned_receipt);
+                fs::remove(receipt_file); fs::create_symlink(outside, receipt_file);
+                check(verify_text(m_directory).find("receipt") != std::string::npos, "a symlinked receipt is untrusted");
+                fs::remove(receipt_file); write_text(receipt_file, pinned_receipt);
+            }
+            // Metadata without a required contract is also pinned, so adding an unrecorded policy is rejected.
+            auto plain_stored = store.contract_path(changed.identity.directory()); fs::create_directories(plain_stored.parent_path());
+            write_text(plain_stored, m_original);
+            try { store.verify(changed.identity.directory()); check(false, "unexpected policy accepted"); }
+            catch (const Error& error) { check(std::string(error.what()).find("declares none") != std::string::npos, "an unrecorded contract cannot be silently adopted"); }
+            fs::remove(plain_stored);
+
+            // Interruption while adding the first contract leaves the old null receipt. Explicit release repair
+            // completes this permitted transition, but an ordinary reinstall must not infer it from current files.
+            auto j_archive = bytes_of(sdk_entries("dev", "02-cxx", native_target(), "j"));
+            auto j_identity = identity_of(j_archive);
+            auto j_plain = contract_store.install(install_with(j_archive, fs::path()));
+            auto j_contract = write_contract("j-contract.json", j_identity, [](Json&) {});
+            write_text(contract_store.contract_path(j_plain.identity.directory()), read_text(j_contract));
+            auto j_repair = install_with(j_archive, j_contract); j_repair.repair_directory = j_plain.identity.directory();
+            auto j_metadata = metadata; j_metadata.content_sha256 = j_identity; j_repair.metadata = j_metadata;
+            check(failure(contract_store, install_with(j_archive, j_contract)).find("declares none") != std::string::npos,
+                  "interrupted contract addition is not silently adopted");
+            contract_store.install(j_repair);
+            check(verify_text(j_plain.identity.directory()).empty(), "explicit release repair completes interrupted contract addition");
 
             // Interrupted writes: only the dead owner's temporary file is a leftover.
             auto pending = [&](const std::string& owner) { return contract_store.root() / ".contracts" / ("x.json.tmp-" + owner); };
@@ -277,6 +362,13 @@ int main() {
             check(swept.size() == 1 && swept[0] == ".contracts/x.json.tmp-999999999", "recover removes only a dead owner's contract file");
             check(fs::exists(pending(std::to_string(getpid()))), "a live owner's contract file is kept");
             fs::remove(pending(std::to_string(getpid())));
+            auto receipt_temp = fs::path(contract_store.receipt_path(m_directory).string() + ".tmp-999999999");
+            write_text(receipt_temp, "{}");
+            auto live_receipt = fs::path(contract_store.receipt_path(m_directory).string() + ".tmp-" + std::to_string(getpid()));
+            write_text(live_receipt, "{}");
+            auto receipt_swept = contract_store.recover();
+            check(receipt_swept.size() == 1 && !fs::exists(receipt_temp) && fs::exists(live_receipt), "recover removes dead receipt writes but preserves live writers");
+            fs::remove(live_receipt);
         }
     } catch (const Error& error) {
         std::fprintf(stderr, "%s\n", error.what());

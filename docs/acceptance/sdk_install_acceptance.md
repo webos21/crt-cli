@@ -394,3 +394,97 @@ Evidence: `sdk-store-test` 89 checks (83 before; six new: intact contracts accep
 `native-test` 829 and `archive-test` 158, all green in a project build with the self-built Linux/x86_64 CLI against the current Development SDK
 (`--allow-dirty-sdk true`, explicit contract; a developer check, not an SDK-only replay). The replay scripts were not changed or rerun for this
 increment, and `bin/*/crt-cli` was not refreshed.
+
+## Installation receipts and explicit repair (Linux/x86_64, 2026-11-05)
+
+**Pass for the bounded Linux developer candidate.** This implements the next
+local-store integrity increment after the first-user-flow planning review.
+Original five-pair Stage 2 results keep their original clean SDKs/binaries;
+this is neither a new common-source matrix nor production adoption.
+
+### Inputs and provenance
+
+Reviewed producer `6f2892d` and CLI `4aa9a8198c71fd04b4153c6304e9a4e61e485605`.
+The implementation is an uncommitted CLI snapshot; `out/d2-receipts-20261105/candidate.json`
+retains its sorted `[relative-path,SHA-256]` input list (`src`, `include`,
+`crt.json`), compact JSON hash, artifact/provenance data and isolated results.
+
+| Input | Identity |
+| --- | --- |
+| CLI source snapshot | `e380f275fffe299fcb6ab1fde1bea641e44ace9ef55c230554f51ed148f08694` |
+| Tested CLI | `68f0535d03ec40d1ea719c8f9f214a1a884c7afeec30eff10bc0bc135cb553a7`, 16,661,360 bytes |
+| Copied SDK content | `ecbb920a8e63e337095c0839b2d897f653f012162164a1b7b4e85a66486b32cd`, version `development`, native dev |
+| Portable provider | `30e67672117ae9b8d3b3d9476f381c3ec4049291bb593208abe541966953d956` |
+| Local fixture manifest | `14e77d7cdf3e43e2931eac61a365a0d4734f639b29614333007bbb162d21316a` |
+| Fixture archive | `crt-development-linux-x86_64-dev.tar.xz`, 9,228,316 bytes, `76453fe2cbf8c82aeab5d750ec275b682a54c6ad309ff99950d9bd4d61643337` |
+
+The already built SDK is copied from CRT's `out/linux-host-ninja-debug/dist/dev`
+to an external handoff under `crt-cli-replay/d2-receipts-d2x4hb21/SDK space 한글/dev`.
+Its producer/base/compile snapshot is `b6bf52be64047e718dc0f2870472a5ffece913f9`
+with **working_tree_dirty: true**. Build and replay explicitly opt in to that
+provenance; it is not relabeled clean. It already provides liblzma. No CRT
+runtime/Web/GFX rebuild is needed for this consumer metadata change.
+
+The archive/manifest are local regression fixtures assembled with existing
+archive/install-metadata/export tools from those exact SDK bytes. They are not
+`crt-dev-release` outputs, official publisher metadata, release candidates or
+promoted assets. The provider is 402,956 bytes. Compiler/linker/archiver
+identities and exact commands are retained in the configure/test receipts.
+SDK/runtime, install metadata, native-provider and project-lock formats do not
+change; [the receipt format](../reference/bootstrap_contract.md#installation-receipt-cli-owned-format-1)
+belongs to CLI, outside the SDK inventory.
+
+### Measured results
+
+- `store-test-r4`: **114 checks pass**, covering original install/transaction
+  behavior plus installation pins, required/absent contracts, valid-looking
+  policy edits, explicit repair, unchanged payload identity, legacy receipts,
+  attempted pin changes/downgrades, wrong repair identity, missing trusted
+  metadata, unknown/symlinked receipts, interrupted contract addition and
+  live/dead receipt writers.
+- `native-test-r4`: **834 checks pass**, including a fresh configure rejecting
+  valid modified policy bytes while preserving both project binding files.
+  Synthetic provider/OS-SDK fixtures declare their own trusted receipts; these
+  fixtures are not product migration or producer-compatibility evidence.
+- Producer's existing metadata/exporter fixtures: **14 checks pass**. They
+  retain the format-1 archive/identity/contract handoff, without a new SDK schema.
+- `isolated-r1`: **84/84 pass** via `tools/replay_sdk_install_linux.py` and
+  shared contract cases: actual install/list/verify, idempotence, stored-contract
+  project build/test/run, receipt tamper/absence, explicit repair, preserved
+  project pins, hostile archives, process interruption/recovery, concurrent
+  installs, read-only store and zip identity. Rejections publish no accepted
+  installation; incomplete metadata is not trusted automatically.
+- `isolated-payload-delta`: **3/3 pass** under the same sandbox. Even with
+  trusted release inputs, repair refuses a changed installed SDK payload and
+  preserves its bytes plus receipt/contract; verify succeeds after the fixture
+  restores the payload. These focused cases are also added to the shared replay
+  helper for future hosts; the unchanged 84-case run was not repeated.
+- ELF audit: no DT_NEEDED or RPATH/RUNPATH; interpreter is the declared OS
+  `/lib64/ld-linux-x86-64.so.2`. No new runtime dependency was introduced.
+
+The isolated work is `crt-cli-replay/d2-native-prb94y6e/`. Bubblewrap hides CRT,
+CLI, the frozen producer worktree and the original build/SDK/provider/fixture
+handoff, denies network, clears environment/PATH and exposes read-only inputs
+plus private writable scratch. Installed SDKs are reconstructed from the copied
+archive. A shared PID namespace preserves lock-owner liveness semantics.
+`isolated-invocation-r1.json` records the full command, including explicit
+`--allow-dirty-sdk`; `isolated-r1/result.json` retains that opt-in.
+
+The source export is built with the committed CRT-native seed and the copied
+SDK, then the resulting CLI explicitly configures lock format 1 and drives its
+own tests. `store-test-r2` retains the old-seed format-0 binding refusal;
+`store-test-r3` retains a wrapped-fixture identity-probe mistake, corrected in
+the test helper before final execution. No product fallback or SDK mutation
+was used to hide those failures. Root locks, ignored default SDK selection and
+committed `bin/*` binaries are unchanged by this increment; use the tested
+candidate at `source/out/native/crt-cli` in the handoff above.
+
+### Remaining scope
+
+Replay the receipt/repair delta on native macOS and Windows using their existing
+identified SDKs, especially metadata replacement and writer recovery. Do not
+substitute the earlier Stage 2 runs for that new evidence. Installed-SDK host
+path/tool/DLL collisions remain a separate D2 task. Automatic first build,
+remote acquisition, generic profiles, official trust/promotion and self-upgrade
+remain planned. This result closes the Linux receipt implementation/validation
+slice, not all D2 or the first-user-flow preview.

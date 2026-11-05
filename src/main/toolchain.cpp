@@ -166,6 +166,8 @@ Toolchain Toolchain::configure(const std::map<std::string, std::string>& options
     const bool from_store = options.count("--sdk") != 0;
     result.sdk = from_store ? fs::canonical(store_sdk(options.at("--sdk")))
         : options.count("--sdk-id") ? inside(sdk_store_root(), options.at("--sdk-id")) : fs::canonical(selected(options, "--sdk-root"));
+    Json installation;
+    if (from_store) installation = SdkStore(sdk_store_root()).verified_receipt(result.sdk.filename().string());
     // A store SDK installed from a release carries its toolchain contract beside it; an explicit contract still overrides.
     const bool stored_contract = from_store && !options.count("--sdk-contract");
     std::string hash;
@@ -174,12 +176,15 @@ Toolchain Toolchain::configure(const std::map<std::string, std::string>& options
         require(fs::is_regular_file(result.contract_path) && !fs::is_symlink(result.contract_path),
                 "the installed SDK has no stored toolchain contract; install it from a release that ships one or pass --sdk-contract");
         result.contract_path = fs::canonical(result.contract_path);
-        hash = file_sha256(result.contract_path);
+        require(!installation.at("contract").is_null(), "the installation receipt names no stored toolchain contract");
+        hash = installation.at("contract").at("sha256");
         require(!options.count("--contract-sha256") || options.at("--contract-sha256") == hash, "toolchain contract digest mismatch");
     } else {
         result.contract_path = fs::canonical(selected(options, "--sdk-contract"));
         hash = selected(options, "--contract-sha256");
         require(hash.size() == 64 && file_sha256(result.contract_path) == hash, "toolchain contract digest mismatch");
+        if (from_store && !installation.at("contract").is_null())
+            require(hash == installation.at("contract").at("sha256"), "explicit contract differs from the immutable installation receipt");
     }
     result.contract = read_json(result.contract_path);
     bool allow_dirty = options.count("--allow-dirty-sdk") && options.at("--allow-dirty-sdk") == "true";
@@ -189,6 +194,8 @@ Toolchain Toolchain::configure(const std::map<std::string, std::string>& options
         // The directory name is derived from the content identity; a renamed or substituted directory is not that SDK.
         const std::string expected = result.selection.at("version").get<std::string>() + "-" + result.selection.at("sdk_content_sha256").get<std::string>().substr(0, 12);
         require(result.sdk.filename().string() == expected, "installed SDK directory name does not match its content identity: " + result.sdk.filename().string());
+        require(installation.at("sdk").at("content_sha256") == result.selection.at("sdk_content_sha256") &&
+                installation.at("sdk").at("version") == result.selection.at("version"), "SDK installation receipt identity mismatch");
         result.selection["source"] = "store";
         result.selection["sdk_directory"] = expected;
     } else result.selection["source"] = "handoff";

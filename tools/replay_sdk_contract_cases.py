@@ -13,8 +13,26 @@ import shutil
 from pathlib import Path
 
 
+def repair_payload_cases(*, call, results, store, sdk_dir, repair):
+    """Repair must never turn into SDK payload replacement, even with trusted release inputs."""
+    version = store / sdk_dir / 'VERSION'
+    receipt = store / '.receipts' / (sdk_dir + '.json')
+    contract = store / '.contracts' / (sdk_dir + '.json')
+    original = version.read_bytes(); before = (receipt.read_bytes(), contract.read_bytes())
+    damaged = original.strip() + b'-damaged\n'
+    try:
+        version.write_bytes(damaged)
+        call('repair refuses a changed installed SDK payload', repair, expect_ok=False, expect_text='immutable')
+        passed = version.read_bytes() == damaged and (receipt.read_bytes(), contract.read_bytes()) == before
+        results.append({'case': 'refused repair preserves payload and metadata', 'passed': passed, 'detail': ''})
+        print(('PASS ' if passed else 'FAIL ') + 'refused repair preserves payload and metadata', flush=True)
+    finally:
+        version.write_bytes(original)
+    call('verify after restoring the refused repair payload', ['sdk', 'verify', sdk_dir])
+
+
 def contract_cases(*, call, results, store, sdk_dir, contract, archive, manifest_path, inputs, work, scratch, fresh_store,
-                   digest, tree, published, tools, os_kind):
+                   digest, tree, published, tools, os_kind, allow_dirty_sdk=False):
     """`contract` is the release manifest's entry for the contract asset (name, sha256); `os_kind` is the OS SDK kind the
     contract is expected to declare on this host (None on Linux, which needs none)."""
 
@@ -34,6 +52,8 @@ def contract_cases(*, call, results, store, sdk_dir, contract, archive, manifest
     call('new project', ['new', str(project)])
     configure = ['configure', *base, '--cc', str(tools['cc']), '--cxx', str(tools['cxx']),
                  '--linker', str(tools['linker']), '--ar', str(tools['ar'])]
+    if allow_dirty_sdk:
+        configure += ['--allow-dirty-sdk', 'true']
     call('configure selects the only installed SDK and its stored contract', configure, tools=True)
     try:
         lock_text = (project / 'crt.lock').read_text(encoding='utf-8')
@@ -59,6 +79,35 @@ def contract_cases(*, call, results, store, sdk_dir, contract, archive, manifest
 
     # 4. Damage to the stored contract is caught by the lock and never repaired silently.
     original = stored.read_bytes()
+    receipt = store / '.receipts' / (sdk_dir + '.json')
+    original_receipt = receipt.read_bytes()
+    record('receipt retains the release contract pin', json.loads(original_receipt)['contract'] == {'sha256': contract['sha256']})
+    unchanged_lock = (project / 'crt.lock').read_bytes()
+    unchanged_local = (project / '.crt/local.json').read_bytes()
+    valid_change = json.loads(original); valid_change['changed_policy'] = 'still a valid portable contract'
+    stored.write_text(json.dumps(valid_change))
+    call('verify rejects a valid-looking policy edit', ['sdk', 'verify', sdk_dir], expect_ok=False, expect_text='digest mismatch')
+    call('fresh configure cannot re-pin changed bytes', configure, expect_ok=False, expect_text='digest mismatch', tools=True)
+    record('failed fresh configure preserves the binding', (project / 'crt.lock').read_bytes() == unchanged_lock and
+           (project / '.crt/local.json').read_bytes() == unchanged_local)
+    repair = ['sdk', 'repair', sdk_dir, '--archive', str(archive), '--release-manifest', str(manifest_path),
+              '--release-manifest-sha256', digest(manifest_path)]
+    call('repair refuses raw archive trust alone', ['sdk', 'repair', sdk_dir, '--archive', str(archive), '--archive-sha256', digest(archive)],
+         expect_ok=False, expect_text='requires --release-manifest')
+    call('repair restores the original policy', repair)
+    record('repair preserves the original receipt and contract', receipt.read_bytes() == original_receipt and stored.read_bytes() == original)
+    call('verify after explicit policy repair', ['sdk', 'verify', sdk_dir])
+    repair_payload_cases(call=call, results=results, store=store, sdk_dir=sdk_dir, repair=repair)
+    receipt.unlink()
+    call('verify refuses a legacy store without a receipt', ['sdk', 'verify', sdk_dir], expect_ok=False, expect_text='receipt')
+    call('configure refuses a legacy store without a receipt', configure, expect_ok=False, expect_text='receipt', tools=True)
+    call('ordinary reinstall does not migrate a legacy store', ['sdk', 'install', *repair[3:]], expect_ok=False, expect_text='receipt')
+    call('explicit release repair migrates a legacy store', repair)
+    stored.unlink()
+    call('receipt detects loss of a required contract', ['sdk', 'verify', sdk_dir], expect_ok=False, expect_text='no stored toolchain contract')
+    call('explicit repair restores a required contract', repair)
+    record('repaired SDK payload identity is unchanged', json.loads(receipt.read_text())['sdk']['content_sha256'] ==
+           json.loads(original)['sdk_content_sha256'])
     stored.write_bytes(original + b'\n')
     call('a modified stored contract is refused', ['build', *base], expect_ok=False, expect_text='toolchain contract digest mismatch', tools=True)
     stored.write_bytes(original)

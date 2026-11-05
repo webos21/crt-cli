@@ -23,6 +23,7 @@ int main(int argc, char** argv) {
             "  fetch --url <https-url> --ca-file <pem> --output <file> --sha256 <hex> --size <bytes> [--publisher-key <pem> --signature <file>]\n"
             "  sdk install --archive <file> --archive-sha256 <hex> [--content-sha256 <hex>] [--store <dir>] [--lock-wait <seconds>]\n"
             "  sdk install --archive <file> --release-manifest <file> --release-manifest-sha256 <hex> [--store <dir>] [--lock-wait <seconds>]\n"
+            "  sdk repair <sdk-directory> --archive <file> --release-manifest <file> --release-manifest-sha256 <hex> [--store <dir>]\n"
             "  sdk list|recover [--store <dir>]; sdk verify <sdk-directory> [--store <dir>]\n"
             "  new <dir> [--language c|cxx]\n"
             "  configure/build/test/run [--project <dir>]"}, json);

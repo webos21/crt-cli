@@ -11,7 +11,8 @@ const char* usage =
     "       sdk install --archive <file> --release-manifest <file> --release-manifest-sha256 <hex> [--store <dir>] [--lock-wait <seconds>]\n"
     "       sdk list [--store <dir>]\n"
     "       sdk verify <sdk-directory> [--store <dir>]\n"
-    "       sdk recover [--store <dir>]";
+    "       sdk recover [--store <dir>]\n"
+    "       sdk repair <sdk-directory> --archive <file> --release-manifest <file> --release-manifest-sha256 <hex> [--store <dir>]";
 
 bool lower_hex(const std::string& value, size_t length) {
     if (value.size() != length) return false;
@@ -44,12 +45,18 @@ Reply sdk_command(const std::vector<std::string>& args) {
     if (args.size() < 2) throw Error(usage, 2);
     const std::string& action = args[1];
 
-    if (action == "install") {
-        auto given = options(args, 2, {"--archive", "--archive-sha256", "--content-sha256", "--release-manifest", "--release-manifest-sha256", "--store", "--lock-wait"});
+    if (action == "install" || action == "repair") {
+        const bool repairing = action == "repair";
+        if (repairing && args.size() < 3) throw Error(usage, 2);
+        auto given = options(args, repairing ? 3 : 2, {"--archive", "--archive-sha256", "--content-sha256", "--release-manifest", "--release-manifest-sha256", "--store", "--lock-wait"});
         if (!given.count("--archive")) throw Error(usage, 2);
         const bool by_manifest = given.count("--release-manifest") || given.count("--release-manifest-sha256");
         InstallRequest request;
         request.archive = given.at("--archive");
+        if (repairing) {
+            require(by_manifest, "sdk repair requires --release-manifest and --release-manifest-sha256; current stored bytes are not a trust source");
+            request.repair_directory = args[2];
+        }
         if (by_manifest) {
             // The release manifest is the trusted input (its digest is pinned by the caller): it names the archive digest,
             // size and install metadata, so none of those may also be given separately.
@@ -107,7 +114,7 @@ Reply sdk_command(const std::vector<std::string>& args) {
         }
         auto result = store.install(request);
         return {0, "sdk", result.to_json(),
-                (result.already_installed ? "already installed: " : "installed: ") + result.identity.directory()};
+                (repairing ? "repaired installation metadata: " : result.already_installed ? "already installed: " : "installed: ") + result.identity.directory()};
     }
 
     if (action == "list") {

@@ -119,7 +119,7 @@ InstallMetadata InstallMetadata::from_json(const Json& value) {
 
 Json InstallResult::to_json() const {
     return {{"identity", identity.to_json()}, {"path", path.string()}, {"already_installed", already_installed},
-            {"contract_stored", contract_stored}, {"extracted", extracted.to_json()}};
+            {"contract_stored", contract_stored}, {"receipt_stored", receipt_stored}, {"extracted", extracted.to_json()}};
 }
 
 SdkStore::SdkStore(fs::path root) : root_(std::move(root)) {}
@@ -179,19 +179,22 @@ std::vector<std::string> SdkStore::recover() {
             removed.push_back(std::string(area) + "/" + entry.path().filename().string());
         }
     }
-    // A contract is first written as `<directory>.json.tmp-<pid>` and renamed once its SDK is published.
-    auto contracts = root_ / ".contracts";
-    if (fs::is_directory(contracts)) {
-        for (const auto& entry : fs::directory_iterator(contracts, error)) {
-            auto name = entry.path().filename().string();
-            auto marker = name.rfind(".json.tmp-");
-            if (marker == std::string::npos) continue;
-            long owner = 0;
-            try { owner = std::stol(name.substr(marker + 10)); } catch (const std::exception&) { owner = 0; }
-            if (process_alive(owner)) continue;
-            std::error_code ignored;
-            fs::remove(entry.path(), ignored);
-            removed.push_back(".contracts/" + name);
+    // PID-owned contract/receipt writes are removable only after their owner has exited.
+    for (const auto& area : {".contracts", ".receipts"}) {
+        auto contracts = root_ / area;
+        require(!fs::is_symlink(contracts), "store metadata directory must not be a symlink: " + contracts.string());
+        if (fs::is_directory(contracts)) {
+            for (const auto& entry : fs::directory_iterator(contracts, error)) {
+                auto name = entry.path().filename().string();
+                auto marker = name.rfind(".json.tmp-");
+                if (marker == std::string::npos) continue;
+                long owner = 0;
+                try { owner = std::stol(name.substr(marker + 10)); } catch (const std::exception&) { owner = 0; }
+                if (process_alive(owner)) continue;
+                std::error_code ignored;
+                fs::remove(entry.path(), ignored);
+                removed.push_back(std::string(area) + "/" + name);
+            }
         }
     }
     return removed;
@@ -202,6 +205,7 @@ namespace {
 Json checked_contract(const fs::path& file, const std::string& expected_sha256) {
     require(is_hex(lower(expected_sha256), 64), "a toolchain contract SHA-256 is required (64 hex digits)");
     require(fs::is_regular_file(file) && !fs::is_symlink(file), "toolchain contract not found: " + file.string());
+    require(fs::file_size(file) <= 16 * 1024 * 1024, "toolchain contract exceeds 16 MiB");
     require(file_sha256(file) == lower(expected_sha256), "toolchain contract SHA-256 mismatch");
     auto contract = read_json(file);
     require(contract.is_object() && contract.value("schema", "") == "crt.experimental.native-toolchain" && contract.value("format", 0) == 1,
@@ -210,13 +214,84 @@ Json checked_contract(const fs::path& file, const std::string& expected_sha256) 
     require(contract.contains("sdk_content_sha256") && contract.at("sdk_content_sha256").is_string(), "the toolchain contract has no SDK identity");
     return contract;
 }
+
+void check_directory_name(const std::string& directory) {
+    require(!directory.empty() && directory.find('/') == std::string::npos && directory.find('\\') == std::string::npos &&
+            directory != "." && directory != ".." && directory[0] != '.', "not an SDK directory name: " + directory);
+}
+
+void check_metadata_area(const fs::path& root, const char* name) {
+    require(!fs::is_symlink(root / name), "store metadata directory must not be a symlink: " + (root / name).string());
+}
+
+Json read_receipt(const fs::path& root, const std::string& directory) {
+    check_directory_name(directory);
+    check_metadata_area(root, ".receipts");
+    const auto file = root / ".receipts" / (directory + ".json");
+    require(fs::is_regular_file(file) && !fs::is_symlink(file),
+            "missing or untrusted SDK installation receipt; use sdk repair with a pinned release manifest: " + directory);
+    require(fs::file_size(file) <= 65536, "SDK installation receipt exceeds 64 KiB");
+    Json receipt;
+    try {
+        receipt = read_json(file);
+        require(receipt.is_object() && receipt.value("schema", "") == "crt-cli.sdk-install-receipt" && receipt.value("format", 0) == 1,
+                "unsupported SDK installation receipt");
+        const auto& sdk = receipt.at("sdk");
+        std::string version = sdk.at("version"), content = sdk.at("content_sha256");
+        check_version(version);
+        require(is_hex(content, 64) && SdkIdentity{version, content}.directory() == directory && sdk.at("directory") == directory,
+                "SDK installation receipt identity mismatch");
+        const auto& contract = receipt.at("contract");
+        require(contract.is_null() || (contract.is_object() && contract.size() == 1 && contract.contains("sha256") &&
+                contract.at("sha256").is_string() && is_hex(contract.at("sha256").get<std::string>(), 64)),
+                "invalid SDK installation receipt contract pin");
+    } catch (const std::exception& error) { throw Error("invalid SDK installation receipt: " + std::string(error.what())); }
+    return receipt;
+}
+
+// Only the final rename publishes metadata; a crashed writer leaves a PID-owned temporary file for recover.
+void publish_file(const fs::path& destination, const std::string& bytes, const std::string& expected_sha256 = {}) {
+    const auto parent = destination.parent_path();
+    require(!fs::is_symlink(parent), "store metadata directory must not be a symlink: " + parent.string());
+    fs::create_directories(parent);
+    auto pending = fs::path(destination.string() + ".tmp-" + std::to_string(current_pid()) + "-" +
+                            std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+    require(!fs::exists(pending) && !fs::is_symlink(pending), "metadata temporary file already exists");
+    struct Remove { fs::path p; ~Remove() { std::error_code ignored; fs::remove(p, ignored); } } cleanup{pending};
+    write_text(pending, bytes);
+    require(expected_sha256.empty() || file_sha256(pending) == expected_sha256, "metadata differs from the verified input");
+    fs::rename(pending, destination);
+}
 }  // namespace
+
+Json SdkStore::verified_receipt(const std::string& directory) const {
+    auto receipt = read_receipt(root_, directory);
+    check_metadata_area(root_, ".contracts");
+    const auto stored = contract_path(directory);
+    const auto& pin = receipt.at("contract");
+    if (pin.is_null()) {
+        require(!fs::exists(stored) && !fs::is_symlink(stored), "unexpected stored contract: installation receipt declares none");
+    } else {
+        require(fs::is_regular_file(stored) && !fs::is_symlink(stored),
+                "the installed SDK has no stored toolchain contract (or it is not a regular file); use sdk repair");
+        require(fs::file_size(stored) <= 16 * 1024 * 1024, "toolchain contract exceeds 16 MiB");
+        require(file_sha256(stored) == pin.at("sha256"), "toolchain contract digest mismatch: stored bytes differ from the installation receipt; use sdk repair");
+        auto contract = checked_contract(stored, pin.at("sha256"));
+        require(contract.at("sdk_content_sha256") == receipt.at("sdk").at("content_sha256"), "the stored contract belongs to another SDK");
+    }
+    return receipt;
+}
 
 InstallResult SdkStore::install(const InstallRequest& request) {
     require(is_hex(lower(request.archive_sha256), 64), "an archive SHA-256 is required (64 hex digits)");
     require(request.expected_content_sha256.empty() || is_hex(lower(request.expected_content_sha256), 64),
             "the expected content identity must be 64 hex digits");
     require(fs::is_regular_file(request.archive), "archive not found: " + request.archive.string());
+    const bool repairing = !request.repair_directory.empty();
+    if (repairing) {
+        check_directory_name(request.repair_directory);
+        require(request.metadata.has_value(), "sdk repair requires verified release install metadata");
+    }
     // A bad contract is refused before anything is extracted.
     Json contract;
     const bool with_contract = !request.contract.empty();
@@ -301,51 +376,54 @@ InstallResult SdkStore::install(const InstallRequest& request) {
     if (with_contract)
         require(contract.at("sdk_content_sha256") == result.identity.content_sha256,
                 "the toolchain contract belongs to SDK " + contract.at("sdk_content_sha256").get<std::string>() + ", not " + result.identity.content_sha256);
-    // 5.-7. Serialize on the identity; decide; publish.
+    // Serialize payload and metadata publication on the same SDK identity.
     Lock lock(root_ / ".locks" / (result.identity.content_sha256.substr(0, 12) + ".lock"), lock_wait_seconds);
     result.path = root_ / result.identity.directory();
+    check_metadata_area(root_, ".contracts"); check_metadata_area(root_, ".receipts");
+    if (repairing) require(request.repair_directory == result.identity.directory(), "repair archive does not match the requested SDK identity");
+    Json wanted{{"schema", "crt-cli.sdk-install-receipt"}, {"format", 1}, {"sdk", result.identity.to_json()},
+                {"contract", with_contract ? Json{{"sha256", lower(request.contract_sha256)}} : Json(nullptr)}};
+    const auto stored = contract_path(result.identity.directory());
+    const auto receipt = receipt_path(result.identity.directory());
     if (fs::exists(result.path) || fs::is_symlink(result.path)) {
-        // The name carries 48 bits of the identity. The same name must hold the same content: anything else is either a
-        // damaged store or a collision, and an installed SDK is never replaced.
+        require(fs::is_directory(result.path) && !fs::is_symlink(result.path), "installed SDK must be a real directory");
         auto present = read_identity(result.path);
-        require(present.content_sha256 == result.identity.content_sha256,
-                "an SDK with this directory name but different content is installed (" + present.content_sha256 + "); installed SDKs are immutable");
+        require(present.to_json() == result.identity.to_json(),
+                "an SDK with this directory name but different content is installed; installed SDKs are immutable");
         result.already_installed = true;
-        if (with_contract) {
-            // An installed SDK's contract is as immutable as the SDK: it may be added, never changed.
-            auto stored = contract_path(result.identity.directory());
-            if (fs::exists(stored)) require(file_sha256(stored) == lower(request.contract_sha256), "a different toolchain contract is stored for this SDK; stored contracts are immutable");
-            else {
-                fs::create_directories(root_ / ".contracts", error);
-                require(!error, "cannot create the contract store: " + error.message());
-                auto pending = fs::path(stored.string() + ".tmp-" + std::to_string(current_pid()));
-                write_text(pending, read_text(request.contract));
-                require(file_sha256(pending) == lower(request.contract_sha256), "the stored toolchain contract differs from the verified file");
-                fs::rename(pending, stored, error);
-                require(!error, "cannot store the toolchain contract: " + error.message());
-                result.contract_stored = true;
+        if (repairing) {
+            // Repair cannot update a known pin or downgrade a required contract. A missing legacy receipt is established
+            // only from the verified release inputs, never by hashing the current stored contract.
+            if (fs::exists(receipt) || fs::is_symlink(receipt)) {
+                auto prior = read_receipt(root_, result.identity.directory());
+                require(prior == wanted || (prior.at("sdk") == wanted.at("sdk") && prior.at("contract").is_null() && with_contract),
+                        "repair cannot change an existing installation receipt; SDK policy is immutable");
+            }
+            if (!with_contract) require(!fs::exists(stored) && !fs::is_symlink(stored), "repair release names no contract but one is stored");
+        } else {
+            auto prior = verified_receipt(result.identity.directory());
+            require(prior.at("sdk") == result.identity.to_json(), "SDK installation receipt identity mismatch");
+            if (!with_contract) return result; // Do not downgrade an installation that already requires a contract.
+            if (!prior.at("contract").is_null()) {
+                require(prior == wanted, "a different toolchain contract is stored for this SDK; stored contracts are immutable");
+                return result;
             }
         }
-        return result;
+    } else {
+        require(!repairing, "sdk repair requires an existing installed SDK");
+        require(!fs::exists(receipt) && !fs::is_symlink(receipt) && !fs::exists(stored) && !fs::is_symlink(stored),
+                "orphan SDK metadata exists; do not replace its identity silently");
+        write_text(staging / "txn.json", Json{{"pid", current_pid()}, {"archive_sha256", actual}, {"state", "publishing"}}.dump(2) + "\n");
+        fs::rename(sdk, result.path);
     }
-    fs::path pending;
+    // The receipt is the final commit record. Between renames an interrupted installation fails closed and needs
+    // explicit repair from the original release, rather than accepting a missing/changed policy as a new baseline.
     if (with_contract) {
-        // Prepared before publication, renamed right after it: the pair is complete or the contract is a recoverable leftover.
-        fs::create_directories(root_ / ".contracts", error);
-        require(!error, "cannot create the contract store: " + error.message());
-        pending = contract_path(result.identity.directory()).string() + ".tmp-" + std::to_string(current_pid());
-        write_text(pending, read_text(request.contract));
-                require(file_sha256(pending) == lower(request.contract_sha256), "the stored toolchain contract differs from the verified file");
-    }
-    write_text(staging / "txn.json", Json{{"pid", current_pid()}, {"archive_sha256", actual}, {"state", "publishing"}}.dump(2) + "\n");
-    fs::rename(sdk, result.path, error);
-    if (error) { std::error_code ignored; if (!pending.empty()) fs::remove(pending, ignored); }
-    require(!error, "cannot publish the SDK: " + error.message());
-    if (!pending.empty()) {
-        fs::rename(pending, contract_path(result.identity.directory()), error);
-        require(!error, "the SDK is installed but its toolchain contract could not be stored (install again to add it): " + error.message());
+        publish_file(stored, read_text(request.contract), lower(request.contract_sha256));
         result.contract_stored = true;
     }
+    publish_file(receipt, wanted.dump(2) + "\n");
+    result.receipt_stored = true;
     return result;
 }
 
@@ -386,23 +464,8 @@ uint64_t SdkStore::verify(const std::string& directory) const {
     auto identity = read_identity(path);
     require(identity.directory() == directory,
             "installed SDK content no longer matches its identity: directory " + directory + ", content " + identity.directory());
-    // The toolchain contract kept beside the SDK is part of what the lock trusts: it must still be a portable contract of this SDK.
-    // Its digest is not known here (the project lock records it); this checks what the store itself can know.
-    auto stored = contract_path(directory);
-    if (fs::exists(stored) || fs::is_symlink(stored)) {
-        Json contract;
-        try {
-            require(fs::is_regular_file(stored) && !fs::is_symlink(stored), "not a regular file");
-            contract = read_json(stored);
-        } catch (const std::exception& error) {
-            throw Error("the stored toolchain contract of " + directory + " is unreadable: " + error.what());
-        }
-        require(contract.is_object() && contract.value("schema", "") == "crt.experimental.native-toolchain" && contract.value("format", 0) == 1,
-                "the stored toolchain contract of " + directory + " is not a supported contract");
-        require(!contract.contains("external_os_sdk"), "the stored toolchain contract of " + directory + " names a machine path (not portable)");
-        require(contract.value("sdk_content_sha256", "") == identity.content_sha256,
-                "the stored toolchain contract of " + directory + " belongs to another SDK");
-    }
+    auto receipt = verified_receipt(directory);
+    require(receipt.at("sdk") == identity.to_json(), "SDK installation receipt identity mismatch");
     return inventory(path).size();
 }
 

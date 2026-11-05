@@ -6,7 +6,43 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## Installation Receipt Local Adoption (2026-11-05)
+
+Reviewed the producer planning baseline `6f2892d` and CLI `4aa9a81`.
+The [producer handoff](https://github.com/webos21/crt/blob/main/docs/design/sdk_development_contract.md#installation-time-contract-pin-handoff-crt-31)
+reuses existing install metadata and referenced portable-contract assets.
+CLI owns the implemented local `crt-cli.sdk-install-receipt`, format 1,
+required-presence/digest enforcement and explicit `sdk repair` lifecycle.
+SDK/native-provider/install-metadata/project-lock formats and SDK identities
+are unchanged; `receipt_stored` is an additive install/repair result field.
+
+The uncommitted product/test source snapshot is
+`e380f275fffe299fcb6ab1fde1bea641e44ace9ef55c230554f51ed148f08694`;
+tested binary `68f0535d03ec40d1ea719c8f9f214a1a884c7afeec30eff10bc0bc135cb553a7`.
+[Consumer acceptance](acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-linuxx86_64-2026-11-05)
+records the exact copied dirty-local SDK/provider and labeled archive/manifest
+fixture, native/store checks and isolated transaction/project proof. This is a
+bounded Linux developer combination, not a promoted SDK or a new common native
+matrix. Earlier clean Stage 2 runs retain their original artifact identities.
+
+New clients refuse missing/untrusted legacy receipts for store-based adoption;
+explicit repair requires the original archive and independently pinned release
+manifest, never a hash inferred from current contract bytes. Known pins cannot
+change or be downgraded; receipt-marked no-contract installs can gain the first
+verified contract. Handoff roots and explicitly pinned external policy remain
+explicit developer choices. Older clients do not enforce this store policy and
+are not qualified receipt readers. Unknown/malformed receipts fail closed.
+
+The new metadata replacement/recovery delta remains to be replayed on native
+macOS/Windows. The root SDK defaults, committed bin snapshots, project locks,
+trust roots and production adoption are unchanged. No release/promotion or
+STATUS refresh is performed by this implementation increment.
+
 ## First User Workflow Planning Review (2026-11-05)
+
+The subsequent [receipt implementation](#installation-receipt-local-adoption-2026-11-05)
+has its own scoped execution evidence; this planning review does not stand in
+for that proof.
 
 Reviewed producer CRT `433a7d65b34ee25d71eb9d7c96976c817f5936cd` and consumer
 CLI `3978cedbefa2abda7c4cd0c11ca1649912d7943a` before this owner-approved
