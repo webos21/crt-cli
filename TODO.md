@@ -57,7 +57,7 @@ These are future increments, not implemented features.
 - [ ] Implement/validate shared immutable SDK storage and project references;
   version/profile/target/content pins remain project-specific.
   - [x] Shared immutable store (`sdk list|verify|recover`).
-  - [ ] Project references and pins: the lock identity and Stage 2 are done on Linux/x86_64 and Linux/aarch64; macOS/arm64, Windows/arm64 and Windows/x64 replays pass.
+  - [x] Project references and pins: lock format 1 identity and the stored portable contract pass the Stage 2 replay on all five native pairs; `sdk verify` also covers the stored contract (Linux/x86_64 unit level, [acceptance](docs/acceptance/sdk_install_acceptance.md#sdk-verify-covers-the-stored-contract-linuxx86_64-2026-11-05)). Open: the store does not record the contract digest.
 - [ ] Implement verified CLI self-upgrade with candidate health checks,
   OS-specific activation, interruption/rollback and unchanged project SDK/port pins
   ([lifecycle gates](docs/acceptance/lifecycle_acceptance.md)).

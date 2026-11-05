@@ -242,8 +242,8 @@ contract byte for byte; `sdk list` reports it; `configure` selects the only SDK 
 `contract_source: store` with no SDK or contract path and no machine path in the lock; `build`, `test`, `run`; a modified
 stored contract is refused by the lock and works again once restored; a missing one is reported; `--os-sdk` is refused where
 the contract needs none; a release without its contract asset, with a flipped byte and with a trailing byte is refused with
-nothing published. Known limit: `sdk verify` does not cover the stored contract (a changed contract is caught by a locked
-project, not by the store); a project that runs `configure` again would lock the changed bytes.
+nothing published. Known limit (closed the same day, see "`sdk verify` covers the stored contract" below): `sdk verify` did not cover the
+stored contract (a changed contract is caught by a locked project, not by the store); a project that runs `configure` again would lock the changed bytes.
 
 ### Other hosts
 
@@ -377,3 +377,20 @@ pinned `xz-5.8.3.tar.gz`, downloaded with the owner's permission and equal to th
 Raw evidence (logs, `result.json` files, per-call stdout/stderr, process images, the previous binary `9948bcd9...fe2d` under `previous/`) is under the producer worktree's ignored `out/s2-windows-x64-20261105/`;
 `bin/win-x64/crt-cli.exe` is replaced by the self-built executable above. Windows/x64 only. This is a rehearsal release asset, not a published release. The Windows Development SDK contains no symlinks, and there is no network
 denial or read-only root on this driver. Full-stage install metadata, a published release asset and promotion are not run.
+
+## `sdk verify` covers the stored contract (Linux/x86_64, 2026-11-05)
+
+**Pass on Linux/x86_64 (unit level); not replayed on other hosts.** `sdk verify <dir>` used to recompute only the SDK's content identity. When
+`.contracts/<dir>.json` exists it now also requires the stored file to be a regular file that parses as a supported `crt.experimental.native-toolchain`
+format 1 contract, to name no machine path (`external_os_sdk`), and to carry `sdk_content_sha256` equal to the verified identity of that SDK. Each failure
+is reported with the SDK directory and the reason ("unreadable", "not a supported contract", "names a machine path", "belongs to another SDK"). An SDK
+installed without a contract verifies as before.
+
+What this does **not** check: the contract's own digest. The store does not record it; the project lock does (`contract_sha256`), so a contract that is
+valid for the SDK but different from the locked one is still caught only by `build`/`test`/`run` of the locking project, and a repeated `configure`
+would lock the new bytes. Closing that needs the store to record the digest at install time, which is a later decision.
+
+Evidence: `sdk-store-test` 89 checks (83 before; six new: intact contracts accepted, machine path, other SDK, unsupported format, unreadable, restored),
+`native-test` 829 and `archive-test` 158, all green in a project build with the self-built Linux/x86_64 CLI against the current Development SDK
+(`--allow-dirty-sdk true`, explicit contract; a developer check, not an SDK-only replay). The replay scripts were not changed or rerun for this
+increment, and `bin/*/crt-cli` was not refreshed.

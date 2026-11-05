@@ -249,6 +249,27 @@ int main() {
             auto added = contract_store.install(install_with(m_archive, write_contract("m-contract.json", m_identity, [](Json&) {})));
             check(added.already_installed && added.contract_stored && listed_has_contract(m_identity), "a contract is added to an installed SDK");
 
+            // `verify` also covers the stored contract: it must stay a portable contract of this very SDK.
+            auto verify_text = [&](const std::string& directory) {
+                try { contract_store.verify(directory); } catch (const Error& error) { return std::string(error.what()); }
+                return std::string();
+            };
+            auto m_directory = added.identity.directory();
+            auto m_stored = contract_store.contract_path(m_directory);
+            check(verify_text(m_directory).empty() && verify_text(stored.identity.directory()).empty(), "verify accepts SDKs with intact contracts");
+            auto m_original = read_text(m_stored);
+            Json m_json = Json::parse(m_original);
+            m_json["external_os_sdk"] = "/x"; write_text(m_stored, m_json.dump());
+            check(verify_text(m_directory).find("machine path") != std::string::npos, "verify refuses a stored contract that names a machine path");
+            m_json.erase("external_os_sdk"); m_json["sdk_content_sha256"] = std::string(64, '1'); write_text(m_stored, m_json.dump());
+            check(verify_text(m_directory).find("belongs to another SDK") != std::string::npos, "verify refuses a stored contract of another SDK");
+            m_json["sdk_content_sha256"] = m_identity; m_json["format"] = 2; write_text(m_stored, m_json.dump());
+            check(verify_text(m_directory).find("not a supported contract") != std::string::npos, "verify refuses an unsupported stored contract");
+            write_text(m_stored, "not json");
+            check(verify_text(m_directory).find("unreadable") != std::string::npos, "verify refuses an unreadable stored contract");
+            write_text(m_stored, m_original);
+            check(verify_text(m_directory).empty(), "verify accepts the restored contract");
+
             // Interrupted writes: only the dead owner's temporary file is a leftover.
             auto pending = [&](const std::string& owner) { return contract_store.root() / ".contracts" / ("x.json.tmp-" + owner); };
             write_text(pending("999999999"), "{}"); write_text(pending(std::to_string(getpid())), "{}");

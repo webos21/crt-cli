@@ -386,6 +386,23 @@ uint64_t SdkStore::verify(const std::string& directory) const {
     auto identity = read_identity(path);
     require(identity.directory() == directory,
             "installed SDK content no longer matches its identity: directory " + directory + ", content " + identity.directory());
+    // The toolchain contract kept beside the SDK is part of what the lock trusts: it must still be a portable contract of this SDK.
+    // Its digest is not known here (the project lock records it); this checks what the store itself can know.
+    auto stored = contract_path(directory);
+    if (fs::exists(stored) || fs::is_symlink(stored)) {
+        Json contract;
+        try {
+            require(fs::is_regular_file(stored) && !fs::is_symlink(stored), "not a regular file");
+            contract = read_json(stored);
+        } catch (const std::exception& error) {
+            throw Error("the stored toolchain contract of " + directory + " is unreadable: " + error.what());
+        }
+        require(contract.is_object() && contract.value("schema", "") == "crt.experimental.native-toolchain" && contract.value("format", 0) == 1,
+                "the stored toolchain contract of " + directory + " is not a supported contract");
+        require(!contract.contains("external_os_sdk"), "the stored toolchain contract of " + directory + " names a machine path (not portable)");
+        require(contract.value("sdk_content_sha256", "") == identity.content_sha256,
+                "the stored toolchain contract of " + directory + " belongs to another SDK");
+    }
     return inventory(path).size();
 }
 

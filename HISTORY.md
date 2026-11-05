@@ -11,6 +11,13 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-05
 
+### `sdk verify` covers the stored toolchain contract
+
+The known Stage 2 gap is closed at unit level: `sdk verify` now also checks the contract kept beside the SDK (regular file, supported format, no machine path,
+`sdk_content_sha256` equal to the SDK's identity). Six new `sdk-store-test` checks (89 total) pass on Linux/x86_64 together with `native-test` 829 and `archive-test` 158. Not replayed on
+the other hosts and the committed binaries are not refreshed; the contract's own digest stays a lock-only property. All five native pairs have now passed the Stage 2 replay, so the D2 project
+references item is checked off. See [acceptance](docs/acceptance/sdk_install_acceptance.md#sdk-verify-covers-the-stored-contract-linuxx86_64-2026-11-05).
+
 ### D2 Stage 2 on Windows/x64: toolchain contract and project SDK selection
 
 Last native pair for the Stage 2 work: a rehearsal `crt-dev-release` of committed CRT `436b4f2` (`v0.0.1-rehearsal.8`) ships the portable toolchain contract (`os_sdk.kind` `windows-um-import-libraries`), `sdk install`
