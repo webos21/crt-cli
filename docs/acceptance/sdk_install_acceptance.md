@@ -223,3 +223,34 @@ boundary, disk-full and power-loss behavior, Full-stage archives and the path wh
 A release
 candidate that is an actual published release; Full-stage archives; disk-full and
 power-loss behavior; very large archives beyond the 186 MB dev SDK.
+
+## Toolchain contract and project SDK selection replay (Stage 2, Linux/x86_64, 2026-11-05)
+
+The replay scripts share the cases in `tools/replay_sdk_contract_cases.py`: the contract the release ships is stored beside
+the SDK, a project selects the only installed SDK and its contract with no `--sdk` and no `--sdk-contract`, the toolchain
+builds, tests and runs, and damage is caught. The store is now `$HOME/.crt/sdks` of the sandbox (HOME is writable
+scratch), because `configure` looks there.
+
+| Input | Value |
+| --- | --- |
+| Release | `crt-dev-release` rehearsal `v0.0.1-rehearsal.3` (scratch clone, nothing uploaded, **uncommitted code**), archive + toolchain contract + manifest |
+| CLI | built from this checkout's sources by the committed `bin/linux-x64/crt-cli` against a local, dirty-marked Dev SDK (`--allow-dirty-sdk true`); not a CLI built from the SDK under test |
+| Isolation | bubblewrap as above; the project workflow runs the host `clang`, `ld.lld` and `llvm-ar` read-only from the root |
+
+Result: **69/69** (the earlier 48 plus 21 new cases), evidence outside the repositories. New cases: the installation kept the
+contract byte for byte; `sdk list` reports it; `configure` selects the only SDK and records identity, contract digest and
+`contract_source: store` with no SDK or contract path and no machine path in the lock; `build`, `test`, `run`; a modified
+stored contract is refused by the lock and works again once restored; a missing one is reported; `--os-sdk` is refused where
+the contract needs none; a release without its contract asset, with a flipped byte and with a trailing byte is refused with
+nothing published. Known limit: `sdk verify` does not cover the stored contract (a changed contract is caught by a locked
+project, not by the store); a project that runs `configure` again would lock the changed bytes.
+
+### Other hosts
+
+`replay_sdk_install_macos.py` and `replay_sdk_install_windows.py` run the same cases but were **not executed** on their hosts
+in this change; they are written from the Linux script and checked only for syntax. Both now need the native tools
+(`--cc --cxx --linker --ar`), and the release must come from a collector that had the OS SDK at collection time (Xcode;
+`CRT_WINDOWS_SDK_LIBPATH`). On Windows the same variable must be set for the replay itself, and the process accounting
+accepts images from the tools' directories and the scratch tree during project calls. The macOS case expects the
+`macos-xcode-sdk` kind, the Windows case `windows-um-import-libraries`; discovery (`xcrun`, the variable) runs inside the
+sandbox, so a Seatbelt or token restriction that blocks it shows up as a failed `configure`, not as a skipped case.

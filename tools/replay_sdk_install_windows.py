@@ -25,6 +25,9 @@ import threading
 import time
 import zipfile
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import replay_sdk_contract_cases as contract_cases
+
 
 def digest(path):
     h = hashlib.sha256()
@@ -51,7 +54,10 @@ def main():
     parser.add_argument('--probe', type=Path, required=True, help='SDK-built executable that must fail to read every --hide root')
     parser.add_argument('--crt-tools', type=Path, required=True, help='tools/ of the producer checkout (crt_windows_* and the metadata module)')
     parser.add_argument('--hide', type=Path, action='append', default=[])
+    for name in ('cc', 'cxx', 'linker', 'ar'):
+        parser.add_argument('--' + name, type=Path, required=True, help=f'absolute native {name}.exe for the project workflow')
     args = parser.parse_args()
+    tools = {name: getattr(args, name) for name in ('cc', 'cxx', 'linker', 'ar')}
     if os.name != 'nt':
         parser.error('requires native Windows')
     sys.path.insert(0, str(args.crt_tools.resolve()))
@@ -62,22 +68,32 @@ def main():
     work, sid = sandbox.create_work(args.work)
     hidden = sorted({p.resolve(strict=True) for p in args.hide})
     assert hidden and all(not work.is_relative_to(p) and not p.is_relative_to(work) for p in hidden), 'work must be outside hidden inputs'
-    (work / 'tmp').mkdir(); (work / 'home').mkdir()
+    (work / 'tmp').mkdir()
     cli, probe = work / 'crt-cli.exe', work / 'probe.exe'
     shutil.copy2(args.cli, cli); shutil.copy2(args.probe, probe)
     inputs = work / 'inputs'; inputs.mkdir()
     manifest_src = next(args.release_dir.glob('release-manifest-dev-windows-*.json'))
     manifest = json.loads(manifest_src.read_text(encoding='utf-8'))
     asset = next(a for a in manifest['assets'] if 'install' in a)
+    contract_asset = next(a for a in manifest['assets'] if a['name'] == asset['contract'])
     shutil.copy2(args.release_dir / asset['name'], inputs / asset['name'])
+    shutil.copy2(args.release_dir / contract_asset['name'], inputs / contract_asset['name'])
     shutil.copy2(manifest_src, inputs / manifest_src.name)
     archive, manifest_path = inputs / asset['name'], inputs / manifest_src.name
     scratch = work / 'scratch space 한글'; scratch.mkdir()
+    # %USERPROFILE%\\.crt\\sdks is where `configure` looks for installed SDKs, so the store lives under a private, writable home.
+    home = scratch / 'home'; home.mkdir()
     (scratch / 'sentinel').mkdir(); (scratch / 'sentinel' / 'keep').write_text('keep')
     input_digests = {p.name: digest(p) for p in inputs.iterdir()}
     permitted = {cli.resolve(), probe.resolve(), Path(os.environ['SystemRoot'], 'System32/conhost.exe').resolve()}
-    environment = {'HOME': str(work / 'home'), 'USERPROFILE': str(work / 'home'), 'PATH': '', 'SystemRoot': os.environ['SystemRoot'],
+    environment = {'HOME': str(home), 'USERPROFILE': str(home), 'PATH': '', 'SystemRoot': os.environ['SystemRoot'],
                    'LC_ALL': 'C', 'TEMP': str(work / 'tmp'), 'TMP': str(work / 'tmp')}
+    # The portable contract finds the Windows SDK import libraries through this variable (the OS SDK is the host's, never locked).
+    assert os.environ.get('CRT_WINDOWS_SDK_LIBPATH'), 'set CRT_WINDOWS_SDK_LIBPATH to the Windows SDK um/<arch> import-library directory'
+    environment['CRT_WINDOWS_SDK_LIBPATH'] = os.environ['CRT_WINDOWS_SDK_LIBPATH']
+    # Project calls start the selected compiler, linker and archiver (and programs the project built): their images are
+    # accounted for like the CLI's own, but only from the tools' directories and the scratch tree.
+    tool_directories = {Path(p).resolve().parent for p in tools.values()}
     results, commands = [], []
     counter = [0]
 
@@ -96,13 +112,16 @@ def main():
         finally:
             kernel.LocalFree(descriptor)
 
-    def launch(argv, timeout=600):
+    def launch(argv, timeout=600, tools_allowed=False):
         counter[0] += 1
         label = f'call-{counter[0]:03d}'
         out, err = output / (label + '.stdout'), output / (label + '.stderr')
         result = trace.run([str(cli), '--json', *map(str, argv)], work=work, sid=sid, env=environment, cwd=work,
                            stdout=out, stderr=err, timeout=timeout)
-        stray = [p for p in result['processes'] if not p['image'] or Path(p['image']).resolve() not in permitted]
+        def known(image):
+            path = Path(image).resolve()
+            return path in permitted or (tools_allowed and (path.parent in tool_directories or path.is_relative_to(scratch.resolve())))
+        stray = [p for p in result['processes'] if not p['image'] or not known(p['image'])]
         commands.append({'label': label, 'argv': [str(x) for x in argv], 'exit': result['exit_code'], 'timed_out': result['timed_out'],
                          'images': sorted({str(p['image']) for p in result['processes']})})
         return result, out.read_bytes(), stray
@@ -113,8 +132,8 @@ def main():
         except Exception:
             return {'ok': result['exit_code'] == 0, 'data': {'message': stdout.decode('utf-8', 'replace')[:300]}}
 
-    def run(label, tail, expect_ok=True, expect_text=None, check=None):
-        result, stdout, stray = launch(tail)
+    def run(label, tail, expect_ok=True, expect_text=None, check=None, tools=False):
+        result, stdout, stray = launch(tail, tools_allowed=tools)
         reply = reply_of(stdout, result)
         message = json.dumps(reply.get('data', {}), ensure_ascii=False)
         passed = (result['exit_code'] == 0) == expect_ok and bool(reply.get('ok')) == expect_ok and not result['timed_out'] and not stray
@@ -150,7 +169,7 @@ def main():
     sentinel_before = tree(scratch / 'sentinel')
 
     # 1. Installation from the pinned manifest, no PATH, no shell.
-    store = scratch / 'store 한글'
+    store = home / '.crt' / 'sdks'
     run('install from release manifest', install_tail(store),
         check=lambda r: r['data']['identity']['content_sha256'] == asset['install']['content_sha256'] and not r['data']['already_installed'])
     entries = published(store)
@@ -179,13 +198,23 @@ def main():
     run('verify passes after restoring the byte', ['sdk', 'verify', sdk_dir, '--store', store])
     save()
 
-    # 4. Tampered inputs never publish anything.
     def fresh_store(name):
         path = scratch / name; shutil.rmtree(path, ignore_errors=True); return path
 
+    # 3b. The release's toolchain contract is kept beside the SDK; a project selects both without --sdk-contract.
+    def call(label, tail, **kw):
+        kw.pop('binds', None); kw.pop('store', None)
+        return run(label, tail, **kw)
+    contract_cases.contract_cases(call=call, results=results, store=store, sdk_dir=sdk_dir, contract=contract_asset, archive=archive,
+                                  manifest_path=manifest_path, inputs=inputs, work=work, scratch=scratch, fresh_store=fresh_store,
+                                  digest=digest, tree=tree, published=published, tools=tools, os_kind='windows-um-import-libraries')
+    save()
+
+    # 4. Tampered inputs never publish anything.
+
     def tampered(name, mutate):
         directory = work / name; directory.mkdir()
-        shutil.copy2(manifest_path, directory / manifest_path.name)
+        shutil.copy2(manifest_path, directory / manifest_path.name); shutil.copy2(inputs / contract_asset['name'], directory / contract_asset['name'])
         target = directory / archive.name; shutil.copy2(archive, target); mutate(target); return directory
 
     def flip_byte(p):

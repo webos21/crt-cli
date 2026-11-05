@@ -11,6 +11,15 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-04
 
+### D2 Stage 2 replay scripts (Linux/x86_64 executed; macOS and Windows written, not run)
+
+The shared cases live in `tools/replay_sdk_contract_cases.py`; the three replay scripts call them with their own isolation
+(bubblewrap, Seatbelt, restricted token), copy the contract asset next to the archive (without it `sdk install` rightly
+refuses a release that names one) and keep the store at the sandbox `$HOME/.crt/sdks`. Linux/x86_64 with the new release
+passed 69/69 ([acceptance](docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-linuxx86_64-2026-11-05)).
+The development `seed` binary was lost to a temporary-directory cleanup, so the CLI for this replay was rebuilt from the
+sources with the committed `bin/linux-x64/crt-cli`. macOS and Windows scripts only parse; they have not run.
+
 ### D2 toolchain contract stored with the SDK (Stage 2, Linux/x86_64)
 
 A release archive entry may name its portable toolchain contract (`contract`, another asset of the release, produced by CRT

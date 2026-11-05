@@ -22,6 +22,9 @@ import tempfile
 import time
 import zipfile
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import replay_sdk_contract_cases as contract_cases
+
 
 def digest(path):
     h = hashlib.sha256()
@@ -46,7 +49,10 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--work-parent', type=Path, required=True)
     parser.add_argument('--hide', type=Path, action='append', default=[])
+    for name in ('cc', 'cxx', 'linker', 'ar'):
+        parser.add_argument('--' + name, type=Path, required=True, help=f'absolute native {name} for the project workflow')
     args = parser.parse_args()
+    tools = {name: getattr(args, name) for name in ('cc', 'cxx', 'linker', 'ar')}
     sandbox = '/usr/bin/sandbox-exec'
     assert sys.platform == 'darwin' and Path(sandbox).exists(), 'macOS sandbox-exec is required'
     output = args.output.resolve(); output.mkdir(parents=True, exist_ok=False)
@@ -60,12 +66,15 @@ def main():
     manifest_src = next(args.release_dir.glob('release-manifest-dev-macos-*.json'))
     manifest = json.loads(manifest_src.read_text())
     asset = next(a for a in manifest['assets'] if 'install' in a)
+    contract_asset = next(a for a in manifest['assets'] if a['name'] == asset['contract'])
     shutil.copy2(args.release_dir / asset['name'], inputs / asset['name'])
+    shutil.copy2(args.release_dir / contract_asset['name'], inputs / contract_asset['name'])
     shutil.copy2(manifest_src, inputs / manifest_src.name)
     archive, manifest_path = inputs / asset['name'], inputs / manifest_src.name
     scratch = work / 'scratch'; scratch.mkdir()
     (scratch / 'sentinel').mkdir(); (scratch / 'sentinel' / 'keep').write_text('keep')
-    home = work / 'home'; home.mkdir()
+    # $HOME/.crt/sdks is where `configure` looks for installed SDKs, so the store lives under a writable HOME.
+    home = scratch / 'home'; home.mkdir()
     results = []
     sandbox_digest_before = {p.name: digest(p) for p in inputs.iterdir()}
 
@@ -108,7 +117,7 @@ def main():
     sentinel_before = tree(scratch / 'sentinel')
 
     # 1. Installation from the pinned manifest, with no network and nothing on PATH.
-    store = scratch / 'store'
+    store = home / '.crt' / 'sdks'
     reply = run('install from release manifest', install_tail(store), store,
                 check=lambda r: r['data']['identity']['content_sha256'] == asset['install']['content_sha256'] and not r['data']['already_installed'])
     entries = published(store)
@@ -136,12 +145,21 @@ def main():
     victim.write_bytes(original); victim.chmod(mode)
     run('verify passes after restoring the byte', ['sdk', 'verify', sdk_dir, '--store', str(store)], store)
 
-    # 4. Tampered inputs never publish anything.
     def fresh_store(name):
         path = scratch / name; shutil.rmtree(path, ignore_errors=True); return path
+
+    # 3b. The release's toolchain contract is kept beside the SDK; a project selects both without --sdk-contract.
+    def call(label, tail, **kw):
+        kw.pop('tools', None)
+        return run(label, tail, kw.pop('store', store), **kw)
+    contract_cases.contract_cases(call=call, results=results, store=store, sdk_dir=sdk_dir, contract=contract_asset, archive=archive,
+                                  manifest_path=manifest_path, inputs=inputs, work=work, scratch=scratch, fresh_store=fresh_store,
+                                  digest=digest, tree=tree, published=published, tools=tools, os_kind='macos-xcode-sdk')
+
+    # 4. Tampered inputs never publish anything.
     def tampered(name, mutate):
         directory = work / name; directory.mkdir()
-        shutil.copy2(manifest_path, directory / manifest_path.name)
+        shutil.copy2(manifest_path, directory / manifest_path.name); shutil.copy2(inputs / contract_asset['name'], directory / contract_asset['name'])
         target = directory / archive.name; shutil.copy2(archive, target); mutate(target); return directory, target
     flip, flipped = tampered('tampered-archive', lambda p: p.write_bytes(bytearray(p.read_bytes())[:1000] + bytes([p.read_bytes()[1000] ^ 1]) + p.read_bytes()[1001:]))
     grown, grown_path = tampered('grown-archive', lambda p: p.open('ab').write(b'x'))

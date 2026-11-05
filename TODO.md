@@ -46,8 +46,8 @@ These are future increments, not implemented features.
     recovery ([acceptance](docs/acceptance/sdk_install_acceptance.md)).
   - [x] Stage 1 (Linux/x86_64): project selection of an installed SDK by name/identity or the only fit; `crt.lock` format 1
     records identity only ([HISTORY](HISTORY.md)). Stage 2 (Linux/x86_64): the release ships a portable toolchain contract
-    that `sdk install` keeps beside the SDK, so `configure` needs no `--sdk-contract`. Open: macOS/Windows replays of
-    Stages 1-2 (`@OS_SDK@` discovery), a release from committed code.
+    that `sdk install` keeps beside the SDK, so `configure` needs no `--sdk-contract`. Linux replay 69/69; macOS/Windows replay scripts are written
+    but not run. Open: running them (`@OS_SDK@` discovery), a release from committed code.
   - [ ] Explicit updates (network acquisition is a later increment).
 - [ ] Replay installation failures and path/tool collisions on the three
   initial native host pairs; never migrate project locks implicitly.
