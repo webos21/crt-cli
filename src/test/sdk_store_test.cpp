@@ -236,11 +236,18 @@ int main() {
             check(failure(contract_store, bad_digest).find("SHA-256 mismatch") != std::string::npos, "a wrong contract digest is refused");
             check(contract_store.list().size() == 1 && leftovers() == 1, "refused contracts left no SDK and no file");
 
+            // The store lists by directory name, so where an SDK appears depends on its content hash (and hence on the target):
+            // look it up by identity instead of assuming a position.
+            auto listed_has_contract = [&](const std::string& content_sha256) {
+                for (const auto& entry : contract_store.list()) if (entry.content12 == content_sha256.substr(0, 12)) return entry.has_contract;
+                check(false, "the SDK is listed: " + content_sha256.substr(0, 12));
+                return false;
+            };
             // A contract may be added to an SDK installed without one.
             auto plain = contract_store.install(install_with(m_archive, fs::path()));
-            check(!plain.already_installed && !plain.contract_stored && !contract_store.list()[1].has_contract, "an SDK without a contract installs");
+            check(!plain.already_installed && !plain.contract_stored && !listed_has_contract(m_identity), "an SDK without a contract installs");
             auto added = contract_store.install(install_with(m_archive, write_contract("m-contract.json", m_identity, [](Json&) {})));
-            check(added.already_installed && added.contract_stored && contract_store.list()[1].has_contract, "a contract is added to an installed SDK");
+            check(added.already_installed && added.contract_stored && listed_has_contract(m_identity), "a contract is added to an installed SDK");
 
             // Interrupted writes: only the dead owner's temporary file is a leftover.
             auto pending = [&](const std::string& owner) { return contract_store.root() / ".contracts" / ("x.json.tmp-" + owner); };
