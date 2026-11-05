@@ -48,7 +48,7 @@ These are future increments, not implemented features.
     records identity only ([HISTORY](HISTORY.md)). Stage 2 (Linux/x86_64): the release ships a portable toolchain contract
     that `sdk install` keeps beside the SDK, so `configure` needs no `--sdk-contract`. Linux/x86_64 replay 69/69; Linux/aarch64 replay 69/69 with a self-built CLI and a release from committed CRT
     `78ed80f` ([record](docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-linuxaarch64-2026-11-05));
-    macOS/arm64 replay 69/69 ([record](docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-macosarm64-2026-11-05)); Windows/arm64 replay 83/83 with a release from committed CRT `0631131` and Windows `@OS_SDK@` discovery working ([record](docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-windowsarm64-2026-11-05)). Open: the Windows/x64 run.
+    macOS/arm64 replay 69/69 ([record](docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-macosarm64-2026-11-05)); Windows/arm64 replay 83/83 with a release from committed CRT `0631131` and Windows `@OS_SDK@` discovery working ([record](docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-windowsarm64-2026-11-05)). Windows/x64 replay 83/83 with a release from committed CRT `436b4f2` ([record](docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-windowsx64-2026-11-05)); every native pair has now run it.
   - [ ] Explicit updates (network acquisition is a later increment).
 - [ ] Replay installation failures and path/tool collisions on the three
   initial native host pairs; never migrate project locks implicitly.
@@ -57,7 +57,7 @@ These are future increments, not implemented features.
 - [ ] Implement/validate shared immutable SDK storage and project references;
   version/profile/target/content pins remain project-specific.
   - [x] Shared immutable store (`sdk list|verify|recover`).
-  - [ ] Project references and pins: the lock identity and Stage 2 are done on Linux/x86_64 and Linux/aarch64; macOS/arm64 and Windows/arm64 replays pass; Windows/x64 remains.
+  - [ ] Project references and pins: the lock identity and Stage 2 are done on Linux/x86_64 and Linux/aarch64; macOS/arm64, Windows/arm64 and Windows/x64 replays pass.
 - [ ] Implement verified CLI self-upgrade with candidate health checks,
   OS-specific activation, interruption/rollback and unchanged project SDK/port pins
   ([lifecycle gates](docs/acceptance/lifecycle_acceptance.md)).

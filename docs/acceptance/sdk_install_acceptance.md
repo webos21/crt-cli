@@ -348,3 +348,32 @@ Raw evidence (logs, `result.json` files, per-call stdout/stderr, process images,
 `out/windows-arm64-s2-20261105/`; `bin/win-arm64/crt-cli.exe` is replaced by the self-built executable above. Windows/arm64 only: the Windows/x64 run of the same script is not part of this
 record. This is a rehearsal release asset, not a published release. The Windows Development SDK contains no symlinks, and there is no network denial or read-only root on this driver.
 
+## Toolchain contract and project SDK selection replay (Stage 2, Windows/x64, 2026-11-05)
+
+**Pass, native Windows/x64; local/unpromoted.** The second Windows execution of `tools/replay_sdk_install_windows.py` with the shared `tools/replay_sdk_contract_cases.py`, run unchanged from the Windows/arm64 record.
+Every CLI call runs under CRT's `crt_windows_trace` (restricted token naming a per-run SID, empty `PATH`, redirected stdio, job-object accounting; no network denial is claimed). The store is
+`%USERPROFILE%\.crt\sdks` of the private work directory (Hangul and spaces in its name); project calls may start the native `clang`, `ld.lld` and `llvm-ar`, and `CRT_WINDOWS_SDK_LIBPATH` is passed for OS SDK discovery.
+
+| Input | Value |
+| --- | --- |
+| Host | Windows 11 Pro 10.0.26100 x64, LLVM/Clang 22.1.8, Windows SDK imports `10.0.28000.0/um/x64`, Developer Mode on (not changed) |
+| Release | `crt-dev-release` rehearsal `v0.0.1-rehearsal.8` of **committed** CRT [`436b4f2`](https://github.com/webos21/crt/commit/436b4f2e18db4ce2ac5d1eb56d6f2c7b37606296) (detached worktree at a short ASCII path, nothing uploaded): archive `crt-v0.0.1-rehearsal.8-windows-x86_64-dev.zip` (146,110,051 bytes, SHA-256 `2575deb4...f304`), contract `crt-v0.0.1-rehearsal.8-windows-x86_64-dev-toolchain.json` (440,297 bytes, SHA-256 `e9758d59...aeab`, `os_sdk.kind` = `windows-um-import-libraries`), manifest SHA-256 `2ce6c779...30f3`; install metadata format 1: `zip`, 2,917 entries (2,736 files, 181 directories, 0 symlinks), 396,523,706 bytes, identity `e80fa143...7159` |
+| Producer gate | `crt-development-sdk-test` exit 0 (1,154 s); `crt-c-test` 169 of 169, one skip (`fork_heap_snapshot_test_runs`); `crt-dev-release` exit 0 (88 s) |
+| CLI | the **self-built, SDK-only** executable of the Windows contract replay of that SDK, built from this repository at `f984387`: SHA-256 `c65c6e47...5e8a`, 30,184,448 bytes, imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`; cold self-build 16 executed / 0 reused, warm 0 / 16; 919 native, 151 archive and 83 SDK-store checks; 559 recorded processes, only the declared native tools, the CLI and its generated executables; SDK inventory unchanged |
+
+Result: **83/83** on the first run (the 62 Windows installer cases plus the same 21 contract and project-selection cases as the other hosts): the installation kept the contract byte for byte beside the SDK
+(`.contracts/v0.0.1-rehearsal.8-e80fa143094e.json`); `sdk list` reports it; `configure` selects the only installed SDK and its stored contract with no `--sdk` and no `--sdk-contract`, and records identity, the
+contract digest, `contract_source: store` and the OS SDK **kind** (`windows-um-import-libraries`) in `crt.lock`, while the OS SDK **location** (`C:/Program Files (x86)/Windows Kits/10/Lib/10.0.28000.0/um/x64`) stays in the ignored
+local state and no machine path is in the lock; `build`, `test` and `run` use the stored contract; a modified stored contract is refused by the lock and works again once restored; a missing one is reported; a non-existent
+`--os-sdk` directory is refused; a release without its contract asset, with a flipped byte and with a trailing byte in it is refused with nothing published. The limit noted for Linux holds: `sdk verify` does not cover the stored contract.
+
+### What the replay found
+
+Nothing needed fixing: no CRT defect and no CLI defect on this host. The `b03d127` fix (the store test looked the SDK up by position) is what let this run pass the 83 store checks on a second Windows target. The only new input was the
+pinned `xz-5.8.3.tar.gz`, downloaded with the owner's permission and equal to the recipe's SHA-256.
+
+### Evidence and limits
+
+Raw evidence (logs, `result.json` files, per-call stdout/stderr, process images, the previous binary `9948bcd9...fe2d` under `previous/`) is under the producer worktree's ignored `out/s2-windows-x64-20261105/`;
+`bin/win-x64/crt-cli.exe` is replaced by the self-built executable above. Windows/x64 only. This is a rehearsal release asset, not a published release. The Windows Development SDK contains no symlinks, and there is no network
+denial or read-only root on this driver. Full-stage install metadata, a published release asset and promotion are not run.

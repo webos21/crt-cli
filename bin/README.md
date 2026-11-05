@@ -13,7 +13,7 @@ release artifacts.
 | macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `acb4f7e1abd0c2b1f7f0516326b46c1a351525cb2b55fdc0cc2a872647e15b62` (3,927,832 bytes; 2026-11-05 Stage 2 replay of `da3f3a9`, clean local CRT `784389b`) |
 | Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `9b82bd300379b45be4cb36becfbef56bf41b1ff5cc3d2cb510b9e60447b10284` (13,889,400 bytes; 2026-11-02 D1 working-tree candidate based on `adc03b0`, clean local CRT `49879bf`) |
 | Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `69118ac17f998ea0cc42ff7fcf422155ee3fefd016a617374a5701dd439bbfef` (16,352,720 bytes; 2026-11-05 Stage 2 replay of `9d711d2`, clean local CRT `78ed80f`) |
-| Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `9948bcd919d6f0a93f2564902124fbbcf9edaf9d3f785caba4ffcf5f1771fe2d` (29,552,640 bytes, built `-O1 -g`; 2026-11-04 D2 installer replay of `2df5610` plus the Windows edits, clean local CRT `1ee0379`) |
+| Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `c65c6e47684f8b1b723e8764e2487d1401fa27b2f55d85e3c8a29504ea725e8a` (30,184,448 bytes, built `-O1 -g`; 2026-11-05 D2 Stage 2 replay of `f984387`, clean local CRT `436b4f2`) |
 | Windows/arm64 | `bin/win-arm64/crt-cli.exe` | present; SHA-256 `a366b26a42a3a99801e58cee44bb25fa3af3a36a083ed14fe0e9d85cc1c821f8` (30,089,728 bytes, built `-O1 -g`; 2026-11-05 D2 Stage 2 replay of `b03d127`, clean local CRT `0631131`) |
 
 macOS ships only arm64, so it keeps the single `bin/macos/` directory. Linux and
@@ -27,9 +27,11 @@ and the D2 install, contract and project-selection replay passes 69/69 with it
 The direct make space-SHELL limitation remains separate from the CLI workflow.
 Earlier D1 evidence: [macOS acceptance](../docs/acceptance/bootstrap_acceptance.md#macos-latest-source-revalidation-2026-11-01).
 
-The Windows/x64 binary is the 2026-11-04 D2 replay's bare executable (it adds `sdk install|list|verify|recover`; 857 native, 151 archive and 66 SDK-store
+The Windows/x64 binary is the 2026-11-05 Stage 2 replay's bare executable (it adds the toolchain contract kept beside the SDK and project SDK selection; 919 native, 151 archive and 83 SDK-store
+checks, 83/83 installer and contract checks, imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`; previous `9948bcd9...` bytes under the ignored producer-worktree `out/s2-windows-x64-20261105/previous/`; see the
+[Stage 2 Windows/x64 record](../docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-windowsx64-2026-11-05)). The next paragraphs describe its predecessors: the 2026-11-04 D2 replay's bare executable (it adds `sdk install|list|verify|recover`; 857 native, 151 archive and 66 SDK-store
 checks, 62/62 installer checks, previous `a04ff851...` bytes under ignored `out/windows-d2-20261104/previous/`; see the
-[D2 Windows record](../docs/acceptance/sdk_install_acceptance.md#windowsx64-isolated-replay-2026-11-04)). The following paragraph describes its predecessor, the 2026-11-02 refresh, whose method is unchanged: the bare executable: it imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`, was built by the CLI itself
+[D2 Windows record](../docs/acceptance/sdk_install_acceptance.md#windowsx64-isolated-replay-2026-11-04)) and, below it, the 2026-11-02 refresh. The following paragraph describes the 2026-11-02 refresh, the 2026-11-02 refresh, whose method is unchanged: the bare executable: it imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`, was built by the CLI itself
 against a fresh clean Dev SDK from CRT `b4c5b5a` (`v0.4.0-cli.20261102`, includes `d12e210`), and passes 844 native checks, the bare audit and 32 SDK-hidden
 HTTPS/signature cases; see the [Windows/x64 latest-source record](../docs/acceptance/bootstrap_acceptance.md#windowsx64-latest-source-revalidation-and-spawn-environment-fix-2026-11-02).
 The previous `c9707454...` binary is retained under ignored `out/windows-x64-20261102/previous/`. That earlier binary was built by the CLI itself
