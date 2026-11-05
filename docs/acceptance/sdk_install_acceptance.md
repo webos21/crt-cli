@@ -311,3 +311,40 @@ Evidence (ignored): `out/s2-macos/` in the CRT checkout (`install-replay/result.
 `install-replay-r1-cwd/`) and the producer worktree `crt-s2-784389b/out/s2-macos-20261105/`. Not run here: Full-stage
 install metadata, a published release asset and promotion.
 
+## Toolchain contract and project SDK selection replay (Stage 2, Windows/arm64, 2026-11-05)
+
+**Pass, native Windows/arm64; local/unpromoted.** This is the first execution of `tools/replay_sdk_install_windows.py` with the shared
+`tools/replay_sdk_contract_cases.py`, and the first Windows collection of the portable toolchain contract. Every CLI call runs under CRT's
+`crt_windows_trace` as in the D2 record (restricted token naming a per-run SID, empty `PATH`, redirected stdio, job-object accounting; no network
+denial is claimed). The store is `%USERPROFILE%\.crt\sdks` of the private work directory (Hangul and spaces in its name), because `configure` looks
+there; project calls may start the native `clang`, `ld.lld` and `llvm-ar`, and `CRT_WINDOWS_SDK_LIBPATH` is passed for OS SDK discovery.
+
+| Input | Value |
+| --- | --- |
+| Host | Windows 11 arm64 VM (QEMU, 4 vCPUs, 10.0.26300), LLVM/Clang 22.1.8, Windows SDK imports `10.0.28000.0/um/arm64`, Developer Mode on (not changed); native arm64 shell and Python |
+| Release | `crt-dev-release` rehearsal `v0.0.1-rehearsal.7` of **committed** CRT [`0631131`](https://github.com/webos21/crt/commit/0631131dbced786efff8162817b3c8764ca5f57a) (detached worktree at a short ASCII path, nothing uploaded): archive `crt-v0.0.1-rehearsal.7-windows-aarch64-dev.zip` (141,785,345 bytes, SHA-256 `976150ba...6294`), contract `crt-v0.0.1-rehearsal.7-windows-aarch64-dev-toolchain.json` (441,104 bytes, SHA-256 `08ae2c51...1d68`, `os_sdk.kind` = `windows-um-import-libraries`), manifest SHA-256 `167f3260...2b4e`; install metadata format 1: `zip`, 2,917 entries (2,736 files, 181 directories, 0 symlinks), 398,216,734 bytes, identity `c4b35201...1233` |
+| Producer gate | `crt-development-sdk-test` exit 0 (2,339 s); `crt-c-test` 169 of 169, one skip (`fork_heap_snapshot_test_runs`); `crt-dev-release` exit 0 (78 s) |
+| CLI | the **self-built, SDK-only** executable of the Windows contract replay of that SDK, built from this repository at `b03d127`: SHA-256 `a366b26a...21f8`, 30,089,728 bytes, PE machine `0xAA64`, imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`; cold self-build 16 executed / 0 reused, warm 0 / 16; 932 native, 151 archive and 83 SDK-store checks, all three test executables exit 0; 487 recorded processes, only the declared native tools, the CLI and its generated executables; SDK inventory unchanged |
+
+Result: **83/83** on the first run of the corrected sources (the Windows installer cases are 62, plus the same 21 contract and project-selection cases as the 69 of
+the other hosts): the installation kept the contract byte for byte beside the SDK (`.contracts/v0.0.1-rehearsal.7-c4b352012b42.json`); `sdk list` reports it; `configure`
+selects the only installed SDK and its stored contract with no `--sdk` and no `--sdk-contract`, and records identity, the contract digest, `contract_source: store` and the OS SDK **kind**
+(`windows-um-import-libraries`) in `crt.lock`, while the OS SDK **location** (`C:/Program Files (x86)/Windows Kits/10/Lib/10.0.28000.0/um/arm64`) stays in the ignored local state and no
+machine path is in the lock; `build`, `test` and `run` use the stored contract; a modified stored contract is refused by the lock and works again once restored; a missing one is reported; a
+non-existent `--os-sdk` directory is refused; a release without its contract asset, with a flipped byte and with a trailing byte in it is refused with nothing published. The limit noted for
+Linux holds: `sdk verify` does not cover the stored contract.
+
+### What the replay found
+
+One **CLI test** defect, fixed in `b03d127`. The first contract replay of the Windows SDK self-built the CLI and passed 932 native and 151 archive checks, but `sdk-store-test` failed
+`an SDK without a contract installs`: the test looked at the newly installed SDK as `list()[1]`, and `SdkStore::list()` sorts by directory name, which ends in the content hash. The hash of
+that fixture depends on the target, so on `windows/aarch64` the new SDK was evidently not the second entry and the check read another SDK (the sort order itself was not printed; the Linux and macOS
+targets pass with the positional lookup). The test now finds the SDK by its identity (`content12`); no product code changed, and the corrected sources pass all 83 store checks, which is the confirmation. Retained, not adopted: the first replay
+(`contract-first-attempt-failed`). No producer (CRT) change was needed on this host, and the Windows `@OS_SDK@` discovery worked without one.
+
+### Evidence and limits
+
+Raw evidence (logs, `result.json` files, per-call stdout/stderr, process images, the failed first attempt, the previous binary `3f587b71...2c52` under `previous/`) is under the ignored
+`out/windows-arm64-s2-20261105/`; `bin/win-arm64/crt-cli.exe` is replaced by the self-built executable above. Windows/arm64 only: the Windows/x64 run of the same script is not part of this
+record. This is a rehearsal release asset, not a published release. The Windows Development SDK contains no symlinks, and there is no network denial or read-only root on this driver.
+

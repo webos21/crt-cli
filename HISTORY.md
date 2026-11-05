@@ -11,6 +11,15 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-05
 
+### D2 Stage 2 on Windows/arm64: toolchain contract and project SDK selection
+
+First Windows execution of the Stage 2 work: a rehearsal `crt-dev-release` of committed CRT `0631131` ships the portable toolchain contract (`os_sdk.kind` `windows-um-import-libraries`, collected
+with the Windows SDK import libraries found through `CRT_WINDOWS_SDK_LIBPATH`), `sdk install` keeps it beside the SDK, and a project selects the only installed SDK with no `--sdk-contract`. The
+self-built SDK-only CLI (cold 16/0, warm 0/16; 932 native, 151 archive and 83 SDK-store checks) passes the Windows restricted-token replay 83/83 (62 installer plus 21 contract cases); only the OS SDK kind
+is locked, its location is local state. One CLI test defect was fixed (`b03d127`): `sdk-store-test` assumed the new SDK was `list()[1]`, but the store sorts by content hash, which is target dependent. The
+committed `bin/win-arm64/crt-cli.exe` is refreshed. See
+[acceptance](docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-windowsarm64-2026-11-05).
+
 ### D2 Stage 2 on macOS/arm64: toolchain contract and project SDK selection
 
 Replayed the Linux Stage 1/2 work natively: a rehearsal `crt-dev-release` of committed CRT `784389b` ships the portable
