@@ -187,6 +187,69 @@ int main() {
         auto stolen = store.install(fresh_archive);
         check(!stolen.already_installed && store.list().size() == 3, "a dead owner's lock is taken over");
         check(directories_in(store.root() / ".locks") == 0, "the lock is released");
+
+        // A release's toolchain contract is kept beside the SDK it belongs to and is as immutable as that SDK.
+        {
+            SdkStore contract_store(base / "contract-store");
+            auto identity_of = [&](const fs::path& archive) { auto probe = work.fresh(); extract_archive(archive, probe); return read_identity(probe).content_sha256; };
+            auto write_contract = [&](const std::string& name, const std::string& identity, const std::function<void(Json&)>& change) {
+                Json document{{"schema", "crt.experimental.native-toolchain"}, {"format", 1}, {"sdk_content_sha256", identity}};
+                change(document);
+                auto file = base / name;
+                write_text(file, document.dump(2) + "\n");
+                return file;
+            };
+            auto install_with = [&](const fs::path& archive, const fs::path& contract) {
+                auto request = request_for(archive);
+                if (!contract.empty()) { request.contract = contract; request.contract_sha256 = file_sha256(contract); }
+                return request;
+            };
+            auto leftovers = [&] { size_t count = 0; if (fs::is_directory(contract_store.root() / ".contracts")) for (const auto& e : fs::directory_iterator(contract_store.root() / ".contracts")) { (void)e; ++count; } return count; };
+
+            auto k_archive = bytes_of(sdk_entries("", "02-cxx", native_target(), "k"));
+            const auto k_identity = identity_of(k_archive);
+            auto good = write_contract("good-contract.json", k_identity, [](Json&) {});
+            auto stored = contract_store.install(install_with(k_archive, good));
+            check(!stored.already_installed && stored.contract_stored, "a contract is stored with a new SDK");
+            check(fs::is_regular_file(contract_store.contract_path(stored.identity.directory())) &&
+                  file_sha256(contract_store.contract_path(stored.identity.directory())) == file_sha256(good), "the stored contract is the verified file");
+            check(contract_store.list().size() == 1 && contract_store.list()[0].has_contract, "list reports the stored contract");
+            check(stored.to_json().at("contract_stored") == true, "the result reports it");
+
+            auto again_k = contract_store.install(install_with(k_archive, good));
+            check(again_k.already_installed && !again_k.contract_stored, "the same contract again changes nothing");
+            auto other_k = write_contract("other-contract.json", k_identity, [](Json& d) { d["policy"] = "different"; });
+            check(failure(contract_store, install_with(k_archive, other_k)).find("immutable") != std::string::npos, "a different contract for an installed SDK is refused");
+            check(contract_store.install(install_with(k_archive, fs::path())).already_installed, "installing without a contract is still fine");
+            check(file_sha256(contract_store.contract_path(stored.identity.directory())) == file_sha256(good), "the stored contract is unchanged");
+
+            // Refusals publish nothing and leave nothing in the contract store.
+            auto m_archive = bytes_of(sdk_entries("", "02-cxx", native_target(), "m"));
+            const auto m_identity = identity_of(m_archive);
+            check(failure(contract_store, install_with(m_archive, good)).find("belongs to SDK") != std::string::npos, "a contract of another SDK is refused");
+            auto machine = write_contract("machine-contract.json", m_identity, [](Json& d) { d["external_os_sdk"] = "/Applications/Xcode.app/SDK"; });
+            check(failure(contract_store, install_with(m_archive, machine)).find("machine path") != std::string::npos, "a host-specific contract is refused");
+            auto wrong_schema = write_contract("schema-contract.json", m_identity, [](Json& d) { d["format"] = 2; });
+            check(failure(contract_store, install_with(m_archive, wrong_schema)).find("unsupported toolchain contract") != std::string::npos, "an unknown contract format is refused");
+            auto bad_digest = install_with(m_archive, write_contract("digest-contract.json", m_identity, [](Json&) {}));
+            bad_digest.contract_sha256 = std::string(64, '0');
+            check(failure(contract_store, bad_digest).find("SHA-256 mismatch") != std::string::npos, "a wrong contract digest is refused");
+            check(contract_store.list().size() == 1 && leftovers() == 1, "refused contracts left no SDK and no file");
+
+            // A contract may be added to an SDK installed without one.
+            auto plain = contract_store.install(install_with(m_archive, fs::path()));
+            check(!plain.already_installed && !plain.contract_stored && !contract_store.list()[1].has_contract, "an SDK without a contract installs");
+            auto added = contract_store.install(install_with(m_archive, write_contract("m-contract.json", m_identity, [](Json&) {})));
+            check(added.already_installed && added.contract_stored && contract_store.list()[1].has_contract, "a contract is added to an installed SDK");
+
+            // Interrupted writes: only the dead owner's temporary file is a leftover.
+            auto pending = [&](const std::string& owner) { return contract_store.root() / ".contracts" / ("x.json.tmp-" + owner); };
+            write_text(pending("999999999"), "{}"); write_text(pending(std::to_string(getpid())), "{}");
+            auto swept = contract_store.recover();
+            check(swept.size() == 1 && swept[0] == ".contracts/x.json.tmp-999999999", "recover removes only a dead owner's contract file");
+            check(fs::exists(pending(std::to_string(getpid()))), "a live owner's contract file is kept");
+            fs::remove(pending(std::to_string(getpid())));
+        }
     } catch (const Error& error) {
         std::fprintf(stderr, "%s\n", error.what());
         fs::remove_all(base);

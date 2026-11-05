@@ -390,6 +390,47 @@ int main(int argc, char** argv) {
         invoke(cli, {"build", "--project", root.string()}, false);               // the locked SDK is no longer installed
         fs::rename(away, published);
         invoke(cli, {"build", "--project", root.string()});
+        // A toolchain contract stored beside the SDK replaces --sdk-contract; the lock records its origin and digest, no path.
+        const auto stored_contract = sdk_store_root() / ".contracts" / (identity + ".json");
+        fs::create_directories(stored_contract.parent_path());
+        fs::copy_file(local.at("sdk_contract").get<std::string>(), stored_contract, fs::copy_options::overwrite_existing);
+        std::vector<std::string> stored_args{"configure", "--project", root.string(), "--sdk", identity, "--cc", local.at("cc"), "--cxx", local.at("cxx"), "--linker", local.at("linker"), "--ar", local.at("ar")};
+        if (lock.at("selection").value("allow_dirty_sdk", false)) stored_args.insert(stored_args.end(), {"--allow-dirty-sdk", "true"});
+        invoke(cli, stored_args);
+        check(read_json(root / "crt.lock").at("selection").at("contract_source") == "store", "the stored contract is used");
+        check(!read_json(root / ".crt/local.json").contains("sdk_contract") && !read_json(root / ".crt/local.json").contains("sdk_root"), "a stored contract keeps no path");
+        check(read_json(root / "crt.lock").at("selection").at("contract_sha256") == file_sha256(stored_contract), "the lock records the contract digest");
+        invoke(cli, {"test", "--project", root.string()});
+        auto bad_digest = stored_args; bad_digest.insert(bad_digest.end(), {"--contract-sha256", std::string(64, '0')});
+        invoke(cli, bad_digest, false);
+        const auto saved_contract = read_text(stored_contract);
+        write_text(stored_contract, "{}");
+        invoke(cli, stored_args, false);                                         // a tampered stored contract is not the SDK's
+        fs::remove(stored_contract);
+        invoke(cli, stored_args, false);                                         // no contract stored: say so, do not guess
+        write_text(stored_contract, saved_contract);
+        invoke(cli, stored_args);
+        auto os_args = stored_args; os_args.insert(os_args.end(), {"--os-sdk", home.string()});
+        invoke(cli, os_args, false);                                             // this contract needs no OS SDK
+
+        // A portable contract (@OS_SDK@) is completed on this host: the location is local state, never locked.
+        auto derived = read_json(stored_contract);
+        derived["os_sdk"] = Json{{"kind", "test-only"}};
+        for (const char* recipe : {"compile_c", "compile_cxx"}) derived["modes"]["executable-static"][recipe].push_back("-DCRT_OS_SDK=@OS_SDK@");
+        write_text(stored_contract, derived.dump());
+        const auto os_sdk = hostile / "OS SDK \xed\x95\x9c";
+        fs::create_directories(os_sdk);
+        invoke(cli, stored_args, false);                                         // an unknown kind cannot be discovered
+        auto with_os = stored_args; with_os.insert(with_os.end(), {"--os-sdk", os_sdk.string()});
+        invoke(cli, with_os);
+        invoke(cli, {"build", "--project", root.string()});
+        check(read_json(root / ".crt/local.json").at("os_sdk") == os_sdk.generic_string(), "the OS SDK stays in local state");
+        check(read_text(root / "crt.lock").find(os_sdk.generic_string()) == std::string::npos, "the lock names no machine path");
+        check(read_json(root / "crt.lock").at("selection").at("os_sdk").at("kind") == "test-only", "the lock records the OS SDK kind");
+        check(read_text(root / "out/native/last-build.json").find("-DCRT_OS_SDK=" + os_sdk.generic_string()) != std::string::npos, "@OS_SDK@ is replaced in the compile command");
+        fs::remove_all(os_sdk);
+        invoke(cli, {"build", "--project", root.string()}, false);               // the recorded OS SDK is gone
+        write_text(stored_contract, saved_contract);
         if (old_home.empty()) unsetenv("HOME"); else setenv("HOME", old_home.c_str(), 1);
         if (old_profile.empty()) unsetenv("USERPROFILE"); else setenv("USERPROFILE", old_profile.c_str(), 1);
         check(!fs::exists(hostile / "never-execute"), "shell metacharacters stay literal");

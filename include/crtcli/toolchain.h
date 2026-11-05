@@ -4,6 +4,7 @@
 namespace crtcli {
 struct Toolchain {
     fs::path sdk, contract_path, cc, cxx, linker, archiver, resource;
+    std::string os_sdk;   // this host's OS SDK location for @OS_SDK@ (empty when the contract needs none)
     Json contract, selection, local;
     // Maps the local, uncommitted `.sdk.json` (format 0) onto the `configure` option names.
     static std::map<std::string, std::string> read_sdk_config(const fs::path& file);

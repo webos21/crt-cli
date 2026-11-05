@@ -119,7 +119,7 @@ InstallMetadata InstallMetadata::from_json(const Json& value) {
 
 Json InstallResult::to_json() const {
     return {{"identity", identity.to_json()}, {"path", path.string()}, {"already_installed", already_installed},
-            {"extracted", extracted.to_json()}};
+            {"contract_stored", contract_stored}, {"extracted", extracted.to_json()}};
 }
 
 SdkStore::SdkStore(fs::path root) : root_(std::move(root)) {}
@@ -179,14 +179,48 @@ std::vector<std::string> SdkStore::recover() {
             removed.push_back(std::string(area) + "/" + entry.path().filename().string());
         }
     }
+    // A contract is first written as `<directory>.json.tmp-<pid>` and renamed once its SDK is published.
+    auto contracts = root_ / ".contracts";
+    if (fs::is_directory(contracts)) {
+        for (const auto& entry : fs::directory_iterator(contracts, error)) {
+            auto name = entry.path().filename().string();
+            auto marker = name.rfind(".json.tmp-");
+            if (marker == std::string::npos) continue;
+            long owner = 0;
+            try { owner = std::stol(name.substr(marker + 10)); } catch (const std::exception&) { owner = 0; }
+            if (process_alive(owner)) continue;
+            std::error_code ignored;
+            fs::remove(entry.path(), ignored);
+            removed.push_back(".contracts/" + name);
+        }
+    }
     return removed;
 }
+
+namespace {
+// A portable contract the store may keep: the right kind of document, bound to the SDK identity, naming no machine path.
+Json checked_contract(const fs::path& file, const std::string& expected_sha256) {
+    require(is_hex(lower(expected_sha256), 64), "a toolchain contract SHA-256 is required (64 hex digits)");
+    require(fs::is_regular_file(file) && !fs::is_symlink(file), "toolchain contract not found: " + file.string());
+    require(file_sha256(file) == lower(expected_sha256), "toolchain contract SHA-256 mismatch");
+    auto contract = read_json(file);
+    require(contract.is_object() && contract.value("schema", "") == "crt.experimental.native-toolchain" && contract.value("format", 0) == 1,
+            "unsupported toolchain contract");
+    require(!contract.contains("external_os_sdk"), "the toolchain contract names a machine path (not portable)");
+    require(contract.contains("sdk_content_sha256") && contract.at("sdk_content_sha256").is_string(), "the toolchain contract has no SDK identity");
+    return contract;
+}
+}  // namespace
 
 InstallResult SdkStore::install(const InstallRequest& request) {
     require(is_hex(lower(request.archive_sha256), 64), "an archive SHA-256 is required (64 hex digits)");
     require(request.expected_content_sha256.empty() || is_hex(lower(request.expected_content_sha256), 64),
             "the expected content identity must be 64 hex digits");
     require(fs::is_regular_file(request.archive), "archive not found: " + request.archive.string());
+    // A bad contract is refused before anything is extracted.
+    Json contract;
+    const bool with_contract = !request.contract.empty();
+    if (with_contract) contract = checked_contract(request.contract, request.contract_sha256);
 
     // 1. The archive is verified before anything is created.
     auto actual = file_sha256(request.archive);
@@ -264,6 +298,9 @@ InstallResult SdkStore::install(const InstallRequest& request) {
         require(manifest.value("stage", "") == promised.stage && profile == promised.profile && manifest.value("target", Json::object()) == promised.target,
                 "SDK stage/profile/target differ from the release metadata");
     }
+    if (with_contract)
+        require(contract.at("sdk_content_sha256") == result.identity.content_sha256,
+                "the toolchain contract belongs to SDK " + contract.at("sdk_content_sha256").get<std::string>() + ", not " + result.identity.content_sha256);
     // 5.-7. Serialize on the identity; decide; publish.
     Lock lock(root_ / ".locks" / (result.identity.content_sha256.substr(0, 12) + ".lock"), lock_wait_seconds);
     result.path = root_ / result.identity.directory();
@@ -274,11 +311,41 @@ InstallResult SdkStore::install(const InstallRequest& request) {
         require(present.content_sha256 == result.identity.content_sha256,
                 "an SDK with this directory name but different content is installed (" + present.content_sha256 + "); installed SDKs are immutable");
         result.already_installed = true;
+        if (with_contract) {
+            // An installed SDK's contract is as immutable as the SDK: it may be added, never changed.
+            auto stored = contract_path(result.identity.directory());
+            if (fs::exists(stored)) require(file_sha256(stored) == lower(request.contract_sha256), "a different toolchain contract is stored for this SDK; stored contracts are immutable");
+            else {
+                fs::create_directories(root_ / ".contracts", error);
+                require(!error, "cannot create the contract store: " + error.message());
+                auto pending = fs::path(stored.string() + ".tmp-" + std::to_string(current_pid()));
+                write_text(pending, read_text(request.contract));
+                require(file_sha256(pending) == lower(request.contract_sha256), "the stored toolchain contract differs from the verified file");
+                fs::rename(pending, stored, error);
+                require(!error, "cannot store the toolchain contract: " + error.message());
+                result.contract_stored = true;
+            }
+        }
         return result;
+    }
+    fs::path pending;
+    if (with_contract) {
+        // Prepared before publication, renamed right after it: the pair is complete or the contract is a recoverable leftover.
+        fs::create_directories(root_ / ".contracts", error);
+        require(!error, "cannot create the contract store: " + error.message());
+        pending = contract_path(result.identity.directory()).string() + ".tmp-" + std::to_string(current_pid());
+        write_text(pending, read_text(request.contract));
+                require(file_sha256(pending) == lower(request.contract_sha256), "the stored toolchain contract differs from the verified file");
     }
     write_text(staging / "txn.json", Json{{"pid", current_pid()}, {"archive_sha256", actual}, {"state", "publishing"}}.dump(2) + "\n");
     fs::rename(sdk, result.path, error);
+    if (error) { std::error_code ignored; if (!pending.empty()) fs::remove(pending, ignored); }
     require(!error, "cannot publish the SDK: " + error.message());
+    if (!pending.empty()) {
+        fs::rename(pending, contract_path(result.identity.directory()), error);
+        require(!error, "the SDK is installed but its toolchain contract could not be stored (install again to add it): " + error.message());
+        result.contract_stored = true;
+    }
     return result;
 }
 
@@ -304,6 +371,7 @@ std::vector<StoreEntry> SdkStore::list() const {
             item.target = manifest.value("target", Json::object());
             item.stage = manifest.value("stage", "");
             item.profile = read_optional_json(path / "share/crt/contracts/development.json").value("profile", "");
+            item.has_contract = fs::is_regular_file(contract_path(item.directory));
         } catch (const std::exception&) {}
         entries.push_back(item);
     }

@@ -111,7 +111,12 @@ only when exactly one fits the project (profile `dev`, this host's target, the m
 is an error that lists the candidates, so a project never follows a moving default. The directory name must equal the
 version and content identity the SDK proves, so a renamed or substituted directory is refused. `--sdk-id <relative-id>`
 (any directory under the root, traversal and escaping symlinks rejected) and `--sdk-root` remain local handoff
-selections; the three options are mutually exclusive. Download and GC remain later work.
+selections; the three options are mutually exclusive. A SDK installed from a release manifest that names a toolchain contract keeps that contract at
+`$USER_HOME/.crt/sdks/.contracts/<directory>.json`; `configure` then needs no `--sdk-contract` (the lock records
+`contract_source: store` and the digest, `.crt/local.json` no path), and an explicit `--sdk-contract` still overrides.
+A contract that refers to the host's OS SDK (`@OS_SDK@`, `os_sdk.kind`) is completed on this host (`xcrun`, or
+`CRT_WINDOWS_SDK_LIBPATH`, or `--os-sdk <directory>`); the location is local state and never locked. Download and GC
+remain later work.
 
 `new` writes sources and an unresolved format-1 `crt.lock` without acquiring an
 SDK. Lock format 0 is no longer read: `build`/`test`/`run` refuse it and say to run `configure` again; a lock is never

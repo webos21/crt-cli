@@ -240,7 +240,7 @@ Reply workflow(const std::vector<std::string>& args) {
     require(args[0] == "configure" || args[0] == "build" || args[0] == "test" || args[0] == "run", "unsupported command or arguments");
     fs::path root = fs::current_path();
     std::map<std::string, std::string> options;
-    const std::set<std::string> configure_options{"--sdk", "--sdk-root", "--sdk-id", "--sdk-contract", "--contract-sha256", "--cc", "--cxx", "--linker", "--ar", "--allow-dirty-sdk", "--sdk-config"};
+    const std::set<std::string> configure_options{"--sdk", "--sdk-root", "--sdk-id", "--os-sdk", "--sdk-contract", "--contract-sha256", "--cc", "--cxx", "--linker", "--ar", "--allow-dirty-sdk", "--sdk-config"};
     for (size_t i = 1; i < args.size(); i += 2) {
         require(i + 1 < args.size() && (args[i] == "--project" || (args[0] != "configure" && args[i] == "--target") ||
             (args[0] == "configure" && configure_options.count(args[i]))), "unsupported/missing workflow option");

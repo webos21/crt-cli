@@ -45,8 +45,9 @@ These are future increments, not implemented features.
   - [x] Immutable installation from a local `tar.xz`/`zip`, verification, transactions and interrupted-install
     recovery ([acceptance](docs/acceptance/sdk_install_acceptance.md)).
   - [x] Stage 1 (Linux/x86_64): project selection of an installed SDK by name/identity or the only fit; `crt.lock` format 1
-    records identity only ([HISTORY](HISTORY.md)). Open: Stage 2 (contract stored with the SDK, needs the CRT release to
-    ship a host-independent contract), then macOS/Windows replays.
+    records identity only ([HISTORY](HISTORY.md)). Stage 2 (Linux/x86_64): the release ships a portable toolchain contract
+    that `sdk install` keeps beside the SDK, so `configure` needs no `--sdk-contract`. Open: macOS/Windows replays of
+    Stages 1-2 (`@OS_SDK@` discovery), a release from committed code.
   - [ ] Explicit updates (network acquisition is a later increment).
 - [ ] Replay installation failures and path/tool collisions on the three
   initial native host pairs; never migrate project locks implicitly.

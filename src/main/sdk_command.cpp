@@ -71,6 +71,23 @@ Reply sdk_command(const std::vector<std::string>& args) {
             require(found->contains("size") && found->at("size").is_number_unsigned() && fs::file_size(request.archive) == found->at("size").get<uint64_t>(),
                     "archive size differs from the release manifest");
             request.archive_sha256 = found->at("sha256").get<std::string>();
+            if (found->contains("contract")) {
+                // The toolchain contract is another asset of the same release, named by the archive's entry and found
+                // beside the archive. Its digest and size are the manifest's, not the file's own claim.
+                require(found->at("contract").is_string(), "release manifest asset " + name + " has an invalid contract reference");
+                const std::string contract_name = found->at("contract").get<std::string>();
+                const Json* listed = nullptr;
+                for (const auto& asset : assets)
+                    if (asset.is_object() && asset.value("name", "") == contract_name) { require(!listed, "release manifest lists " + contract_name + " twice"); listed = &asset; }
+                require(listed != nullptr && listed->contains("sha256") && listed->at("sha256").is_string() && lower_hex(listed->at("sha256").get<std::string>(), 64),
+                        "release manifest has no valid asset named " + contract_name);
+                require(contract_name == fs::path(contract_name).filename().string(), "release manifest contract name must be a plain file name");
+                request.contract = request.archive.parent_path() / contract_name;
+                require(fs::is_regular_file(request.contract), "toolchain contract not found beside the archive: " + request.contract.string());
+                require(listed->contains("size") && listed->at("size").is_number_unsigned() && fs::file_size(request.contract) == listed->at("size").get<uint64_t>(),
+                        "toolchain contract size differs from the release manifest");
+                request.contract_sha256 = listed->at("sha256").get<std::string>();
+            }
             request.metadata = InstallMetadata::from_json(found->at("install"));
             request.expected_content_sha256 = request.metadata->content_sha256;
         } else {
@@ -99,7 +116,7 @@ Reply sdk_command(const std::vector<std::string>& args) {
         Json items = Json::array();
         for (const auto& entry : store.list())
             items.push_back({{"directory", entry.directory}, {"version", entry.version}, {"content12", entry.content12},
-                             {"path", entry.path.string()}, {"target", entry.target}, {"stage", entry.stage}, {"profile", entry.profile}});
+                             {"path", entry.path.string()}, {"has_contract", entry.has_contract}, {"target", entry.target}, {"stage", entry.stage}, {"profile", entry.profile}});
         return {0, "sdk", {{"store", store.root().string()}, {"sdks", items}}, std::to_string(items.size()) + " SDK(s) installed"};
     }
 

@@ -11,6 +11,26 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-04
 
+### D2 toolchain contract stored with the SDK (Stage 2, Linux/x86_64)
+
+A release archive entry may name its portable toolchain contract (`contract`, another asset of the release, produced by CRT
+`export_cli_toolchain.py --portable`). `sdk install --release-manifest` checks it against the manifest's digest and size,
+the document type, the absence of any machine path and the installed content identity, then keeps it at
+`<store>/.contracts/<directory>.json` (prepared before the SDK is published, renamed right after; an SDK may gain a
+contract later, a stored contract never changes, a dead owner's temporary file is a `recover` leftover). `configure` with
+a store SDK then needs no `--sdk-contract`/`--contract-sha256`: the lock records `contract_source: store` and the
+contract's digest, `.crt/local.json` keeps no SDK or contract path, and a tampered or missing stored contract fails. A
+contract with `os_sdk` (`@OS_SDK@` in its argv) is completed on this host (`xcrun`, `CRT_WINDOWS_SDK_LIBPATH`, or
+`--os-sdk`); the location is local state and the lock records only its kind. Verified: native 829 checks (29 new:
+stored contract used, wrong digest, tampered, missing, `--os-sdk` where none is needed, unknown kind, substitution in
+the compile command, vanished OS SDK), store 83 (17 new: stored, idempotent, immutable, another SDK's contract,
+machine-path/format/digest refusals leaving nothing, added later, dead/live temporary files), archive 158; CRT
+exporter tests 9. Real flow from a `crt-dev-release` rehearsal (`v0.0.1-rehearsal.3`, scratch clone, nothing uploaded,
+uncommitted code): `sdk install` stored the contract (403 KB), reinstall was idempotent, `new` + `configure` with only
+the tool paths selected the single installed SDK, then `build`, `test` and `run` printed "Hello from CRT". Not verified:
+macOS/Windows (the `@OS_SDK@` discovery is implemented from the same rules as the exporter but exercised on Linux only
+through the `--os-sdk` override and a synthetic contract), a release from committed code, explicit updates.
+
 ### D2 project SDK selection from the store (Stage 1, Linux/x86_64)
 
 `configure --sdk <ref>` selects an SDK published by `sdk install` by directory name or an identity prefix (>= 8 hex);

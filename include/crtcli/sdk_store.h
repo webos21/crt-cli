@@ -47,12 +47,18 @@ struct InstallRequest {
     // When present: limits are tightened to the metadata, and the extracted tree must match it exactly (format, root,
     // counts, byte total, identity, version, stage, profile, target). expected_content_sha256 is set from it.
     std::optional<InstallMetadata> metadata;
+    // Optional host-independent toolchain contract shipped with the release (crt install metadata `contract` asset). It is
+    // checked against `contract_sha256` and the installed identity, then kept at `.contracts/<directory>.json` so that
+    // selecting the SDK needs no other input. Never a host-specific contract (one that names a machine path).
+    fs::path contract;
+    std::string contract_sha256;
 };
 
 struct InstallResult {
     SdkIdentity identity;
     fs::path path;
     bool already_installed = false;           // the identical SDK was published before; nothing was changed
+    bool contract_stored = false;             // a toolchain contract was added to the store by this call
     ExtractReport extracted;
     Json to_json() const;
 };
@@ -65,12 +71,15 @@ struct StoreEntry {
     Json target;                              // {"os","arch"} from the SDK manifest
     std::string stage;
     std::string profile;
+    bool has_contract = false;    // a toolchain contract is stored beside the SDK
 };
 
 class SdkStore {
 public:
     explicit SdkStore(fs::path root);
     const fs::path& root() const { return root_; }
+    // Where the stored toolchain contract of the published SDK `directory` lives (it may not exist).
+    fs::path contract_path(const std::string& directory) const { return root_ / ".contracts" / (directory + ".json"); }
 
     // Installs the archive. Throws Error on any failure; on failure no directory named like an SDK has been added.
     InstallResult install(const InstallRequest& request);
