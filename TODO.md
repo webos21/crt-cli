@@ -22,52 +22,82 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
 
 ## In Progress
 
-Active increment (opened 2026-11-03, with CRT Tranche 3): **D2 local SDK installer**. In scope: `sdk install` of a
-local `tar.xz`/`zip` archive (digest check, safe extraction, inventory validation, per-identity lock, atomic
-same-filesystem publication, interrupted-install recovery, immutability) and `sdk list`/`sdk verify`, replayed on
-Linux first. Out of scope for this increment: network acquisition, updates, project-lock migration, CLI self-upgrade,
-GC. The xz decoder comes from a CRT Development-SDK port; CRT 3.1 defines the install metadata. Linux/x86_64: tar.xz and zip
-install/list/verify/recover, manifest install metadata and the isolated replay are done ([acceptance](docs/acceptance/sdk_install_acceptance.md));
-macOS/arm64 isolated replay (48/48, self-built SDK-only CLI) and Windows/x64 isolated replay (62/62, self-built SDK-only CLI;
-[evidence](docs/acceptance/sdk_install_acceptance.md#windowsx64-isolated-replay-2026-11-04)) are done, as is Linux/aarch64 (48/48;
-[evidence](docs/acceptance/sdk_install_acceptance.md#linuxaarch64-isolated-replay-2026-11-04)) and Windows/arm64 (62/62;
-[evidence](docs/acceptance/sdk_install_acceptance.md#windowsarm64-isolated-replay-2026-11-04)). D1 local replay is recorded in [HISTORY](HISTORY.md) and
-[acceptance](docs/acceptance/host_environment_acceptance.md#windowsx64-independent-host-environment-replay-2026-11-03).
-Installation is recorded as passing on Linux/x86_64, Linux/aarch64, macOS/arm64, Windows/x64 and Windows/arm64.
+### First user workflow: local SDK selection -> first build -> pinned acquisition
 
-Follow [D0-D7 dependency order](docs/design/crt_cli.md#9-joint-development-sequence).
-These are future increments, not implemented features.
+The local D2 installer and Stage 2 stored-contract/project-selection flow have
+native evidence on Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64/arm64.
+Retain those exact per-host baselines in [SDK installation acceptance](docs/acceptance/sdk_install_acceptance.md);
+Windows/x64 Stage 2 is complete. The latest `sdk verify` increment has Linux
+unit/developer evidence only. Current scope and limits are in [STATUS](STATUS.md).
 
-### D2 - Safe SDK Management
+Keep D0-D7 identifiers. Dependencies are working capabilities, not completion
+of every checkbox in an earlier stage. The execution/validation policy belongs
+to [the CLI design](docs/design/crt_cli.md#execution-priorities-adopted-2026-11-05).
 
-- [ ] Implement stage/profile resolution, immutable installation/selection,
-  verification, transactions, interrupted-install recovery, and explicit updates.
-  - [x] Immutable installation from a local `tar.xz`/`zip`, verification, transactions and interrupted-install
-    recovery ([acceptance](docs/acceptance/sdk_install_acceptance.md)).
-  - [x] Stage 1 (Linux/x86_64): project selection of an installed SDK by name/identity or the only fit; `crt.lock` format 1
-    records identity only ([HISTORY](HISTORY.md)). Stage 2 (Linux/x86_64): the release ships a portable toolchain contract
-    that `sdk install` keeps beside the SDK, so `configure` needs no `--sdk-contract`. Linux/x86_64 replay 69/69; Linux/aarch64 replay 69/69 with a self-built CLI and a release from committed CRT
-    `78ed80f` ([record](docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-linuxaarch64-2026-11-05));
-    macOS/arm64 replay 69/69 ([record](docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-macosarm64-2026-11-05)); Windows/arm64 replay 83/83 with a release from committed CRT `0631131` and Windows `@OS_SDK@` discovery working ([record](docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-windowsarm64-2026-11-05)). Windows/x64 replay 83/83 with a release from committed CRT `436b4f2` ([record](docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-windowsx64-2026-11-05)); every native pair has now run it.
-  - [ ] Explicit updates (network acquisition is a later increment).
-- [ ] Replay installation failures and path/tool collisions on the three
-  initial native host pairs; never migrate project locks implicitly.
-  - [x] Installation failures replayed on all five native pairs (Linux x86_64/aarch64, macOS/arm64, Windows x64/arm64).
-  - [ ] Path/tool collisions with an installed SDK; no implicit lock migration (needs project selection).
-- [ ] Implement/validate shared immutable SDK storage and project references;
-  version/profile/target/content pins remain project-specific.
-  - [x] Shared immutable store (`sdk list|verify|recover`).
-  - [x] Project references and pins: lock format 1 identity and the stored portable contract pass the Stage 2 replay on all five native pairs; `sdk verify` also covers the stored contract (Linux/x86_64 unit level, [acceptance](docs/acceptance/sdk_install_acceptance.md#sdk-verify-covers-the-stored-contract-linuxx86_64-2026-11-05)). Open: the store does not record the contract digest.
-- [ ] Implement verified CLI self-upgrade with candidate health checks,
-  OS-specific activation, interruption/rollback and unchanged project SDK/port pins
-  ([lifecycle gates](docs/acceptance/lifecycle_acceptance.md)).
+Work can proceed in three coordinated streams: CLI workflow implementation,
+affected-host replay/producer fixes, and preview trust/packaging. Pin shared
+contracts before parallel work; changes to the same manifest/store/lock format
+need one coordinated producer/consumer review. No new implementation or replay
+is claimed by this queue update.
 
-### D3 - First Source-built Port
+### D2 - Close the bounded local installation/selection baseline first
 
-- [ ] Implement native execution of the reviewed JSON zlib recipe contract;
-  fetch/verify/build/test and publish into a separate immutable port store.
-- [ ] Require Windows CRT-shell/make static/shared link/run evidence and
-  unchanged SDK/source inputs before accepting the first port.
+- [ ] Preserve the installation-time toolchain-contract digest and whether a
+  contract was required; check it on verify and before a fresh configure adopts
+  the stored contract. Define recovery for existing stores from verified release
+  metadata; never bless changed bytes by hashing the current file as a new baseline.
+- [ ] Run targeted store/contract regressions for the latest verify change and
+  the digest/receipt increment on affected hosts; keep earlier Stage 2 evidence
+  separate rather than rerunning/relabeling every SDK build.
+- [ ] Finish installed-SDK path/tool/DLL collision checks and prove explicit
+  project selection keeps existing locks unchanged on failure or ambiguity.
+
+### D2 / basic D5 - First build and acquisition, in this order
+
+- [ ] With one compatible installed SDK and declared external LLVM tools, make
+  a fresh `new` project reach build/test/run without a separate configure.
+  Record exact SDK/contract/tool pins on success; preserve existing locks and
+  diagnose missing tools or multiple fitting SDKs without choosing a moving default.
+- [ ] Connect explicitly pinned HTTPS metadata/archive/contract retrieval to
+  the existing installer and first-build path. Check CA/trust, sizes, digests,
+  interrupted transfers and failure cleanup; reuse an installed identity without
+  downloading it again. Keep `new` source-only.
+- [ ] Start with the currently supported native `dev` profile on Linux/x86_64.
+  Broader app profiles (`cxx`/upper stages), version/channel resolution and a
+  general registry are separate increments; do not imply they already work.
+- [ ] Qualify one Linux preview candidate: CLI/resources/notices, an identified
+  SDK and portable contract, external-tool setup and the end-to-end user flow.
+  A developer pin/test key is not official publisher trust. General default
+  downloads require approved official trust inputs and actual producer promotion
+  before consumer adoption/publication.
+- [ ] Replay the new workflow on macOS/arm64 and Windows/x64 before claiming
+  that feature there. Existing aarch64/Windows-arm64 evidence stays valid for
+  its recorded scope; extending new-feature support has its own replay queue.
+
+### D3 - First source-built port, parallel with first-build/acquisition work
+
+- [ ] Define/adopt the bounded public CRT recipe/compiler adapter, then execute
+  the reviewed zlib JSON recipe natively into a separate immutable port store.
+- [ ] Prove fresh source build, static/shared link/run and actual consumption
+  from that store. The Dev SDK already contains zlib: define SDK-provided versus
+  explicit isolated source-build handling; do not overwrite it or count linking
+  its existing library as the first source port. Classify make as a host tool.
+- [ ] Preserve SDK/source inputs and host-tool/compiler identities. Linux is
+  the first implementation slice; full D3 closure retains the native Windows
+  CRT-shell/make static/shared gate and applicable native OS replay.
+
+## Planned
+
+### D2 - Management beyond the first workflow
+
+- [ ] General stage/profile/version resolution and Full-stage installation;
+  coordinate producer metadata and size/performance limits with CRT.
+- [ ] Explicit SDK updates and broader installation/reference/GC policy without
+  implicit project-lock migration.
+- [ ] Verified CLI self-upgrade: candidate health, OS-specific activation,
+  interruption/rollback and unchanged SDK/port pins
+  ([lifecycle gates](docs/acceptance/lifecycle_acceptance.md)). This is outside
+  the first preview's critical path and does not block D3.
 
 ### D4 - Dependencies, Variants, Locks, and Local Cache
 
@@ -82,8 +112,8 @@ These are future increments, not implemented features.
   resolution and upper stages; app workflows must not require Python, shell or CMake.
 - [ ] Validate external consumers, runtime closures, and Web worker layout
   without producer-private headers or build-tree inputs.
-- [ ] Validate first-configure/build SDK acquisition, source-only new, generated layout,
-  locked/offline failures and CLI self-build/template parity; keep layout evolution explicit.
+- [ ] Extend the initial workflow above to general locked/offline behavior,
+  dependency/template parity and broader SDK profiles; keep layout evolution explicit.
 
 ### D6 - Packaging and Automation
 
@@ -102,8 +132,6 @@ These are future increments, not implemented features.
   Studio frontend; coordinate only consumer-driven generic CRT API changes.
   D7 formally approves exercised combinations; it does not block SDK-only S0
   PoCs or earlier live experiments using actually implemented capabilities.
-
-## Planned
 
 ### Deferred Beyond the Initial Workflow
 

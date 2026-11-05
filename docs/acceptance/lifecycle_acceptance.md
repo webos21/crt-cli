@@ -1,12 +1,19 @@
 # CLI Lifecycle Acceptance
 
-This record owns future CLI self-upgrade, project SDK/creation, scoped
+This record owns complete CLI self-upgrade, project SDK/creation, scoped
 diagnostics and distribution gates. Policy belongs to the
 [CLI design](../design/crt_cli.md), order to [TODO](../../TODO.md), and initial
 SDK-only/single-executable/HTTPS bootstrap to
 [D0/D1 acceptance](bootstrap_acceptance.md). These complete lifecycle gates are **Not run**; the bounded Linux D0
 implementation and its partial project evidence belong to bootstrap acceptance.
 No release lifecycle is accepted here.
+
+Local installation and explicit project SDK/contract selection now have
+[five-pair D2 evidence](sdk_install_acceptance.md). Automatic first-build binding,
+acquisition and the full lifecycle criteria remain separate. Under the
+[adopted priorities](../design/crt_cli.md#execution-priorities-adopted-2026-11-05),
+self-upgrade/rollback remains planned beyond the first preview and does not
+block D3. This changes scheduling, not the acceptance requirements below.
 
 Bounded self/environment/project diagnosis and explicit local resource-file
 pin/signature checks now have [Linux D1 evidence](host_environment_acceptance.md).

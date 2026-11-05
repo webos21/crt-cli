@@ -37,8 +37,10 @@ supports it then needs only `crt-cli configure --project /absolute/crt-cli`; the
 seed that predates it still needs the explicit flags once. The goal of the
 bootstrap loop is: a changed SDK plus an already built `crt-cli` produce a new
 `crt-cli`, even when the change follows a CRT contract change, and the result
-rebuilds and tests itself. Until the SDK installer exists (D2), `.sdk.json`
-points at a local handoff via `sdk_root`; `$HOME/.crt/sdks` is not populated.
+rebuilds and tests itself. `.sdk.json` may still point at a local handoff via
+`sdk_root`. The implemented local installer can instead populate the shared
+store and preserve a release's portable contract; see the
+[current local workflow](../../README.md#try-the-local-workflow).
 
 These are separate argv invocations, not a shell script. Supply actual absolute
 paths and preserve the `ld.lld` driver name even when it is a symlink to `lld`.
@@ -334,8 +336,8 @@ merged artifact. Public release actions remain separately authorized.
 
 ## Implementation Sequence
 
-Follow [D0-D7](../design/crt_cli.md#9-joint-development-sequence). D0 can start
-against a manually installed immutable SDK; implementing the SDK downloader is
+Follow [D0-D7 capability dependencies and the adopted priorities](../design/crt_cli.md#execution-priorities-adopted-2026-11-05).
+D0 can start against a manually installed immutable SDK; implementing the SDK downloader is
 not required just to build the first CLI. Define the consumer/identity/result
 contracts and minimal runtime closure before growing command implementations.
 
@@ -350,6 +352,17 @@ recipe semantics and regression results without a Python prerequisite; optional
 upstream shell/make requirements must remain explicit.
 
 ## Validation and Evidence
+
+Choose focused, integration and native-matrix gates using the
+[change-impact policy](../design/crt_cli.md#validation-by-change-impact).
+Documentation-only updates need link/consistency checks, not SDK regeneration.
+For implementation, record changed modules/contracts, affected pairs and the
+specific tests that justify the result. Do not repeat unchanged passing gates
+without a failure or unresolved concern. Relevant parser/transaction/trust/
+PAL/ABI failure and recovery checks still run before merge. Feature-bundle and
+release qualification covers every advertised pair; periodic/nightly automation
+is not implemented by this policy. Use acceptance for detailed receipts and
+HISTORY for a short completion/link, keeping TODO concise.
 
 Use the [bootstrap acceptance](../acceptance/bootstrap_acceptance.md) for
 SDK-only and runtime-closure validation. Separate fixtures, compile/link tests,
@@ -368,11 +381,14 @@ track ownership, and clean up only the processes created for the job.
 
 Record exact commands, inputs, host/target, results, skips, and limitations in
 acceptance. Put completed changes and causes in HISTORY; keep TODO concise.
-Do not update STATUS or duplicate the measured support matrix in README.
+Update STATUS only on explicit request; do not duplicate the detailed measured
+support matrix in README.
 Follow-on self-upgrade, project SDK/new and shipping doctor/package gates are
 defined in [lifecycle acceptance](../acceptance/lifecycle_acceptance.md).
-Define the interfaces in D0, implement self-upgrade with D2 transactions, connect
-generated-project SDK acquisition in D5 and repeat real shipping checks in D6.
+Define the interfaces in D0; self-upgrade is a later D2 transaction increment,
+outside the first preview's critical path. Connect
+generated-project first-build acquisition as the basic D5/D2 flow now, extend
+broader workflows later in D5 and repeat real shipping checks in D6.
 
 ## Selected Common-source Technical Candidate
 

@@ -118,6 +118,13 @@ A contract that refers to the host's OS SDK (`@OS_SDK@`, `os_sdk.kind`) is compl
 `CRT_WINDOWS_SDK_LIBPATH`, or `--os-sdk <directory>`); the location is local state and never locked. Download and GC
 remain later work.
 
+`sdk verify` now also checks a present stored contract's format, portability
+and SDK content identity. The store does not yet retain the original contract
+digest or required-presence state: an existing project lock pins bytes, but a
+fresh configure computes its pin from the stored file. The latest guard has
+[Linux developer/unit evidence only](../acceptance/sdk_install_acceptance.md#sdk-verify-covers-the-stored-contract-linuxx86_64-2026-11-05).
+Installation-time receipt/pin handling is planned; this paragraph adds no format.
+
 `new` writes sources and an unresolved format-1 `crt.lock` without acquiring an
 SDK. Lock format 0 is no longer read: `build`/`test`/`run` refuse it and say to run `configure` again; a lock is never
 migrated implicitly. Explicit configure writes `state: local-experiment` with exact version,

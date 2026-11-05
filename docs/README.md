@@ -4,7 +4,8 @@ Start with the [project introduction](../README.md),
 [CLI design](design/crt_cli.md), and
 [development guide](guides/development.md).
 Current work is in [TODO](../TODO.md); completed work is in
-[HISTORY](../HISTORY.md). [AGENTS.md](../AGENTS.md) defines development rules.
+[HISTORY](../HISTORY.md). [STATUS](../STATUS.md) is the explicitly refreshed
+evidence snapshot. [AGENTS.md](../AGENTS.md) defines development rules.
 
 ## Architecture and Policy
 
@@ -30,7 +31,8 @@ from the SDK build baseline:
   initial implementation, [test local unreleased Dev SDK candidates](guides/development.md#local-dev-sdk-candidate-loop),
   record SDK/tool inputs, and document real commands.
   [Linux bootstrap build/test entry points](guides/development.md#build-and-test-the-bootstrap)
-  now exist; the full installer/project workflow remains planned.
+  and local install/selection now exist; first-build automatic binding and
+  remote acquisition remain planned.
 
 ## Acceptance Contracts and Evidence
 
@@ -46,9 +48,11 @@ from the SDK build baseline:
   project-generation/self-build evidence is linked to native D0 acceptance.
 - [D1 Host Environment and Bootstrap Resources](acceptance/host_environment_acceptance.md):
   independently pinned CRT tools, scoped doctor, non-interactive shell, resource
-  pin/signature negatives and SDK-free Linux/macOS HTTPS; Windows/x64 replay remains open.
+  pin/signature negatives and SDK-free Linux/macOS/Windows-x64 HTTPS at recorded
+  combinations; private-import and other-host limits remain in that record.
 - [D2 Local SDK Installer](acceptance/sdk_install_acceptance.md):
-  Isolated replays of `sdk install|list|verify|recover` on tar.xz and zip: Linux/x86_64, macOS/arm64 and Windows/x64.
+  Local install/verify/recover and stored-contract/project-selection evidence
+  on all five native pairs; the later Linux verify increment has its own scope.
 - [Implemented Bootstrap Contract](reference/bootstrap_contract.md): SDK input
   and command/result formats, experimental project fixtures and actual limits.
 
@@ -58,6 +62,7 @@ from the SDK build baseline:
 | --- | --- | --- |
 | Root README | User-facing purpose, maturity, navigation | Detailed roadmap, per-host measurements |
 | AGENTS | Contributor/agent rules and boundaries | Running work status |
+| STATUS | Explicitly requested, dated evidence snapshot | Live work queue or a replacement for acceptance |
 | TODO | Concise In Progress and Planned steps | Completed investigation logs |
 | HISTORY | Dated completed changes and why they were made | Future work queue |
 | `docs/design/` | Architecture, contracts, decisions, dependency order | Duplicate completion checklist |

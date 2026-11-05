@@ -452,8 +452,9 @@ fixtures alone do not establish executable integrity or native health.
 
 ### CLI Self-Upgrade
 
-Define the contract in D0 and implement/test it with D2 installation
-transactions. `upgrade` changes the CLI, while SDK/port/project updates remain
+Define the contract in D0 and implement/test it in a later D2 increment using
+installation transactions, after the first preview workflow. It is not a D3
+prerequisite. `upgrade` changes the CLI, while SDK/port/project updates remain
 explicit operations with separate locks. The planned transaction is:
 
 1. Resolve an intended CLI release and host identity using the agreed metadata
@@ -521,7 +522,7 @@ completion checklist. Each repository's TODO/acceptance owns actual status.
 | --- | --- | --- | --- |
 | D0 Contracts/inventory | SDK inputs/startup/link/import contracts and fixtures | Product decisions, evolving initial layout, minimal CLI and one-file feasibility; lock/JSON drafts | SDK-only compile/link/run and import proof; no private build inputs; layout/decision review |
 | D1 Windows environment/bootstrap | Separate host tools/rootfs and SDK technical validation | Single-executable SDK-free bootstrap, trust inputs, self-doctor and host environments | Native one-file execution/HTTPS; actual CRT tools without global PATH changes |
-| D2 SDK management/self-upgrade | Immutable SDK/profile artifacts and contract metadata | Project SDK storage/selection and verified CLI self-upgrade transactions | Three-host installs, candidate health/activation/recovery and unchanged project pins |
+| D2 SDK management/self-upgrade | Immutable SDK/profile artifacts and contract metadata | Local installation/selection, then acquisition; updates/self-upgrade are separate increments | Scoped native installation/selection proof; upgrade activation/recovery when that feature is implemented |
 | D3 First source port | Existing zlib recipe/tests and packaged driver contract | Fetch/verify/build/test/store adapter | Windows CRT mksh/make static/shared zlib link/run; SDK/source roots unchanged |
 | D4 Dependencies/cache/lock | Review SQLite/libpng and host-generator/target-dependency roles | Resolver, variants/build keys, local cache, project views | SQLite and libpng->zlib; rerun/recovery/ABI-mixing rejection; three-native-OS replay |
 | D5 Application workflow | Extend native compiler/runtime/dependency contracts | new/add/configure/build/run, layer-specific templates | External C/C++ and supported GFX/Media/UI/Web apps run; Web worker/ABI checks |
@@ -543,6 +544,77 @@ Use small increments within each stage: contract, implementation, bounded test,
 native replay, then documentation. Record host failures, unsupported
 static/shared variants, and cross-compile-only results separately. Do not
 assume every upstream port already works on all three OSes.
+
+### Execution Priorities (Adopted 2026-11-05)
+
+Preserve stage IDs and historical evidence. Proceed when an increment's actual
+producer/consumer capabilities are available; completing all of D2, including
+self-upgrade, is not a prerequisite for D3 or the basic D5 app workflow.
+TODO owns scheduling, STATUS the dated implementation snapshot, acceptance
+the original native evidence and compatibility the adoption ledger.
+
+The immediate sequence is:
+
+1. Close the bounded local installer/selection gaps: preserve the original
+   contract digest/required-presence state and finish installed-SDK collisions.
+   Retain the five exercised native Stage 2 baselines; do not require identical
+   latest-HEAD rebuilds merely to record them. Existing stores need an explicit
+   recovery rule based on verified metadata, not silent re-pinning of current bytes.
+2. Connect a fresh project to an already installed SDK and declared external
+   LLVM on first build, without a separate configure. Preserve source-only new,
+   exact project-specific locks, ambiguity errors and unchanged prior selections
+   on failure. External LLVM/OS SDK setup and missing-tool diagnosis are part
+   of the user flow; LLVM is not bundled or implicitly installed.
+3. Reuse verified HTTPS fetch and the local installer for explicitly pinned
+   metadata/archive/contract acquisition. Begin with the implemented native dev
+   profile on Linux/x86_64. Generic cxx/Full profiles, version channels and
+   registry resolution require later bounded contracts. Developer pins/test
+   keys support experiments; default public acquisition requires approved
+   official trust inputs and promotion of the actual producer artifacts.
+4. Prepare one reproducible Linux Developer Preview candidate with resources,
+   notices, trust/tool prerequisites and the first-build/run instructions.
+   Preview preparation grants no publication approval. Extend the new feature
+   to macOS/arm64 and Windows/x64 with native evidence before claiming support.
+   Existing results on the other architectures retain their original scope;
+   a Linux preview does not demote the CRT runtime's existing host coverage.
+
+D3 may proceed alongside steps 2-4 against pinned contracts. It must build
+zlib from the reviewed source into a separate store and prove that consumers
+use those bytes in both static/shared cases. Dev already supplies zlib; default
+SDK-provided reuse and explicit isolated source-build handling must be defined
+without replacing SDK content or mixing two zlib ABIs in one runtime closure.
+The existing Windows CRT mksh/make gate still applies to full D3 closure.
+Source ports do not require CMake/Python in the native CLI engine; their declared
+upstream configure/make environment remains separate from app builds.
+
+Coordinate three work streams: workflow code in CLI, affected-host replay and
+producer fixes, and preview trust/packaging. Shared format changes are reviewed
+first with one owner; parallel streams do not independently edit the same
+SDK manifest, store receipt or lock schema. Exact handoffs remain SDK-only.
+Full 06-web metadata/limits, general updates/self-upgrade, multi-port resolution,
+Studio and general package-manager integrations are outside the first flow.
+
+### Validation by Change Impact
+
+| Gate | When | Required scope |
+| --- | --- | --- |
+| Focused | Each implementation change | Selected-SDK build of affected modules, focused regressions and a basic execution smoke; docs-only edits need link/consistency checks |
+| Integration | Before merging a feature increment | Relevant install/select/build/run flow and changed-platform failure/recovery cases; verify exact artifact identities and preserved inputs/locks |
+| Native matrix | A feature bundle or release candidate | Declared support pairs' isolation, ABI/import/runtime and self-build evidence; retain the five-pair regression baseline without relabeling old runs |
+
+Archive, transaction, contract-trust, filesystem/PAL and ABI changes require
+their relevant tamper, hostile-input, interruption/recovery and native boundary
+regressions **before merge**. They cannot be deferred solely because a matrix
+run is scheduled later. Shared runtime/architecture changes expand scope to the
+affected pairs; an unchanged unrelated Web/GFX stack is not an automatic gate.
+Do not repeat a passed gate without changed inputs, failure or an unresolved
+concern. State the affected scope and evidence in each handoff.
+
+Periodic/nightly automation is a future implementation task: this repository
+has no CI workflow and CRT's current workflow is push/PR/manual, not nightly.
+Until separately implemented, use explicit feature-bundle/native release gates.
+A first Linux-only preview requires its declared native scope, not new support
+claims on all five pairs. A broader release must qualify each advertised pair.
 
 ## 10. Decisions for the First Implementation
 

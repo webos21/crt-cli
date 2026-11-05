@@ -74,7 +74,8 @@ the entire roadmap, creation of other repositories, or publication.
 
 ## Language, Build, and Runtime Contract
 
-Use the native manifest-driven builder (`crt.json`, experimental format 0) and
+Use the native manifest-driven builder (`crt.json`, supported formats in the
+[implemented contract](docs/reference/bootstrap_contract.md)) and
 C/C++ tests under `src/test/`. Keep `main.cpp` as command dispatch; implement
 project, SDK/compiler and process behavior in separate `src/main/` modules.
 Do not require CMake, Ninja, Python or a shell for CLI self-build, control commands
@@ -135,8 +136,10 @@ SDKs or rearrange SDK internals. Minimize consumer OS macros; put missing
 platform queries in CRT's public PAL rather than duplicating host APIs here.
 Each project locks its own SDK version/profile/target/content identity. Use
 shared immutable SDK payloads and project-specific exact references. First
-configure/build acquires a missing SDK; `new` generates sources without SDK
-download. Installer/resolver behavior remains D2/D5 work. SDK content profiles
+configure/build is intended to acquire a missing SDK; `new` generates sources
+without SDK download. Local install/selection is implemented for native dev
+SDKs; remote acquisition and automatic first-build binding remain D2/basic-D5
+work. SDK content profiles
 are separate from build modes; handoff/test copies do not implement a second
 storage mode.
 Support user-selected locations and real paths containing spaces and Unicode.
@@ -197,7 +200,8 @@ are not public application port packages. Start with zlib, then
 assumed accepted ports.
 
 `crt.json` describes project intent; `crt.lock` records exact resolved inputs.
-Their schemas are design work until implemented and tested. Pin concrete SDK,
+Use implemented formats from the reference contract; later extensions require
+explicit review rather than being inferred from roadmap examples. Pin concrete SDK,
 registry, source, recipe, variant, dependency, and tool identities; a version,
 channel, branch, or `latest` alone is not sufficient. `--locked` forbids
 re-resolution/lock changes; `--offline` separately forbids network use.
@@ -244,11 +248,14 @@ or terminal support as a separate, reproduced producer-side gap.
 
 ## Development and Verification
 
-Follow the design's D0-D7 order: establish SDK/host-tool contracts and a minimal
-CRT-native CLI first, then the Windows environment/bootstrap, safe SDK
-management, first source port, dependency/cache/lock handling, application
-workflows, deployment/automation, and finally Studio integration. Do not expand
-into IDE work or a registry service while these foundations remain unproven.
+Follow D0-D7 capability dependencies and the
+[execution/validation policy](docs/design/crt_cli.md#execution-priorities-adopted-2026-11-05).
+Bounded local installation/selection enables basic first-build work and a
+parallel D3 source-port increment; unrelated Full-stage metadata, general
+updates and self-upgrade do not block them. Pin shared contracts before
+parallel work and coordinate changes to the same manifest/store/lock format.
+Do not expand into IDE work or a registry service while these foundations
+remain unproven.
 
 Review the initial source/module/template and public build contract before
 minimal CLI implementation. Internal layout may evolve without private SDK
@@ -269,6 +276,16 @@ is not proof.
 Document real build/test commands once they exist. Parser/resolver/transaction
 fixtures belong in fast tests; actual artifact consumers and native replay are
 separate gates. Documentation-only changes do not require a full WebKit build.
+
+Choose gates by change impact: focused module checks for each change,
+relevant integration before feature merge, and native matrix runs for feature
+bundles/release candidates. Archive/transaction/trust/PAL/ABI changes still
+require their affected failure, recovery and native-boundary checks before
+merge; do not defer them to a future matrix run. Repeat passed checks only for
+changed inputs, a failure or an unresolved concern. Qualify each advertised
+host/architecture explicitly; old passes are not current-source acceptance.
+Periodic/nightly automation requires a separate implementation, not a claim
+in a work report.
 
 Attempt both static/shared port variants and link/run smokes, recording
 unsupported variants and reasons. Replay applicable installation/environment

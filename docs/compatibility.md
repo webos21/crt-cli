@@ -6,6 +6,39 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## First User Workflow Planning Review (2026-11-05)
+
+Reviewed producer CRT `433a7d65b34ee25d71eb9d7c96976c817f5936cd` and consumer
+CLI `3978cedbefa2abda7c4cd0c11ca1649912d7943a` before this owner-approved
+documentation update. CRT owns SDK/portable compiler/recipe policy and artifact
+promotion; CLI owns store receipts, tool selection, first-build binding and
+acquisition. The [producer policy](https://github.com/webos21/crt/blob/main/docs/design/sdk_development_contract.md#change-impact-and-first-user-workflow-adopted-2026-11-05)
+and [consumer execution/gates](design/crt_cli.md#execution-priorities-adopted-2026-11-05)
+retain D0-D7 IDs while removing general updates/self-upgrade and Full metadata
+from the first-flow dependency chain. D3 can proceed against fixed contracts.
+
+Local install and Stage 2 project/contract selection already have five native
+records, including [Windows/x64](acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-windowsx64-2026-11-05).
+Their original SDK/CLI revisions differ and remain unchanged. The latest
+[stored-contract verify increment](acceptance/sdk_install_acceptance.md#sdk-verify-covers-the-stored-contract-linuxx86_64-2026-11-05)
+has Linux developer/unit evidence only; no common-latest-HEAD qualification or
+binary refresh is inferred. Native dev is the supported consumer profile;
+broader app profiles and Full installation are separate increments.
+
+The next contract work is preserving installation-time contract digest and
+required-presence state, with explicit recovery for existing stores. Its wire
+format has not been assigned by this plan. First-build configure and explicitly
+pinned remote acquisition are likewise planned, not implemented commands or
+new schema capabilities. Dev supplies zlib, so D3 must prove actual isolated
+source-build/store consumption and define collisions with the supplied library.
+
+No SDK install metadata, native-provider, project/lock or recipe schema, product
+source, artifact pin or runtime combination is changed here. Explicit technical
+handoffs remain allowed; approved official trust and actual producer promotion
+precede default public acquisition and production consumer adoption. No release,
+nightly automation, test execution or publication is claimed. Root README/STATUS
+were explicitly synchronized; detailed evidence remains in acceptance.
+
 ## Technical Bootstrap Gates and Common Source Contract Review (2026-11-02)
 
 Reviewed producer documentation/tool commit

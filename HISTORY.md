@@ -11,6 +11,20 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-05
 
+### Adopt the first-user-flow sequence and refresh README/STATUS
+
+Reviewed CLI `3978ced` and CRT `433a7d6` with the owner. Reordered the queue to
+bounded local-store closure, installed-SDK first build and pinned acquisition,
+with D3 source-port work enabled in parallel on fixed contracts. Deferred
+self-upgrade/general updates and Full profile work beyond that first flow.
+The [design](docs/design/crt_cli.md#execution-priorities-adopted-2026-11-05)
+owns the change-impact gates and declared-host preview scope;
+[compatibility](docs/compatibility.md#first-user-workflow-planning-review-2026-11-05)
+records the shared review. Refreshed the usable local README workflow and
+created STATUS at the owner's explicit request. Updated contributor/development
+guidance and linked original evidence without new test or runtime claims.
+No code, binary, SDK identity, lock, trust key or release artifact changed.
+
 ### `sdk verify` covers the stored toolchain contract
 
 The known Stage 2 gap is closed at unit level: `sdk verify` now also checks the contract kept beside the SDK (regular file, supported format, no machine path,

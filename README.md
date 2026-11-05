@@ -8,77 +8,87 @@ and staged SDKs easier to use: select an SDK, create a project, add libraries,
 and build/run/package an application without manually assembling startup
 objects, sysroots, special compiler flags, or runtime search paths.
 
-## Project Maturity
+## What Works Today
 
-Local native bootstrap replays are recorded for Linux/x86_64, Linux/aarch64,
-macOS/arm64, Windows/x64 and Windows/arm64 at their exact source/SDK snapshots.
-The native C++ builder
-reads `crt.json` and invokes LLVM directly. `new` creates separate C/C++ files
-under `src/main/` and `src/test/`, with headers in `include/`; bounded configure/build/test/run and bootstrap
-doctor are implemented. `env --profile control|app-build|app-run` inspects the
-shared child-environment policy without changing the shell or project binding.
-Local experimental `port-build`/non-interactive `shell` consume a separately
-pinned CRT host-tools bundle. Scoped `doctor` checks self, environment or project
-bindings; explicit resource pins can also check executable/notices/trust bytes.
-CMake, Python and shell are excluded from this app path.
-The SDK installer, dependency resolver, self-upgrade, complete current-source
-native matrix and public release remain pending.
-`fetch` can verify a detached RSA-PSS signature against an explicitly supplied
-public key. Official publisher keys and signed-release policy remain unassigned;
-the [D1 audit](docs/acceptance/bootstrap_acceptance.md#d1-publisher-and-host-environment-audit-2026-10-31)
-records the measured scope and remaining gates.
+The CRT-native C++ CLI reads `crt.json` and invokes LLVM directly. `new`
+creates C/C++ sources under `src/main/` and `src/test/`, with headers in
+`include/`. Explicit configure/build/test/run, scoped doctor, environment
+reports and a bounded non-interactive CRT shell are implemented. Native app
+builds and CLI self-build require no CMake, Python or shell.
 
-See the [build guide](docs/guides/development.md#build-and-test-the-bootstrap)
-and [implemented contract](docs/reference/bootstrap_contract.md) for actual
-entry points and limitations. Plain bootstrap doctor reports integrity as not
-verified and HTTPS as not run. Native host-tools/resource verification and its exact per-host scope are
-[recorded separately](docs/acceptance/host_environment_acceptance.md).
+Local SDK management is implemented: `sdk install` accepts pinned local
+`tar.xz`/`zip` release assets, `sdk list|verify|recover` manage a shared immutable
+store, and configure can select an installed SDK with its stored portable
+compiler contract. Local installation and Stage 2 project selection have native
+records on Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64/arm64 at
+identified snapshots. They are local technical results, not a current-source
+support matrix or a public release. See [STATUS](STATUS.md) for scope and
+[SDK installation acceptance](docs/acceptance/sdk_install_acceptance.md) for evidence.
 
-## Intended Experience
+The current installer/project selection supports the native `dev` profile.
+General cxx/upper-stage profile selection, remote SDK acquisition, first-build
+automatic configure, source-port/dependency management and self-upgrade remain
+planned. `fetch` already performs explicit-CA HTTPS size/digest checks and
+optional explicit-key RSA-PSS verification; it is not yet an automatic SDK
+installer. Official default-download trust and release metadata remain pending.
 
-```sh
-crt-cli sdk install --profile cxx
-crt-cli doctor
+## Try the Local Workflow
+
+Use an identified [local test executable](bin/README.md), a native CRT Dev SDK
+release archive with its manifest and named portable contract asset beside it,
+and external LLVM tools. Substitute actual paths and the independently trusted
+manifest SHA-256 below:
+
+```text
+crt-cli sdk install --archive <archive> --release-manifest <manifest> --release-manifest-sha256 <sha256>
+crt-cli sdk list
 crt-cli new hello --language cxx
-cd hello
-crt-cli add zlib
-crt-cli build
-crt-cli run
+crt-cli configure --project hello --cc <clang> --cxx <clang++> --linker <ld.lld> --ar <llvm-ar>
+crt-cli build --project hello
+crt-cli test --project hello
+crt-cli run --project hello
 ```
 
-- **Choose an SDK:** use the existing CRT stage appropriate for C, C++,
-  graphics, media, UI, or Web applications rather than always downloading WebKit.
-- **Use additional libraries:** fetch reviewed upstream sources and build them
-  locally through CRT port recipes; keep exact SDK and dependency locks.
-- **Develop applications:** use one workflow for project creation, build, run,
-  test, and packaging, with structured diagnostics for CI and automation.
-- **Keep environments separate:** manage CRT host tools and runtime dependencies
-  without silently replacing tools or changing the system PATH.
+Configure selects the only compatible installed SDK. If several fit, select
+one explicitly with `--sdk <directory-or-identity-prefix>`; there is no moving
+default. Windows also needs its OS SDK import-library location through
+`CRT_WINDOWS_SDK_LIBPATH` or `--os-sdk`; macOS uses `xcrun` or an explicit
+`--os-sdk`. Tool locations remain local state; the project lock pins SDK,
+contract and tool identities. See the [implemented contract](docs/reference/bootstrap_contract.md#sdk-store-and-exact-inputs).
 
-The CLI itself is intended to use CRT and ship as one executable per supported
-host, able to start before a development SDK is installed. Full three-host validation remains pending. The selected policy allows OS
-dependencies, data/cache/certificates, previous versions and temporary update
-helpers; no permanent auxiliary launcher is used. Planned
-`upgrade` updates the CLI itself; implemented `doctor` scopes provide the bounded
-checks described above. Projects pin their own SDK version/profile independently of
-CLI updates. SDK payloads use shared immutable storage with exact project references;
-first configure/build acquires a missing SDK, while new only creates sources.
-Automatic acquisition and shared-store installation remain planned; the current
-experiment selects a local SDK and separately hashed compiler policy explicitly.
-The default SDK store is `$USER_HOME/.crt/sdks` on all hosts. Native project
-targets distinguish executables, static libraries and shared libraries, with
-static/shared runtime linkage; the CLI's own one-executable goal does not
-restrict the applications it builds. JSON and SHA-2 are supplied by the Dev SDK.
-CRT Studio is a later, separate native IDE built on this CLI workflow.
+SDKs default to `$USER_HOME/.crt/sdks` on all hosts. Project-specific exact
+references share immutable payloads; installation does not migrate another
+project's lock. `new` creates sources only. The example currently needs explicit
+configure and a local archive; it does not download an SDK on first build.
+The native builder supports executables, static/shared project libraries and
+static/shared runtime linkage using SDK-owned startup/link/ABI policy.
+
+## Next User Workflow
+
+[The active plan](TODO.md) closes bounded local-store integrity/collision gaps,
+then connects installed-SDK first build, explicitly pinned remote acquisition
+and app execution on Linux/x86_64. The zlib source-port adapter can proceed in
+parallel against fixed contracts. Full-stage metadata, general updates,
+self-upgrade, multi-port resolution and Studio are later increments. A preview
+candidate is qualified for its declared hosts before wider support is claimed.
+
+The intended first-build experience keeps `new` source-only, acquires a missing
+SDK on first configure/build and preserves exact existing locks. This remains a
+planned workflow; publication requires approved trust inputs and the actual
+producer artifact to be promoted before CLI adoption.
 
 ## Platforms and Requirements
 
-Initial native validation targets are Windows/x64, Linux/x86_64, and
-macOS/arm64. These are design targets, not a completed support matrix.
-External LLVM and native build tools remain prerequisites; the CRT SDK owns
-the target compilation/linking contract. Windows build/source-stage hosts
-require Developer Mode and real filesystem symlinks. The CLI must diagnose
-missing prerequisites rather than change security settings automatically.
+External Clang/LLD/LLVM ar and required vendor OS SDKs are prerequisites; neither
+CRT nor this CLI bundles LLVM. The CLI ships toward one executable per host
+with declared OS dependencies, resources/notices/certificate data and no
+permanent launcher. Current committed binaries are local test snapshots with
+per-host provenance in [bin/README](bin/README.md).
+
+The independent CRT host-tools profile supplies mksh, toybox, awk and make for
+explicit shell/port workflows. It is separate from native app builds and target
+SDKs. Windows workflows using real symlinks require Developer Mode; settings
+are not changed automatically. Studio remains a separate future GUI consumer.
 
 ## Learn More and Contribute
 
