@@ -118,8 +118,8 @@ selections; the three options are mutually exclusive. A SDK installed from a rel
 `$USER_HOME/.crt/sdks/.contracts/<directory>.json`; `configure` then needs no `--sdk-contract` (the lock records
 `contract_source: store` and the digest, `.crt/local.json` no path), and an explicit `--sdk-contract` still overrides.
 A contract that refers to the host's OS SDK (`@OS_SDK@`, `os_sdk.kind`) is completed on this host (`xcrun`, or
-`CRT_WINDOWS_SDK_LIBPATH`, or `--os-sdk <directory>`); the location is local state and never locked. Download and GC
-remain later work.
+`CRT_WINDOWS_SDK_LIBPATH`, or `--os-sdk <directory>`); the location is local state and never locked.
+Explicit pinned acquisition is defined below; general channels/GC remain later work.
 
 ### Installation receipt (CLI-owned format 1)
 
@@ -179,6 +179,83 @@ unless `--allow-dirty-sdk true` is explicitly selected; that choice and the true
 dirty provenance are locked. It is an unpromoted local experiment, never a clean
 release claim. The repository lock remains unresolved.
 
+### Explicit pinned HTTPS SDK source (experimental format 0)
+
+The CLI owns `crt-cli.sdk-source`, format 0. It is a caller-trusted acquisition
+input, separate from producer release-manifest/install metadata format 1,
+portable compiler policy format 1 and the format-1 project lock. It defines no
+channel, registry, default publisher or new SDK profile. Replace the placeholders
+in this input template with independently trusted values:
+
+```json
+{
+  "schema": "crt-cli.sdk-source",
+  "format": 0,
+  "ca_file": "/absolute/trust/ca.pem",
+  "ca_sha256": "<64 lowercase hex digits>",
+  "manifest": {
+    "url": "https://example.test/releases/release-manifest.json",
+    "sha256": "<64 lowercase hex digits>",
+    "size": 1696
+  },
+  "archive": {
+    "name": "crt-example-linux-x86_64-dev.tar.xz",
+    "url": "https://example.test/releases/crt-example-linux-x86_64-dev.tar.xz"
+  },
+  "contract_url": "https://example.test/releases/crt-example-linux-x86_64-dev-toolchain.json",
+  "sdk": {
+    "version": "example",
+    "content_sha256": "<64 lowercase hex digits>",
+    "contract_sha256": "<64 lowercase hex digits>"
+  },
+  "timeout_seconds": 60
+}
+```
+
+Unknown input fields are rejected. Source files are bounded to 64 KiB; CA files
+must be absolute regular files of at most 1 MiB matching their pin. URLs require
+HTTPS without credentials, query or fragment. Redirects are not followed, peer/
+host verification is always enabled, minimum TLS is 1.2 and the supplied PEM is
+the trust input. Metadata is bounded to 1 MiB, contracts to 16 MiB and compressed
+archives to 2 GiB. Timeout defaults to 60 seconds and accepts integer 1–3600.
+Producer install metadata separately bounds extraction. Archive/contract names
+must be distinct plain file names; internal acquisition names are reserved.
+
+`crt-cli sdk acquire --source <file> [--store <absolute-dir>]` validates the
+expected SDK/contract identity against an existing installed receipt and actual
+SDK inventory. A compatible exact match needs no network access, even if the
+URLs are unavailable. The declared CA file/pin must still be available. This
+path verifies caller-declared content pins; it does not claim to have retrieved
+or reauthenticated the remote manifest. Missing/modified metadata is refused,
+never repaired implicitly. No persistent raw-download cache is introduced.
+
+When absent, the CLI fetches pinned metadata, checks version/native target/dev
+profile/content and contract pins before fetching assets, then fetches the
+contract and archive with metadata sizes/digests. Native `fetch` and the ordinary
+release-based `sdk install` are reused; no external curl, Python or shell is
+executed. Downloads are private PID-owned `.staging` transactions. Normal failure
+removes the transaction; `sdk recover` preserves live writers and reclaims dead
+ones after interruption. Installed SDK payload/receipt rules remain unchanged.
+No retry loop, automatic policy repair or in-place SDK replacement is performed.
+
+An unresolved first `build` (or explicit `configure`) accepts `--sdk-source
+<file>`. Ignored `.sdk.json` may declare absolute `sdk_source` alongside its LLVM
+paths. Explicit SDK selectors replace the defaults' selector; a source cannot
+be combined with another SDK/provider selector. The expected source version
+must satisfy `crt.json`, and tools are checked before network access. A bound
+build ignores changed local defaults and refuses explicit configuration flags.
+`new` remains source-only. Acquisition may publish a valid reusable SDK before
+a later compilation fails, but project pins are published only after successful
+build. Provider paths/flags remain producer-owned.
+
+The source descriptor pins exact inputs; it is not official publisher
+authentication. Acquisition results record source/manifest/CA digests, fetched
+URLs/sizes/digests and `publisher_authentication: not_verified`; the project lock
+continues to pin installed SDK/contract/tool identities with its existing schema.
+Official default acquisition still requires approved trust inputs and producer
+promotion. The [Linux evidence](../acceptance/sdk_install_acceptance.md#pinned-https-sdk-acquisition-linuxx86_64-2026-11-06)
+owns exercised combinations and remaining native-host gates.
+
 ### First build without configure
 
 `build` can bind an unresolved format-1 project created by `new`, using a
@@ -190,7 +267,8 @@ also accepted). First-build flags follow configure's per-key override rules;
 SDK/provider/OS-SDK inputs as configure are accepted, including explicitly
 pinned local developer handoffs. The default path selects the only fitting
 installed native `dev` SDK; `--sdk <ref>` resolves ambiguity explicitly.
-No compiler or SDK is discovered on PATH, bundled, downloaded or promoted.
+No compiler or SDK is discovered on PATH or bundled. SDK downloads require
+an explicit pinned `--sdk-source` input; promotion remains a producer operation.
 
 Only `lock_format: 1, state: unresolved` without a selection and without
 `.crt/local.json` qualifies. Other lock formats, malformed/duplicate-key locks,
@@ -234,7 +312,7 @@ local state, never a lock and never committed. Format 0 is a flat JSON object:
 
 `configure` reads `<project>/.sdk.json`, or the file named by `--sdk-config
 <path>`, as defaults. Explicit flags override per key, and `--sdk-root` /
-`--sdk-id` / `--sdk` replace the file's SDK selection instead of conflicting with it.
+`--sdk-id` / `--sdk` / `--sdk-source` replace the file's SDK selection instead of conflicting with it.
 Unknown keys, relative tool paths and a wrong provider digest are rejected. The
 file only supplies inputs: everything is still verified and the resulting
 identities are written to the project lock.

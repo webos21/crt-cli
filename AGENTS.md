@@ -140,7 +140,9 @@ configure/build is intended to acquire a missing SDK; `new` generates sources
 without SDK download. Local install/selection is implemented for native dev
 SDKs. First-build binding to an installed SDK is implemented for an unresolved
 format-1 project with explicit LLVM declarations; acceptance records its native
-scope. Remote acquisition remains D2/basic-D5 work. SDK content profiles
+scope. Explicit pinned HTTPS source acquisition is implemented for the bounded
+native-dev workflow; official defaults/channels and affected-host replay remain
+separate gates. SDK content profiles
 are separate from build modes; handoff/test copies do not implement a second
 storage mode.
 Support user-selected locations and real paths containing spaces and Unicode.

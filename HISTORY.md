@@ -11,6 +11,22 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-06
 
+### Acquire caller-pinned SDK inputs over HTTPS and reuse installed identities
+
+Added consumer-owned SDK source format 0, `sdk acquire --source` and first-build
+`--sdk-source`/local `sdk_source`. The native flow verifies explicit CA/metadata/
+SDK/contract pins, delegates transport and installation to existing components,
+and downloads nothing for an exact verified installed identity. PID-owned
+network staging uses existing live/dead recovery rules. Source-only new and
+success-only project pin publication remain unchanged.
+
+[Acceptance](docs/acceptance/sdk_install_acceptance.md#pinned-https-sdk-acquisition-linuxx86_64-2026-11-06)
+records SDK-only build, 70 TLS/acquisition/recovery checks, 12 focused first-build
+failure/retry checks and 881 native regressions. It preserves exact source/binary/
+fixture identities and the dirty local developer scope; official trust/default
+URLs, producer promotion and macOS/Windows replay remain separate gates. No
+SDK bytes, root/default lock, committed binary or STATUS is refreshed.
+
 ### Build unresolved projects without a separate configure
 
 First `build` reads explicit LLVM flags or `.sdk.json`, selects the fitting

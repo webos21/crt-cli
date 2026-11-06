@@ -6,6 +6,32 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## Explicit Pinned HTTPS Source Adoption (2026-11-06)
+
+Reviewed CRT `6e064f2cc2ff84b5507d7be8000668c730dfe73a` and CLI
+`4f55a52bd75660b4c8d2543da58da6337efd45de`. CLI owns the implemented
+`crt-cli.sdk-source`, format 0, acquisition transaction and project integration.
+CRT still owns release/install metadata format 1, portable compiler policy,
+SDK content/provenance and technical qualification. Existing assets/fields
+supply the metadata/archive/contract handoff; no producer schema changes.
+
+The source file explicitly pins HTTPS URLs, CA bytes, manifest size/digest,
+SDK content/version and portable-contract digest. Cold acquisition applies the
+existing fetch TLS/size/digest checks and local release installer. Verified
+installed-identity reuse does not fetch/reverify remote metadata; it compares
+caller-trusted SDK/contract pins with the installed receipt and actual payload.
+The source is optional local input, never a moving default or publisher key.
+Project-lock/build-result formats are unchanged; source input hashes and
+transport evidence live in acquisition output rather than changing existing
+SDK/tool selection keys.
+
+[Linux consumer evidence](acceptance/sdk_install_acceptance.md#pinned-https-sdk-acquisition-linuxx86_64-2026-11-06)
+uses the retained dirty developer SDK/release fixture and disposable local TLS
+trust. This qualifies that exact native technical combination, not an official
+public release, default trust policy or another-host support claim. Producer
+promotion precedes future production adoption; Windows concurrency/DLL and
+macOS/Windows first-build/acquisition replay remain open.
+
 ## Installed SDK First-build Binding (2026-11-06)
 
 Reviewed producer `c9e6aa9ecb73c85c73ba32761b2715d0b09fbe71` and CLI base

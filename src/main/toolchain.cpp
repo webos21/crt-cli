@@ -143,9 +143,9 @@ Json inspect_sdk(const fs::path& sdk, const Json& contract, bool allow_dirty) {
 }
 std::map<std::string, std::string> Toolchain::read_sdk_config(const fs::path& file) {
     require(fs::is_regular_file(file), "SDK config is not a regular file: " + file.string());
-    const std::map<std::string, std::string> roles{{"sdk_root", "--sdk-root"}, {"sdk_id", "--sdk-id"}, {"sdk", "--sdk"}, {"os_sdk", "--os-sdk"}, {"sdk_contract", "--sdk-contract"}, {"contract_sha256", "--contract-sha256"},
+    const std::map<std::string, std::string> roles{{"sdk_root", "--sdk-root"}, {"sdk_id", "--sdk-id"}, {"sdk", "--sdk"}, {"sdk_source", "--sdk-source"}, {"os_sdk", "--os-sdk"}, {"sdk_contract", "--sdk-contract"}, {"contract_sha256", "--contract-sha256"},
         {"cc", "--cc"}, {"cxx", "--cxx"}, {"linker", "--linker"}, {"ar", "--ar"}};
-    const std::set<std::string> absolute_paths{"sdk_root", "os_sdk", "sdk_contract", "cc", "cxx", "linker", "ar"};
+    const std::set<std::string> absolute_paths{"sdk_root", "sdk_source", "os_sdk", "sdk_contract", "cc", "cxx", "linker", "ar"};
     auto config = read_json(file);
     require(config.is_object() && config.contains("format") && config.at("format") == 0, "unsupported SDK config format (expected 0)");
     std::map<std::string, std::string> options;

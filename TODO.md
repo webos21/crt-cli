@@ -70,15 +70,13 @@ and [HISTORY](HISTORY.md).
 
 Installed-SDK first build now has a bounded
 [Linux implementation and acceptance](docs/acceptance/sdk_install_acceptance.md#first-build-without-configure-linuxx86_64-2026-11-06);
-completed details live in HISTORY. Continue with pinned acquisition below.
+completed details live in HISTORY.
 
-- [ ] Connect explicitly pinned HTTPS metadata/archive/contract retrieval to
-  the existing installer and first-build path. Check CA/trust, sizes, digests,
-  interrupted transfers and failure cleanup; reuse an installed identity without
-  downloading it again. Keep `new` source-only.
-- [ ] Start with the currently supported native `dev` profile on Linux/x86_64.
-  Broader app profiles (`cxx`/upper stages), version/channel resolution and a
-  general registry are separate increments; do not imply they already work.
+Explicit pinned HTTPS acquisition and installed-identity reuse also have
+[Linux evidence](docs/acceptance/sdk_install_acceptance.md#pinned-https-sdk-acquisition-linuxx86_64-2026-11-06);
+first build and acquisition currently support the native `dev` profile. General
+profiles, channels and registry resolution remain separate work.
+
 - [ ] Qualify one Linux preview candidate: CLI/resources/notices, an identified
   SDK and portable contract, external-tool setup and the end-to-end user flow.
   A developer pin/test key is not official publisher trust. General default

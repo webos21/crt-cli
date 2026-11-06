@@ -1,6 +1,7 @@
 #include <crtcli/toolchain.h>
 #include <crtcli/host_tools.h>
 #include <crtcli/environment.h>
+#include <crtcli/sdk_acquire.h>
 #include <set>
 #include <map>
 #include <cctype>
@@ -274,7 +275,7 @@ Reply workflow(const std::vector<std::string>& args) {
     require(args[0] == "configure" || args[0] == "build" || args[0] == "test" || args[0] == "run", "unsupported command or arguments");
     fs::path root = fs::current_path();
     std::map<std::string, std::string> options;
-    const std::set<std::string> configure_options{"--sdk", "--sdk-root", "--sdk-id", "--os-sdk", "--sdk-contract", "--contract-sha256", "--cc", "--cxx", "--linker", "--ar", "--allow-dirty-sdk", "--sdk-config"};
+    const std::set<std::string> configure_options{"--sdk", "--sdk-root", "--sdk-id", "--sdk-source", "--os-sdk", "--sdk-contract", "--contract-sha256", "--cc", "--cxx", "--linker", "--ar", "--allow-dirty-sdk", "--sdk-config"};
     for (size_t i = 1; i < args.size(); i += 2) {
         require(i + 1 < args.size() && (args[i] == "--project" || (args[0] != "configure" && args[i] == "--target") ||
             ((args[0] == "configure" || args[0] == "build") && configure_options.count(args[i]))), "unsupported/missing workflow option");
@@ -300,13 +301,25 @@ Reply workflow(const std::vector<std::string>& args) {
     if (args[0] == "configure" || first_build) {
         fs::path config = options.count("--sdk-config") ? fs::path(options.at("--sdk-config")) : root / ".sdk.json";
         if (options.count("--sdk-config") || fs::exists(config)) requested = Toolchain::read_sdk_config(config);
-        if (options.count("--sdk") || options.count("--sdk-root") || options.count("--sdk-id")) requested.erase("--sdk"), requested.erase("--sdk-root"), requested.erase("--sdk-id");
+        if (options.count("--sdk") || options.count("--sdk-root") || options.count("--sdk-id") || options.count("--sdk-source"))
+            for (auto selector : {"--sdk", "--sdk-root", "--sdk-id", "--sdk-source"}) requested.erase(selector);
         for (const auto& option : options) if (option.first != "--project" && option.first != "--sdk-config" && option.first != "--target") requested[option.first] = option.second;
         if (first_build)
             for (const auto& role : {"--cc", "--cxx", "--linker", "--ar"}) {
                 require(requested.count(role), std::string("first build requires explicit ") + role + " or its declaration in .sdk.json; external LLVM is not bundled");
                 require(fs::path(requested.at(role)).is_absolute(), std::string("first-build tool must be an absolute path: ") + role);
             }
+        if (requested.count("--sdk-source")) {
+            for (auto selector : {"--sdk", "--sdk-root", "--sdk-id", "--sdk-contract", "--contract-sha256"})
+                require(!requested.count(selector), "--sdk-source cannot be combined with another SDK/provider selection");
+            for (auto role : {"--cc", "--cxx", "--linker", "--ar"}) {
+                require(requested.count(role), std::string("SDK acquisition requires explicit ") + role);
+                native_executable(requested.at(role));
+            }
+            auto acquired = acquire_sdk(requested.at("--sdk-source"), sdk_store_root(), manifest.at("sdk").at("version").get<std::string>());
+            requested.erase("--sdk-source");
+            requested["--sdk"] = acquired.at("identity").at("directory");
+        }
         // Without a named SDK the installed one is used only when exactly one fits the project's request.
         if (!requested.empty() && !requested.count("--sdk") && !requested.count("--sdk-root") && !requested.count("--sdk-id"))
             requested["--sdk"] = Toolchain::select_store_sdk(manifest.at("sdk").at("version").get<std::string>());

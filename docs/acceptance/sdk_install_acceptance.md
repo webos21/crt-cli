@@ -899,3 +899,109 @@ loader on the C++ shared consumer; no host glibc/GNU C++ runtime is imported.
 Accepted `isolated-r2/result.json` SHA-256:
 `2a172599e425314999fafe5a619e5a39814dfbd5bc0886d85cb275acbd2b98fc`.
 Native `native-test` passes **881 checks** (855 at the previous selection baseline).
+
+## Pinned HTTPS SDK acquisition (Linux/x86_64, 2026-11-06)
+
+Explicit SDK source format 0 now connects native HTTPS fetch, release-based
+installation and first-build binding. The [implemented contract](../reference/bootstrap_contract.md#explicit-pinned-https-sdk-source-experimental-format-0)
+owns fields, limits, reuse and rejection semantics. No channels, official
+publisher/default trust, generic registry or new producer wire format is added.
+
+### Reviewed inputs and build
+
+CRT `6e064f2cc2ff84b5507d7be8000668c730dfe73a`; CLI base
+`4f55a52bd75660b4c8d2543da58da6337efd45de`. Product/test snapshot (sorted
+`src`, `include`, `crt.json` path/hash compact JSON):
+`f3eadfd5dd025958f6757bb286a0f30715e1d10f9bf9bf49a95ff62d150a4fbe`.
+CLI SHA-256 `67cf3ebadaca3bf3545628f15318dec9ee706906d9adca1169996837d10cef3a`,
+17,520,544 bytes, no ELF `DT_NEEDED`. A fresh public-SDK handoff/source export
+under `/home/syszone/GitLocal/crt-cli-replay/sdk-acquire-build-j40loz93`
+builds the candidate; logs and exact tool/resource hashes are retained.
+
+Reused the original dirty local Linux Dev release fixture from
+[receipt acceptance](#installation-receipts-and-explicit-repair-linuxx86_64-2026-11-05),
+with the same SDK content
+`ecbb920a8e63e337095c0839b2d897f653f012162164a1b7b4e85a66486b32cd`,
+provider `30e67672117ae9b8d3b3d9476f381c3ec4049291bb593208abe541966953d956`
+and manifest `14e77d7cdf3e43e2931eac61a365a0d4734f639b29614333007bbb162d21316a`.
+No runtime/SDK rebuild or producer artifact promotion is involved. Dirty-SDK
+opt-in remains explicit. The CLI executable, not a shell wrapper or external
+curl, performs all consumer requests/installations/builds.
+
+### Reproduction and measured gates
+
+Host entry point: `tools/replay_sdk_acquire_linux.py`, with that exact CLI,
+receipt handoff `release-fixture`, explicit native LLVM paths, fresh
+`--output`/`--work-parent`, `--allow-dirty-sdk`, and `--hide` for both repositories,
+frozen worktree and original/current handoffs. It generates a disposable CA and
+server certificate, pins the public CA bytes in an actual source file and serves
+the exact metadata/archive/contract over loopback TLS. Private PKI is hidden
+from the consumer. This is test trust, not approved publisher trust.
+
+The full replay passes **70/70**:
+
+- Refuses plain HTTP, URL credentials, modified CA pin, untrusted CA,
+  wrong-host certificate, redirects, wrong metadata size/digest and unsafe
+  archive names/unknown input fields. No verified candidate is replaced.
+- Rejects foreign-target/different-content/different-contract/duplicate-asset
+  manifests after one metadata GET, before asset downloads. Modified contract
+  and archive bytes fail pinned digest checks. Truncated and timed-out transfers
+  leave no SDK or staging publication.
+- Cold new -> HTTPS metadata/contract/archive -> first build -> test/run succeeds.
+  New alone leaves the store absent; tools are validated before networking.
+  Cold build makes exactly three GETs, in metadata/contract/archive order, then
+  records exact SDK and stored portable-contract pins.
+- A bound project refuses explicit source replacement with both binding files
+  unchanged and zero GETs. A second project's plain build reads `sdk_source`
+  from `.sdk.json` and uses the existing identity. Reuse with unreachable URLs
+  reports an empty downloads array; it is not a new remote-manifest verification.
+- Different contract pins and missing receipts cannot be silently adopted or
+  repaired. Existing payload and installation checks remain authoritative.
+- A controlled slow transfer exposes a live PID-owned fetch transaction;
+  recover preserves it. SIGKILL of that exact owned CLI leaves no SDK. Recover
+  removes the dead transaction, and the same pinned source then installs with
+  empty bookkeeping. No global process-name kill or hidden retry is used.
+
+The focused `--first-build-failure-only` continuation checks the project side:
+HTTPS digest failure preserves the unresolved lock and removes staging;
+version mismatch refuses before GETs; a valid acquired SDK survives a later
+compiler failure while project pins remain unresolved; correcting source builds
+without new GETs, then test/run succeeds. The final driver includes these checks
+in its own result/exit path. Earlier and final focused runs remain separate.
+Native `native-test` also passes **881 checks**, preserving the explicit local
+configure, first-build, SDK selection and existing project behavior.
+
+Bubblewrap provides a read-only root, private writable HOME/scratch, cleared
+environment, hidden source/SDK/PKI trees and masked interpreters/build drivers.
+Strace records owned CLI/tool/generated-program execution; no Python or shell
+runs inside consumer invocations. Networking is shared for the controlled
+loopback server; no general network-denial claim is made. Test-host Python,
+OpenSSL, bubblewrap and strace are not product prerequisites. Expected test-server
+EOF/reset diagnostics during rejected transfers are retained as host noise,
+not native CLI crashes or a waived failure.
+
+### Evidence and limits
+
+CLI ignored `out/sdk-acquire-20261106/` retains `inputs.json`, `candidate.json`,
+SDK-only configure/build/native argv/logs, `isolated-r1/`, initial
+`first-build-failures/` and final `first-build-failures-r2/`. Per-call argv,
+stdout/stderr, exact source/CA pins, server GETs, killed-job evidence and process
+traces are included. Accepted full `isolated-r1/result.json` SHA-256:
+`0b0d9a97dcd32225acf1771c6a9fced8a7cc4b3217cd480ebc616fb091d9c7f5`.
+The candidate records tested source, CLI and both host-driver snapshots rather
+than relabeling the earlier full replay as a new run.
+
+The Linux developer handoff is technically exercised. Public/default source
+URLs, approved publisher trust, actual producer promotion/preview assembly,
+macOS/Windows first-build/acquisition replay and existing Windows installer/DLL
+blockers remain open. This does not refresh root locks, local defaults,
+committed binaries or STATUS, qualify pure C shared policy, or publish an SDK/CLI
+release. Raw archives are not persistently cached/resumed; installed SDK identity
+reuse is implemented and failed transactions are retried explicitly.
+
+The final first-build failure/retry continuation passes **12/12**; its result
+SHA-256 is `7df43ad4a9a892150e1a3415a461f758d2b90ce24cab2100b18a9fb3dc30f504`.
+The host-driver-only control-flow cleanup includes final trace checks in the
+exit status. Product inputs are identical across the 70-case replay, 12-case
+continuation and 881 native checks. No already-passing artifact/runtime suite
+was reopened for this reporting change.

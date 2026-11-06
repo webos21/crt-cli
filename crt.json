@@ -30,7 +30,8 @@
       "src/main/diagnostics.cpp",
       "src/main/archive.cpp",
       "src/main/sdk_store.cpp",
-      "src/main/sdk_command.cpp"
+      "src/main/sdk_command.cpp",
+      "src/main/sdk_acquire.cpp"
     ],
     "sdk_consumer_option_sources": [
       "src/main/http.cpp"

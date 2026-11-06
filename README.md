@@ -30,16 +30,19 @@ A fresh unresolved project can bind to an installed SDK on its first `build`
 using declared LLVM paths, then use plain build/test/run. This increment has
 [Linux/x86_64 evidence](docs/acceptance/sdk_install_acceptance.md#first-build-without-configure-linuxx86_64-2026-11-06);
 its macOS/Windows replay remains separate. General cxx/upper-stage profile
-selection, remote SDK acquisition, source-port/dependency management and
-self-upgrade remain planned. `fetch` already performs explicit-CA HTTPS size/digest checks and
-optional explicit-key RSA-PSS verification; it is not yet an automatic SDK
-installer. Official default-download trust and release metadata remain pending.
+selection, source-port/dependency management and self-upgrade remain planned.
+[Explicit pinned HTTPS SDK acquisition](docs/reference/bootstrap_contract.md#explicit-pinned-https-sdk-source-experimental-format-0)
+is implemented for the Linux workflow: `sdk acquire --source <file>` or first
+`build --sdk-source <file>` verifies a caller-pinned source and reuses an exact
+installed identity. `fetch` also supports explicit-key RSA-PSS verification.
+Official default-download trust, channels and publisher promotion remain pending.
 
 ## Try the Local Workflow
 
-Use an identified [local test executable](bin/README.md), a native CRT Dev SDK
-release archive with its manifest and named portable contract asset beside it,
-and external LLVM tools. Substitute actual paths and the independently trusted
+Use a CLI built from the implementation being exercised; the dated
+[local executable snapshots](bin/README.md) may predate first-build/acquisition
+commands. For the local flow, select a native CRT Dev SDK release archive,
+its manifest and named portable contract asset beside it, plus external LLVM tools. Substitute actual paths and the independently trusted
 manifest SHA-256 below:
 
 ```text
@@ -63,24 +66,33 @@ contract and tool identities. See the [implemented contract](docs/reference/boot
 
 SDKs default to `$USER_HOME/.crt/sdks` on all hosts. Project-specific exact
 references share immutable payloads; installation does not migrate another
-project's lock. `new` creates sources only. The example currently needs explicit
-configure and a local archive; it does not download an SDK on first build.
+project's lock. `new` creates sources only. The local example installs an archive
+before first build; network acquisition requires an explicit pinned source.
 The native builder supports executables, static/shared project libraries and
 static/shared runtime linkage using SDK-owned startup/link/ABI policy.
 
+For explicit HTTPS acquisition, supply a trusted format-0 source file with
+CA/metadata/SDK/contract pins, then use `--sdk-source /absolute/source.json` on
+the first build alongside LLVM declarations. Alternatively, put `sdk_source`
+and LLVM paths in ignored `.sdk.json` and run plain `build`. `new` downloads
+nothing; existing project pins change only through explicit configure. This
+workflow has [Linux evidence](docs/acceptance/sdk_install_acceptance.md#pinned-https-sdk-acquisition-linuxx86_64-2026-11-06);
+macOS/Windows need their affected-feature replay.
+
+
 ## Next User Workflow
 
-[The active plan](TODO.md) closes bounded local-store integrity/collision gaps,
-then connects installed-SDK first build, explicitly pinned remote acquisition
-and app execution on Linux/x86_64. The zlib source-port adapter can proceed in
+[The active plan](TODO.md) retains the remaining native store/collision gates
+and qualifies a Linux preview beyond the implemented first-build/acquisition
+workflow. The zlib source-port adapter can proceed in
 parallel against fixed contracts. Full-stage metadata, general updates,
 self-upgrade, multi-port resolution and Studio are later increments. A preview
 candidate is qualified for its declared hosts before wider support is claimed.
 
-The intended first-build experience keeps `new` source-only, acquires a missing
-SDK on first configure/build and preserves exact existing locks. This remains a
-planned workflow; publication requires approved trust inputs and the actual
-producer artifact to be promoted before CLI adoption.
+The implemented developer flow keeps `new` source-only and can acquire a
+missing SDK on first configure/build from explicit pinned inputs. Default
+channels and publication require approved trust and actual producer artifact
+promotion before production CLI adoption.
 
 ## Platforms and Requirements
 

@@ -1,4 +1,5 @@
 #include "crtcli/sdk_store.h"
+#include "crtcli/sdk_acquire.h"
 #include <cctype>
 #include <map>
 #include <set>
@@ -7,7 +8,8 @@ namespace crtcli {
 namespace {
 
 const char* usage =
-    "usage: sdk install --archive <file> --archive-sha256 <hex> [--content-sha256 <hex>] [--store <dir>] [--lock-wait <seconds>]\n"
+    "usage: sdk acquire --source <pinned-source.json> [--store <dir>]\n"
+    "       sdk install --archive <file> --archive-sha256 <hex> [--content-sha256 <hex>] [--store <dir>] [--lock-wait <seconds>]\n"
     "       sdk install --archive <file> --release-manifest <file> --release-manifest-sha256 <hex> [--store <dir>] [--lock-wait <seconds>]\n"
     "       sdk list [--store <dir>]\n"
     "       sdk verify <sdk-directory> [--store <dir>]\n"
@@ -44,6 +46,13 @@ fs::path store_path(const std::map<std::string, std::string>& given) {
 Reply sdk_command(const std::vector<std::string>& args) {
     if (args.size() < 2) throw Error(usage, 2);
     const std::string& action = args[1];
+
+    if (action == "acquire") {
+        auto given = options(args, 2, {"--source", "--store"});
+        require(given.count("--source"), "sdk acquire requires --source <pinned-source.json>");
+        auto result = acquire_sdk(given.at("--source"), store_path(given));
+        return {0, "sdk", result, "SDK source verified: " + result.at("identity").at("directory").get<std::string>()};
+    }
 
     if (action == "install" || action == "repair") {
         const bool repairing = action == "repair";

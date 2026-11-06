@@ -126,10 +126,15 @@ wrappers/Python/shell; do not count it as a CLI consumer dependency or a public
 SDK schema. Retain the producer source, export tool hash, immutable SDK inventory
 and provider digest separately. Do not overwrite an accepted candidate.
 
-For generated projects, run `crt-cli new /absolute/hello --language cxx`, select
-the same local SDK explicitly with configure, then run test/build/run with
-`--project /absolute/hello`. New only generates sources. Missing SDK selection
-currently fails clearly; automatic acquisition remains planned.
+For generated projects, run `crt-cli new /absolute/hello --language cxx`, then
+first build with explicit LLVM declarations and an installed SDK or pinned
+`--sdk-source /absolute/source.json`. Plain build/test/run follows the resolved
+pins. Ignored `.sdk.json` can supply LLVM paths and `sdk_source`; explicit
+configure remains the rebinding/recovery entry point. New only generates sources.
+The [source contract](../reference/bootstrap_contract.md#explicit-pinned-https-sdk-source-experimental-format-0)
+records developer trust and installed reuse; general default acquisition is
+separate work. Use the recorded explicit-configure baseline on hosts awaiting
+the new first-build/acquisition replay.
 
 New creates `include/greeting.h`, source and test directories. Add
 `--kind static-library` or `--kind shared-library` for library templates, or
