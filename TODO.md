@@ -61,8 +61,10 @@ and [HISTORY](HISTORY.md).
   the passing continuation does not qualify the failed whole replay.
 - [ ] Replay the receipt/repair delta on Windows/arm64 using its existing
   identified SDK. Earlier Stage 2 evidence is not a replay of the new code.
-- [ ] Finish installed-SDK path/tool/DLL collision checks and prove explicit
-  project selection keeps existing locks unchanged on failure or ambiguity.
+- [ ] Replay the full-identity matcher fix and installed-SDK collision cases
+  on macOS/Windows, including actual Windows tool/DLL collisions. The
+  [Linux selection slice passes](docs/acceptance/sdk_install_acceptance.md#installed-sdk-selection-and-search-path-collisions-linuxx86_64-2026-11-05);
+  preserve its SDK/tool pins and keep Windows concurrency closure separate.
 
 ### D2 / basic D5 - First build and acquisition, in this order
 

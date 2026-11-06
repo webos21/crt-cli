@@ -49,8 +49,18 @@ fs::path store_sdk(const std::string& reference) {
     const bool prefix = reference.size() >= 8 && reference.size() <= 64 && reference.find_first_not_of("0123456789abcdef") == std::string::npos;
     std::vector<StoreEntry> published, matches;
     for (const auto& entry : SdkStore(sdk_store_root()).list()) if (published_name(entry)) published.push_back(entry);
-    for (const auto& entry : published)
-        if (entry.directory == reference || (prefix && entry.content12.compare(0, std::min<size_t>(12, reference.size()), reference, 0, 12) == 0)) matches.push_back(entry);
+    for (const auto& entry : published) {
+        if (entry.directory == reference) { matches.push_back(entry); continue; }
+        if (!prefix || entry.content12.compare(0, std::min<size_t>(12, reference.size()), reference, 0, 12) != 0) continue;
+        // Directory names carry only 12 digits. Longer references must also
+        // match the installation-time full identity; never truncate a pin.
+        if (reference.size() > 12) {
+            auto receipt = SdkStore(sdk_store_root()).verified_receipt(entry.directory);
+            const std::string content = receipt.at("sdk").at("content_sha256");
+            if (content.compare(0, reference.size(), reference) != 0) continue;
+        }
+        matches.push_back(entry);
+    }
     require(!matches.empty(), "no installed SDK matches '" + reference + "'; installed:" + describe(published));
     require(matches.size() == 1, "'" + reference + "' matches several installed SDKs:" + describe(matches));
     return matches.front().path;

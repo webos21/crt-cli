@@ -6,6 +6,24 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## Installed SDK Full-identity Selection Review (2026-11-05)
+
+Reviewed CRT `d856a009358dcf6391c89ee0af7390b54db2419b` and CLI base
+`483e76d846808aa3391b329908c4b5883c815c66`. The consumer matcher now checks
+all supplied content-reference digits, including those beyond the store's
+12-digit directory suffix. This corrects existing selection semantics without
+changing receipt/provider/install-metadata/project-lock formats or requiring
+new producer artifacts. CRT owns SDK identity/portable policy; CLI owns exact
+selection and lock preservation.
+
+The [Linux collision slice](acceptance/sdk_install_acceptance.md#installed-sdk-selection-and-search-path-collisions-linuxx86_64-2026-11-05)
+uses the same explicitly dirty, unpromoted receipt developer fixture, with a
+fresh CLI and bounded SDK-only/consumer checks. It records exact source/binary/
+SDK/tool identities and synthetic resolver-fixture scope. No new combination
+is claimed compatible on macOS/Windows until affected-host replay. Windows
+concurrency/receipt/DLL gates retain their existing open scope. No production
+pin, default, lock, committed binary, trust root or public artifact is changed.
+
 ## Installation Receipt Windows/x64 Scoped Replay (2026-11-05)
 
 Reviewed CRT `dc62e8db883ad0218b32c442915d7d76fe7f5b5e` and CLI

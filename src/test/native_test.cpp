@@ -374,6 +374,16 @@ int main(int argc, char** argv) {
         invoke(cli, {"test", "--project", root.string()});
         invoke(cli, select("--sdk", content.substr(0, 10)));
         check(read_json(root / "crt.lock").at("selection").at("sdk_directory") == identity, "identity prefix selects the same SDK");
+        const auto identity_lock = read_text(root / "crt.lock"), identity_local = read_text(root / ".crt/local.json");
+        for (size_t length : {13, 32, 64}) {
+            invoke(cli, select("--sdk", content.substr(0, length)));
+            auto wrong = content.substr(0, length); wrong.back() = wrong.back() == '0' ? '1' : '0';
+            auto rejected = invoke(cli, select("--sdk", wrong), false);
+            check(rejected.at("message").get<std::string>().find("no installed SDK matches") != std::string::npos,
+                  "all supplied identity digits must match");
+            check(read_text(root / "crt.lock") == identity_lock && read_text(root / ".crt/local.json") == identity_local,
+                  "identity mismatch preserves both binding files");
+        }
         fs::remove(root / ".sdk.json");                                           // its sdk_root would name the SDK
         auto automatic = select("--sdk", identity); automatic.erase(automatic.begin() + 3, automatic.begin() + 5);
         invoke(cli, automatic);
@@ -386,6 +396,9 @@ int main(int argc, char** argv) {
         const auto copy = sdk_store_root() / (version + "-aaaaaaaaaaaa");
         fs::copy(published, copy, fs::copy_options::recursive | fs::copy_options::copy_symlinks);
         invoke(cli, automatic, false);                                           // two fit: never pick one silently
+        check(read_text(root / "crt.lock") == identity_lock && read_text(root / ".crt/local.json") == identity_local,
+              "ambiguous automatic selection preserves both binding files");
+        invoke(cli, select("--sdk", identity));                                  // an explicit identity resolves ambiguity
         invoke(cli, select("--sdk", copy.filename().string()), false);           // the name does not match the content
         fs::remove_all(copy);
         invoke(cli, select("--sdk", identity));

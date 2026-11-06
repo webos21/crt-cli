@@ -709,3 +709,101 @@ Windows/x64 native concurrency closure, Windows/arm64 receipt delta replay,
 installed-SDK collisions and automatic acquisition remain open. No SDK/runtime,
 committed binary, default selection, root/project lock, trust or STATUS refresh
 or public artifact promotion is performed.
+
+## Installed SDK selection and search-path collisions (Linux/x86_64, 2026-11-05)
+
+This is the Linux slice of D2 / CRT 3.2. Reviewed CRT
+`d856a009358dcf6391c89ee0af7390b54db2419b` and CLI base
+`483e76d846808aa3391b329908c4b5883c815c66`. A content reference longer than
+12 digits previously matched only the directory's first 12 digits. The bounded
+reproducer accepts incorrect 13-, 32- and 64-digit references on the old CLI;
+the fix checks every supplied digit against the installation receipt before
+normal SDK/provider content validation. Receipt, provider, project-lock and
+producer metadata formats are unchanged.
+
+### Inputs and reproduction
+
+| Input | Identity |
+| --- | --- |
+| Product/test source snapshot (`src`, `include`, `crt.json`, sorted path/hash compact JSON) | `af4627c71ee295c942ef858882a08b25753139ea385eb5b295725ace344b1268` |
+| Fresh CLI | `f4b965d79326d567b12b8a9982795a5851ca1329fca4456103e0fda6dc5e9ef1`, 16,668,520 bytes |
+| Reused SDK content | `ecbb920a8e63e337095c0839b2d897f653f012162164a1b7b4e85a66486b32cd` |
+| Portable provider | `30e67672117ae9b8d3b3d9476f381c3ec4049291bb593208abe541966953d956` |
+| Release-fixture manifest | `14e77d7cdf3e43e2931eac61a365a0d4734f639b29614333007bbb162d21316a` |
+
+The SDK, archive and provider are the explicitly dirty local developer fixture
+from [the Linux receipt increment](#installation-receipts-and-explicit-repair-linuxx86_64-2026-11-05),
+not a clean release or promoted producer candidate. No runtime/source-stage
+rebuild was needed. The exact SDK provenance and external LLVM/resource hashes
+are retained in `candidate.json` and the self-build lock. The fresh source/SDK
+handoff is `/home/syszone/GitLocal/crt-cli-replay/d2-selection-build-nesdfklg`;
+its `source/out/native/crt-cli` is tested, not the committed binary.
+
+Host-test entry point: `tools/replay_sdk_selection_linux.py` with `--cli` that
+executable, `--release-dir` the receipt handoff's `release-fixture`, explicit
+`--cc /usr/bin/clang --cxx /usr/bin/clang++ --linker /usr/bin/ld.lld
+--ar /usr/bin/llvm-ar-21`, `--allow-dirty-sdk`, fresh `--output`/`--work-parent`,
+and `--hide` for both repositories, the frozen worktree and both handoffs.
+`tools/replay_sdk_selection_cases.py` owns reusable selection cases; other
+native adapters still need to invoke them for their own collision acceptance.
+Python, bubblewrap, readelf and the tiny host-built trap are test-host tools,
+not application or CLI runtime dependencies.
+
+### Measured scope
+
+The SDK-only fresh CLI build executes **16 commands / 0 reused**.
+`<fresh-cli> --json test --project <fresh-source> --target native-test` passes
+**855 checks**, including correct/incorrect long identity references and
+ambiguous-selection lock preservation (834 at the previous Linux baseline).
+The bounded isolated selection replay passes **65/65**:
+
+- Correct 8/12/13/32/64-digit references select the same exact identity;
+  mismatching 13/32/64-digit references and too-short references are refused.
+- Two SDKs of the same version but different real content identities both
+  verify. Automatic selection refuses ambiguity, explicit selection reaches
+  either identity, and the existing project builds from its original lock.
+  The second SDK is a private resolver fixture: a copied payload plus a marker,
+  matching inventory/provider/receipt. It is not a producer release.
+- Missing/nonexistent declared compiler/linker/archiver, script substitution,
+  modified locked tool bytes and ambiguous/incorrect SDK selection preserve
+  both `crt.lock` and `.crt/local.json` byte for byte on refusal.
+- Paths contain spaces and Hangul, including HOME/store and selected LLVM
+  aliases. The working directory and PATH contain colliding native tool names;
+  loader/include/library variables and CRT root variables point to fake
+  runtime/header inputs. No trap executable runs. Static and shared consumers
+  actually build, test and run with the selected tools and installed SDK.
+- Original SDK file bytes, receipt/contract pins and release inputs remain
+  unchanged. Final `sdk verify` passes.
+
+Bubblewrap clears the environment then sets the hostile variables, denies
+network access, hides source/handoff trees, exposes a read-only root and makes
+only private scratch writable. Child environment filtering and explicit tool
+paths are exercised; no general execution-denial or Windows DLL result is
+claimed. ELF inspection finds no `DT_NEEDED` on the CLI/static consumer. The
+shared consumer imports CRT `libc.so` and the declared host ELF loader, with
+RUNPATH to the selected installed SDK; no glibc/GNU C++ runtime is imported.
+
+### Evidence and limits
+
+Ignored CLI `out/d2-selection-20261105/` retains `inputs.json`, `candidate.json`,
+configure/build/native-test argv and logs, `after/result.json` and per-call
+stdout/stderr/commands, ELF reports and consumer import identities. The
+accepted scratch root is recorded in `after/result.json`. The accepted result
+SHA-256 is `894acbd1c9f3c0a2df3a1f406db656ae8f502f99652c355f3165526eea592ad1`;
+`candidate.json` binds command/import/reporting evidence digests as well.
+
+Failed `before/` used an invalid generated-project basename; `before-r2/`
+retains the three real identity-reference failures and three synthetic-fixture
+failures caused by sorting generic path strings instead of CRT path components.
+The fixture order was corrected without changing SDK inputs. After the passing
+run, an exception-reporting guard was added to the driver; the deliberate
+`harness-failure/` probe and `harness-failure-check.json` prove it emits a failed
+result and exit 1. The accepted success-path driver hash and final reporting
+probe hash are separately retained.
+
+The matcher fix needs affected-host macOS/Windows replay before adoption there.
+Windows/x64 concurrent-install fault-time module/stack investigation,
+Windows/arm64 receipt replay and actual Windows tool/DLL collision checks remain
+open. Automatic first-build binding/acquisition is the next workflow increment;
+this record does not implement it or qualify default downloads. Root locks,
+local defaults, committed binaries, STATUS and public artifacts are unchanged.

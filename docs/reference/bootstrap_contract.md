@@ -106,7 +106,10 @@ There is no XDG/AppData/Application Support default for SDKs. The driver never
 falls back to its working directory if home is unavailable.
 
 `configure --sdk <ref>` selects an SDK published by `sdk install` (directory `<version>-<content12>`) by that name or
-by at least 8 hex digits of its content identity. Without `--sdk`, `--sdk-id` or `--sdk-root`, the installed SDK is used
+by 8–64 lowercase hex digits of its content identity. Every supplied digit
+must match: references longer than the 12-digit directory suffix are checked
+against the full installation receipt identity, followed by the normal SDK
+content/provider verification. Without `--sdk`, `--sdk-id` or `--sdk-root`, the installed SDK is used
 only when exactly one fits the project (profile `dev`, this host's target, the manifest's `sdk.version`); none or several
 is an error that lists the candidates, so a project never follows a moving default. The directory name must equal the
 version and content identity the SDK proves, so a renamed or substituted directory is refused. `--sdk-id <relative-id>`

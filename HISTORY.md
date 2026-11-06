@@ -11,6 +11,19 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-05
 
+### Enforce complete SDK identity references and replay Linux selection collisions
+
+Fixed store selection so a 13–64-digit content reference cannot match only its
+first 12 digits. Native regressions pass 855 checks; reusable selection cases
+and the bounded Linux replay pass 65/65 with competing SDKs, exact selection,
+lock preservation, hostile tool/header/runtime paths and static/shared consumers.
+[Acceptance](docs/acceptance/sdk_install_acceptance.md#installed-sdk-selection-and-search-path-collisions-linuxx86_64-2026-11-05)
+owns exact source/binary identities, fresh SDK-only build, test results and
+retained product/fixture failures. Reused the explicitly dirty developer SDK;
+no producer runtime/schema, root lock, committed binary or STATUS changed.
+Affected-host matcher/collision replay and the existing Windows native crash
+remain open; automatic first build/acquisition remains the next workflow slice.
+
 ### Replay Windows/x64 receipts and retain the concurrent-install native failure
 
 Built CLI `51f1dc0` from the retained clean CRT `436b4f2` Dev SDK and original
