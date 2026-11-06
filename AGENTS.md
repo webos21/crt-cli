@@ -138,8 +138,9 @@ Each project locks its own SDK version/profile/target/content identity. Use
 shared immutable SDK payloads and project-specific exact references. First
 configure/build is intended to acquire a missing SDK; `new` generates sources
 without SDK download. Local install/selection is implemented for native dev
-SDKs; remote acquisition and automatic first-build binding remain D2/basic-D5
-work. SDK content profiles
+SDKs. First-build binding to an installed SDK is implemented for an unresolved
+format-1 project with explicit LLVM declarations; acceptance records its native
+scope. Remote acquisition remains D2/basic-D5 work. SDK content profiles
 are separate from build modes; handoff/test copies do not implement a second
 storage mode.
 Support user-selected locations and real paths containing spaces and Unicode.

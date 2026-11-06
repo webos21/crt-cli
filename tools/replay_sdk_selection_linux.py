@@ -15,6 +15,7 @@ import subprocess
 import tempfile
 
 from replay_sdk_selection_cases import selection_cases
+from replay_first_build_cases import first_build_cases
 
 
 def digest(path):
@@ -27,6 +28,7 @@ def main():
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--hide', type=Path, action='append', default=[])
     parser.add_argument('--allow-dirty-sdk', action='store_true')
+    parser.add_argument('--cases', choices=('selection', 'first-build'), default='selection')
     args = parser.parse_args()
     tools = {role: getattr(args, role).absolute() for role in ('cc', 'cxx', 'linker', 'ar')}
     output = args.output.resolve(); output.mkdir(parents=True, exist_ok=False)
@@ -65,7 +67,7 @@ def main():
         results.append({'case': case, 'passed': bool(passed), 'detail': str(detail)[:500]})
         print(('PASS ' if passed else 'FAIL ') + case, flush=True)
 
-    def call(label, tail, expect_ok=True, expect_text=None):
+    def call(label, tail, expect_ok=True, expect_text=None, readonly_paths=()):
         command = ['bwrap', '--unshare-user', '--unshare-ipc', '--unshare-uts', '--unshare-net', '--die-with-parent', '--new-session',
                    '--ro-bind', '/', '/', '--proc', '/proc', '--dev', '/dev', '--tmpfs', '/tmp', '--clearenv',
                    '--setenv', 'HOME', str(home), '--setenv', 'PATH', str(poison),
@@ -74,7 +76,10 @@ def main():
                    '--setenv', 'CRT_SYSROOT', str(poison), '--setenv', 'CRT_ROOTFS', str(poison)]
         for path in hidden:
             command += ['--tmpfs', str(path)]
-        command += ['--bind', str(scratch), str(scratch), '--chdir', str(poison), str(cli), '--json', *tail]
+        command += ['--bind', str(scratch), str(scratch)]
+        for path in readonly_paths:
+            command += ['--ro-bind', str(path), str(path)]
+        command += ['--chdir', str(poison), str(cli), '--json', *tail]
         proc = subprocess.run(command, capture_output=True, text=True, timeout=600)
         number = len(commands)
         (output / f'call-{number:03}.stdout').write_text(proc.stdout)
@@ -103,8 +108,14 @@ def main():
             alias = aliases / (tool.name if role in ('linker', 'ar') else role + ' compiler')
             alias.symlink_to(tool)
             tools[role] = alias
-        selection_cases(call=call, record=record, store=store, sdk_dir=sdk_dir, scratch=scratch, tools=tools,
-                        allow_dirty_sdk=args.allow_dirty_sdk)
+        if args.cases == 'selection':
+            selection_cases(call=call, record=record, store=store, sdk_dir=sdk_dir, scratch=scratch, tools=tools,
+                            allow_dirty_sdk=args.allow_dirty_sdk)
+        else:
+            def publication_failure(project, argv):
+                call('read-only lock publication is refused', argv, expect_ok=False, readonly_paths=(project / 'crt.lock',))
+            first_build_cases(call=call, record=record, store=store, sdk_dir=sdk_dir, scratch=scratch, tools=tools,
+                              allow_dirty_sdk=args.allow_dirty_sdk, publication_failure=publication_failure)
         after = {str(path.relative_to(store / sdk_dir)): digest(path) for path in (store / sdk_dir).rglob('*') if path.is_file()}
         record('original SDK file bytes are unchanged', before == after)
         call('final original SDK verification', ['sdk', 'verify', sdk_dir])
@@ -116,6 +127,7 @@ def main():
         summary = {'passed': bool(results) and all(case['passed'] for case in results), 'cases': results, 'work': str(work),
                    'cli_sha256': digest(cli), 'archive_sha256': digest(inputs / asset['name']),
                    'manifest_sha256': digest(inputs / manifest_path.name), 'allow_dirty_sdk': args.allow_dirty_sdk,
+                   'suite': args.cases,
                    'isolation': 'bwrap: no network, hidden source, read-only root, private writable scratch, hostile cwd/PATH/loader variables'}
         (output / 'result.json').write_text(json.dumps(summary, ensure_ascii=False, indent=2) + '\n')
         (output / 'commands.json').write_text(json.dumps(commands, ensure_ascii=False, indent=2) + '\n')

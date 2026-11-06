@@ -26,7 +26,9 @@ int main(int argc, char** argv) {
             "  sdk repair <sdk-directory> --archive <file> --release-manifest <file> --release-manifest-sha256 <hex> [--store <dir>]\n"
             "  sdk list|recover [--store <dir>]; sdk verify <sdk-directory> [--store <dir>]\n"
             "  new <dir> [--language c|cxx]\n"
-            "  configure/build/test/run [--project <dir>]"}, json);
+            "  configure/build/test/run [--project <dir>]\n"
+            "  First build: declare --cc <clang> --cxx <clang++> --linker <lld> --ar <llvm-ar> or local .sdk.json.\n"
+            "  Existing bindings require explicit configure to change SDK/tools."}, json);
         check_arguments(args);
         command = args.front();
         if (args == std::vector<std::string>{"--version"}) return print_reply({0, "version", {{"version", "0.1.0-dev"}}, "crt-cli 0.1.0-dev"}, json);

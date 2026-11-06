@@ -393,6 +393,35 @@ int main(int argc, char** argv) {
         invoke(cli, select("--sdk", std::string(64, 'a')), false);               // nothing matches
         auto both = select("--sdk", identity); both.insert(both.end(), {"--sdk-id", "local-candidate"});
         invoke(cli, both, false);
+        // First build binds only an unresolved project, after successful compilation.
+        auto first = hostile / "first-build";
+        invoke(cli, {"new", first.string()});
+        const auto unresolved = read_text(first / "crt.lock");
+        auto first_args = select("--sdk", identity); first_args[0] = "build"; first_args[2] = first.string();
+        invoke(cli, {"build", "--project", first.string()}, false);
+        check(read_text(first / "crt.lock") == unresolved && !fs::exists(first / ".crt/local.json"), "missing first-build tools preserve unresolved state");
+        const auto main_source = read_text(first / "src/main/main.cpp");
+        write_text(first / "src/main/main.cpp", "#error deliberate first-build compilation failure\n");
+        invoke(cli, first_args, false);
+        check(read_text(first / "crt.lock") == unresolved && !fs::exists(first / ".crt/local.json"), "failed first build does not publish pins");
+        write_text(first / "src/main/main.cpp", main_source);
+        invoke(cli, first_args);
+        check(read_json(first / "crt.lock").at("selection").at("sdk_directory") == identity, "successful first build pins the installed SDK");
+        const auto first_lock = read_text(first / "crt.lock"), first_local = read_text(first / ".crt/local.json");
+        invoke(cli, {"test", "--project", first.string()});
+        invoke(cli, {"run", "--project", first.string()});
+        invoke(cli, first_args, false); // Reselection remains an explicit configure operation.
+        check(read_text(first / "crt.lock") == first_lock && read_text(first / ".crt/local.json") == first_local, "bound build refuses configuration flags without changing pins");
+        fs::remove(first / ".crt/local.json");
+        invoke(cli, first_args, false);
+        check(read_text(first / "crt.lock") == first_lock && !fs::exists(first / ".crt/local.json"), "resolved lock is never rebound after local-state loss");
+        write_text(first / ".crt/local.json", first_local);
+        auto defaults_first = hostile / "first-build-defaults";
+        invoke(cli, {"new", defaults_first.string()});
+        auto first_config = sdk_config; first_config.erase("sdk_root"); first_config["sdk"] = identity;
+        write_text(defaults_first / ".sdk.json", first_config.dump());
+        invoke(cli, {"build", "--project", defaults_first.string()});
+        check(read_json(defaults_first / "crt.lock").at("selection").at("sdk_directory") == identity, "plain first build reads declared .sdk.json tools");
         const auto copy = sdk_store_root() / (version + "-aaaaaaaaaaaa");
         fs::copy(published, copy, fs::copy_options::recursive | fs::copy_options::copy_symlinks);
         invoke(cli, automatic, false);                                           // two fit: never pick one silently

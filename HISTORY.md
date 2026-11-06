@@ -9,6 +9,23 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-06
+
+### Build unresolved projects without a separate configure
+
+First `build` reads explicit LLVM flags or `.sdk.json`, selects the fitting
+installed SDK and publishes exact format-1 pins after successful compilation.
+Resolved/partial bindings are not reselected; failed validation, compilation or
+metadata publication preserves the original binding. Native regressions pass 881
+checks and isolated workflow cases pass 85/85, including rollback and keyed retry. The
+[acceptance record](docs/acceptance/sdk_install_acceptance.md#first-build-without-configure-linuxx86_64-2026-11-06)
+owns exact source/binary/test identities and the retained developer-SDK scope.
+ELF review found that the retained provider's pure C shared policy links static
+inputs; it remains a producer follow-up, not a C shared-runtime pass. C static
+and actual C++ shared consumers are distinguished. Remote acquisition and
+macOS/Windows replay remain open; no SDK/binary/default/lock promotion or STATUS
+refresh is performed.
+
 ## 2026-11-05
 
 ### Enforce complete SDK identity references and replay Linux selection collisions

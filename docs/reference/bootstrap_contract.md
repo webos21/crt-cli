@@ -179,10 +179,48 @@ unless `--allow-dirty-sdk true` is explicitly selected; that choice and the true
 dirty provenance are locked. It is an unpromoted local experiment, never a clean
 release claim. The repository lock remains unresolved.
 
+### First build without configure
+
+`build` can bind an unresolved format-1 project created by `new`, using a
+compatible installed SDK and explicit external LLVM declarations. Supply
+`--cc`, `--cxx`, `--linker`, `--ar` as absolute native executable paths on the
+first build or declare them in ignored `.sdk.json` (`--sdk-config <file>` is
+also accepted). First-build flags follow configure's per-key override rules;
+`--target` remains a build target, never a toolchain input. The same optional
+SDK/provider/OS-SDK inputs as configure are accepted, including explicitly
+pinned local developer handoffs. The default path selects the only fitting
+installed native `dev` SDK; `--sdk <ref>` resolves ambiguity explicitly.
+No compiler or SDK is discovered on PATH, bundled, downloaded or promoted.
+
+Only `lock_format: 1, state: unresolved` without a selection and without
+`.crt/local.json` qualifies. Other lock formats, malformed/duplicate-key locks,
+resolved locks missing local state and partially published bindings are never
+re-resolved implicitly. Missing SDKs/tools or ambiguity are actionable failures.
+`test` and `run` continue to require an existing binding; run `build` first.
+
+SDK/contract/tool validation and compilation finish before initial binding
+publication. The CLI stages local metadata and a resolved lock, publishes local
+paths first and the lock last. An ordinary publication error removes its own
+staging and newly published local state; the unresolved lock is not truncated.
+A process interruption between publication renames leaves an incomplete binding
+that subsequent builds refuse; inspect it and use explicit configure to recover.
+This is not a power-loss durability or concurrent same-project build guarantee.
+Build outputs may remain after failure and are independently keyed for reuse.
+
+After success, the normal format-1 lock pins SDK/content/provider/provenance and
+LLVM/resource identities. Subsequent plain builds use that exact selection,
+ignore changed `.sdk.json` defaults and refuse changed toolchain/SDK bytes.
+Configuration flags on an already bound/incomplete project are refused: explicit
+`configure` is the operation that changes a binding. The build JSON/receipt
+keeps its existing schema and `selection` fields; no new producer or project
+format is introduced. Native evidence belongs to
+[SDK installation acceptance](../acceptance/sdk_install_acceptance.md#first-build-without-configure-linuxx86_64-2026-11-06).
+
 ### Local `.sdk.json`
 
 `.sdk.json` (ignored by git, also in the `.gitignore` written by `new`) records
-this machine's SDK handoff and host tools so `configure` needs no flags. It is
+this machine's SDK handoff and host tools so `configure`, or an unresolved
+project's first `build`, needs no flags. It is
 local state, never a lock and never committed. Format 0 is a flat JSON object:
 
 | Key | Meaning |

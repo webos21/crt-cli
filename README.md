@@ -26,9 +26,12 @@ support matrix or a public release. See [STATUS](STATUS.md) for scope and
 [SDK installation acceptance](docs/acceptance/sdk_install_acceptance.md) for evidence.
 
 The current installer/project selection supports the native `dev` profile.
-General cxx/upper-stage profile selection, remote SDK acquisition, first-build
-automatic configure, source-port/dependency management and self-upgrade remain
-planned. `fetch` already performs explicit-CA HTTPS size/digest checks and
+A fresh unresolved project can bind to an installed SDK on its first `build`
+using declared LLVM paths, then use plain build/test/run. This increment has
+[Linux/x86_64 evidence](docs/acceptance/sdk_install_acceptance.md#first-build-without-configure-linuxx86_64-2026-11-06);
+its macOS/Windows replay remains separate. General cxx/upper-stage profile
+selection, remote SDK acquisition, source-port/dependency management and
+self-upgrade remain planned. `fetch` already performs explicit-CA HTTPS size/digest checks and
 optional explicit-key RSA-PSS verification; it is not yet an automatic SDK
 installer. Official default-download trust and release metadata remain pending.
 
@@ -43,15 +46,17 @@ manifest SHA-256 below:
 crt-cli sdk install --archive <archive> --release-manifest <manifest> --release-manifest-sha256 <sha256>
 crt-cli sdk list
 crt-cli new hello --language cxx
-crt-cli configure --project hello --cc <clang> --cxx <clang++> --linker <ld.lld> --ar <llvm-ar>
-crt-cli build --project hello
+crt-cli build --project hello --cc <absolute-clang> --cxx <absolute-clang++> --linker <absolute-ld.lld> --ar <absolute-llvm-ar>
 crt-cli test --project hello
 crt-cli run --project hello
 ```
 
-Configure selects the only compatible installed SDK. If several fit, select
-one explicitly with `--sdk <directory-or-identity-prefix>`; there is no moving
-default. Windows also needs its OS SDK import-library location through
+The first build selects the only compatible installed SDK and records exact
+pins after the build succeeds. LLVM declarations may also live in ignored
+`.sdk.json`; subsequent builds need no tool flags. Use `configure` explicitly
+to change an existing binding. If several SDKs fit, select one on the first build explicitly with `--sdk <directory-or-identity-prefix>`; there is no moving
+default. On hosts awaiting first-build replay, retain the explicit `configure`
+step before build/test/run from their recorded baseline. Windows also needs its OS SDK import-library location through
 `CRT_WINDOWS_SDK_LIBPATH` or `--os-sdk`; macOS uses `xcrun` or an explicit
 `--os-sdk`. Tool locations remain local state; the project lock pins SDK,
 contract and tool identities. See the [implemented contract](docs/reference/bootstrap_contract.md#sdk-store-and-exact-inputs).

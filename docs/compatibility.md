@@ -6,6 +6,24 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## Installed SDK First-build Binding (2026-11-06)
+
+Reviewed producer `c9e6aa9ecb73c85c73ba32761b2715d0b09fbe71` and CLI base
+`8788b59a77841537033915b34bbbf3c9a013b906`. CLI owns first-build input
+selection and success-only project binding; the SDK still owns all compiler,
+startup and link policy. Existing manifest/provider/receipt/project-lock and
+build-result formats are retained. A bound or incomplete project requires
+explicit configure for selection changes; no automatic lock migration occurs.
+
+The [Linux first-build evidence](acceptance/sdk_install_acceptance.md#first-build-without-configure-linuxx86_64-2026-11-06)
+uses the retained explicitly dirty Dev fixture with unchanged provider/SDK pins,
+a fresh CLI and isolated new/build/test/run consumers. It is local technical
+adoption, not production trust/promotion or another-host qualification. Pure C
+shared policy in that retained provider emits static inputs; actual C++ shared
+and C static results are recorded separately. CRT tracks the policy audit.
+Remote acquisition and native macOS/Windows first-build replay remain open;
+existing Windows concurrency/DLL gates are unchanged.
+
 ## Installed SDK Full-identity Selection Review (2026-11-05)
 
 Reviewed CRT `d856a009358dcf6391c89ee0af7390b54db2419b` and CLI base

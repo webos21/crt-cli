@@ -4,6 +4,8 @@
 #include <set>
 #include <map>
 #include <cctype>
+#include <chrono>
+#include <unistd.h>
 
 namespace crtcli {
 namespace {
@@ -26,6 +28,38 @@ Json project(const fs::path& root) {
 void match_request(const Json& manifest, const Toolchain& toolchain) {
     auto version = manifest.at("sdk").at("version").get<std::string>();
     require(version == "*" || version == toolchain.selection.at("version"), "project SDK version mismatch");
+}
+
+void binding_outputs(const fs::path& root) {
+    require(!fs::is_symlink(root / ".crt") && !fs::is_symlink(root / ".crt/local.json") && !fs::is_symlink(root / "crt.lock"),
+            "project binding outputs must not be symlinks");
+}
+
+Json binding_lock(const Toolchain& toolchain) {
+    return {{"lock_format", 1}, {"state", "local-experiment"}, {"selection", toolchain.selection}};
+}
+
+// Build failures leave the unresolved lock untouched. Stage both metadata files
+// before publishing local paths followed by the lock as the commit record.
+// An interruption between renames is refused on the next build, never resolved
+// again implicitly; explicit configure remains the recovery entry point.
+void bind_first_build(const fs::path& root, const std::string& original_lock, const Toolchain& toolchain) {
+    binding_outputs(root);
+    require(read_text(root / "crt.lock") == original_lock && !fs::exists(root / ".crt/local.json"),
+            "project binding changed during first build; inspect it and run configure explicitly");
+    fs::create_directories(root / ".crt");
+    const auto pending = root / ".crt" / ("binding.tmp-" + std::to_string(getpid()) + "-" +
+        std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+    require(fs::create_directory(pending), "cannot stage first-build binding");
+    struct Cleanup { fs::path path; ~Cleanup() { std::error_code ignored; fs::remove_all(path, ignored); } } cleanup{pending};
+    write_text(pending / "local.json", toolchain.local.dump(2) + "\n");
+    write_text(pending / "crt.lock", binding_lock(toolchain).dump(2) + "\n");
+    binding_outputs(root);
+    require(read_text(root / "crt.lock") == original_lock && !fs::exists(root / ".crt/local.json"),
+            "project binding changed during first build; inspect it and run configure explicitly");
+    fs::rename(pending / "local.json", root / ".crt/local.json");
+    try { fs::rename(pending / "crt.lock", root / "crt.lock"); }
+    catch (...) { std::error_code ignored; fs::remove(root / ".crt/local.json", ignored); throw; }
 }
 
 std::string kind(const Json& target) { return target.value("kind", "executable"); }
@@ -243,19 +277,36 @@ Reply workflow(const std::vector<std::string>& args) {
     const std::set<std::string> configure_options{"--sdk", "--sdk-root", "--sdk-id", "--os-sdk", "--sdk-contract", "--contract-sha256", "--cc", "--cxx", "--linker", "--ar", "--allow-dirty-sdk", "--sdk-config"};
     for (size_t i = 1; i < args.size(); i += 2) {
         require(i + 1 < args.size() && (args[i] == "--project" || (args[0] != "configure" && args[i] == "--target") ||
-            (args[0] == "configure" && configure_options.count(args[i]))), "unsupported/missing workflow option");
+            ((args[0] == "configure" || args[0] == "build") && configure_options.count(args[i]))), "unsupported/missing workflow option");
         require(options.emplace(args[i], args[i + 1]).second, "duplicate workflow option");
     }
     if (options.count("--project")) root = options.at("--project");
     root = fs::canonical(root);
     auto manifest = project(root);
+    bool first_build = false;
+    std::string original_lock;
+    if (args[0] == "build") {
+        binding_outputs(root);
+        original_lock = read_text(root / "crt.lock");
+        const auto lock = read_json(root / "crt.lock");
+        first_build = lock.contains("lock_format") && lock.at("lock_format") == 1 && lock.value("state", "") == "unresolved" &&
+                      !lock.contains("selection") && !fs::exists(root / ".crt/local.json");
+        if (!first_build)
+            for (const auto& option : options)
+                require(!configure_options.count(option.first), "build cannot replace an existing or incomplete binding; use configure explicitly");
+    }
     // Configure inputs: the local `.sdk.json` (or --sdk-config) supplies defaults, explicit flags override per key.
     std::map<std::string, std::string> requested;
-    if (args[0] == "configure") {
+    if (args[0] == "configure" || first_build) {
         fs::path config = options.count("--sdk-config") ? fs::path(options.at("--sdk-config")) : root / ".sdk.json";
         if (options.count("--sdk-config") || fs::exists(config)) requested = Toolchain::read_sdk_config(config);
         if (options.count("--sdk") || options.count("--sdk-root") || options.count("--sdk-id")) requested.erase("--sdk"), requested.erase("--sdk-root"), requested.erase("--sdk-id");
-        for (const auto& option : options) if (option.first != "--project" && option.first != "--sdk-config") requested[option.first] = option.second;
+        for (const auto& option : options) if (option.first != "--project" && option.first != "--sdk-config" && option.first != "--target") requested[option.first] = option.second;
+        if (first_build)
+            for (const auto& role : {"--cc", "--cxx", "--linker", "--ar"}) {
+                require(requested.count(role), std::string("first build requires explicit ") + role + " or its declaration in .sdk.json; external LLVM is not bundled");
+                require(fs::path(requested.at(role)).is_absolute(), std::string("first-build tool must be an absolute path: ") + role);
+            }
         // Without a named SDK the installed one is used only when exactly one fits the project's request.
         if (!requested.empty() && !requested.count("--sdk") && !requested.count("--sdk-root") && !requested.count("--sdk-id"))
             requested["--sdk"] = Toolchain::select_store_sdk(manifest.at("sdk").at("version").get<std::string>());
@@ -265,10 +316,10 @@ Reply workflow(const std::vector<std::string>& args) {
     match_request(manifest, toolchain);
     Builder builder(root, inside(root, "out/native"), manifest, toolchain);
     if (args[0] == "configure") {
-        require(!fs::is_symlink(root / ".crt") && !fs::is_symlink(root / ".crt/local.json") && !fs::is_symlink(root / "crt.lock"), "project binding outputs must not be symlinks");
+        binding_outputs(root);
         fs::create_directories(inside(root, ".crt"));
         write_text(inside(root, ".crt/local.json"), toolchain.local.dump(2) + "\n");
-        write_text(inside(root, "crt.lock"), Json{{"lock_format", 1}, {"state", "local-experiment"}, {"selection", toolchain.selection}}.dump(2) + "\n");
+        write_text(inside(root, "crt.lock"), binding_lock(toolchain).dump(2) + "\n");
         return {0, "configure", {{"selection", toolchain.selection}, {"promotion", "none"}}, "configured local SDK experiment"};
     }
     auto build = builder.build;
@@ -310,6 +361,7 @@ Reply workflow(const std::vector<std::string>& args) {
         receipt["executable_sha256"] = file_sha256(builder.output(primary));
     }
     write_text(build / "last-build.json", receipt.dump(2, ' ', false, Json::error_handler_t::replace) + "\n");
+    if (first_build && code == 0) bind_first_build(root, original_lock, toolchain);
     return {code, args[0], receipt, code ? "child workflow failed" : args[0] + " completed"};
 }
 }

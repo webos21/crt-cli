@@ -807,3 +807,95 @@ Windows/arm64 receipt replay and actual Windows tool/DLL collision checks remain
 open. Automatic first-build binding/acquisition is the next workflow increment;
 this record does not implement it or qualify default downloads. Root locks,
 local defaults, committed binaries, STATUS and public artifacts are unchanged.
+
+## First build without configure (Linux/x86_64, 2026-11-06)
+
+An unresolved format-1 project can now select an installed native Dev SDK,
+build and record exact pins without a separate configure command. Subsequent
+build/test/run uses those pins. The implemented boundary belongs to
+[the first-build contract](../reference/bootstrap_contract.md#first-build-without-configure).
+This is a consumer workflow increment, not remote acquisition or a new producer
+schema/profile/ABI. It is qualified here on Linux/x86_64 only.
+
+### Reviewed inputs
+
+Producer baseline `c9e6aa9ecb73c85c73ba32761b2715d0b09fbe71`; consumer base
+`8788b59a77841537033915b34bbbf3c9a013b906`. Product/test snapshot (sorted
+`src`, `include`, `crt.json` path/hash compact JSON):
+`b29a00baa8f322701f5d6ebf6223ae5a216ee7f7511754d25f3f13fbf60eefe0`.
+Tested CLI SHA-256
+`a1716e06ab60c42e052f792d5b973082a7a1ee63204275000a1e521ea85ca6f6`,
+16,766,136 bytes. It has no ELF `DT_NEEDED` entries.
+
+Reused the explicitly dirty Linux developer SDK/release fixture from
+[receipt acceptance](#installation-receipts-and-explicit-repair-linuxx86_64-2026-11-05):
+content `ecbb920a8e63e337095c0839b2d897f653f012162164a1b7b4e85a66486b32cd`,
+portable provider `30e67672117ae9b8d3b3d9476f381c3ec4049291bb593208abe541966953d956`.
+Its original provenance is preserved with explicit dirty-SDK opt-in. No new SDK,
+source-stage/runtime rebuild, producer promotion or production lock is involved.
+The source/SDK handoff is
+`/home/syszone/GitLocal/crt-cli-replay/first-build-bootstrap-0_1ixkc8`.
+SDK-only self-build first executes 16 commands; the strict lock classification
+and help review then rebuilds three commands, reusing 13. Tests use that final
+binary, not the earlier output or committed binary.
+
+### Reproduction and exercised behavior
+
+Use `tools/replay_sdk_selection_linux.py --cases first-build`, with the exact
+handoff `source/out/native/crt-cli`, the retained receipt `release-fixture`,
+explicit native LLVM paths, `--allow-dirty-sdk`, fresh output/work paths and
+`--hide` for both repositories, frozen worktree and original/current handoffs.
+Host Python/bubblewrap and ELF inspection tools are outside the product boundary.
+The shared cases live in `tools/replay_first_build_cases.py`; native adapters
+must exercise them before claiming the feature on another host.
+
+The replay uses a private HOME/store, source trees hidden, network denied,
+read-only root, private writable scratch, spaces/Hangul paths and explicit LLVM
+aliases. Hostile PATH/cwd, loader/include/library variables and CRT root variables
+point to fake tools/headers/runtime files. No trap tool executes. Cases cover:
+
+- Source-only `new`; explicit LLVM first build; plain build with `.sdk.json`;
+  exact SDK/portable-contract/provenance/LLVM/resource pins after success.
+- Missing or relative tools, absent/ambiguous SDKs, changed stored policy and
+  unknown build target refusal without changing either binding file.
+- Legacy/fractional/malformed/duplicate-key/unresolved-with-selection locks
+  and partial binding publication are never migrated or re-resolved implicitly.
+- An explicit SDK resolves competing same-version content identities; a bound
+  project keeps its pin despite ambiguity or changed configure defaults. A
+  missing resolved local binding requires explicit configure.
+- Compile failure preserves the unresolved lock; repairing the source permits
+  first build and run. A read-only bind on `crt.lock` forces failure after local
+  metadata publication: rollback preserves the original lock, removes its new
+  local file and staging, and a writable retry succeeds.
+- Bound-build and publication retry caches each execute zero commands and reuse
+  three. Installed SDK bytes, receipt/contract and release inputs remain intact.
+
+The initial replay records 80/80 command/assertion cases. ELF review then finds
+that this retained provider's `executable-shared.link_c` uses `libc.a`/static
+runtime inputs: its C shared request emits no dynamic dependencies. This is
+recorded as a producer-policy limitation, not native C shared proof. The final
+replay separates static C (including `--target`) from actual C++ shared runtime
+build/test/run. The existing provider/SDK pin is not modified to hide the finding.
+Pure C shared policy needs producer review before that mode is advertised.
+
+### Evidence and remaining scope
+
+CLI ignored `out/first-build-20261106/` retains `inputs.json`, `candidate.json`,
+configure/build/final-build/native-test argv and logs, initial `isolated/`, final
+`isolated-r2/`, per-call commands/stdout/stderr, consumer import/cache checks and
+ELF reports. The candidate binds exact source, CLI, SDK/tool selection and test
+input hashes. The final result and native counts below are the accepted scope;
+the earlier C shared request is retained separately with its limitation.
+
+Remote pinned metadata/archive/contract acquisition, publisher trust/promotion,
+macOS/Windows first-build replay and the existing Windows installer/DLL gates
+remain open. No current-source support matrix on those hosts, power-loss
+binding durability, concurrent same-project builds, public release, root lock,
+committed binary, default or STATUS refresh is claimed.
+
+The final isolated replay passes **85/85**. ELF review confirms no dynamic
+imports on the C/C++ static consumers and CRT `libc.so` plus the declared host
+loader on the C++ shared consumer; no host glibc/GNU C++ runtime is imported.
+Accepted `isolated-r2/result.json` SHA-256:
+`2a172599e425314999fafe5a619e5a39814dfbd5bc0886d85cb275acbd2b98fc`.
+Native `native-test` passes **881 checks** (855 at the previous selection baseline).

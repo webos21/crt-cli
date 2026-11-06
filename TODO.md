@@ -68,10 +68,10 @@ and [HISTORY](HISTORY.md).
 
 ### D2 / basic D5 - First build and acquisition, in this order
 
-- [ ] With one compatible installed SDK and declared external LLVM tools, make
-  a fresh `new` project reach build/test/run without a separate configure.
-  Record exact SDK/contract/tool pins on success; preserve existing locks and
-  diagnose missing tools or multiple fitting SDKs without choosing a moving default.
+Installed-SDK first build now has a bounded
+[Linux implementation and acceptance](docs/acceptance/sdk_install_acceptance.md#first-build-without-configure-linuxx86_64-2026-11-06);
+completed details live in HISTORY. Continue with pinned acquisition below.
+
 - [ ] Connect explicitly pinned HTTPS metadata/archive/contract retrieval to
   the existing installer and first-build path. Check CA/trust, sizes, digests,
   interrupted transfers and failure cleanup; reuse an installed identity without
