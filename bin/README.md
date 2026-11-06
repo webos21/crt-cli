@@ -13,7 +13,7 @@ release artifacts.
 | macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `acb4f7e1abd0c2b1f7f0516326b46c1a351525cb2b55fdc0cc2a872647e15b62` (3,927,832 bytes; 2026-11-05 Stage 2 replay of `da3f3a9`, clean local CRT `784389b`) |
 | Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `9b82bd300379b45be4cb36becfbef56bf41b1ff5cc3d2cb510b9e60447b10284` (13,889,400 bytes; 2026-11-02 D1 working-tree candidate based on `adc03b0`, clean local CRT `49879bf`) |
 | Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `69118ac17f998ea0cc42ff7fcf422155ee3fefd016a617374a5701dd439bbfef` (16,352,720 bytes; 2026-11-05 Stage 2 replay of `9d711d2`, clean local CRT `78ed80f`) |
-| Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `c65c6e47684f8b1b723e8764e2487d1401fa27b2f55d85e3c8a29504ea725e8a` (30,184,448 bytes, built `-O1 -g`; 2026-11-05 D2 Stage 2 replay of `f984387`, clean local CRT `436b4f2`) |
+| Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `01bfa8c7ae4f35e74f04e7ad9aace1b88528c9b46239c1d373133f7758bc1e37` (32,499,200 bytes, built `-O1 -g`; 2026-11-06 selection/first-build/HTTPS replay of `ea9b8cd`, SDK from clean local CRT `436b4f2`) |
 | Windows/arm64 | `bin/win-arm64/crt-cli.exe` | present; SHA-256 `a366b26a42a3a99801e58cee44bb25fa3af3a36a083ed14fe0e9d85cc1c821f8` (30,089,728 bytes, built `-O1 -g`; 2026-11-05 D2 Stage 2 replay of `b03d127`, clean local CRT `0631131`) |
 
 macOS ships only arm64, so it keeps the single `bin/macos/` directory. Linux and
@@ -27,7 +27,8 @@ and the D2 install, contract and project-selection replay passes 69/69 with it
 The direct make space-SHELL limitation remains separate from the CLI workflow.
 Earlier D1 evidence: [macOS acceptance](../docs/acceptance/bootstrap_acceptance.md#macos-latest-source-revalidation-2026-11-01).
 
-The Windows/x64 binary is the 2026-11-05 Stage 2 replay's bare executable (it adds the toolchain contract kept beside the SDK and project SDK selection; 919 native, 151 archive and 83 SDK-store
+The Windows/x64 binary is the 2026-11-06 replay's bare executable (it adds first build without `configure`, explicit pinned HTTPS acquisition and the release-envelope correction; imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`; previous `c65c6e47...` bytes under the ignored producer-worktree `out/s3-windows-x64-20261106/previous/`; see the
+[Windows/x64 record](../docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsx64-2026-11-06)). The next paragraph describes its predecessor, the 2026-11-05 Stage 2 replay's bare executable (it adds the toolchain contract kept beside the SDK and project SDK selection; 919 native, 151 archive and 83 SDK-store
 checks, 83/83 installer and contract checks, imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`; previous `9948bcd9...` bytes under the ignored producer-worktree `out/s2-windows-x64-20261105/previous/`; see the
 [Stage 2 Windows/x64 record](../docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-windowsx64-2026-11-05)). The next paragraphs describe its predecessors: the 2026-11-04 D2 replay's bare executable (it adds `sdk install|list|verify|recover`; 857 native, 151 archive and 66 SDK-store
 checks, 62/62 installer checks, previous `a04ff851...` bytes under ignored `out/windows-d2-20261104/previous/`; see the

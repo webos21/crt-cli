@@ -1170,3 +1170,46 @@ binary is **not** committed or refreshed. The driver's trust is a disposable tes
 
 Evidence (outside the repositories): `/home/syszone/envrepro/` (`out-pre/result.json` `4ed54e1c...`, `out-post/result.json` `53428480...`, `out-retry/result.json` `3a9fd0d9...`, logs), producer logs `/home/syszone/crt-r-*.log`, release `crt-r-4db4c85/out/linux-host-ninja-debug/release/dev/`.
 
+## Selection, first build and pinned HTTPS replay (Windows/x64, 2026-11-06)
+
+**Pass, native Windows/x64; local/unpromoted.** Replays the Linux and macOS increments of the receipt/selection/first-build/acquisition work on this host with a CLI self-built from this repository at `ea9b8cd`, against the **existing**
+identified SDK of the Stage 2 record (CRT `436b4f2`, rehearsal.8, content `e80fa143...7159`). CRT `main` has moved to `4db4c85`, but the delta since `436b4f2` is host-tools and documentation only; the SDK was not rebuilt and no producer
+claim is made for `4db4c85`. Every CLI call runs under CRT's `crt_windows_trace` (restricted token naming a per-run SID, empty `PATH`, redirected stdio, job-object process accounting; accounting, not denial); the declared
+LLVM tools are the only host programs a project call may start; no network denial is claimed (the acquisition suite uses loopback).
+
+| Input | Value |
+| --- | --- |
+| Host | Windows 11 Pro 10.0.26100 x64, LLVM/Clang 22.1.8, Windows SDK imports `10.0.28000.0/um/x64` |
+| SDK / release | original rehearsal.8 release assets of committed CRT `436b4f2`: archive 146,110,051 bytes, contract `e9758d59...aeab`; the manifest has **no top-level `format`** (keys `profile`, `version`, `target`, `source_commit`, `assets`), archive `install.format` 1 |
+| CLI | self-built, SDK-only, from `ea9b8cd`: SHA-256 `01bfa8c7...1e37`, 32,499,200 bytes, imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`; cold self-build 17 executed / 0 reused, warm 0 / 17; native integration suite passes; 609 recorded processes, only the declared native tools, the CLI and its generated executables; SDK inventory unchanged |
+| Drivers | new `tools/replay_sdk_selection_windows.py` (`--cases selection|first-build`) and `tools/replay_sdk_acquire_windows.py`, which run the unchanged shared case modules `replay_sdk_selection_cases.py` / `replay_first_build_cases.py` and the Linux acquisition case list; the existing `tools/replay_sdk_install_windows.py` |
+
+| Suite | Result |
+| --- | --- |
+| Installed-SDK selection and search-path collisions (full-identity matcher, synthetic competing SDK, missing/nonexistent/script/changed tools) | **68/68** |
+| First build without `configure` (missing tools, malformed locks, ambiguity, failure/retry, targets, static C and shared C++ runtime, locked-lock publication failure) | **86/86** |
+| Pinned HTTPS acquisition (13 source mutations, 5 manifest mutations, cold acquire and first build, reuse, killed transaction and recovery) | **74/74** |
+| Installer, receipts, explicit repair, contract and selection (existing driver, unchanged) | **101/101** |
+
+The release-envelope correction is exercised by construction: all four suites install or acquire from the original producer manifest without a top-level `format`. No "before" run is made, because the earlier Windows binary
+(`c65c6e47...`) predates `sdk acquire` and the changed envelope handling.
+
+### What the replay found
+
+No CRT defect and no CLI product defect. Four harness findings, each fixed in the Windows driver rather than hidden:
+
+- **Working-directory DLL search.** The first selection run failed the shared-runtime consumer (test and run exit 47) because the harness had planted junk `libc.dll`/`libc++.dll` in the CLI's working directory, and Windows
+  searches that directory before the child's `PATH`. The same decoys are harmless on Linux/macOS. The CLI does not defend against this and was not changed: the junk libraries now live in a separate directory, a clean
+  working directory is exercised first, and one explicit case documents that a planted `libc.dll` in the working directory shadows the runtime. Whether the CLI should set the child's working directory is a design question, not decided here.
+- **Locked-lock publication.** A file ACL cannot make `crt.lock` unreplaceable: the parent's delete-child right still allows the rename (3 failures on the first first-build run, 83/86). The case now holds an open handle without `FILE_SHARE_DELETE`; the
+  CLI's publication fails and the unresolved binding and staging are preserved.
+- **Archive transfer time.** The 146 MB archive crosses a single-threaded Python TLS server; the fixture's total 10 s timeout fired (51/54 on the first run). The fixture now uses 180 s; the `slow` case still sets 1 s.
+- Windows OpenSSL needs an explicit minimal `OPENSSL_CONF` for the disposable PKI (already known from the fetch replay); the PKI lives outside the work directory and the visibility probe proves the run SID cannot read it.
+
+The concurrent-install native crash recorded for this host did **not** reproduce in this one full-driver run (the concurrent cases passed within 101/101). A single passing run does not close the open item.
+
+### Evidence and limits
+
+Raw evidence (logs, `result.json`, per-call stdout/stderr, process images) is under the producer worktree's ignored `out/s3-windows-x64-20261106/` (`selection*`, `firstbuild*`, `acquire*`, `d2`, `contract`; the failed first attempts are kept as
+`selection`, `selection2`, `firstbuild`, `acquire`). `bin/win-x64/crt-cli.exe` is replaced by the executable above. Windows/x64 only; Windows/arm64 receipt/selection/first-build/acquisition replay, Full-stage metadata,
+a published release asset, official trust and promotion are not run. The acquisition trust is a disposable test CA.

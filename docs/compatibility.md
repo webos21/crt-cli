@@ -6,6 +6,17 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## Windows/x64 Selection, First Build and HTTPS Replay (2026-11-06)
+
+Reviewed CRT `4db4c85` (host-tools and documentation only since `436b4f2`) and CLI `ea9b8cd`. The
+[Windows/x64 record](acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsx64-2026-11-06) replays the macOS/Linux selection,
+first-build and pinned-HTTPS increments against the **existing** rehearsal.8 SDK of CRT `436b4f2` (content
+`e80fa143094eae0338716e0d1419bda07ea455ceadc21e0309c7e88622487159`, manifest without top-level `format`). No format,
+producer asset or SDK byte changes. Selection 68/68, first build 86/86, HTTPS 74/74 and the installer/receipt driver 101/101 pass on this
+native combination; the proven combination is that SDK with the CLI executable `01bfa8c7...1e37`. A DLL planted in the caller's working
+directory shadows the shared runtime on Windows; that is documented, not defended. The concurrent-install crash is neither fixed nor closed
+(one passing run), and Windows/arm64 receipt/selection/first-build/acquisition, official trust, promotion and STATUS remain untouched.
+
 ## macOS Private-dylib Host-tools Replay (2026-11-06)
 
 Reviewed CRT `82466be` plus the retained assembler/runtime-alias delta and CLI

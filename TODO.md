@@ -61,8 +61,8 @@ and [HISTORY](HISTORY.md).
   the passing continuation does not qualify the failed whole replay.
 - [ ] Replay the receipt/repair delta on Windows/arm64 using its existing
   identified SDK. Earlier Stage 2 evidence is not a replay of the new code.
-- [ ] Replay the full-identity matcher fix and installed-SDK collision cases
-  on Windows, including actual tool/DLL collisions. The
+- [x] Replay the full-identity matcher fix and installed-SDK collision cases
+  on Windows/x64 ([68/68](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsx64-2026-11-06), including decoy executables and a documented working-directory DLL limitation); Windows/arm64 remains. The
   [Linux selection slice passes](docs/acceptance/sdk_install_acceptance.md#installed-sdk-selection-and-search-path-collisions-linuxx86_64-2026-11-05);
   [macOS replay passes](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-macosarm64-2026-11-06).
   Preserve per-host SDK/tool pins and keep Windows concurrency closure separate.
@@ -85,11 +85,11 @@ also passes, with a shared consumer correction for actual producer release envel
   A developer pin/test key is not official publisher trust. General default
   downloads require approved official trust inputs and actual producer promotion
   before consumer adoption/publication.
-- [ ] Replay the new workflow on Windows/x64 before claiming
-  that feature there. Existing aarch64/Windows-arm64 evidence stays valid for
+- [x] Replay the new workflow on Windows/x64 ([first build 86/86, pinned HTTPS 74/74](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsx64-2026-11-06))
+  before claiming that feature there. Existing aarch64/Windows-arm64 evidence stays valid for
   its recorded scope; extending new-feature support has its own replay queue.
-- [ ] Replay the release-envelope correction with original producer assets on
-  Windows (and Linux/aarch64 if wanted). Linux/x86_64 passes
+- [x] Replay the release-envelope correction with original producer assets on
+  Windows/x64 (rehearsal.8, same record; Linux/aarch64 if wanted remains). Linux/x86_64 passes
   ([record](docs/acceptance/sdk_install_acceptance.md#release-envelope-correction-with-original-producer-assets-linuxx86_64-2026-11-06));
   the earlier Linux fixture evidence is not relabeled as a run of the corrected candidate.
 

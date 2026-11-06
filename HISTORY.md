@@ -11,6 +11,13 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-06
 
+### Windows/x64 selection, first build and pinned HTTPS replay
+
+The Linux/macOS increments (full-identity selection, first build without `configure`, explicit pinned HTTPS acquisition, release envelope without top-level `format`) replayed on Windows/x64 with a CLI self-built from `ea9b8cd`
+against the existing rehearsal.8 SDK (CRT `436b4f2`): selection 68/68, first build 86/86, HTTPS 74/74, installer/receipt driver 101/101. No CRT or CLI product defect; four harness findings (working-directory DLL search,
+locked-file publication needing a no-share-delete handle, fixture timeout for the 146 MB archive, OpenSSL config) fixed in the new Windows drivers. The concurrent-install crash did not reproduce in one run; it stays open.
+The committed `bin/win-x64/crt-cli.exe` is refreshed. [Acceptance](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsx64-2026-11-06).
+
 ### Release-envelope correction reproduced with an original Linux release
 
 A fresh `crt-dev-release` of committed CRT `4db4c85` (`v0.0.1-rehearsal.9`; development SDK test, `crt-c-test` 147/147 and release all exit 0) has an envelope without top-level `format`. The CLI before the
