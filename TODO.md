@@ -56,9 +56,10 @@ and [HISTORY](HISTORY.md).
 - [x] Replay the bounded receipt/repair delta on Windows/x64 with the existing
   identified SDK, including pin replacement, dead/live metadata writers and an
   actual symlink receipt; [evidence](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-windowsx64-2026-11-05).
-- [ ] Resolve the Windows/x64 concurrent-install native SIGSEGV from the first
-  replay. Capture fault-time module/stack evidence in a bounded reproducer;
-  the passing continuation does not qualify the failed whole replay.
+- [x] Windows/x64 concurrent-install native SIGSEGV: root-caused to the pinned
+  libunwind not restoring callee-saved XMM6-XMM15 on catch, fixed in the CRT
+  recipe, and replayed with a CLI self-built against the fixed SDK
+  ([record](docs/acceptance/sdk_install_acceptance.md#windowsx64-concurrent-install-sigsegv-fix-2026-11-06)). Windows/arm64 remains untested.
 - [ ] Replay the receipt/repair delta on Windows/arm64 using its existing
   identified SDK. Earlier Stage 2 evidence is not a replay of the new code.
 - [x] Replay the full-identity matcher fix and installed-SDK collision cases

@@ -1213,3 +1213,29 @@ The concurrent-install native crash recorded for this host did **not** reproduce
 Raw evidence (logs, `result.json`, per-call stdout/stderr, process images) is under the producer worktree's ignored `out/s3-windows-x64-20261106/` (`selection*`, `firstbuild*`, `acquire*`, `d2`, `contract`; the failed first attempts are kept as
 `selection`, `selection2`, `firstbuild`, `acquire`). `bin/win-x64/crt-cli.exe` is replaced by the executable above. Windows/x64 only; Windows/arm64 receipt/selection/first-build/acquisition replay, Full-stage metadata,
 a published release asset, official trust and promotion are not run. The acquisition trust is a disposable test CA.
+
+## Windows/x64 concurrent-install SIGSEGV fix (2026-11-06)
+
+**Pass, native Windows/x64; local/unpromoted.** Closes the native crash recorded by the
+[receipt replay](#installation-receipts-and-explicit-repair-windowsx64-2026-11-05). Root cause and fix are producer-side (CRT commit
+`05b5678`, libunwind recipe patch; design note in CRT `docs/design/cxx_runtime.md`): the pinned libunwind did not restore the callee-saved
+XMM6-XMM15 when a catch resumed, so a zero kept in XMM6 across a throwing call (clang's `std::basic_string` initialiser) became stack garbage in the next
+`std::wstring`, and path conversion overran the stack or freed a wild pointer. The lock-wait loop throws and catches on every poll, hence the intermittent failure.
+
+| Input | Value |
+| --- | --- |
+| Producer | detached worktree of **committed** CRT `05b5678` (local commit, then pushed with this record), `CRT_RELEASE_TAG=v0.0.1-rehearsal.10` (not a tag, nothing uploaded); `crt-development-sdk-test`, `crt-c-test` and `crt-dev-release` exit 0; the three pinned LLVM clones were copied from the rehearsal.8 build (no network) |
+| Release | archive `crt-v0.0.1-rehearsal.10-windows-x86_64-dev.zip` (SHA-256 `d886eeb1...`), SDK content `b984ec30b4b2...`; the SDK's `libunwind/src/Registers.hpp` contains the `_xmm` copy |
+| CLI | self-built, SDK-only, from `ea9b8cd` against that SDK: SHA-256 `1661a16d...0be8`, 32,498,688 bytes, imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`; cold 17 executed / 0 reused, warm 0 / 17; 603 recorded processes; SDK inventory unchanged |
+
+Results with that CLI: the installer/receipt/contract driver passed **101/101 three times** (both concurrent installs exited 0 each time: `[0, 0]` x3), selection **68/68**,
+first build **86/86**, pinned HTTPS **74/74**.
+
+Evidence that the cause is the one stated: a live debugger stop at the access violation (write at the stack top inside `wstring::resize` called from `path::path<char[6]>`);
+the cursor's XMM6 slot holding garbage at `jumpto` while the live register was intact at `__unw_getcontext`; a minimal probe losing XMM6 in 400/400 catches before and 0/400 after;
+a probe crashing 16/300 before and 0/300 after; and the original CLI objects relinked with the diagnostic allocator and the unfixed or fixed object, in held-lock pairs: 3/4 crashed (exit 139) unfixed, 0/4 fixed.
+The new CRT test `libstdc++/tests/imported_libcxx_eh_registers_test.cc` fails 600/600 without the patch and passes static and shared.
+
+Limits: the crash was intermittent, so three passing concurrent runs are consistent with, not proof of, absence; the root-cause evidence above carries the claim. The regression test checks Windows/x86_64 only.
+Windows/arm64 is untested here and its libunwind/CFI path is not claimed fixed or affected. This is a rehearsal release, not a published asset. Raw evidence is under the producer worktree's ignored
+`out/s4-windows-x64-20261106/` (`install1..3`, `selection`, `firstbuild`, `acquire`, `contract`; the previous executable is kept under `previous/`).

@@ -11,6 +11,12 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-06
 
+### Windows/x64 concurrent-install SIGSEGV fixed at its root
+
+The pinned libunwind copied only general registers into its cursor, so a catch resumed with indeterminate XMM6-XMM15; the CLI's lock-wait loop, which throws and catches per poll, then built
+`std::wstring` objects from stack garbage. Fixed in the CRT libunwind recipe (CRT `05b5678`). A CLI self-built against the rebuilt SDK (`v0.0.1-rehearsal.10`) passes the installer driver 101/101 three times
+(both concurrent installs exit 0 each time), selection 68/68, first build 86/86 and pinned HTTPS 74/74. The committed `bin/win-x64/crt-cli.exe` is refreshed. [Acceptance](docs/acceptance/sdk_install_acceptance.md#windowsx64-concurrent-install-sigsegv-fix-2026-11-06).
+
 ### Windows/x64 selection, first build and pinned HTTPS replay
 
 The Linux/macOS increments (full-identity selection, first build without `configure`, explicit pinned HTTPS acquisition, release envelope without top-level `format`) replayed on Windows/x64 with a CLI self-built from `ea9b8cd`

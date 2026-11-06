@@ -6,6 +6,13 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## Windows/x64 Concurrent-install Fix (2026-11-06)
+
+Reviewed CRT `05b5678` (libunwind recipe patch; no SDK format, asset schema or CLI source change) and CLI `ea9b8cd`. The
+[record](acceptance/sdk_install_acceptance.md#windowsx64-concurrent-install-sigsegv-fix-2026-11-06) replays the installer, selection, first-build and HTTPS drivers with a CLI self-built against
+SDK `v0.0.1-rehearsal.10` (content `b984ec30b4b2...`): 101/101 x3, 68/68, 86/86, 74/74. The previously open Windows/x64 concurrent-install crash is closed by the
+root-cause fix; Windows/arm64, a published asset, official trust and promotion remain untouched, and the earlier rehearsal.8 records keep their own scope.
+
 ## Windows/x64 Selection, First Build and HTTPS Replay (2026-11-06)
 
 Reviewed CRT `4db4c85` (host-tools and documentation only since `436b4f2`) and CLI `ea9b8cd`. The
