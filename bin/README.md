@@ -14,7 +14,7 @@ release artifacts.
 | Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `9b82bd300379b45be4cb36becfbef56bf41b1ff5cc3d2cb510b9e60447b10284` (13,889,400 bytes; 2026-11-02 D1 working-tree candidate based on `adc03b0`, clean local CRT `49879bf`) |
 | Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `69118ac17f998ea0cc42ff7fcf422155ee3fefd016a617374a5701dd439bbfef` (16,352,720 bytes; 2026-11-05 Stage 2 replay of `9d711d2`, clean local CRT `78ed80f`) |
 | Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `01bfa8c7ae4f35e74f04e7ad9aace1b88528c9b46239c1d373133f7758bc1e37` (32,499,200 bytes, built `-O1 -g`; 2026-11-06 selection/first-build/HTTPS replay of `ea9b8cd`, SDK from clean local CRT `436b4f2`) |
-| Windows/arm64 | `bin/win-arm64/crt-cli.exe` | present; SHA-256 `a366b26a42a3a99801e58cee44bb25fa3af3a36a083ed14fe0e9d85cc1c821f8` (30,089,728 bytes, built `-O1 -g`; 2026-11-05 D2 Stage 2 replay of `b03d127`, clean local CRT `0631131`) |
+| Windows/arm64 | `bin/win-arm64/crt-cli.exe` | present; SHA-256 `d855f092e27bfab01047902ec14ae9747447e82d866702ea71d580d59ef80582` (32,403,968 bytes, built `-O1 -g`; 2026-11-06 replay of `160a4a6` against the clean local CRT `0631131` SDK) |
 
 macOS ships only arm64, so it keeps the single `bin/macos/` directory. Linux and
 Windows are split by architecture: `linux-x64`, `linux-arm64`, `win-x64`, `win-arm64`.
@@ -43,7 +43,10 @@ Evidence: [Windows fix acceptance](../docs/acceptance/bootstrap_acceptance.md#wi
 The previous binary and failed candidate records are retained under ignored `out/`.
 Rebuild outputs and intermediate objects live in the ignored `out/` directory.
 
-The Windows/arm64 binary is the 2026-11-05 Stage 2 replay's bare executable (it adds the toolchain contract kept beside the SDK and project SDK selection; 932 native, 151 archive and 83 SDK-store
+The Windows/arm64 binary is the 2026-11-06 replay's bare executable (it adds the stored-contract `sdk verify`, installation receipts and repair, first build without `configure` and pinned HTTPS `sdk acquire`; 985 native, 151 archive and 113 SDK-store
+checks, installer/receipt 101/101, selection 68/68, first build 86/86 and HTTPS 74/74, imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`, PE machine `0xAA64`; previous `a366b26a...` bytes under ignored
+`out/windows-arm64-s3-20261106/previous/`; see the
+[Windows/arm64 record](../docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsarm64-2026-11-06)). The following paragraph describes its predecessor, the 2026-11-05 Stage 2 replay's executable (it adds the toolchain contract kept beside the SDK and project SDK selection; 932 native, 151 archive and 83 SDK-store
 checks, 83/83 installer and contract checks, imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`, PE machine `0xAA64`; previous `3f587b71...` bytes under ignored
 `out/windows-arm64-s2-20261105/previous/`; see the
 [Stage 2 Windows/arm64 record](../docs/acceptance/sdk_install_acceptance.md#toolchain-contract-and-project-sdk-selection-replay-stage-2-windowsarm64-2026-11-05)). The following paragraph describes its predecessor, the 2026-11-04 D2 replay's bare executable, whose method is unchanged:

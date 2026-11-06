@@ -6,6 +6,14 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## Windows/arm64 Selection, First Build and HTTPS Replay (2026-11-06)
+
+Reviewed CRT `a00c6be` (host-tools and documentation only since `0631131`) and CLI `160a4a6`. The
+[Windows/arm64 record](acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsarm64-2026-11-06) replays the Linux, macOS and Windows/x64 receipt, selection, first-build and pinned-HTTPS
+increments against the **existing** rehearsal.7 SDK of CRT `0631131` (content `c4b352012b426c60e2d4d666febf565e17239f8f534714e7b67d89430f051233`, manifest without top-level `format`). No format, producer asset or SDK
+byte changes. Installer/receipt driver 101/101, selection 68/68, first build 86/86 and HTTPS 74/74 pass on this native combination; the proven combination is that SDK with the CLI executable `d855f092...0582`. The
+Windows/x64 concurrent-install crash is neither fixed nor closed (15 of 15 repeated concurrent installs pass here, as supporting evidence only), and Full-stage metadata, official trust, promotion and STATUS remain untouched.
+
 ## Windows/x64 Selection, First Build and HTTPS Replay (2026-11-06)
 
 Reviewed CRT `4db4c85` (host-tools and documentation only since `436b4f2`) and CLI `ea9b8cd`. The

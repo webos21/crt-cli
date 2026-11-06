@@ -58,11 +58,14 @@ and [HISTORY](HISTORY.md).
   actual symlink receipt; [evidence](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-windowsx64-2026-11-05).
 - [ ] Resolve the Windows/x64 concurrent-install native SIGSEGV from the first
   replay. Capture fault-time module/stack evidence in a bounded reproducer;
-  the passing continuation does not qualify the failed whole replay.
-- [ ] Replay the receipt/repair delta on Windows/arm64 using its existing
-  identified SDK. Earlier Stage 2 evidence is not a replay of the new code.
+  the passing continuation does not qualify the failed whole replay. Windows/arm64
+  repeats the scenario 15 of 15 times without a crash
+  ([stability note](docs/acceptance/sdk_install_acceptance.md#concurrent-install-stability-not-a-closure-of-the-windowsx64-crash)); that is not the x64 closure.
+- [x] Replay the receipt/repair delta on Windows/arm64 using its existing
+  identified SDK ([installer/receipt driver 101/101](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsarm64-2026-11-06)).
+  Earlier Stage 2 evidence is not a replay of the new code.
 - [x] Replay the full-identity matcher fix and installed-SDK collision cases
-  on Windows/x64 ([68/68](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsx64-2026-11-06), including decoy executables and a documented working-directory DLL limitation); Windows/arm64 remains. The
+  on Windows/x64 ([68/68](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsx64-2026-11-06), including decoy executables and a documented working-directory DLL limitation) and Windows/arm64 ([68/68](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsarm64-2026-11-06)). The
   [Linux selection slice passes](docs/acceptance/sdk_install_acceptance.md#installed-sdk-selection-and-search-path-collisions-linuxx86_64-2026-11-05);
   [macOS replay passes](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-macosarm64-2026-11-06).
   Preserve per-host SDK/tool pins and keep Windows concurrency closure separate.
@@ -86,10 +89,11 @@ also passes, with a shared consumer correction for actual producer release envel
   downloads require approved official trust inputs and actual producer promotion
   before consumer adoption/publication.
 - [x] Replay the new workflow on Windows/x64 ([first build 86/86, pinned HTTPS 74/74](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsx64-2026-11-06))
+  and Windows/arm64 ([first build 86/86, pinned HTTPS 74/74](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsarm64-2026-11-06))
   before claiming that feature there. Existing aarch64/Windows-arm64 evidence stays valid for
   its recorded scope; extending new-feature support has its own replay queue.
 - [x] Replay the release-envelope correction with original producer assets on
-  Windows/x64 (rehearsal.8, same record; Linux/aarch64 if wanted remains). Linux/x86_64 passes
+  Windows/x64 (rehearsal.8, same record) and Windows/arm64 (original rehearsal.7 manifest, [record](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsarm64-2026-11-06)); Linux/aarch64 if wanted remains. Linux/x86_64 passes
   ([record](docs/acceptance/sdk_install_acceptance.md#release-envelope-correction-with-original-producer-assets-linuxx86_64-2026-11-06));
   the earlier Linux fixture evidence is not relabeled as a run of the corrected candidate.
 
