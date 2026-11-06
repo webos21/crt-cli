@@ -116,7 +116,9 @@ Json acquire_sdk(const fs::path& source, const fs::path& root, const std::string
     };
     download(manifest_url, "release-manifest.json", manifest_pin, manifest_size);
     auto manifest = read_json(pending / "release-manifest.json");
-    require(manifest.at("format") == 1 && manifest.at("version") == sdk_version, "release manifest format/version differs from SDK source");
+    // CRT release envelopes have no top-level format; the archive's install
+    // metadata owns format 1 and is validated below by InstallMetadata.
+    require(manifest.is_object() && manifest.at("version") == sdk_version, "release manifest version differs from SDK source");
     auto package = asset(manifest, archive_name, 1ull << 31);
     const auto metadata = InstallMetadata::from_json(package.at("install"));
     require(metadata.content_sha256 == content_pin && metadata.version == sdk_version && metadata.stage == "02-cxx" &&

@@ -1,6 +1,7 @@
 #include <crtcli/core.h>
 #include <crtcli/environment.h>
 #include <crt/platform.h>
+#include <algorithm>
 #include <cstdio>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -11,6 +12,18 @@ using namespace crtcli;
 namespace {
 size_t checks = 0;
 void check(bool condition, const std::string& message) { require(condition, "test failed: " + message); ++checks; }
+void portable_vendor_paths(Json& value, const std::string& location) {
+    if (value.is_array() || value.is_object()) {
+        for (auto& child : value) portable_vendor_paths(child, location);
+    } else if (value.is_string()) {
+        auto text = value.get<std::string>();
+        size_t position = 0;
+        while ((position = text.find(location, position)) != std::string::npos) {
+            text.replace(position, location.size(), "@OS_SDK@"); position += 8;
+        }
+        value = text;
+    }
+}
 Json invoke(const std::string& cli, std::vector<std::string> args, bool success = true) {
     args.insert(args.begin(), "--json"); args.insert(args.begin(), cli);
     auto child = execute(args, 120, false);
@@ -444,9 +457,21 @@ int main(int argc, char** argv) {
         // A toolchain contract stored beside the SDK replaces --sdk-contract; the lock records its origin and digest, no path.
         const auto stored_contract = sdk_store_root() / ".contracts" / (identity + ".json");
         fs::create_directories(stored_contract.parent_path());
-        fs::copy_file(local.at("sdk_contract").get<std::string>(), stored_contract, fs::copy_options::overwrite_existing);
-        fixture_receipt(lock.at("selection").at("contract_sha256"));
+        auto stored_policy = read_json(local.at("sdk_contract").get<std::string>());
+        const auto vendor_sdk = local.value("os_sdk", stored_policy.value("external_os_sdk", std::string()));
+        if (stored_policy.contains("external_os_sdk")) {
+            // A developer policy names this machine's vendor SDK; it cannot be
+            // installed as portable policy. Pin a separate synthetic fixture.
+            const auto location = stored_policy.at("external_os_sdk").get<std::string>();
+            check(!location.empty(), "a declared vendor SDK has a location");
+            stored_policy.erase("external_os_sdk");
+            stored_policy["os_sdk"] = {{"kind", "test-only"}};
+            portable_vendor_paths(stored_policy, location);
+        }
+        write_text(stored_contract, stored_policy.dump());
+        fixture_receipt(file_sha256(stored_contract));
         std::vector<std::string> stored_args{"configure", "--project", root.string(), "--sdk", identity, "--cc", local.at("cc"), "--cxx", local.at("cxx"), "--linker", local.at("linker"), "--ar", local.at("ar")};
+        if (!vendor_sdk.empty()) stored_args.insert(stored_args.end(), {"--os-sdk", vendor_sdk});
         if (lock.at("selection").value("allow_dirty_sdk", false)) stored_args.insert(stored_args.end(), {"--allow-dirty-sdk", "true"});
         invoke(cli, stored_args);
         check(read_json(root / "crt.lock").at("selection").at("contract_source") == "store", "the stored contract is used");
@@ -468,8 +493,11 @@ int main(int argc, char** argv) {
         invoke(cli, stored_args, false);                                         // no contract stored: say so, do not guess
         write_text(stored_contract, saved_contract);
         invoke(cli, stored_args);
-        auto os_args = stored_args; os_args.insert(os_args.end(), {"--os-sdk", home.string()});
-        invoke(cli, os_args, false);                                             // this contract needs no OS SDK
+        auto os_args = stored_args;
+        auto declared_os = std::find(os_args.begin(), os_args.end(), "--os-sdk");
+        if (declared_os == os_args.end()) os_args.insert(os_args.end(), {"--os-sdk", home.string()});
+        else *(declared_os + 1) = (home / "missing-vendor-sdk").string();
+        invoke(cli, os_args, false); // No OS SDK is needed, or the required explicit SDK is absent.
 
         // A portable contract (@OS_SDK@) is completed on this host: the location is local state, never locked.
         auto derived = read_json(stored_contract);
@@ -479,8 +507,19 @@ int main(int argc, char** argv) {
         fixture_receipt(sha256(derived.dump())); // A separately approved synthetic installation, not implicit re-pinning.
         const auto os_sdk = hostile / "OS SDK \xed\x95\x9c";
         fs::create_directories(os_sdk);
-        invoke(cli, stored_args, false);                                         // an unknown kind cannot be discovered
-        auto with_os = stored_args; with_os.insert(with_os.end(), {"--os-sdk", os_sdk.string()});
+        // Keep the declared vendor inputs usable through the synthetic SDK root;
+        // an empty directory is sufficient only for a policy with no vendor SDK.
+        if (!vendor_sdk.empty()) {
+            for (const auto& entry : fs::directory_iterator(vendor_sdk)) {
+                if (entry.is_directory()) fs::create_directory_symlink(entry.path(), os_sdk / entry.path().filename());
+                else fs::create_symlink(entry.path(), os_sdk / entry.path().filename());
+            }
+        }
+        auto unknown_os = stored_args;
+        declared_os = std::find(unknown_os.begin(), unknown_os.end(), "--os-sdk");
+        if (declared_os != unknown_os.end()) unknown_os.erase(declared_os, declared_os + 2);
+        invoke(cli, unknown_os, false);                                         // an unknown kind cannot be discovered
+        auto with_os = unknown_os; with_os.insert(with_os.end(), {"--os-sdk", os_sdk.string()});
         invoke(cli, with_os);
         invoke(cli, {"build", "--project", root.string()});
         check(read_json(root / ".crt/local.json").at("os_sdk") == os_sdk.generic_string(), "the OS SDK stays in local state");

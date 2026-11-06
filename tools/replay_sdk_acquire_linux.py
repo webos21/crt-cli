@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pinned HTTPS SDK acquisition against a controlled native Linux TLS server.
+"""Pinned HTTPS SDK acquisition cases; Linux entry point, optional native host adapter.
 
 Python/OpenSSL/bwrap/strace are test-host tools. The consumer has no source or
 server-file access, a cleared environment and writable private HOME only.
@@ -29,7 +29,7 @@ def compact(value):
     return json.dumps(value, sort_keys=True, separators=(',', ':')).encode()
 
 
-def main():
+def main(adapter=None):
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('cli', 'release-dir', 'output', 'work-parent', 'cc', 'cxx', 'linker', 'ar'):
         parser.add_argument('--' + name, type=Path, required=True)
@@ -42,11 +42,13 @@ def main():
     work = Path(tempfile.mkdtemp(prefix='HTTPS SDK space 한글 ', dir=args.work_parent.resolve()))
     hidden = [path.resolve() for path in args.hide]
     assert all(not work.is_relative_to(path) and not path.is_relative_to(work) for path in hidden)
-    assert not work.is_relative_to('/tmp')
+    if adapter is None:
+        assert not work.is_relative_to('/tmp')
     pki = work / 'private-pki'; pki.mkdir()
     scratch = work / 'scratch'; scratch.mkdir()
     cli = work / 'crt-cli'; shutil.copy2(args.cli, cli)
-    manifest_path = next(args.release_dir.glob('release-manifest-dev-linux-*.json'))
+    os_kind = adapter.os_kind if adapter else 'linux'
+    manifest_path = next(args.release_dir.glob(f'release-manifest-dev-{os_kind}-*.json'))
     manifest_bytes = manifest_path.read_bytes(); manifest = json.loads(manifest_bytes)
     archive = next(asset for asset in manifest['assets'] if 'install' in asset)
     policy = next(asset for asset in manifest['assets'] if asset['name'] == archive['contract'])
@@ -118,6 +120,11 @@ def main():
     tool_flags = [part for role, path in tools.items() for part in ('--' + role, path)]
     if args.allow_dirty_sdk:
         tool_flags += ['--allow-dirty-sdk', 'true']
+    if adapter:
+        adapter.prepare(work, scratch, cli, tools, [*hidden, pki], network=True)
+
+    def process_options(user_home):
+        return adapter.process_options(user_home) if adapter else {}
 
     def record(label, passed, detail=''):
         results.append({'case': label, 'passed': bool(passed), 'detail': str(detail)[:600]})
@@ -130,6 +137,8 @@ def main():
         path = scratch / (name + '.json'); path.write_bytes(compact(value)); return path
 
     def command(tail, user_home, index):
+        if adapter:
+            return adapter.command(tail, user_home, index)
         argv = ['bwrap', '--unshare-user', '--unshare-ipc', '--unshare-uts', '--die-with-parent', '--new-session',
                 '--ro-bind', '/', '/', '--proc', '/proc', '--dev', '/dev', '--tmpfs', '/tmp', '--clearenv',
                 '--setenv', 'HOME', str(user_home), '--setenv', 'PATH', '/nonexistent']
@@ -143,7 +152,7 @@ def main():
 
     def call(label, tail, user_home, expect=True, message=None):
         index = len(commands); argv = command(tail, user_home, index)
-        proc = subprocess.run(argv, capture_output=True, timeout=180)
+        proc = subprocess.run(argv, capture_output=True, timeout=180, **process_options(user_home))
         commands.append({'case': label, 'argv': argv, 'exit': proc.returncode})
         (output / f'call-{index:03}.stdout').write_bytes(proc.stdout); (output / f'call-{index:03}.stderr').write_bytes(proc.stderr)
         try:
@@ -228,6 +237,7 @@ def main():
                     value['contract_url'] = origin + route
                 failed_source(label, value, 'digest_mismatch')
             for label, mutate in (
+                ('unsupported install metadata format', lambda m: m['assets'][0]['install'].update(format=2)),
                 ('foreign target manifest', lambda m: m['assets'][0]['install'].update(target={'os': 'linux', 'arch': 'not-this-host'})),
                 ('different SDK identity manifest', lambda m: m['assets'][0]['install'].update(content_sha256='0' * 64)),
                 ('different contract pin manifest', lambda m: m['assets'][1].update(sha256='0' * 64)),
@@ -281,7 +291,7 @@ def main():
             interrupted_spec = descriptor('kill-source', interrupted); index = len(commands)
             argv = command(['sdk', 'acquire', '--source', str(interrupted_spec)], interrupted_home, index)
             commands.append({'case': 'SIGKILL during HTTPS archive', 'argv': argv, 'exit': None})
-            proc = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            proc = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **process_options(interrupted_home))
             assert kill_started.wait(30), 'download did not reach the controlled interruption point'
             staged = interrupted_home / '.crt/sdks/.staging'; transactions = list(staged.iterdir()); assert len(transactions) == 1
             call('recover preserves a live HTTPS transaction', ['sdk', 'recover'], interrupted_home)
@@ -306,11 +316,14 @@ def main():
             for line in trace.read_text().splitlines():
                 if 'execve(' in line:
                     images.append(line)
-        record('execution traces contain no interpreter or shell', not any('"' + str(path) + '"' in line for path in masked for line in images))
+        if adapter:
+            adapter.verify(record)
+        else:
+            record('execution traces contain no interpreter or shell', not any('"' + str(path) + '"' in line for path in masked for line in images))
         summary = {'passed': bool(results) and all(case['passed'] for case in results), 'cases': results, 'work': str(work),
                    'cli_sha256': sha(cli.read_bytes()), 'source_fixture': source, 'archive_sha256': sha(archive_bytes),
                    'manifest_sha256': sha(manifest_bytes), 'http_requests': hits, 'allow_dirty_sdk': args.allow_dirty_sdk,
-                   'isolation': 'bwrap: read-only root, hidden sources/private PKI, cleared env, masked interpreters, private writable scratch; shared loopback network'}
+                   'isolation': adapter.isolation if adapter else 'bwrap: read-only root, hidden sources/private PKI, cleared env, masked interpreters, private writable scratch; shared loopback network'}
         (output / 'result.json').write_text(json.dumps(summary, indent=2) + '\n')
         (output / 'commands.json').write_text(json.dumps(commands, indent=2) + '\n')
         print(f"{sum(case['passed'] for case in results)}/{len(results)} passed")
