@@ -1239,3 +1239,48 @@ The new CRT test `libstdc++/tests/imported_libcxx_eh_registers_test.cc` fails 60
 Limits: the crash was intermittent, so three passing concurrent runs are consistent with, not proof of, absence; the root-cause evidence above carries the claim. The regression test checks Windows/x86_64 only.
 Windows/arm64 is untested here and its libunwind/CFI path is not claimed fixed or affected. This is a rehearsal release, not a published asset. Raw evidence is under the producer worktree's ignored
 `out/s4-windows-x64-20261106/` (`install1..3`, `selection`, `firstbuild`, `acquire`, `contract`; the previous executable is kept under `previous/`).
+
+
+## Selection, first build and pinned HTTPS replay (Windows/arm64, 2026-11-06)
+
+**Pass, native Windows/arm64; local/unpromoted.** Replays the receipt/repair, full-identity selection, first-build, pinned-HTTPS and release-envelope increments of the Linux, macOS and Windows/x64 records on this host with a CLI
+self-built from this repository at `160a4a6`, against the **existing** identified SDK of the Stage 2 record (CRT `0631131`, rehearsal.7, content `c4b35201...1233`). CRT `main` has moved to `a00c6be`, but the delta
+since `0631131` is host-tools (a macOS-only dylib closure), a macOS replay script, its tests and `AGENTS.md`; no file the Development SDK contains changed, so the SDK was not rebuilt and no producer claim is made for `a00c6be`.
+Every CLI call runs under CRT's `crt_windows_trace` (restricted token naming a per-run SID, empty `PATH`, redirected stdio, job-object process accounting; accounting, not denial); the declared LLVM tools are the only host
+programs a project call may start; no network denial is claimed (the acquisition suite uses loopback).
+
+| Input | Value |
+| --- | --- |
+| Host | Windows 11 arm64 VM (QEMU, 4 vCPUs, 10.0.26300), LLVM/Clang 22.1.8, Windows SDK imports `10.0.28000.0/um/arm64`, Developer Mode on (not changed); native arm64 shell and Python |
+| SDK / release | original rehearsal.7 release assets of committed CRT `0631131`: archive 141,785,345 bytes (SHA-256 `976150ba...6294`), contract `08ae2c51...1d68`, manifest `167f3260...2b4e`; the manifest has **no top-level `format`** (keys `assets`, `profile`, `source_commit`, `target`, `version`), archive `install.format` 1 |
+| CLI | self-built, SDK-only, from `160a4a6`: SHA-256 `d855f092...0582`, 32,403,968 bytes, PE machine `0xAA64`, imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`; cold self-build 17 executed / 0 reused, warm 0 / 17; native integration suite 985 checks, archive test 151 and SDK-store test 113 checks, all three executables exit 0; 531 recorded processes, only the declared native tools, the CLI and its generated executables; SDK inventory unchanged |
+| Drivers | the existing `tools/replay_sdk_install_windows.py`, `tools/replay_sdk_selection_windows.py` (`--cases selection|first-build`) and `tools/replay_sdk_acquire_windows.py`, **unchanged**, with the shared case modules |
+
+| Suite | Result | Time |
+| --- | --- | --- |
+| Installer, receipts, explicit repair, contract and selection | **101/101** | 1,742 s |
+| Installed-SDK selection and search-path collisions (full-identity matcher, synthetic competing SDK, missing/nonexistent/script/changed tools) | **68/68** | 557 s |
+| First build without `configure` (missing tools, malformed locks, ambiguity, failure/retry, targets, static C and shared C++ runtime, locked-lock publication failure) | **86/86** | 507 s |
+| Pinned HTTPS acquisition (source and manifest mutations, cold acquire and first build, reuse, killed transaction and recovery) | **74/74** | 427 s |
+
+The release-envelope correction is exercised by construction: all four suites install or acquire from the original producer manifest without a top-level `format`. As on Windows/x64, a planted `libc.dll` in the CLI's working
+directory shadows the shared runtime; the case that documents this limit passes, the CLI does not defend against it and was not changed, and no decoy executable was started in any call of the selection, first-build and acquisition suites (the installer suite has none).
+
+### Concurrent-install stability (not a closure of the Windows/x64 crash)
+
+The first Windows/x64 receipt replay recorded a native SIGSEGV in one of two concurrent installs, and a later run did not reproduce it; that item is still open. The 101/101 run above contains the concurrent cases and they passed. As a bounded
+stress on this host, the same scenario was repeated: two simultaneous `sdk install --lock-wait 300` of this SDK into a fresh store, 15 times, with the self-built CLI run directly (no restricted token). In **15 of 15** rounds
+both processes exit 0 with empty stderr, one reports `installed:` and the other `already installed:` with the same identity, the store holds exactly one SDK and no staging or lock leftovers remain; each install takes 123-149 s. No crash
+occurred. This does not reproduce or explain the x64 fault, which was an allocator candidate on another architecture, and it is not fault-time evidence. The stress script printed `FAIL` for every round because it parsed
+the text output as JSON; the first run was kept (`stress-first-run-parse-defect/`), and the rounds were judged from the raw output of the second run, which shares that defect and keeps every stdout. Moving the script to `--json` would remove it.
+
+### What the replay found
+
+No CRT defect and no CLI product defect, and no driver change was needed: the four harness findings of the Windows/x64 replay (working-directory DLL search, locked-file publication, archive transfer time, OpenSSL configuration) are
+already handled by the shared drivers, which ran unchanged. The only defect was in the throwaway stress script described above.
+
+### Evidence and limits
+
+Raw evidence (logs, `result.json`, per-call stdout/stderr, process images, `suites-status.log`, the stress runs) is under the ignored `out/windows-arm64-s3-20261106/`; `bin/win-arm64/crt-cli.exe` is replaced by the executable
+above and the previous bytes (`a366b26a...21f8`) are kept under `previous/`. Windows/arm64 only. The acquisition trust is a disposable test CA; Full-stage metadata, a published release asset, official trust, promotion and the
+Windows/x64 crash closure are not part of this record. Source export of the driver inventory: `1571b9b2...2111`.

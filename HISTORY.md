@@ -17,6 +17,13 @@ The pinned libunwind copied only general registers into its cursor, so a catch r
 `std::wstring` objects from stack garbage. Fixed in the CRT libunwind recipe (CRT `05b5678`). A CLI self-built against the rebuilt SDK (`v0.0.1-rehearsal.10`) passes the installer driver 101/101 three times
 (both concurrent installs exit 0 each time), selection 68/68, first build 86/86 and pinned HTTPS 74/74. The committed `bin/win-x64/crt-cli.exe` is refreshed. [Acceptance](docs/acceptance/sdk_install_acceptance.md#windowsx64-concurrent-install-sigsegv-fix-2026-11-06).
 
+### Selection, first build and pinned HTTPS replay on Windows/arm64
+
+Replayed the receipt/repair, full-identity selection, first-build, pinned-HTTPS and release-envelope increments on Windows/arm64 with a CLI self-built from `160a4a6` against the existing rehearsal.7 SDK (CRT `0631131`; the delta to `a00c6be`
+is host-tools and documentation only): installer/receipt driver 101/101, selection 68/68, first build 86/86, HTTPS 74/74, all first run, with the existing Windows drivers unchanged. No CRT or CLI product defect. Fifteen repeated
+concurrent installs of the SDK all succeed without a crash (supporting evidence only; the Windows/x64 crash stays open); the throwaway stress script's own parsing defect is recorded. The committed `bin/win-arm64/crt-cli.exe` is refreshed.
+[Acceptance](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsarm64-2026-11-06).
+
 ### Windows/x64 selection, first build and pinned HTTPS replay
 
 The Linux/macOS increments (full-identity selection, first build without `configure`, explicit pinned HTTPS acquisition, release envelope without top-level `format`) replayed on Windows/x64 with a CLI self-built from `ea9b8cd`
