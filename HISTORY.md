@@ -11,6 +11,12 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-06
 
+### Release-envelope correction reproduced with an original Linux release
+
+A fresh `crt-dev-release` of committed CRT `4db4c85` (`v0.0.1-rehearsal.9`; development SDK test, `crt-c-test` 147/147 and release all exit 0) has an envelope without top-level `format`. The CLI before the
+correction (`1dc3c03`) fails the HTTPS acquisition replay 46/53 with `key 'format' not found`; the corrected CLI passes 73/73, the failure/retry continuation 12/12 and 881 native, 158 archive and 114 store checks.
+Linux only, developer-built CLI, no committed binary change. [Acceptance](docs/acceptance/sdk_install_acceptance.md#release-envelope-correction-with-original-producer-assets-linuxx86_64-2026-11-06).
+
 ### Close the macOS host-tools private-dylib scenario
 
 The unchanged corrected CLI consumes a labeled bundle containing actual AWK

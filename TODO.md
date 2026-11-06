@@ -89,8 +89,9 @@ also passes, with a shared consumer correction for actual producer release envel
   that feature there. Existing aarch64/Windows-arm64 evidence stays valid for
   its recorded scope; extending new-feature support has its own replay queue.
 - [ ] Replay the release-envelope correction with original producer assets on
-  Linux/Windows; retain the earlier Linux fixture evidence without relabeling it
-  as a run of the corrected candidate.
+  Windows (and Linux/aarch64 if wanted). Linux/x86_64 passes
+  ([record](docs/acceptance/sdk_install_acceptance.md#release-envelope-correction-with-original-producer-assets-linuxx86_64-2026-11-06));
+  the earlier Linux fixture evidence is not relabeled as a run of the corrected candidate.
 
 ### D3 - First source-built port, parallel with first-build/acquisition work
 

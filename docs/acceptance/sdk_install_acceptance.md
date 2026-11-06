@@ -1141,3 +1141,32 @@ Windows feature/concurrency/DLL gates and Linux/Windows original-producer-asset
 replay of the envelope correction remain open. Broader profiles, default/public
 trust and URLs, production promotion/preview assembly and self-upgrade are not
 qualified. No committed binary, root lock, default, SDK asset or STATUS refresh.
+
+## Release-envelope correction with original producer assets (Linux/x86_64, 2026-11-06)
+
+**Pass, native Linux/x86_64; local/unpromoted.** Reproduces the macOS finding of
+[the macOS record](#selection-first-build-and-pinned-https-replay-macosarm64-2026-11-06) (CLI `6b6fe73`: a CRT release
+envelope has no top-level `format`) against an **original** Linux producer release instead of the earlier fixture.
+The earlier Linux HTTPS replay (70/70) is kept as it was; it is not a run of the corrected CLI or of an original envelope.
+
+| Input | Value |
+| --- | --- |
+| Producer | detached worktree of **committed** CRT `4db4c85`, preset `linux-host-ninja-debug`, `CRT_RELEASE_TAG=v0.0.1-rehearsal.9` (not a tag, nothing uploaded); `crt-development-sdk-test` exit 0, `crt-c-test` 147/147, `crt-dev-release` exit 0 |
+| Assets | archive `crt-v0.0.1-rehearsal.9-linux-x86_64-dev.tar.xz` (9,227,020 bytes, SHA-256 `4dde1871...42da`), portable contract `...-dev-toolchain.json` (402,958 bytes, `070054dd...d9d1`), manifest `release-manifest-dev-linux-x86_64.json` (`5898c893...1021`); `SHA256SUMS-dev-linux-x86_64` verifies all four assets; SDK content `808364840249...f6190` |
+| Envelope | top-level keys `profile`, `version`, `target`, `source_commit`, `assets` -- **no `format`**; the archive entry's `install.format` is 1 |
+| CLI before | CLI repository `1dc3c03` (before the correction), SHA-256 `ce1dd036...b6a7`, built with the explicit-local-SDK flow below |
+| CLI after | CLI repository `5290791` (contains `6b6fe73`), SHA-256 `fa0342cf...aea31`, 17,513,120 bytes |
+
+Result, same replay driver (`tools/replay_sdk_acquire_linux.py`, bubblewrap, loopback TLS with a disposable CA, `--hide` for the repositories and worktree):
+
+- **Before: 46/53, fails as on macOS.** Every case that needs the real manifest (cold acquisition and first build, interrupted and timed-out archive, modified archive/contract bytes) stops with
+  `key 'format' not found` (`invalid_input`); the driver then ends on a missing-file harness exception. Retained as `out-pre/`.
+- **After: 73/73.** The same cases pass, including the new `unsupported install metadata format` refusal (rejected before any asset GET). The acquisition-failure retry continuation passes **12/12**
+  (`--first-build-failure-only`). The CLI's own regressions pass: native **881**, archive **158**, SDK store **114** checks.
+  (macOS counts 922 native checks because its fixture also projects vendor SDK children; Linux needs none.)
+
+Limits: both CLIs were built by the earlier self-built Linux CLI against this release's SDK with explicit `--sdk-root`/`--sdk-contract` pins (a developer flow, not the SDK-only self-build of earlier records), so the
+binary is **not** committed or refreshed. The driver's trust is a disposable test CA, not publisher trust. Not run: Windows, Linux/aarch64, Full-stage metadata, a published release asset, promotion.
+
+Evidence (outside the repositories): `/home/syszone/envrepro/` (`out-pre/result.json` `4ed54e1c...`, `out-post/result.json` `53428480...`, `out-retry/result.json` `3a9fd0d9...`, logs), producer logs `/home/syszone/crt-r-*.log`, release `crt-r-4db4c85/out/linux-host-ninja-debug/release/dev/`.
+
