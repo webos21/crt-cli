@@ -1005,3 +1005,139 @@ The host-driver-only control-flow cleanup includes final trace checks in the
 exit status. Product inputs are identical across the 70-case replay, 12-case
 continuation and 881 native checks. No already-passing artifact/runtime suite
 was reopened for this reporting change.
+
+## Selection, first build and pinned HTTPS replay (macOS/arm64, 2026-11-06)
+
+**Pass for the bounded three-increment native workflow.** Reviewed CRT
+`82466be582e57c8770a6816f1c6b9ed0bf819f76` and CLI `1dc3c03`:
+full-identity matching `8788b59`, first-build binding `4f55a52`, and explicit
+HTTPS acquisition `1dc3c03`. This is native macOS 27.2/arm64, not a runtime
+rebuild or current-source five-pair qualification.
+
+### Inputs and consumer correction
+
+Reused clean CRT `784389b0aaad10545598eda4d2b7e3134e640a71` Development SDK
+and the original `v0.0.1-rehearsal.6` archive/portable contract/manifest, with
+the exact [receipt-replay identities](#installation-receipts-and-explicit-repair-macosarm64-2026-11-05).
+SDK content is `72d1b37593abb2f5dd9d58a8338f44191b0b2023d6cbf2621cf7cd688ce80b4c`;
+no dirty opt-in, new SDK fixture, producer rebuild or artifact promotion is used.
+The explicit self-build provider remains `6ffbf556...41d2e7`; project/acquisition
+cases install the original portable contract `200d9a10...70faec` instead.
+
+| Input | Identity |
+| --- | --- |
+| Initial product/test snapshot (`src`, `include`, `crt.json`) | `f3eadfd5dd025958f6757bb286a0f30715e1d10f9bf9bf49a95ff62d150a4fbe`, identical to the Linux implementation |
+| Initial CLI | `97ea4d802aa69fb5ac148e8a62d03b0d860026a0eda9e840b9b0ca565b47b4cf` |
+| Envelope-corrected build snapshot | `34c4a11de974664f9d8e943e9e7b09f5a615f8d8dd04b19c793557bd865f4424` |
+| Final tested CLI | `94ddda0ee179b3e47bf4dbfc91502415ef33209dfa9945706f7cb1116fd9ea8d`, 4,004,968 bytes |
+| Final snapshot including the native-test fixture correction | `12683a1e5e558a5542e05331cefcb9a393d185e36752643bef502e3b76a2579a` |
+
+The initial HTTPS replay fails on the real producer manifest after one GET:
+`sdk_acquire.cpp` requires a top-level `format`, which neither the original
+nor current `tools/crt_sdk_release.py` emits. Version 1 belongs to each SDK
+archive's `install` object. The shared consumer correction drops the invented
+envelope requirement, not the real install-format/version/target/profile/
+identity/size/digest checks. No source release bytes/pins are edited. The shared
+TLS cases add unsupported `install.format` rejection before asset downloads.
+The earlier Linux fixture pass is retained, not claimed as proof of this fix
+or compatibility with an original producer envelope.
+
+### Measured gates
+
+All four focused suites below use the **final tested CLI**:
+
+| Gate | Result |
+| --- | --- |
+| SDK-only cold/warm self-build | 17 executed / 0 reused, then 0 / 17 |
+| Installed selection and hostile search paths | **66/66** |
+| First build without configure | **86/86** |
+| Pinned HTTPS acquisition | **73/73** |
+| Acquisition/first-build failure and retry | **12/12** |
+| Full native regression with the corrected fixture | **922 checks pass** |
+| Four consumer Mach-O import/binding audits | pass |
+| Fast macOS policy-generation tests | **5/5**, including inside-Seatbelt DYLD injection |
+| Producer metadata/exporter/Dev SDK fixtures | **44 passed, 2 Windows-only skipped** |
+
+Selection tests cover matching 8/12/13/32/64-digit identities, mismatching full
+references, two real content identities, explicit tool validation, hostile
+PATH/cwd/header/library/DYLD variables and preserved project/installation pins.
+The second SDK is a labeled resolver fixture, never a promoted producer asset.
+First-build tests cover source-only new, exact selection/tool/contract pins,
+ambiguous/partial/malformed state, compile failure and success-only binding.
+Seatbelt denies the final `crt.lock` rename after local metadata publication:
+rollback preserves the unresolved lock and removes its own staging/local file;
+retry and bound-build cache each execute **0**, reusing **3** commands.
+
+HTTPS cases use explicit disposable test CA pins and serve the exact release
+bytes over native loopback TLS. Wrong CA/host, insecure URLs, redirects,
+size/digest/identity/format failures, timeout/truncation, cold new/build/test/run,
+zero-download reuse and live/dead fetch recovery all pass. The focused retry
+suite proves acquisition failure leaves the project unresolved, a later compile
+failure keeps the valid SDK reusable, and repaired source succeeds without GETs.
+No system trust, credential, external curl or interpreter is used by the CLI.
+
+C/C++ static consumers import only the declared libSystem PAL dependency.
+Actual C++ shared consumers import the installed CRT `libc`, `libm`, `libdl`,
+`libc++` and `libc++abi` dylibs, with RPATH to that exact store SDK; four consumer
+binding audits find no foreign CRT-symbol bindings or mixed allocators. The
+bare static CLI imports only libSystem, has no RPATH, owns malloc and passes
+doctor with SDK/source/provider reads and compiler execution denied. This does
+not close Linux's retained pure-C shared-provider-policy audit.
+
+### Reproduction, isolation and retained failures
+
+Use `tools/replay_sdk_selection_macos.py --cases selection|first-build` and
+`tools/replay_sdk_acquire_macos.py` (also `--first-build-failure-only`). They
+reuse the same selection/first-build/HTTPS cases as Linux. Supply the final
+candidate, original release directory, explicit Xcode LLVM paths, fresh output/
+work roots, and `--hide` for both repos, producer worktree and original handoffs.
+Exact invocations and tool/resource SHA-256s live in CRT's ignored
+`out/first-workflow-macos-20261106/`; `run_suite.py` is local orchestration only.
+
+Seatbelt hides source/SDK/input trees, denies writes outside scratch/private
+temp (plus `/dev`), and allows declared LLVM/vendor-discovery helpers, the CLI,
+test probe and generated scratch executables. Boundary probes verify hidden
+reads and shell/Python/make/CMake/Ninja execution are denied. Selection/first
+build denies network; HTTPS shares host networking for the controlled loopback
+server, **not** a loopback-only OS network filter. Private server keys/PKI are
+hidden from consumers. Python, OpenSSL, host C probes and Seatbelt are test-host
+tools, not product prerequisites. Original/copy SDK inventories and release
+input bytes remain unchanged; no real user SDK store/global environment changes.
+
+Retained attempts include the host trap compile without an explicit Xcode
+sysroot, native policy missing ranlib's canonical libtool helper, the original
+HTTPS envelope failure (`acquire/`, 43/50), and a native test fixture copying
+machine-specific policy into a portable store. Host setup is made explicit.
+The native fixture now separately pins a synthetic portable policy and projects
+declared vendor SDK children into its synthetic SDK root; it does not weaken
+store checks, edit the SDK or fabricate platform capability. Actual original
+portable release policy is exercised independently in every focused suite.
+An intermediate fixture revision used an unavailable JSON traversal API and
+failed compilation; it is retained under `fixed-build/native-test.*`. The final
+structured-iterator implementation passes **922 native checks** on the same
+CLI executable as the focused suites, recorded in `native-test-r2.*`. Only test
+sources differ from the corrected CLI's self-build snapshot.
+
+Original accepted results: `selection-fixed/` **66/66**, `first-build/` **86/86**,
+`acquire-r2/` **73/73**, `acquire-fail/` **12/12**. `candidate.json` binds their
+result/driver/CLI/input identities; per-call commands/stdout/stderr, test-only
+policies, CA pins, GET evidence and killed-owner records remain at those paths.
+`fixed-build/` retains build/native receipts and `consumer-imports.json` plus
+`consumer-bindings.json` retain the four inspected consumers. Failed/earlier
+results are not relabeled as runs of the corrected source.
+
+The subsequent [private-dylib replay](host_environment_acceptance.md#macosarm64-private-dylib-host-tools-replay-2026-11-06)
+exposes a test-boundary limitation: sandbox-exec strips the caller's DYLD keys.
+`replay_macos_sandbox.py` now uses its native test probe to inject those keys
+after that boundary, rather than relying on a pre-sandbox environment. The
+stronger `selection-dyld/` and `first-build-dyld/` runs pass **66/66** and
+**86/86** on the same CLI/SDK, and four fresh consumer binding audits pass.
+`candidate-dyld.json` links those result/driver hashes to the original
+`candidate.json`; TLS 73/73, retry 12/12 and native 922 retain their original
+tested-driver/input receipts. They are not claimed as new runs of the changed
+test probe. The five fast policy tests cover the added injection argv boundary.
+
+Windows feature/concurrency/DLL gates and Linux/Windows original-producer-asset
+replay of the envelope correction remain open. Broader profiles, default/public
+trust and URLs, production promotion/preview assembly and self-upgrade are not
+qualified. No committed binary, root lock, default, SDK asset or STATUS refresh.

@@ -6,6 +6,45 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## macOS Private-dylib Host-tools Replay (2026-11-06)
+
+Reviewed CRT `82466be` plus the retained assembler/runtime-alias delta and CLI
+`1dc3c03` plus the preceding macOS workflow correction. The executable remains
+`94ddda0e...9ea8d`; no further consumer product change is needed. The
+[native consumer evidence](acceptance/host_environment_acceptance.md#macosarm64-private-dylib-host-tools-replay-2026-11-06)
+and [producer fixture](https://github.com/webos21/crt/blob/main/docs/acceptance/host_tools_acceptance.md#macosarm64-private-dylib-closure-replay-2026-11-06)
+bind a real shared-AWK closure to manifest
+`1e71a84593d220cbe09d62932c7d446073a5dc8f5bc7313128142aaa9c2301e8`.
+
+Existing host-tools format 1 covers the three private dylibs and six internal
+runtime links needed by copied executable aliases. Relative private load names
+and the declared OS boundary are producer requirements; CLI's existing pinned
+inventory and clean child environment enforce the consumer boundary. This is
+local macOS/arm64 fixture adoption, not promotion of the modified SDK view,
+every future dynamic bundle or Windows private-DLL acceptance. Static bundle
+payload is unchanged. No SDK/default/lock/trust/binary/STATUS adoption occurs.
+
+## macOS Selection, First Build and HTTPS Replay (2026-11-06)
+
+Reviewed CRT `82466be582e57c8770a6816f1c6b9ed0bf819f76` and the CLI
+increments `8788b59`, `4f55a52`, `1dc3c03`. The
+[macOS/arm64 replay](acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-macosarm64-2026-11-06)
+uses clean CRT `784389b` Dev, content
+`72d1b37593abb2f5dd9d58a8338f44191b0b2023d6cbf2621cf7cd688ce80b4c`,
+and its unchanged original rehearsal.6 archive/contract/manifest. It owns exact
+before/after source and CLI identities, affected native cases and retained failures.
+
+The local consumer correction accepts the actual release envelope, which has
+no required top-level `format`; **archive `install.format` is 1** and remains
+validated. This aligns with existing producer assets without changing source,
+receipt, portable-provider, SDK or project-lock formats. No runtime/PAL or SDK
+bytes change. Selection, first-build and pinned acquisition are exercised on
+this exact native developer combination, not a promoted/default pin.
+Earlier Linux records retain their fixture/binary scope; the correction needs
+original-producer-asset replay there and on Windows. Windows concurrency/DLL,
+broader profiles, official trust and production promotion remain open.
+No committed binary, default, root lock, release or STATUS is refreshed.
+
 ## Explicit Pinned HTTPS Source Adoption (2026-11-06)
 
 Reviewed CRT `6e064f2cc2ff84b5507d7be8000668c730dfe73a` and CLI

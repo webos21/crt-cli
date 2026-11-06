@@ -11,6 +11,45 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-06
 
+### Close the macOS host-tools private-dylib scenario
+
+The unchanged corrected CLI consumes a labeled bundle containing actual AWK
+rebuilt with the public SDK's shared C runtime. Private closure replay passes
+27/27: relocation, real dyld load evidence, a working poisoned-library control,
+CLI child filtering, copied aliases and missing/changed dylib refusal before
+job creation. CRT fixes canonical private-runtime links beside copied aliases;
+the ordinary static bundle's complete payload stays identical. No original
+SDK, upstream source or CLI product implementation change is needed for this slice.
+
+Apple sandbox-exec strips DYLD variables before its child starts. The test-only
+native bridge now injects them inside the boundary; selection/first-build
+replays pass 66/66 and 86/86 again with that real hostile environment, and five
+policy-generation unit tests pass. Earlier TLS/native receipts remain distinct
+and are not relabeled as reruns. The [consumer record](docs/acceptance/host_environment_acceptance.md#macosarm64-private-dylib-host-tools-replay-2026-11-06)
+links producer-owned hashes, failures and the scoped closure. Windows private
+DLL/arm64, production trust/promotion, root locks/defaults and STATUS are unchanged.
+
+### Replay Linux selection, first-build and HTTPS increments on macOS/arm64
+
+Replayed `8788b59`, `4f55a52` and `1dc3c03` against CRT `82466be`, retaining
+clean CRT `784389b` Dev and original rehearsal.6 release assets. The corrected
+SDK-only candidate passes selection/collisions 66/66, first-build 86/86,
+HTTPS acquisition 73/73 and acquisition-failure retry 12/12, with actual
+static/shared consumers and four clean Mach-O binding audits. Shared cases
+now have native macOS Seatbelt adapters and four policy-generation unit tests.
+The corrected candidate and portable/vendor-aware native fixture pass all
+922 native regressions.
+
+Found and corrected a common consumer contract bug: release envelopes have
+no required top-level `format`; archive `install.format` is the existing
+version-1 contract. Unsupported install metadata still fails before asset GETs.
+Also repaired a native fixture's machine-specific versus portable-policy
+assumption without weakening product checks or fabricating vendor SDK support.
+[Acceptance](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-macosarm64-2026-11-06)
+owns exact before/after inputs, measured gates and retained failures. Other-host
+replay of the correction, Windows blockers, public trust/promotion and broader
+profiles remain open; no SDK bytes, committed binary, lock/default or STATUS changed.
+
 ### Acquire caller-pinned SDK inputs over HTTPS and reuse installed identities
 
 Added consumer-owned SDK source format 0, `sdk acquire --source` and first-build

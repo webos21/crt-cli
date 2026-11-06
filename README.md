@@ -28,11 +28,12 @@ support matrix or a public release. See [STATUS](STATUS.md) for scope and
 The current installer/project selection supports the native `dev` profile.
 A fresh unresolved project can bind to an installed SDK on its first `build`
 using declared LLVM paths, then use plain build/test/run. This increment has
-[Linux/x86_64 evidence](docs/acceptance/sdk_install_acceptance.md#first-build-without-configure-linuxx86_64-2026-11-06);
-its macOS/Windows replay remains separate. General cxx/upper-stage profile
+[Linux/x86_64 evidence](docs/acceptance/sdk_install_acceptance.md#first-build-without-configure-linuxx86_64-2026-11-06)
+and [macOS/arm64 replay](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-macosarm64-2026-11-06);
+Windows replay remains separate. General cxx/upper-stage profile
 selection, source-port/dependency management and self-upgrade remain planned.
 [Explicit pinned HTTPS SDK acquisition](docs/reference/bootstrap_contract.md#explicit-pinned-https-sdk-source-experimental-format-0)
-is implemented for the Linux workflow: `sdk acquire --source <file>` or first
+is implemented with Linux and macOS replay evidence: `sdk acquire --source <file>` or first
 `build --sdk-source <file>` verifies a caller-pinned source and reuses an exact
 installed identity. `fetch` also supports explicit-key RSA-PSS verification.
 Official default-download trust, channels and publisher promotion remain pending.
@@ -77,7 +78,8 @@ the first build alongside LLVM declarations. Alternatively, put `sdk_source`
 and LLVM paths in ignored `.sdk.json` and run plain `build`. `new` downloads
 nothing; existing project pins change only through explicit configure. This
 workflow has [Linux evidence](docs/acceptance/sdk_install_acceptance.md#pinned-https-sdk-acquisition-linuxx86_64-2026-11-06);
-macOS/Windows need their affected-feature replay.
+the [macOS replay](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-macosarm64-2026-11-06)
+also exercises this workflow. Windows needs its affected-feature replay.
 
 
 ## Next User Workflow

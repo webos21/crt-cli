@@ -62,9 +62,10 @@ and [HISTORY](HISTORY.md).
 - [ ] Replay the receipt/repair delta on Windows/arm64 using its existing
   identified SDK. Earlier Stage 2 evidence is not a replay of the new code.
 - [ ] Replay the full-identity matcher fix and installed-SDK collision cases
-  on macOS/Windows, including actual Windows tool/DLL collisions. The
+  on Windows, including actual tool/DLL collisions. The
   [Linux selection slice passes](docs/acceptance/sdk_install_acceptance.md#installed-sdk-selection-and-search-path-collisions-linuxx86_64-2026-11-05);
-  preserve its SDK/tool pins and keep Windows concurrency closure separate.
+  [macOS replay passes](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-macosarm64-2026-11-06).
+  Preserve per-host SDK/tool pins and keep Windows concurrency closure separate.
 
 ### D2 / basic D5 - First build and acquisition, in this order
 
@@ -76,15 +77,20 @@ Explicit pinned HTTPS acquisition and installed-identity reuse also have
 [Linux evidence](docs/acceptance/sdk_install_acceptance.md#pinned-https-sdk-acquisition-linuxx86_64-2026-11-06);
 first build and acquisition currently support the native `dev` profile. General
 profiles, channels and registry resolution remain separate work.
+The [macOS selection/first-build/acquisition replay](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-macosarm64-2026-11-06)
+also passes, with a shared consumer correction for actual producer release envelopes.
 
 - [ ] Qualify one Linux preview candidate: CLI/resources/notices, an identified
   SDK and portable contract, external-tool setup and the end-to-end user flow.
   A developer pin/test key is not official publisher trust. General default
   downloads require approved official trust inputs and actual producer promotion
   before consumer adoption/publication.
-- [ ] Replay the new workflow on macOS/arm64 and Windows/x64 before claiming
+- [ ] Replay the new workflow on Windows/x64 before claiming
   that feature there. Existing aarch64/Windows-arm64 evidence stays valid for
   its recorded scope; extending new-feature support has its own replay queue.
+- [ ] Replay the release-envelope correction with original producer assets on
+  Linux/Windows; retain the earlier Linux fixture evidence without relabeling it
+  as a run of the corrected candidate.
 
 ### D3 - First source-built port, parallel with first-build/acquisition work
 

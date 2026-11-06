@@ -182,7 +182,7 @@ release claim. The repository lock remains unresolved.
 ### Explicit pinned HTTPS SDK source (experimental format 0)
 
 The CLI owns `crt-cli.sdk-source`, format 0. It is a caller-trusted acquisition
-input, separate from producer release-manifest/install metadata format 1,
+input, separate from producer release manifests with archive install metadata format 1,
 portable compiler policy format 1 and the format-1 project lock. It defines no
 channel, registry, default publisher or new SDK profile. Replace the placeholders
 in this input template with independently trusted values:
@@ -229,6 +229,8 @@ path verifies caller-declared content pins; it does not claim to have retrieved
 or reauthenticated the remote manifest. Missing/modified metadata is refused,
 never repaired implicitly. No persistent raw-download cache is introduced.
 
+The CRT release envelope has no required top-level `format`; format 1 belongs
+to the selected archive's `install` object and is checked before asset downloads.
 When absent, the CLI fetches pinned metadata, checks version/native target/dev
 profile/content and contract pins before fetching assets, then fetches the
 contract and archive with metadata sizes/digests. Native `fetch` and the ordinary
