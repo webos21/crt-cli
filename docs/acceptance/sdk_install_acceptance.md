@@ -1307,3 +1307,22 @@ The real upstream `zlib-1.3.1.tar.gz` (SHA-256 `9a93b2b7...df23`, equal to the r
 Not covered: other hosts, multi-member streams (rejected on purpose). **Observed, not fixed:** the
 `tar.xz` reader likewise stops at the tar end marker and does not read the rest of the xz stream, so its integrity check and trailing-byte
 rule are not applied after the last entry; an SDK-install behavior change is outside this step and needs its own increment.
+
+## Recipe subset reader, D3 step 2 (Linux/x86_64, 2026-11-07)
+
+**Unit-level on one host; the reader performs no I/O and executes nothing.** `include/crtcli/port_recipe.h`/`src/main/port_recipe.cpp`
+parse the bounded subset of recipe `schema_version: 1` that the [D3 design](../design/source_port_adapter.md#d3-2-fail-closed-on-a-bounded-recipe-subset)
+fixes, and carry the compiled-in **adapter table** (seed: the zlib 1.3.1 entry, keyed by the recipe file SHA-256 `dde94498...349b`, host tool `make`, no target ports,
+pinned test source `porting/tests/zlib_roundtrip.c` `3d7460fb...e562`). The entry's `crt_review` is `pending`: CRT has not yet reviewed it, and the executor step must decide what to do with that.
+
+Rules enforced: the digest is checked before anything else (any change, even whitespace, is an unreviewed file); duplicate JSON keys, unknown keys at every level,
+unknown OS names, `build.system` other than `configure`, `path_prepend`/`include_dirs`/other unsupported build keys, unsupported placeholders (only `@PORT_PREFIX@`,
+`@PORT_PREFIX_POSIX@`, `@PORT_PREFIX_MAKE@`, `@CC@`), control characters, invalid UTF-8, oversized files/strings/arrays, non-HTTPS or credentialed source URLs, path-like
+archive/source-dir names, non-lowercase-hex digests, recipe `env` names outside `[A-Z0-9_]` or naming `PATH`/`SHELL`/`IFS`/`LD_*`/`DYLD_*`/`BASH_*`, patch files that fail the archive path rules,
+test sources the entry does not pin, non-`compile-run` tests and any dependency name the table does not classify. Environment application reproduces the oracle, including its quirk that
+the Linux override appends to the already replaced `CFLAGS` (`-O2 -O2 -fPIC` from an initial `-O2`); the result is asserted, not hidden.
+
+Evidence: `port-recipe-test` 137 checks with `native-test` 881, `archive-test` 221 and `sdk-store-test` 114 green in a scratch copy with the self-built CLI (rehearsal.9 SDK); negative control: with the
+dependency-role comparison disabled the suite fails at "accepted: unclassified dependency". The fixture is an exact copy of the CRT recipe (`src/test/data/zlib.recipe.json`, see its README).
+
+Not covered: a differential against `crt-port-build.py` (step 6), other hosts, CRT's review of the table and of the accepted subset, and every use of the reader: nothing in the CLI calls it yet.

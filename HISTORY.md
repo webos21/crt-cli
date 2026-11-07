@@ -11,6 +11,10 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-07
 
+### D3 step 2: recipe subset reader and seeded adapter table
+
+`port_recipe.h/.cpp` parse the bounded zlib-recipe subset fail-closed (digest gate first, duplicate keys, unknown keys/placeholders/OS names, env-name denylist, test sources pinned by the table, roles from the table) and reproduce the oracle's environment semantics. `port-recipe-test` 137 checks on Linux/x86_64 with a negative control; nothing calls the reader yet and CRT's review of the table is pending. Record: `docs/acceptance/sdk_install_acceptance.md`.
+
 ### D3 step 1: hardened `tar.gz` reading
 
 `extract_archive` reads `tar.gz` (single gzip member, CRC/length trailer verified after the tar end marker, zero padding only, no trailing bytes) with the same entry rules as `tar.xz`; SDK install still refuses it. `archive-test` 221 checks, `native-test` 881, `sdk-store-test` 114 on Linux/x86_64, with a negative control. Observed and not fixed: the `tar.xz` reader does not verify the xz stream after the tar end marker. Record: `docs/acceptance/sdk_install_acceptance.md`.

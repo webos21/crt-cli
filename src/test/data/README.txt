@@ -1,0 +1,1 @@
+Exact copy of crt/porting/recipes/zlib.json (last changed in CRT 376f06d; copied at CRT 65a5670), SHA-256 dde944984d799197c0af1553ac7cf38139edc7b2e4e673ef9b4c17dd8c1a349b. Test fixture only; the adapter table pins this digest.

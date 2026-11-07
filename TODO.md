@@ -101,7 +101,7 @@ also passes, with a shared consumer correction for actual producer release envel
 
 - [x] Define the bounded recipe/compiler adapter: [design record](docs/design/source_port_adapter.md)
   (2026-11-06; design only, producer review of its adapter table pending).
-- [ ] Implement it in order (design §3): ~~hardened `tar.gz` reading~~ (done, [record](docs/acceptance/sdk_install_acceptance.md#hardened-targz-reading-d3-step-1-linuxx86_64-2026-11-07)), recipe subset reader, executor through the host-tools
+- [ ] Implement it in order (design §3): ~~hardened `tar.gz` reading~~ (done, [record](docs/acceptance/sdk_install_acceptance.md#hardened-targz-reading-d3-step-1-linuxx86_64-2026-11-07)), ~~recipe subset reader~~ (done, [record](docs/acceptance/sdk_install_acceptance.md#recipe-subset-reader-d3-step-2-linuxx86_64-2026-11-07); CRT review of the adapter table pending), executor through the host-tools
   bundle, audit/store publish, explicit provider choice with the consumer proof, then the `crt-port-build.py` differential.
   Executes the reviewed zlib JSON recipe natively into a separate immutable port store.
 - [ ] Prove fresh source build, static/shared link/run and actual consumption

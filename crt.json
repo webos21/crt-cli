@@ -31,7 +31,8 @@
       "src/main/archive.cpp",
       "src/main/sdk_store.cpp",
       "src/main/sdk_command.cpp",
-      "src/main/sdk_acquire.cpp"
+      "src/main/sdk_acquire.cpp",
+      "src/main/port_recipe.cpp"
     ],
     "sdk_consumer_option_sources": [
       "src/main/http.cpp"
@@ -81,6 +82,23 @@
       "sources": [
         "src/test/sdk_store_test.cpp",
         "src/main/sdk_store.cpp",
+        "src/main/archive.cpp",
+        "src/main/core.cpp",
+        "src/main/process.cpp",
+        "src/main/environment.cpp"
+      ],
+      "sdk_libraries": [
+        "lzma",
+        "z",
+        "mbedcrypto"
+      ]
+    },
+    {
+      "name": "port-recipe-test",
+      "timeout_seconds": 600,
+      "sources": [
+        "src/test/port_recipe_test.cpp",
+        "src/main/port_recipe.cpp",
         "src/main/archive.cpp",
         "src/main/core.cpp",
         "src/main/process.cpp",
