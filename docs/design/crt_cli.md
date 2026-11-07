@@ -283,6 +283,9 @@ be fully validated already.
 
 ### Execution and Installation
 
+The first-slice decisions (zlib, Linux/x86_64, native executor, SDK-provided versus isolated provider, role table, `tar.gz`
+prerequisite) are in the [D3 source-port adapter design](source_port_adapter.md).
+
 ```text
 resolve exact SDK/recipe/dependencies
   -> fetch pinned source -> verify -> pristine source copy

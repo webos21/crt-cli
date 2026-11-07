@@ -30,9 +30,10 @@ Retain those exact per-host baselines in [SDK installation acceptance](docs/acce
 Windows/x64 Stage 2 is complete. The later receipt/pinned-repair increment has
 its own [Linux isolated evidence](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-linuxx86_64-2026-11-05)
 and [macOS replay](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-macosarm64-2026-11-05).
-The [Windows/x64 receipt boundaries pass](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-windowsx64-2026-11-05), but its
-concurrent-install native crash keeps the whole Windows replay open;
-the earlier shape-only verify guard keeps its original developer/unit scope.
+The [Windows/x64 receipt boundaries pass](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-windowsx64-2026-11-05); its
+concurrent-install native crash was root-caused in the CRT libunwind recipe and is
+[closed](docs/acceptance/sdk_install_acceptance.md#windowsx64-concurrent-install-sigsegv-fix-2026-11-06).
+The earlier shape-only verify guard keeps its original developer/unit scope.
 [STATUS](STATUS.md) is the separately refreshed, dated baseline snapshot.
 
 Keep D0-D7 identifiers. Dependencies are working capabilities, not completion
@@ -98,8 +99,11 @@ also passes, with a shared consumer correction for actual producer release envel
 
 ### D3 - First source-built port, parallel with first-build/acquisition work
 
-- [ ] Define/adopt the bounded public CRT recipe/compiler adapter, then execute
-  the reviewed zlib JSON recipe natively into a separate immutable port store.
+- [x] Define the bounded recipe/compiler adapter: [design record](docs/design/source_port_adapter.md)
+  (2026-11-06; design only, producer review of its adapter table pending).
+- [ ] Implement it in order (design §3): ~~hardened `tar.gz` reading~~ (done, [record](docs/acceptance/sdk_install_acceptance.md#hardened-targz-reading-d3-step-1-linuxx86_64-2026-11-07)), recipe subset reader, executor through the host-tools
+  bundle, audit/store publish, explicit provider choice with the consumer proof, then the `crt-port-build.py` differential.
+  Executes the reviewed zlib JSON recipe natively into a separate immutable port store.
 - [ ] Prove fresh source build, static/shared link/run and actual consumption
   from that store. The Dev SDK already contains zlib: define SDK-provided versus
   explicit isolated source-build handling; do not overwrite it or count linking

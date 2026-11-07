@@ -9,7 +9,17 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-07
+
+### D3 step 1: hardened `tar.gz` reading
+
+`extract_archive` reads `tar.gz` (single gzip member, CRC/length trailer verified after the tar end marker, zero padding only, no trailing bytes) with the same entry rules as `tar.xz`; SDK install still refuses it. `archive-test` 221 checks, `native-test` 881, `sdk-store-test` 114 on Linux/x86_64, with a negative control. Observed and not fixed: the `tar.xz` reader does not verify the xz stream after the tar end marker. Record: `docs/acceptance/sdk_install_acceptance.md`.
+
 ## 2026-11-06
+
+### D3 native source-port adapter: design record
+
+Added `docs/design/source_port_adapter.md`: native executor with `crt-port-build.py` as differential oracle only, fail-closed recipe subset, roles from a CRT-reviewed table keyed by recipe digest, one provider (SDK or port) per dependency, SDK-owned `crt-cc` as `CC`, host tools only from the pinned bundle, build key and atomic store publish, and path-resolution (not content) as the consumption proof. Review found that the archive module reads only `xz`/`zip` while zlib ships `.tar.gz`, so hardened `tar.gz` reading is the first increment. Also fixed the stale TODO claim that the Windows/x64 concurrent-install crash is open. Design only: nothing implemented, no producer review of the adapter table yet.
 
 ### Windows/x64 concurrent-install SIGSEGV fixed at its root
 

@@ -1,5 +1,5 @@
 #pragma once
-// Safe extraction of SDK archives (tar.xz and zip) into a directory the caller owns.
+// Safe extraction of SDK archives (tar.xz, tar.gz and zip) into a directory the caller owns.
 //
 // The archive is untrusted input. Every entry is validated before anything is written for it, and the first violation
 // stops the extraction with an Error; the caller discards the (partially filled) destination. Nothing here decides what
@@ -21,7 +21,7 @@ struct ArchiveLimits {
 };
 
 struct ExtractReport {
-    std::string format;                    // "tar.xz" or "zip"
+    std::string format;                    // "tar.xz", "tar.gz" or "zip"
     uint64_t entries = 0;
     uint64_t files = 0;
     uint64_t directories = 0;
@@ -30,7 +30,9 @@ struct ExtractReport {
     Json to_json() const;
 };
 
-// Format by content, never by file name: "xz" (FD 37 7A 58 5A 00) or "zip" ("PK").
+// Format by content, never by file name: "xz" (FD 37 7A 58 5A 00), "gz" (1F 8B 08) or "zip" ("PK").
+// "tar.gz" is a single gzip member whose CRC-32/length trailer is verified after the tar end marker; multi-member
+// streams and trailing bytes are rejected. SDK installation still accepts only the formats its release metadata names.
 std::string detect_archive_format(const fs::path& archive);
 
 // Extracts into `destination`, which must be an existing empty directory. Rejected, before they are created:

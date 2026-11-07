@@ -18,10 +18,17 @@ void check(bool condition, const std::string& message) { require(condition, "tes
 
 // Returns the error text, or an empty string when the extraction succeeded.
 std::string attempt(Work& work, const std::vector<Entry>& entries, const ArchiveLimits& limits = {}, bool end_marker = true) {
-    auto destination = work.fresh();
-    try { extract_archive(work.archive(xz_of(tar_of(entries, end_marker))), destination, limits); }
-    catch (const Error& error) { return error.what(); }
-    return {};
+    // Every tar-level rule must behave identically behind both containers: run the same bytes through tar.xz and tar.gz.
+    auto tar = tar_of(entries, end_marker);
+    std::string messages[2];
+    for (int i = 0; i < 2; ++i) {
+        auto destination = work.fresh();
+        try { extract_archive(work.archive(i == 0 ? xz_of(tar) : gz_of(tar)), destination, limits); }
+        catch (const Error& error) { messages[i] = error.what(); }
+    }
+    require(messages[0] == messages[1], "test failed: tar.xz and tar.gz disagree: [" + messages[0] + "] vs [" + messages[1] + "]");
+    ++checks;
+    return messages[0];
 }
 
 void rejects(Work& work, const std::string& why, const std::vector<Entry>& entries, const std::string& expect, const ArchiveLimits& limits = {}) {
@@ -149,6 +156,68 @@ int main() {
         try { extract_archive(work.archive(xz_of(tar_of({make_file("zeros", std::string(40u << 20, '\0'))}))), work.fresh(),
                               ArchiveLimits{.compression_ratio = 16}); } catch (const Error& e) { message = e.what(); }
         check(message.find("decompression ratio") != std::string::npos, "decompression bomb rejected (" + message + ")");
+    }
+
+    // ---- tar.gz container ----------------------------------------------------------------------------------------
+    {
+        auto gz_error = [&](const std::string& bytes, const ArchiveLimits& limits = {}) {
+            try { extract_archive(work.archive(bytes), work.fresh(), limits); } catch (const Error& e) { return std::string(e.what()); }
+            return std::string();
+        };
+        auto gz_rejects = [&](const std::string& why, const std::string& bytes, const std::string& expect, const ArchiveLimits& limits = {}) {
+            auto message = gz_error(bytes, limits);
+            check(!message.empty(), "tar.gz accepted: " + why);
+            check(message.find(expect) != std::string::npos, "tar.gz " + why + " (got: " + message + ")");
+        };
+        std::vector<Entry> tree = {make_dir("zlib-1.3.1/"), make_file("zlib-1.3.1/zlib.h", std::string(70000, 'h')),
+                                   make_file("zlib-1.3.1/configure", "#!/bin/sh\n", 0755), make_link("zlib-1.3.1/alias", "zlib.h")};
+        auto good = gz_of(tar_of(tree));
+        check(detect_archive_format(work.archive(good)) == "gz", "gzip detected by content");
+        {
+            auto out = work.fresh();
+            auto report = extract_archive(work.archive(good), out);
+            check(report.format == "tar.gz" && report.files == 2 && report.symlinks == 1 && report.directories == 1, "tar.gz report: " + report.to_json().dump());
+            check(read_text(out / "zlib-1.3.1/zlib.h") == std::string(70000, 'h'), "tar.gz content spanning several read chunks");
+            check(fs::is_symlink(out / "zlib-1.3.1/alias") && fs::read_symlink(out / "zlib-1.3.1/alias") == "zlib.h", "tar.gz symlink kept");
+        }
+        // A tar without the end marker is tolerated at a record boundary, exactly as for tar.xz.
+        check(gz_error(gz_of(tar_of(tree, false))).empty(), "tar.gz without the tar end marker accepted at a record boundary");
+        // Container integrity: the checks the tar reader cannot make because it stops at its end marker.
+        { auto bytes = good; bytes[bytes.size() - 8] ^= 1; gz_rejects("CRC-32 trailer damaged", bytes, "corrupt gzip"); }
+        { auto bytes = good; bytes[bytes.size() - 1] ^= 1; gz_rejects("length trailer damaged", bytes, "corrupt gzip"); }
+        { auto bytes = good; bytes[bytes.size() / 2] ^= 0x40; check(!gz_error(bytes).empty(), "payload damaged rejected"); }
+        gz_rejects("truncated inside the payload", good.substr(0, good.size() / 2), "truncated gzip");
+        gz_rejects("trailer cut off", good.substr(0, good.size() - 4), "truncated gzip");
+        gz_rejects("header only", good.substr(0, 10), "truncated gzip");
+        gz_rejects("second member", good + gz_of(tar_of(tree)), "data after the gzip stream");
+        gz_rejects("trailing bytes", good + std::string("junk"), "data after the gzip stream");
+        gz_rejects("trailing zero bytes", good + std::string(512, '\0'), "data after the gzip stream");
+        // Data hidden after the tar end marker, inside the member.
+        gz_rejects("non-zero data after the tar end marker", gz_of(tar_of(tree) + "hidden payload" + std::string(500, '\0')), "non-zero data after the tar end marker");
+        check(gz_error(gz_of(tar_of(tree) + std::string(10240, '\0'))).empty(), "ordinary zero blocking padding after the end marker accepted");
+        gz_rejects("padding beyond the limit", gz_of(tar_of(tree) + std::string(2u << 20, '\0')), "padding limit");
+        // A raw zlib stream, a bare tar, and a gzip with a wrong method byte are not tar.gz.
+        { z_stream z{}; deflateInit(&z, 6); std::string raw(200, '\0'); std::string tarbytes = tar_of(tree);
+          raw.resize(deflateBound(&z, static_cast<uLong>(tarbytes.size())) + 32);
+          z.next_in = reinterpret_cast<Bytef*>(tarbytes.data()); z.avail_in = static_cast<uInt>(tarbytes.size());
+          z.next_out = reinterpret_cast<Bytef*>(raw.data()); z.avail_out = static_cast<uInt>(raw.size());
+          deflate(&z, Z_FINISH); raw.resize(raw.size() - z.avail_out); deflateEnd(&z);
+          gz_rejects("raw zlib stream", raw, "unsupported archive format"); }
+        gz_rejects("bare tar", tar_of(tree), "unsupported archive format");
+        { auto bytes = good; bytes[2] = 7; gz_rejects("unknown compression method", bytes, "unsupported archive format"); }
+        // Bomb guard behind the container, with a legitimate tree below the ratio limit still accepted.
+        gz_rejects("decompression bomb", gz_of(tar_of({make_file("zeros", std::string(40u << 20, '\0'))}), 9), "decompression ratio", ArchiveLimits{.compression_ratio = 16});
+        check(gz_error(gz_of(tar_of({make_file("zeros", std::string(8u << 20, '\0'))}), 9)).empty(), "highly compressible but within the default ratio accepted");
+        // A gzip header with every optional field (FEXTRA, FNAME, FCOMMENT, FHCRC) still decodes.
+        { std::string tarbytes = tar_of(tree); auto plain = gz_of(tarbytes);
+          std::string header = plain.substr(0, 10); header[3] = char(0x1E);  // FEXTRA|FNAME|FCOMMENT|FHCRC
+          std::string extra = std::string("\x04\x00", 2) + "ABCD";
+          std::string full = header + extra + "name.tar" + std::string(1, '\0') + "comment" + std::string(1, '\0');
+          uint32_t hcrc = static_cast<uint32_t>(crc32(0, reinterpret_cast<const Bytef*>(full.data()), static_cast<uInt>(full.size()))) & 0xFFFF;
+          full.push_back(char(hcrc & 255)); full.push_back(char(hcrc >> 8));
+          check(gz_error(full + plain.substr(10)).empty(), "gzip header with all optional fields accepted");
+          std::string bad = full; bad[bad.size() - 1] ^= 1;
+          gz_rejects("header CRC wrong", bad + plain.substr(10), "corrupt gzip"); }
     }
 
     // ---- zip ----

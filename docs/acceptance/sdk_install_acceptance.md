@@ -1284,3 +1284,26 @@ already handled by the shared drivers, which ran unchanged. The only defect was 
 Raw evidence (logs, `result.json`, per-call stdout/stderr, process images, `suites-status.log`, the stress runs) is under the ignored `out/windows-arm64-s3-20261106/`; `bin/win-arm64/crt-cli.exe` is replaced by the executable
 above and the previous bytes (`a366b26a...21f8`) are kept under `previous/`. Windows/arm64 only. The acquisition trust is a disposable test CA; Full-stage metadata, a published release asset, official trust, promotion and the
 Windows/x64 crash closure are not part of this record. Source export of the driver inventory: `1571b9b2...2111`.
+
+## Hardened `tar.gz` reading, D3 step 1 (Linux/x86_64, 2026-11-07)
+
+**Unit-level on one host; no SDK, recipe, store or CLI-command behavior changes.** `extract_archive` now detects `1F 8B 08`
+and reads `tar.gz` through the same entry rules as `tar.xz` (the [D3 design](../design/source_port_adapter.md) needs it for zlib's
+upstream archive). SDK installation is unaffected: it still requires the format named by the release metadata, which can only be
+`tar.xz` or `zip`, so a `tar.gz` SDK archive is refused with the existing "differs from the release metadata" error.
+
+Container rules added: exactly one gzip member; after the tar end marker the rest of the member is read, only zero padding up to
+1 MiB may follow, and zlib's CRC-32/length trailer must verify; bytes after the member (a second member, junk, zero bytes) are
+rejected; truncation at any point is rejected; the shared decompression-ratio guard applies. A raw zlib stream, a bare tar and a
+wrong method byte are "unsupported archive format". A header with FEXTRA, FNAME, FCOMMENT and FHCRC decodes; a wrong header CRC is rejected.
+
+Evidence: `archive-test` 221 checks (was 158), `native-test` 881, `sdk-store-test` 114, all green with the self-built CLI (CRT rehearsal.9 SDK
+`808364840249...`, `crt-cli test` in a scratch copy of the working tree). Every tar-level rejection case now runs through both containers
+and fails if the xz and gzip results differ. Negative control: with the post-end-marker `finish()` call disabled the suite fails at
+"tar.gz accepted: trailer cut off".
+
+The real upstream `zlib-1.3.1.tar.gz` (SHA-256 `9a93b2b7...df23`, equal to the recipe pin) also extracts: 290 entries, 253 files, 37 directories, 4,390,808 bytes. That check ran once in a scratch-only copy of the test, not in the committed suite (no upstream bytes are checked in).
+
+Not covered: other hosts, multi-member streams (rejected on purpose). **Observed, not fixed:** the
+`tar.xz` reader likewise stops at the tar end marker and does not read the rest of the xz stream, so its integrity check and trailing-byte
+rule are not applied after the last entry; an SDK-install behavior change is outside this step and needs its own increment.

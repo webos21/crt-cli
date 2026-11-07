@@ -93,6 +93,19 @@ std::string xz_of(const std::string& tar) {
 }
 
 
+// One gzip member (RFC 1952) from zlib's own encoder, so the product only has to decode.
+inline std::string gz_of(const std::string& tar, int level = 6) {
+    z_stream z{};
+    require(deflateInit2(&z, level, Z_DEFLATED, 15 + 16, 8, Z_DEFAULT_STRATEGY) == Z_OK, "gzip init");
+    std::string out(deflateBound(&z, static_cast<uLong>(tar.size())) + 64, '\0');
+    z.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(tar.data())); z.avail_in = static_cast<uInt>(tar.size());
+    z.next_out = reinterpret_cast<Bytef*>(out.data()); z.avail_out = static_cast<uInt>(out.size());
+    require(deflate(&z, Z_FINISH) == Z_STREAM_END, "gzip encode");
+    out.resize(out.size() - z.avail_out);
+    deflateEnd(&z);
+    return out;
+}
+
 inline void put16(std::string& out, uint32_t v) { out.push_back(char(v & 255)); out.push_back(char((v >> 8) & 255)); }
 inline void put32(std::string& out, uint32_t v) { put16(out, v & 0xFFFF); put16(out, v >> 16); }
 

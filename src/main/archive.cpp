@@ -103,8 +103,9 @@ std::string detect_archive_format(const fs::path& archive) {
     in.read(reinterpret_cast<char*>(head), sizeof(head));
     const unsigned char xz[6] = {0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00};
     if (in.gcount() == 6 && std::memcmp(head, xz, 6) == 0) return "xz";
+    if (in.gcount() >= 3 && head[0] == 0x1F && head[1] == 0x8B && head[2] == 8) return "gz";
     if (in.gcount() >= 4 && head[0] == 'P' && head[1] == 'K' && (head[2] == 3 || head[2] == 5) && (head[3] == 4 || head[3] == 6)) return "zip";
-    throw Error("unsupported archive format (expected xz or zip): " + archive.string());
+    throw Error("unsupported archive format (expected xz, gzip or zip): " + archive.string());
 }
 
 namespace {
@@ -235,6 +236,8 @@ public:
     virtual ~ByteSource() = default;
     // Fills up to `size` bytes; returns the number read (0 at end of stream).
     virtual size_t read(char* out, size_t size) = 0;
+    // Called once the tar reader is done: lets a source finish verifying its own container (default: nothing to do).
+    virtual void finish() {}
     uint64_t consumed_in = 0;   // compressed bytes read from the file
     uint64_t produced = 0;      // decompressed bytes handed out
 };
@@ -281,6 +284,64 @@ private:
     bool ok_ = false;
     bool done_ = false;
     bool finishing_ = false;
+};
+
+class GzSource : public ByteSource {
+public:
+    // One gzip member only (RFC 1952): a second member, or any bytes after the trailer, are rejected, so what is
+    // verified is exactly what was extracted. zlib checks the header, the CRC-32 and the ISIZE trailer.
+    GzSource(const fs::path& path, const ArchiveLimits& limits) : in_(path.string(), std::ios::binary), limits_(limits) {
+        require(in_.good(), "cannot open archive: " + path.string());
+        stream_ = z_stream{};
+        require(inflateInit2(&stream_, 15 + 16) == Z_OK, "cannot initialize the gzip decoder");
+        ok_ = true;
+    }
+    ~GzSource() { if (ok_) inflateEnd(&stream_); }
+    size_t read(char* out, size_t size) override {
+        stream_.next_out = reinterpret_cast<Bytef*>(out);
+        stream_.avail_out = static_cast<uInt>(std::min<size_t>(size, 1u << 30));
+        const uInt asked = stream_.avail_out;
+        while (stream_.avail_out > 0 && !done_) {
+            if (stream_.avail_in == 0) {
+                in_.read(inbuf_, sizeof(inbuf_));
+                stream_.next_in = reinterpret_cast<Bytef*>(inbuf_);
+                stream_.avail_in = static_cast<uInt>(in_.gcount());
+                consumed_in += stream_.avail_in;
+                require(stream_.avail_in > 0, "truncated gzip archive");
+            }
+            auto rc = inflate(&stream_, Z_NO_FLUSH);
+            if (rc == Z_STREAM_END) { done_ = true; break; }
+            if (rc == Z_BUF_ERROR) continue;  // needs more input or output; the loop supplies one of them
+            require(rc == Z_OK, std::string("corrupt gzip archive (") + (stream_.msg ? stream_.msg : "zlib error " + std::to_string(rc)) + ")");
+        }
+        size_t produced_now = asked - stream_.avail_out;
+        produced += produced_now;
+        require(consumed_in == 0 || produced / std::max<uint64_t>(consumed_in, 1) <= limits_.compression_ratio || produced < (1ull << 20),
+                "decompression ratio beyond the limit (decompression bomb)");
+        return produced_now;
+    }
+    // The tar reader stops at its end marker. Read the remainder of the member: only zero padding (bounded) may follow,
+    // the CRC-32 and length trailer must verify, and nothing may follow the member.
+    void finish() override {
+        char scratch[1 << 14];
+        uint64_t tail = 0;
+        for (;;) {
+            auto got = read(scratch, sizeof(scratch));
+            if (got == 0) break;
+            tail += got;
+            require(tail <= (1u << 20), "data after the tar end marker is larger than the padding limit");
+            require(std::all_of(scratch, scratch + got, [](char c) { return c == 0; }), "non-zero data after the tar end marker");
+        }
+        require(done_, "truncated gzip archive");
+        require(stream_.avail_in == 0 && in_.peek() == std::ifstream::traits_type::eof(), "data after the gzip stream (multi-member or trailing bytes)");
+    }
+private:
+    std::ifstream in_;
+    ArchiveLimits limits_;
+    z_stream stream_;
+    char inbuf_[1 << 16];
+    bool ok_ = false;
+    bool done_ = false;
 };
 
 // ---- tar -------------------------------------------------------------------------------------------------------
@@ -572,6 +633,11 @@ ExtractReport extract_archive(const fs::path& archive, const fs::path& destinati
         XzSource source(archive, limits);
         extract_tar(source, sink);
         sink.report.format = "tar.xz";
+    } else if (format == "gz") {
+        GzSource source(archive, limits);
+        extract_tar(source, sink);
+        source.finish();
+        sink.report.format = "tar.gz";
     } else {
         extract_zip(archive, sink);
         sink.report.format = "zip";
