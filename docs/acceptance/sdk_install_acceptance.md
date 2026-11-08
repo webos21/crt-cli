@@ -1326,3 +1326,15 @@ Evidence: `port-recipe-test` 137 checks with `native-test` 881, `archive-test` 2
 dependency-role comparison disabled the suite fails at "accepted: unclassified dependency". The fixture is an exact copy of the CRT recipe (`src/test/data/zlib.recipe.json`, see its README).
 
 Not covered: a differential against `crt-port-build.py` (step 6), other hosts, CRT's review of the table and of the accepted subset, and every use of the reader: nothing in the CLI calls it yet.
+
+## `crt-cc` under the bundle's `mksh` (Linux/x86_64, 2026-11-08)
+
+Experiment only, no CLI code: the installed host-tools bundle (`v0.1.0-hosttools.20261102.3`, `system/bin` = `mksh`, `make`, toybox applets incl. `sed`/`dirname`/`uname`) with `PATH` set to that directory alone (`env -i`),
+the rehearsal.9 Dev SDK's `tools/crt-cc` and host `clang` via `CRT_HOST_CC`. Results:
+
+* `mksh -c 'crt-cc h.c -o h && ./h'` compiles, links and runs: the wrapper's `sed`/`dirname`/`uname`/`pwd` needs are met by the applets. Under `bundle make` with `SHELL=mksh` the same compile-link-run passes.
+* **The linker is not found** with a bundle-only `PATH`: `clang -fuse-ld=lld` fails with `posix_spawn failed` (`ld.lld` is not next to `/usr/lib/llvm-21/bin/clang`; a `PATH` entry holding an `ld.lld` symlink did not help). `--ld-path=/usr/bin/ld.lld` works. The executor must therefore pass the
+  configured linker explicitly (the CLI already has `--linker`), not rely on `PATH`; a recipe's `configure` cannot add it, so the executor needs a CRT-supported way (flag injection or wrapper) that is separately reviewed.
+* **`make` with a spaces-containing `SHELL`** (the test bundle path is `tools space 한글/...`) fails (`make: .../tools: No such file or directory`, exit 127); a space-free path to the same `mksh` works. The executor has to use a space-free shell path
+  (e.g. a per-job symlink or `.SHELLFLAGS`-safe launcher); the existing `@PORT_PREFIX_MAKE@` escaping covers the prefix only.
+* Not exercised: `configure` itself, `crt-ar`/`ranlib`, `crt-c++`, other hosts. The produced executable's runtime identity (CRT libc, no host `DT_NEEDED`) was not analysed here; step 4's audit owns that.

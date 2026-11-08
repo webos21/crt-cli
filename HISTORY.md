@@ -9,6 +9,12 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-08
+
+### D3: `crt-cc` under the host-tools bundle's `mksh`
+
+`crt-cc` compiles, links and runs under the bundle's `mksh`/`make`/applets with a bundle-only `PATH`; two executor requirements surfaced: the linker must be named explicitly (`--ld-path`, not `PATH`) and `make`'s `SHELL` cannot contain spaces. No code changed; Linux/x86_64 only. Record: `docs/acceptance/sdk_install_acceptance.md`.
+
 ## 2026-11-07
 
 ### D3 step 2: recipe subset reader and seeded adapter table

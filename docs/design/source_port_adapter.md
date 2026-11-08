@@ -171,8 +171,9 @@ bytes, or moves a consumer lock.
 
 * Whether the adapter table should later be signed with the registry snapshot (needs the official-trust work).
 * Whether the shared audit should also assert the exact set of exported symbols against the recipe's version script.
-* How `crt-cc` behaves when its `sh` is the bundle's `mksh`: unverified; it is the first thing step 3 must exercise, and
-  the answer decides whether a CLI compiler bridge is needed earlier than planned.
+* ~~How `crt-cc` behaves when its `sh` is the bundle's `mksh`~~: answered by the 2026-11-08 experiment in
+  `docs/acceptance/sdk_install_acceptance.md` ("`crt-cc` under the bundle's `mksh`"): it runs, but the linker must be named explicitly
+  and a `SHELL` path with spaces breaks `make`; both are step-3 executor requirements, and no compiler bridge is needed for them.
 
 ## 5. Failure handling expectations
 
