@@ -1338,3 +1338,20 @@ the rehearsal.9 Dev SDK's `tools/crt-cc` and host `clang` via `CRT_HOST_CC`. Res
 * **`make` with a spaces-containing `SHELL`** (the test bundle path is `tools space 한글/...`) fails (`make: .../tools: No such file or directory`, exit 127); a space-free path to the same `mksh` works. The executor has to use a space-free shell path
   (e.g. a per-job symlink or `.SHELLFLAGS`-safe launcher); the existing `@PORT_PREFIX_MAKE@` escaping covers the prefix only.
 * Not exercised: `configure` itself, `crt-ar`/`ranlib`, `crt-c++`, other hosts. The produced executable's runtime identity (CRT libc, no host `DT_NEEDED`) was not analysed here; step 4's audit owns that.
+
+## Port executor, D3 step 3 (Linux/x86_64, 2026-11-08)
+
+`port_build.h/.cpp` run a parsed recipe in one new job directory: copy of the pristine tree, `configure --prefix=<job>/prefix`, the recipe's `post_configure_patch`, `make -j`, `make install`, then the recipe's compile-run tests, all through the pinned host-tools bundle (job rootfs from `HostTools::create_job`). Logs (stdout+stderr merged, stdin `/dev/null`) are kept per step; a failing step throws with its log path and keeps the job.
+
+What the work established:
+
+* `CC`/`CXX` are `/system/bin/sh /crt-bin/crt-cc` (job-generated thin wrappers over `/crt-sdk/tools/crt-cc`, both virtual paths in the job rootfs, so they are one shell word whatever the real paths contain). The wrappers append `--ld-path=<configured linker>` unless the command is compile-only (`-c`/`-E`/`-S`, crt-cc's own rule): `LDFLAGS` is not enough, zlib's link probes do not carry it (first attempt failed: "No shared library support"), and the flag on a compile-only command is an unused-argument warning that breaks configure's no-output probes.
+* Scripts are always started as `<bundle sh> <script>`. A `#!/bin/sh` line executed by the kernel would run the host's `dash`; `strace -f -e execve` over a full build shows only the bundle shell (`<job>/rootfs/system/bin/sh`) and bundle applets, plus the declared host programs `clang`, `ld.lld`, `llvm-ar`, `llvm-ranlib` and the test binaries. No `/bin/sh` or `/usr/bin/dash` was executed.
+* The job path contains spaces and non-ASCII text, so the install prefix does too: the recorded `post_configure_patch` (`@PORT_PREFIX_MAKE@`) was applied once and `make install` and the installed `zlib.pc` use the real prefix.
+* Test sources come from the SDK (`porting/tests/zlib_roundtrip.c`), must match the adapter table's SHA-256, and are checked before any job directory exists. `expect_stdout` is a fragment of the output (as in the oracle).
+* AR/RANLIB are the configured `llvm-ar` and the `llvm-ranlib` beside it (required to exist). Toolchain paths with whitespace or shell metacharacters are refused (the Makefile expands `$(AR)` unquoted); an alias or compiler bridge is the later answer.
+
+Evidence: `port-build-test` 35 checks (not run by `crt-cli test`, which clears the environment: it reads `CRT_CLI_TEST_PORT_PROJECT`, `_HOST_TOOLS`, `_HOST_TOOLS_SHA256`, `_ARCHIVE` and reports "skipped" without them), about 13 s, with `native-test` 881, `archive-test` 221, `sdk-store-test` 114 and `port-recipe-test` 137 green, rehearsal.9 SDK, host-tools `v0.1.0-hosttools.20261102.3`, zlib-1.3.1 (source SHA-256 verified). Negative control: a wrapper that never names the linker makes the build fail at the link. Both recipe tests pass (`zlib_roundtrip_test: ok`); `libz.a`, `libz.so{,.1,.1.3.1}`, headers and `zlib.pc` are installed; the pristine tree is untouched.
+
+Not covered: audit of the produced binaries (`DT_NEEDED`, rpath), store publish and build keys (step 4), the consumer proof (step 5), the oracle differential (step 6), other hosts, other recipes, a CLI command that calls the executor (the unit test is the only caller), and the stale `-O2 -O2 -fPIC` duplication the oracle also produces. Three scratch directories from failed intermediate runs remain under the system temp directory.
+

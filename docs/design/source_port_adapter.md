@@ -154,7 +154,7 @@ provider `port`:
 
 ## 3. Work breakdown (Linux/x86_64 first)
 
-Status 2026-11-07: step 1 done ([record](../acceptance/sdk_install_acceptance.md#hardened-targz-reading-d3-step-1-linuxx86_64-2026-11-07)); step 2 done for the reader and the seeded table ([record](../acceptance/sdk_install_acceptance.md#recipe-subset-reader-d3-step-2-linuxx86_64-2026-11-07)), CRT review of the table pending.
+Status 2026-11-07: step 1 done ([record](../acceptance/sdk_install_acceptance.md#hardened-targz-reading-d3-step-1-linuxx86_64-2026-11-07)); step 2 done for the reader and the seeded table ([record](../acceptance/sdk_install_acceptance.md#recipe-subset-reader-d3-step-2-linuxx86_64-2026-11-07)), CRT review of the table pending; step 3 done ([record](../acceptance/sdk_install_acceptance.md#port-executor-d3-step-3-linuxx86_64-2026-11-08)).
 
 1. Hardened `tar.gz` reading in the archive module + hostile-input tests (traversal, links, bombs, truncation).
 2. Recipe reader for the §2 subset, with the exhaustive refusal tests, and the adapter table (CRT-reviewed) as data.
