@@ -274,6 +274,13 @@ Toolchain Toolchain::load(const fs::path& root) {
 bool Toolchain::invoke(const std::string& operation, bool cpp, const std::vector<std::string>& inputs, const fs::path& output, const std::vector<std::string>& extra, const std::vector<std::string>& libraries, Json& commands, const std::string& mode) const {
     std::vector<std::string> argv{(operation == "archive" ? archiver : cpp ? cxx : cc).string()};
     const auto& recipe = contract.at("modes").at(mode);
+    if (!extra.empty()) {
+        // An argument the recipe has no place for would be dropped without a trace (a linker flag that silently does not
+        // apply is worse than a failed build).
+        bool placed = false;
+        for (const auto& value : recipe.at(operation == "archive" ? "archive" : operation + (cpp ? "_cxx" : "_c"))) placed |= value == "@EXTRA@";
+        require(placed, "the SDK toolchain recipe for '" + operation + "' in mode '" + mode + "' has no place for extra arguments");
+    }
     for (const auto& value : recipe.at(operation == "archive" ? "archive" : operation + (cpp ? "_cxx" : "_c"))) {
         std::string arg = value;
         if (arg == "@OBJECTS@") argv.insert(argv.end(), inputs.begin(), inputs.end());
@@ -312,6 +319,7 @@ bool Toolchain::invoke(const std::string& operation, bool cpp, const std::vector
     else dependencies.insert(dependencies.end(), libraries.begin(), libraries.end());
     Json recorded = Json::object();
     for (const auto& dependency : dependencies) {
+        if (!dependency.empty() && dependency[0] == '-') continue;   // a linker flag carried in the library list, not a file
         require_native_utf8(dependency, "a dependency path reported by the compiler");
         fs::path path = fs::absolute(dependency);
         if (under(path, sdk) || under(path, resource)) continue; // covered by the verified SDK/tool identity

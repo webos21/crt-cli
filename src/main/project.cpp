@@ -2,6 +2,7 @@
 #include <crtcli/host_tools.h>
 #include <crtcli/environment.h>
 #include <crtcli/sdk_acquire.h>
+#include <crtcli/port_store.h>
 #include <set>
 #include <map>
 #include <cctype>
@@ -71,8 +72,18 @@ std::string mode(const Json& target) {
     return kind(target) == "executable" ? "executable-" + linkage(target) : kind(target);
 }
 
+bool hex64(const std::string& value) {
+    return value.size() == 64 && std::all_of(value.begin(), value.end(), [](unsigned char c) { return std::isdigit(c) || (c >= 'a' && c <= 'f'); });
+}
+
+// A target's explicit choice of provider for a port-recipe dependency (experimental, CLI-owned; D3 step 5).
+struct PortUse { std::string name, provider, build_key; const PortAdapter* adapter = nullptr; };
+
 struct Builder {
     fs::path root, build;
+    std::map<std::string, std::vector<PortUse>> target_ports;
+    std::map<std::string, fs::path> port_items;      // build key -> verified item directory
+    std::set<std::string> rpaths;                    // -Wl,-rpath for the shared port libraries of the target being linked
     Json manifest, consumer_options, commands = Json::array(), artifacts = Json::object();
     size_t executed = 0, reused = 0;
     const Toolchain& toolchain;
@@ -95,6 +106,77 @@ struct Builder {
                 require(!(linkage(entry.second) == "static" && kind(entry.second) == "executable" && kind(targets.at(name)) == "shared-library"), "a shared-library consumer must select shared runtime linkage");
             }
         }
+        read_ports();
+    }
+
+    // `ports`: [{"name":"zlib","provider":"sdk"}] or [{"name":"zlib","provider":"port","build_key":"<64 hex>"}]. The choice is
+    // always written down; one project uses one provider per port; and a link closure that could reach both the SDK's library
+    // and the port's is an error (one ABI per runtime closure).
+    void read_ports() {
+        std::map<std::string, PortUse> chosen;
+        for (const auto& entry : targets) {
+            const auto& target = entry.second;
+            if (!target.contains("ports")) continue;
+            require(target.at("ports").is_array(), "target 'ports' must be an array");
+            std::set<std::string> names;
+            for (const auto& item : target.at("ports")) {
+                require(item.is_object(), "a port declaration must be an object");
+                for (auto it = item.begin(); it != item.end(); ++it)
+                    require(it.key() == "name" || it.key() == "provider" || it.key() == "build_key", "unknown port declaration key: " + it.key());
+                PortUse use;
+                require(item.contains("name") && item.at("name").is_string() && item.contains("provider") && item.at("provider").is_string(),
+                        "a port declaration needs a name and a provider");
+                use.name = item.at("name");
+                use.provider = item.at("provider");
+                for (const auto& adapter : port_adapters()) if (adapter.name == use.name) use.adapter = &adapter;
+                require(use.adapter, "unknown port: " + use.name);
+                require(names.insert(use.name).second, "port declared twice in one target: " + use.name);
+                require(use.provider == "sdk" || use.provider == "port", "port provider must be 'sdk' or 'port'");
+                if (use.provider == "port") {
+                    require(item.contains("build_key") && item.at("build_key").is_string() && hex64(item.at("build_key")),
+                            "provider 'port' requires build_key (64 lowercase hex digits)");
+                    use.build_key = item.at("build_key");
+                } else require(!item.contains("build_key"), "provider 'sdk' takes no build_key");
+                auto found = chosen.emplace(use.name, use);
+                require(found.second || (found.first->second.provider == use.provider && found.first->second.build_key == use.build_key),
+                        "port '" + use.name + "' is declared with different providers or keys; a project uses one provider per dependency");
+                target_ports[entry.first].push_back(use);
+            }
+        }
+        for (const auto& entry : targets) {
+            std::set<std::string> closure, libraries;
+            std::vector<PortUse> ports;
+            collect(entry.first, closure, libraries, ports);
+            for (const auto& use : ports)
+                if (use.provider == "port")
+                    require(!libraries.count(use.adapter->sdk_library), "the closure of target '" + entry.first + "' reaches both the SDK's '" +
+                            use.adapter->sdk_library + "' and the port '" + use.name + "'; choose one provider");
+        }
+    }
+
+    void collect(const std::string& name, std::set<std::string>& closure, std::set<std::string>& libraries, std::vector<PortUse>& ports) const {
+        if (!closure.insert(name).second) return;
+        const auto& target = targets.at(name);
+        for (const auto& value : target.value("sdk_libraries", Json::array())) libraries.insert(value.get<std::string>());
+        auto declared = target_ports.find(name);
+        if (declared != target_ports.end()) ports.insert(ports.end(), declared->second.begin(), declared->second.end());
+        for (const auto& value : target.value("dependencies", Json::array())) collect(value.get<std::string>(), closure, libraries, ports);
+    }
+
+    // The published, re-verified item for a key; it must have been built for this exact SDK.
+    fs::path port_item(const PortUse& use) {
+        auto found = port_items.find(use.build_key);
+        if (found != port_items.end()) return found->second;
+        PortStore store(sdk_store_root().parent_path() / "ports");
+        store.verify(use.build_key, toolchain.sdk);
+        auto item = store.item_path(use.build_key);
+        auto item_manifest = read_json(item / "manifest.json");
+        const auto& inputs = item_manifest.at("key_inputs");
+        require(inputs.at("recipe").at("name") == use.name, "port item " + use.build_key + " is not a '" + use.name + "' build");
+        require(inputs.at("sdk").at("content_sha256") == toolchain.selection.at("sdk_content_sha256"),
+                "port item " + use.build_key + " was built for another SDK than the one this project selects");
+        require(inputs.at("target") == native_target(), "port item " + use.build_key + " was built for another target");
+        return port_items.emplace(use.build_key, item).first->second;
     }
 
     void add(const Json& target, bool test) {
@@ -121,9 +203,20 @@ struct Builder {
         return inside(root, "out/native/" + file);
     }
 
-    void sdk_libraries(const Json& target, const std::string& selected_linkage, std::vector<std::string>& libraries) const {
+    void sdk_libraries(const std::string& target_name, const Json& target, const std::string& selected_linkage, std::vector<std::string>& libraries) {
         std::string selected = target.value("sdk_library_linkage", selected_linkage);
         require(selected == "static" || selected == "shared", "unsupported SDK library linkage");
+        // A port provider's library replaces the SDK's: it is named by its item path, ahead of the SDK libraries.
+        auto declared = target_ports.find(target_name);
+        if (declared != target_ports.end())
+            for (const auto& use : declared->second) {
+                if (use.provider != "port") continue;
+                auto item = port_item(use);
+                auto library = item / (selected == "static" ? use.adapter->static_library : use.adapter->shared_library);
+                require(fs::exists(library), "port item lacks " + library.string());
+                libraries.push_back(library.string());
+                if (selected == "shared") rpaths.insert("-Wl,-rpath," + (item / "lib").string());
+            }
         for (const auto& value : target.value("sdk_libraries", Json::array())) {
             std::string name = value;
             require(identifier(name), "invalid SDK library name");
@@ -139,7 +232,7 @@ struct Builder {
             require(selected_linkage == "shared" || kind(targets.at(name)) != "shared-library", "transitive shared dependency requires shared runtime linkage");
             libraries.push_back(outputs.at(name).string());
             dependencies(targets.at(name), selected_linkage, libraries, seen);
-            sdk_libraries(targets.at(name), selected_linkage, libraries);
+            sdk_libraries(name, targets.at(name), selected_linkage, libraries);
             seen.erase(name); // Repeat diamond dependencies after each dependent archive.
         }
     }
@@ -172,6 +265,9 @@ struct Builder {
             std::vector<std::string> flags{is_cpp ? "-std=c++17" : "-std=c99", "-O1", "-g", "-I" + (build / "generated").string()};
             for (const auto& dir : manifest.value("include_dirs", Json::array())) flags.push_back("-I" + inside(root, dir).string());
             for (const auto& dir : target.value("include_dirs", Json::array())) flags.push_back("-I" + inside(root, dir).string());
+            if (target_ports.count(name))
+                for (const auto& use : target_ports.at(name))
+                    if (use.provider == "port") flags.push_back("-I" + (port_item(use) / use.adapter->include_dir).string());
             // The SDK's consumer options (Windows: -U_WIN32 ... so the curl headers take their POSIX branch) change how libc++
             // sees the target, so they apply only to the translation units that declare they need them, never to <filesystem> users.
             bool wants_options = false;
@@ -186,8 +282,12 @@ struct Builder {
             objects.push_back(object.string());
         }
         std::set<std::string> linked;
+        rpaths.clear();
         dependencies(target, linkage(target), libraries, linked);
-        sdk_libraries(target, linkage(target), libraries);
+        sdk_libraries(name, target, linkage(target), libraries);
+        // The SDK's link recipes have no extra-argument slot; the run-time search path for a shared port library travels in
+        // the library list (flags there are part of the command key and are not hashed as files).
+        if (kind(target) != "static-library") libraries.insert(libraries.end(), rpaths.begin(), rpaths.end());
         (toolchain.invoke(kind(target) == "static-library" ? "archive" : "link", uses_cpp, objects, destination, {}, libraries, commands, mode(target)) ? executed : reused)++;
         outputs[name] = destination;
         cpp[name] = uses_cpp;
@@ -368,7 +468,18 @@ Reply workflow(const std::vector<std::string>& args) {
         outcomes.push_back({{"exit_code", child.exit_code}, {"timed_out", child.timed_out}, {"stdout_truncated", child.output_truncated}});
         code = child.exit_code ? 1 : 0;
     }
-    Json receipt{{"selection", selection}, {"commands", builder.commands}, {"cache", {{"executed", builder.executed}, {"reused", builder.reused}}}, {"outcomes", outcomes}, {"artifacts", builder.artifacts}};
+    Json ports = Json::array();
+    {
+        std::set<std::string> seen;
+        for (const auto& entry : builder.target_ports)
+            for (const auto& use : entry.second)
+                if (seen.insert(use.name).second) {
+                    Json item{{"name", use.name}, {"provider", use.provider}};
+                    if (use.provider == "port") { item["build_key"] = use.build_key; if (builder.port_items.count(use.build_key)) item["path"] = builder.port_items.at(use.build_key).string(); }
+                    ports.push_back(item);
+                }
+    }
+    Json receipt{{"selection", selection}, {"ports", ports}, {"commands", builder.commands}, {"cache", {{"executed", builder.executed}, {"reused", builder.reused}}}, {"outcomes", outcomes}, {"artifacts", builder.artifacts}};
     if (!primary.empty() && builder.outputs.count(primary)) {
         receipt["executable"] = builder.output(primary).string();
         receipt["executable_sha256"] = file_sha256(builder.output(primary));

@@ -154,6 +154,42 @@
         "z",
         "mbedcrypto"
       ]
+    },
+    {
+      "name": "port-project-test",
+      "timeout_seconds": 1800,
+      "sources": [
+        "src/test/port_project_test.cpp",
+        "src/main/bootstrap.cpp",
+        "src/main/core.cpp",
+        "src/main/process.cpp",
+        "src/main/environment.cpp",
+        "src/main/toolchain.cpp",
+        "src/main/project.cpp",
+        "src/main/http.cpp",
+        "src/main/fetch.cpp",
+        "src/main/publisher.cpp",
+        "src/main/host_tools.cpp",
+        "src/main/diagnostics.cpp",
+        "src/main/archive.cpp",
+        "src/main/sdk_store.cpp",
+        "src/main/sdk_command.cpp",
+        "src/main/sdk_acquire.cpp",
+        "src/main/port_recipe.cpp",
+        "src/main/port_build.cpp",
+        "src/main/port_store.cpp"
+      ],
+      "sdk_libraries": [
+        "curl",
+        "mbedtls",
+        "mbedx509",
+        "mbedcrypto",
+        "z",
+        "lzma"
+      ],
+      "sdk_consumer_option_sources": [
+        "src/main/http.cpp"
+      ]
     }
   ]
 }

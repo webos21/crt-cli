@@ -84,6 +84,12 @@ C++ link requirements. SDK library names use `sdk_libraries`; optional
 defaulting to target runtime linkage. Static archives do not embed dependency
 libraries: executable/shared consumers resolve their transitive dependencies.
 
+`ports` (experimental, CLI-owned, per target): `[{"name":"zlib","provider":"sdk"}]` or
+`[{"name":"zlib","provider":"port","build_key":"<64 hex>"}]`. The provider is always explicit,
+one per port per project; provider `port` consumes the verified item `CRT_HOME/ports/store/<key>/`
+in place of the SDK's library, and a closure that also lists the SDK library the port replaces
+(`sdk_libraries`) is refused. Record: [acceptance](../acceptance/sdk_install_acceptance.md#project-provider-choice-and-consumer-proof-d3-step-5-linuxx86_64-2026-11-08).
+
 Use `.c` for C99, `.cpp`/`.cc`/`.cxx` for C++17. Source/include paths must remain
 inside the project after resolving symlinks; output symlinks are rejected.
 Target names are unique across build/test targets. Legacy format-0 `application`

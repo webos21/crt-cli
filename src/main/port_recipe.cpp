@@ -112,7 +112,8 @@ const std::vector<PortAdapter>& port_adapters() {
          /*host_tools*/ {"make"}, /*target_ports*/ {}, /*variants*/ {"static", "shared"}, /*sdk_stage*/ "01-c",
          {{"porting/tests/zlib_roundtrip.c", "3d7460fb51e215424ef4fa36593cd7662bdcf83bbd1e986eb0ed746b07aebe62"}}, "pending",
          /*expected_files*/ {"include/zlib.h", "include/zconf.h", "lib/libz.a", "lib/libz.so", "lib/libz.so.1", "lib/pkgconfig/zlib.pc"},
-         /*expected_sonames*/ {"libz.so.1"}},
+         /*expected_sonames*/ {"libz.so.1"},
+         /*sdk_library*/ "z", /*include_dir*/ "include", /*static_library*/ "lib/libz.a", /*shared_library*/ "lib/libz.so"},
     };
     return table;
 }

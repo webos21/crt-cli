@@ -43,6 +43,9 @@ struct PortAdapter {
     // What a correct install prefix must contain (D3 step 4 audit): prefix-relative files (a symlink to a file counts) and
     // the SONAMEs the shared objects must carry. The recipe does not say this; CRT's review of the entry does.
     std::vector<std::string> expected_files, expected_sonames;
+    // How a project consumes the item (D3 step 5): the SDK contract library name the port replaces (a closure may not
+    // reach both), and the item-relative include directory and link inputs.
+    std::string sdk_library, include_dir, static_library, shared_library;
 };
 
 // The reviewed table (compiled in). Throws for a digest that is not listed.

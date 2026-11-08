@@ -11,6 +11,10 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-08
 
+### D3 step 5: explicit provider choice and consumer proof
+
+Targets may declare `ports` with provider `sdk` or `port` (+ build key); the build re-verifies the store item, requires it to match the SDK and target, refuses one project/closure that can reach both providers, and links the item's headers and library in place of the SDK's. Path evidence: linker map, compiler dependency file and the process's own memory map name the item (and, in the SDK-provider control, not the item). The first shared run exposed that the link recipe silently dropped an extra argument (the host's libz was loaded); `Toolchain::invoke` now refuses that. `port-project-test` 51 checks. Record: `docs/acceptance/sdk_install_acceptance.md`.
+
 ### D3 step 4: binary audit, build key and port store
 
 `port_store.h/.cpp`: in-process ELF audit (`DT_NEEDED` must resolve in the SDK or the item, runpath inside the item/SDK, SONAME aliases, relative in-item symlinks, no job paths, expected files from the adapter entry), a build key over recipe/source/adapter/SDK/toolchain-binary/host-tools/environment identities, and `PortStore` (staged copy, audit, manifest format 0, atomic rename under a per-key lock, `verify`, `recover`). The first real audit refused zlib because `crt-cc` stamps `CRT_PORT_RPATH_DIR` into every link; the executor now sets it only for the unpublished recipe tests. Lock helpers moved to `store_lock.h`. `port-store-test` 86 checks including concurrent publication and tamper detection; nothing in the CLI calls the store yet. Record: `docs/acceptance/sdk_install_acceptance.md`.
