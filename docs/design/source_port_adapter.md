@@ -138,7 +138,7 @@ port (`CC CXX AR RANLIB CFLAGS CPPFLAGS CXXFLAGS LDFLAGS LIBS CRT_*` plus recipe
 ### D3-8. Audit and the consumer proof
 
 Before publish: the shared object's `DT_NEEDED` set contains no host libc (the zlib recipe notes show this failure mode
-on Linux); runpath/rpath point inside the SDK sysroot or the store item, never at the host; the `libz.so.1` SONAME and
+on Linux); runpath/rpath point inside the SDK sysroot or the store item, never at the host (the executor therefore builds without `CRT_PORT_RPATH_DIR`, which `crt-cc` would stamp into every link); the `libz.so.1` SONAME and
 symlinks exist; no file outside the staging prefix was written.
 
 Consumption proof, for each of static and shared, from a project (not from the recipe's own test) that selects
@@ -154,7 +154,7 @@ provider `port`:
 
 ## 3. Work breakdown (Linux/x86_64 first)
 
-Status 2026-11-07: step 1 done ([record](../acceptance/sdk_install_acceptance.md#hardened-targz-reading-d3-step-1-linuxx86_64-2026-11-07)); step 2 done for the reader and the seeded table ([record](../acceptance/sdk_install_acceptance.md#recipe-subset-reader-d3-step-2-linuxx86_64-2026-11-07)), CRT review of the table pending; step 3 done ([record](../acceptance/sdk_install_acceptance.md#port-executor-d3-step-3-linuxx86_64-2026-11-08)).
+Status 2026-11-07: step 1 done ([record](../acceptance/sdk_install_acceptance.md#hardened-targz-reading-d3-step-1-linuxx86_64-2026-11-07)); step 2 done for the reader and the seeded table ([record](../acceptance/sdk_install_acceptance.md#recipe-subset-reader-d3-step-2-linuxx86_64-2026-11-07)), CRT review of the table pending; step 3 done ([record](../acceptance/sdk_install_acceptance.md#port-executor-d3-step-3-linuxx86_64-2026-11-08)); step 4 done ([record](../acceptance/sdk_install_acceptance.md#binary-audit-build-key-and-port-store-d3-step-4-linuxx86_64-2026-11-08)).
 
 1. Hardened `tar.gz` reading in the archive module + hostile-input tests (traversal, links, bombs, truncation).
 2. Recipe reader for the §2 subset, with the exhaustive refusal tests, and the adapter table (CRT-reviewed) as data.

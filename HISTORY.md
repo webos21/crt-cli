@@ -11,6 +11,10 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-08
 
+### D3 step 4: binary audit, build key and port store
+
+`port_store.h/.cpp`: in-process ELF audit (`DT_NEEDED` must resolve in the SDK or the item, runpath inside the item/SDK, SONAME aliases, relative in-item symlinks, no job paths, expected files from the adapter entry), a build key over recipe/source/adapter/SDK/toolchain-binary/host-tools/environment identities, and `PortStore` (staged copy, audit, manifest format 0, atomic rename under a per-key lock, `verify`, `recover`). The first real audit refused zlib because `crt-cc` stamps `CRT_PORT_RPATH_DIR` into every link; the executor now sets it only for the unpublished recipe tests. Lock helpers moved to `store_lock.h`. `port-store-test` 86 checks including concurrent publication and tamper detection; nothing in the CLI calls the store yet. Record: `docs/acceptance/sdk_install_acceptance.md`.
+
 ### D3 step 3: port executor
 
 `port_build.h/.cpp` build the reviewed zlib recipe (configure, patch, make, install, both recipe tests) in a new job through the host-tools bundle and the SDK's `crt-cc` via job wrappers that name the linker; `strace` shows no host `sh` was executed. `port-build-test` 35 checks with a negative control; nothing in the CLI calls the executor yet. Record: `docs/acceptance/sdk_install_acceptance.md`.

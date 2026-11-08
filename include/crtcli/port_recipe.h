@@ -40,6 +40,9 @@ struct PortAdapter {
     std::string sdk_stage;                                      // minimum SDK stage that satisfies the build
     std::map<std::string, std::string> test_sources;            // recipe-relative test source -> SHA-256
     std::string crt_review;                                     // "pending" until CRT accepts the entry
+    // What a correct install prefix must contain (D3 step 4 audit): prefix-relative files (a symlink to a file counts) and
+    // the SONAMEs the shared objects must carry. The recipe does not say this; CRT's review of the entry does.
+    std::vector<std::string> expected_files, expected_sonames;
 };
 
 // The reviewed table (compiled in). Throws for a digest that is not listed.

@@ -32,6 +32,13 @@ struct PortBuildResult {
 // Throws Error naming the failing step and its log file. The job directory is kept on failure for inspection.
 PortBuildResult run_port_build(const PortBuildRequest& request);
 
+// The llvm-ranlib that sits beside the archiver (llvm-ar-21 -> llvm-ranlib-21); throws when there is none.
+fs::path port_ranlib_for(const fs::path& archiver);
+
+// The environment a build declares and therefore keys on: the executor's fixed flag defaults and the recipe's own ops,
+// with nothing that names a job directory. (Part of the store build key.)
+Json port_declared_environment(const PortRecipe& recipe);
+
 // Exposed for tests: the environment the build steps receive (names and values, inherited values omitted by the record).
 std::map<std::string, std::string> port_build_environment(const PortBuildRequest& request, const fs::path& prefix);
 

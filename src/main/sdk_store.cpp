@@ -5,6 +5,7 @@
 #include <csignal>
 #include <thread>
 #include <unistd.h>
+#include "store_lock.h"
 
 namespace crtcli {
 namespace {
@@ -23,16 +24,6 @@ std::string trimmed(std::string value) {
     return value;
 }
 
-// A process is alive when signal 0 reaches it. Another user's process counts as alive (EPERM): a lock must never be
-// stolen from a process that may still be running.
-bool process_alive(long pid) {
-    if (pid <= 0) return false;
-    if (kill(static_cast<pid_t>(pid), 0) == 0) return true;
-    return errno == EPERM;
-}
-
-long current_pid() { return static_cast<long>(getpid()); }
-
 // The version string becomes part of a directory name, so it is held to a conservative alphabet.
 void check_version(const std::string& version) {
     require(!version.empty() && version.size() <= 64, "SDK VERSION is empty or too long");
@@ -40,48 +31,6 @@ void check_version(const std::string& version) {
         require(std::isalnum(c) || c == '.' || c == '-' || c == '_' || c == '+', "SDK VERSION contains a character that cannot name a directory");
     require(version[0] != '.' && version[0] != '-', "SDK VERSION may not start with '.' or '-'");
 }
-
-class Lock {
-public:
-    Lock(const fs::path& directory, unsigned wait_seconds) : directory_(directory) {
-        auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(wait_seconds);
-        for (;;) {
-            std::error_code error;
-            if (fs::create_directory(directory_, error)) {
-                write_text(directory_ / "owner", std::to_string(current_pid()) + "\n");
-                held_ = true;
-                return;
-            }
-            require(!error, "cannot create lock " + directory_.string() + ": " + error.message());
-            if (steal_if_dead()) continue;
-            if (std::chrono::steady_clock::now() >= deadline)
-                throw Error("another installation of this SDK is in progress (lock " + directory_.string() + ")");
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
-    }
-    ~Lock() { release(); }
-    Lock(const Lock&) = delete;
-    Lock& operator=(const Lock&) = delete;
-    void release() {
-        if (!held_) return;
-        std::error_code ignored;
-        fs::remove_all(directory_, ignored);
-        held_ = false;
-    }
-private:
-    bool steal_if_dead() {
-        long owner = 0;
-        try { owner = std::stol(trimmed(read_text(directory_ / "owner"))); } catch (const std::exception&) { owner = 0; }
-        if (process_alive(owner)) return false;
-        // The owner is gone: remove the lock, then let the loop retry the atomic create. Two takers race on that create,
-        // and exactly one of them wins it.
-        std::error_code ignored;
-        fs::remove_all(directory_, ignored);
-        return true;
-    }
-    fs::path directory_;
-    bool held_ = false;
-};
 
 Json read_optional_json(const fs::path& path) {
     try { return read_json(path); } catch (const std::exception&) { return Json::object(); }

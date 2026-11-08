@@ -41,6 +41,13 @@ std::string wrapper_script(const std::string& shell, const std::string& wrapped,
            "exec " + shell + " " + wrapped + " \"$@\"\n";
 }
 
+// The fixed defaults every build starts from before the recipe's ops apply (the oracle's configure-port exports).
+const std::map<std::string, std::string>& flag_defaults() {
+    static const std::map<std::string, std::string> defaults = {
+        {"CPPFLAGS", ""}, {"CFLAGS", "-O2"}, {"CXXFLAGS", "-O2"}, {"LDFLAGS", ""}, {"LIBS", ""}, {"DESTDIR", ""}};
+    return defaults;
+}
+
 std::string shell_path(const HostTools& tools) { return tools.manifest.at("rootfs").at("shell").get<std::string>(); }
 
 unsigned choose_jobs(unsigned requested) {
@@ -94,6 +101,14 @@ std::string trim_end(std::string value) {
 
 }  // namespace
 
+fs::path port_ranlib_for(const fs::path& archiver) { return ranlib_beside(archiver); }
+
+Json port_declared_environment(const PortRecipe& recipe) {
+    Json ops = Json::array();
+    for (const auto& op : recipe.env) ops.push_back({{"name", op.name}, {"value", op.value}, {"append_flags", op.append_flags}});
+    return {{"defaults", flag_defaults()}, {"recipe", ops}};
+}
+
 std::map<std::string, std::string> port_build_environment(const PortBuildRequest& request, const fs::path& prefix) {
     const auto& toolchain = *request.toolchain;
     const auto& recipe = request.recipe;
@@ -122,13 +137,11 @@ std::map<std::string, std::string> port_build_environment(const PortBuildRequest
     // prefix would lose its word boundary), exactly as the oracle does.
     env["CRT_PORT_INCLUDE_DIR"] = (prefix / "include").string();
     env["CRT_PORT_LIBRARY_DIR"] = (prefix / "lib").string();
-    env["CRT_PORT_RPATH_DIR"] = (prefix / "lib").string();
-    env["CPPFLAGS"] = "";
-    env["CFLAGS"] = "-O2";
-    env["CXXFLAGS"] = "-O2";
-    env["LDFLAGS"] = "";
-    env["LIBS"] = "";
-    env["DESTDIR"] = "";
+    // crt-cc adds `-Wl,-rpath,$CRT_PORT_RPATH_DIR` to every link. During the build that would stamp the job's prefix into
+    // each installed library (a path that stops existing the moment the item is published), so the build steps run
+    // without it; only the recipe tests, which are never published, get it (and LD_LIBRARY_PATH as well).
+    env["CRT_PORT_RPATH_DIR"] = "";
+    for (const auto& item : flag_defaults()) env[item.first] = item.second;
     apply_port_env(env, recipe.env, PortPlaceholders{prefix.string(), env["CC"]});
     return env;
 }
@@ -216,7 +229,9 @@ PortBuildResult run_port_build(const PortBuildRequest& request) {
         for (const auto& arg : test.link_args) compile.push_back(substitute_port_placeholders(arg, placeholders));
         compile.push_back("-o");
         compile.push_back(binary.string());
-        runner.run("test-build-" + test.name, compile, child, tests);
+        auto compile_env = env;
+        compile_env["CRT_PORT_RPATH_DIR"] = (prefix / "lib").string();
+        runner.run("test-build-" + test.name, compile, as_child(compile_env, base), tests);
         auto run_env = env;
         run_env["LD_LIBRARY_PATH"] = (prefix / "lib").string();
         auto result = runner.run("test-run-" + test.name, {binary.string()}, as_child(run_env, base), tests);
