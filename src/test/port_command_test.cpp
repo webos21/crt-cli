@@ -29,7 +29,8 @@ int main() {
     fs::path scratch = buffer.data();
     auto home = scratch / "home";
     fs::create_directories(home);
-    setenv("HOME", home.c_str(), 1);
+    setenv("HOME", home.string().c_str(), 1);
+    setenv("USERPROFILE", home.string().c_str(), 1);
     auto ports = home / ".crt/ports";
     auto toolchain = Toolchain::load(project);
     auto sdk_before = inventory(toolchain.sdk);
@@ -54,7 +55,7 @@ int main() {
     check(build_error({"port", "build", "zlib", "--archive", archive, "--host-tools", bundle, "--host-tools-sha256", pin, "--project", project, "--jobs", "0"}).find("--jobs must be 1..256") != std::string::npos, "--jobs 0 is refused");
     {
         auto other = scratch / "other.tar.gz";
-        std::ofstream(other) << "not the pinned source";
+        std::ofstream(other.string()) << "not the pinned source";
         auto message = build_error({"port", "build", "zlib", "--archive", other.string(), "--host-tools", bundle, "--host-tools-sha256", pin, "--project", project});
         check(message.find("not the recipe's pinned source") != std::string::npos, "an archive other than the pinned source is refused (" + message + ")");
     }
@@ -97,7 +98,7 @@ int main() {
     check(!build_error({"port", "verify", std::string(64, 'a'), "--project", project}).empty(), "verify refuses a key that is not in the store");
     check(port_command(std::vector<std::string>{"port", "recover"}).data.at("recovered").empty(), "recover on a clean store removes nothing");
     {
-        std::ofstream(ports / "store" / key / "include/extra.h") << "tamper";
+        std::ofstream((ports / "store" / key / "include/extra.h").string()) << "tamper";
         check(!build_error({"port", "verify", key, "--project", project}).empty(), "verify detects an added file");
         check(!build_error({"port", "build", "zlib", "--archive", archive, "--host-tools", bundle, "--host-tools-sha256", pin, "--project", project}).empty(), "a damaged item is reported, not rebuilt over");
     }

@@ -6,6 +6,22 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## D3 Replay Boundary on Windows/x64 (2026-11-09)
+
+Reviewed CRT `a62d5e2d3a17ed0984e659552413a6d044330f6c` and CLI
+`4936df5e2abae90e84cd3a52d452b7a9bb612329`. The producer delta since the clean
+rehearsal.10 SDK's `05b56788501b02f71a8b8084cc4041effa1475a9` is documentation only;
+that public SDK is reused with policy `5b1ad5ba0465268a8485035f92066b19e0df9942458c212804cd7121366d29d1`.
+The [Windows record](acceptance/sdk_install_acceptance.md#source-port-d3-replay-windowsx64-2026-11-09)
+binds the identical macOS product inventory, corrected Windows-only test fixtures, actual CLI image,
+independent CRT host tools, common regression passes and retained input-enabled D3 failures.
+
+No SDK, native policy 1, recipe schema 1, host-tools 1, project lock 1 or product code changes.
+The producer Windows replay guards now admit JSON recipe data and the private store-lock helper;
+they do not add a runtime capability. The Windows executor, adapter layout and PE port audit remain
+unsupported: this records a negative D3 result, not a compatible Windows source-port combination.
+Formal table approval, promotion, root locks/defaults, committed binaries and STATUS remain unchanged.
+
 ## D3 Source-port Adapter on macOS/arm64 (2026-11-09)
 
 CRT `2f4103d97880d5a51c474ef7b65fe810186c49de` produced a clean local Dev SDK `v0.0.1-rehearsal.7`, content

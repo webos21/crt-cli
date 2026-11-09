@@ -140,7 +140,8 @@ int main() {
     // The port store is CRT_HOME/ports, found through the PAL's user home.
     auto home = scratch / "home";
     fs::create_directories(home);
-    setenv("HOME", home.c_str(), 1);
+    setenv("HOME", home.string().c_str(), 1);
+    setenv("USERPROFILE", home.string().c_str(), 1);
     check(sdk_store_root() == home / ".crt/sdks", "the SDK store root follows HOME (so the port store is " + (home / ".crt/ports").string() + ")");
 
     auto toolchain = Toolchain::load(bound);

@@ -1517,3 +1517,133 @@ Remaining: formal CRT table approval, native Windows static/shared replay, curre
 other ports/architectures, signature/export auditing and general dyld resolution. The audit is bounded to the declared
 item/SDK, not a general loader emulator; a moved store/SDK root, official trust and release promotion are not qualified.
 
+## Source-port D3 replay (Windows/x64, 2026-11-09)
+
+**Common regression replay and a negative D3 result, not Windows D3 acceptance.**
+The Linux implementation and macOS replay were reviewed at CLI
+`4936df5e2abae90e84cd3a52d452b7a9bb612329` and CRT
+`a62d5e2d3a17ed0984e659552413a6d044330f6c`. No CLI product, CRT runtime,
+upstream source, recipe, public format or committed executable is changed by this replay.
+
+### Inputs and boundary
+
+Reuse the clean local Dev SDK `v0.0.1-rehearsal.10` built from CRT
+`05b56788501b02f71a8b8084cc4041effa1475a9`. The producer diff to the reviewed
+CRT tip changes four documentation files only, so no producer rebuild or new SDK
+identity is claimed. The public SDK is copied out of its original handoff before
+consumption. The root repository lock and ignored local SDK selection stay untouched.
+
+- Compact product-source inventory SHA-256 (`include/`, `src/main/`, `crt.json`):
+  `e55ce9ed997e619527aae9b62887a7ebee44d2cfe297c4bf0f2336c97cf80ca7`,
+  identical to the macOS replay.
+- Native compiler-policy SDK inventory SHA-256:
+  `2e7843bcf3b77b09894a4172e8d7639835564ec7e70b2ee565f58762fb0b65e6`.
+  Provider SHA-256: `5b1ad5ba0465268a8485035f92066b19e0df9942458c212804cd7121366d29d1`.
+  These are exporter inventory/policy identities, not the release install-metadata digest.
+- Independent CRT host-tools manifest:
+  `513eab805ed0753b67d00939fd8b00e03a577f6f14cbe74b2ad4e3862691b1cf`
+  (`v0.1.0-hosttools.20261103.windows.5`, retained local/dirty-assembler provenance).
+- zlib archive: `9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23`;
+  recipe: `dde944984d799197c0af1553ac7cf38139edc7b2e4e673ef9b4c17dd8c1a349b`.
+- Native LLVM 22.1.8 in `C:/Program Files/LLVM/bin`; Windows SDK import libraries
+  `10.0.28000.0/um/x64`. No WSL/MSYS/Git Bash substitution.
+
+The producer contract driver exports fresh LF-normalized sources into
+`C:/Users/Lee/AppData/Local/Temp/crt d3 한글 20261109 r4` and runs consumers with
+an empty PATH under a per-run restricted SID. Native probes prove the repositories,
+original SDK and producer worktree inaccessible. The test-only continuation uses a
+new disposable workspace/SID for SDK-free help/version/doctor and probes denial of
+the exported source/SDK/provider there. The SDK inventory is
+compared before/after. Windows process accounting is not executable or network denial.
+The driver enables `allow_dirty_sdk` explicitly, while the recorded SDK provenance
+itself is clean; this does not promote a release.
+
+### Results
+
+| Check | Result |
+|---|---|
+| Full native CLI regression | 972 checks passed |
+| Archive safety / gzip integrity | 214 checks passed (POSIX-mode-only cases are not Windows claims) |
+| SDK store | 113 checks passed |
+| Recipe reader / OS fixtures | 141 checks passed |
+| Cold / warm self-build | 21 executed, 0 reused / 0 executed, 21 reused |
+| SDK-free visibility/help/version/doctor and PE imports | 5/5 passed |
+| Native D3 executor/store/project/command/oracle suites | All five compile; all five fail, exit 134 |
+| Actual `port build zlib --json` | Exit 1, `the adapter entry for zlib has no layout for windows` |
+
+The input-enabled executor suite fails its existing-path assertion because the
+Windows host rejection precedes that check; the store suite expects ELF identity
+from an SDK PE DLL; project/command fail at the missing Windows layout; the oracle
+stops at `the port executor supports Linux and macOS hosts so far`. No assertion
+was weakened or unsupported result converted into success. Default environment-
+gated skips in the original aggregate are explicitly not accepted.
+
+The tested CLI is 45,002,752 bytes, SHA-256
+`643997d225a873a2155597d02cbbb59d2365c26a19fadbe409c1466ba72287f0`.
+Its direct imports are only `kernel32.dll` and
+`api-ms-win-core-synch-l1-2-0.dll`. The initial boxed bootstrap/native trace records
+634 processes with no forbidden host interpreter/build-tool image. Follow-up traces
+contain no undeclared images or timeouts. Original/copied SDK and copied/original
+host-tools inventories stay unchanged. These are bounded native Windows/x64
+results, not HTTP trust, Windows/arm64 or a release qualification.
+
+### Unsupported Windows boundary
+
+The product deliberately refuses Windows before a native source-port build can run:
+`run_port_build` admits only Linux/macOS, the adapter has no Windows `port_layout`,
+and `audit_port_item` admits ELF/Mach-O rather than PE. Windows recipe parsing alone
+does not implement execution, publication or consumer proof. The pinned recipe's
+producer-side Windows support does not confer CLI adapter support.
+
+Static and shared variants therefore have no CLI-native build/link/run acceptance
+here. No port item, lock pin or oracle equivalence is accepted. The gated suites are
+actually invoked with their inputs; their failures stay failures. Implementing the
+Windows executor/tool-path policy, PE audit/closure and provider mapping is the next
+bounded feature increment, followed by both linkage variants and oracle comparison.
+Formal CRT adapter-table review, Windows/arm64, affected Linux replay, official trust
+and release promotion remain separate gates.
+
+### Reproduction and retained failures
+
+Raw evidence lives in this repository's ignored `out/windows-d3-20261109/`:
+`contract-r4/` contains source/SDK inventories, commands, process images, raw output
+and the failed aggregate; `d3/`, `d3-r2/` and `d3-r3/` contain input-enabled suite results, retained failures
+and separate bare checks. `qualification.json` binds each selected receipt, final
+fixture hash and unchanged SDK/CLI identity. The original aggregate is not relabeled as passing.
+`identities.json` binds the product inventory and exact producer-driver hash.
+The exported workspace retains the tested CLI and per-target native executables.
+The tracked `bin/win-x64/crt-cli.exe` is intentionally not refreshed by a failed D3 replay.
+
+The first two attempts stopped at stale replay guards: the source scan treated the
+recipe JSON's documented `_WIN32` as consumer code, then rejected the private
+`src/main/store_lock.h` introduced by D3. The producer driver now scans C/C++ source
+and header suffixes and explicitly permits that internal helper. No OS macro was
+added to product code. The third attempt failed when native LLD could not write its
+argv recorder into the app-container temporary directory. The final invocation uses
+an explicit ordinary test-host TEMP/TMP and retains all three failures; no global
+security or tool setting is changed. Driver SHA-256:
+`3bf505ded4a323aaf57b2a4019ca5ee35de3df57f495ab913cb2e1d43d58bb81`.
+Python, SDK-wrapper probe compilation and restricted-token orchestration belong to
+the replay host; the CLI control/app path still uses direct native argv execution.
+
+The aggregate next exposed a Windows-only fixture compilation defect: assigning a
+`filesystem::path` to the string-valued `os_sdk` relies on a POSIX implicit
+conversion that Windows does not provide. The fixture now calls `.string()`; two
+other fixtures likewise convert wide paths explicitly before `setenv`. Product
+source, native policy, SDK and archive are verified unchanged before synchronizing
+only tests. Project/command fixtures also set `USERPROFILE` for the Windows PAL's
+home query. Two fstream calls pass `.string()` explicitly because this SDK does
+not supply their wide-path overload; this qualifies the UTF-8 narrow calls, not
+that overload. The first retry retained the remaining fstream compilation error;
+the final command-only retry compiles and reaches the missing-layout rejection.
+The continuation records the old/new fixture hashes and builds every
+D3 target; the already-passing long native/archive/store suites are not repeated.
+This is qualification across retained receipts, not one uninterrupted green run.
+
+Run the existing Windows contract command in the development guide with the inputs
+above, then use [the D3 follow-up driver](../guides/development.md#windows-d3-replay)
+with its retained evidence directory, disposable build SID, pinned bundle and archive.
+Use `--cases` for an explicit changed-fixture subset; retain the earlier receipts.
+The follow-up returns nonzero for the unsupported suites rather than accepting skips.
+Final follow-up driver SHA-256:
+`0732eec9b4c9e624b37833341871020ca686152b372414d3e3f74c14c74c5257`.

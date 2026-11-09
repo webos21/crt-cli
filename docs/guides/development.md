@@ -450,3 +450,38 @@ artifact or silently track CRT main to make a failed replay pass.
 Commit/push, release publication, global environment changes, and destructive
 cleanup require authorization covering those actions. This guide does not
 grant it merely by describing the development workflow.
+
+## Windows D3 replay
+
+Run the producer's `tools/replay_cli_contract_windows.py` first, using the native
+Windows entry point above. Keep its fresh workspace, `inputs.json`, `commands.json`
+and raw logs, including a failed aggregate result when applicable.
+The contract replay builds the declared tests, but environment-gated port suites
+without their inputs print `skipped`; that is not source-port acceptance.
+
+`tools/replay_port_windows.py` then supplies the pinned independent CRT host-tools
+bundle and zlib archive to those suites in the same disposable workspace. Supply
+the workspace's unregistered build SID (visible in `Get-Acl <work>`); do not use a
+real account SID or change existing account/tool/repository ACLs. Every invocation
+uses the restricted token, empty PATH, hidden-root probe and process accounting.
+For a test-fixture compilation failure, retain the failed aggregate receipt. The
+follow-up checks the completed bootstrap steps and unchanged product/SDK inputs,
+records test-fixture synchronization, builds each requested suite and performs the
+bare checks separately. It does not relabel the original aggregate as passing.
+
+```text
+python tools/replay_port_windows.py --contract-evidence C:/evidence/contract \
+  --source C:/absolute/crt-cli \
+  --crt-tools C:/absolute/crt/tools --host-tools C:/absolute/host-tools \
+  --host-tools-sha256 <manifest-sha256> --archive C:/absolute/zlib-1.3.1.tar.gz \
+  --sid <workspace-build-sid> --hide C:/absolute/crt --hide C:/absolute/crt-cli \
+  --hide C:/absolute/original-sdk --output C:/evidence/fresh-d3
+```
+
+The example is one argv invocation; line-continuation syntax depends on the host
+shell. The driver keeps per-suite stdout/stderr, exit codes and process images.
+It returns nonzero when a D3 suite is unsupported, fails or skips. Inspect the
+[Windows result](../acceptance/sdk_install_acceptance.md#source-port-d3-replay-windowsx64-2026-11-09)
+before interpreting a passing bootstrap as D3 support. Python is a replay-host
+tool, not a CLI/runtime prerequisite. No network or executable-denial boundary is
+claimed on Windows.

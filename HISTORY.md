@@ -11,6 +11,15 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-09
 
+### Windows/x64 replay of the Linux/macOS D3 increment
+
+Reused the identified clean rehearsal.10 SDK after confirming the CRT delta is documentation only. Current product
+sources match the macOS inventory: native 972, archive 214, SDK-store 113 and recipe 141 checks pass; cold/warm self-build,
+SDK-free commands and PE imports pass. Fixed only Windows fixture path/home handling and added a bounded replay driver.
+All five input-enabled D3 suites compile but fail at the unsupported Windows executor/layout/PE boundary; no source port,
+lock or oracle equivalence is accepted. SDK/host-tools inventories, committed binaries and STATUS stay unchanged.
+[Exact inputs, retained failures and continuation receipts](docs/acceptance/sdk_install_acceptance.md#source-port-d3-replay-windowsx64-2026-11-09).
+
 ### D3 macOS adapter and native source-port replay
 
 Added OS layouts, a relocatable zlib dylib install name, declared ar/ranlib overrides and explicit OS SDK delivery;

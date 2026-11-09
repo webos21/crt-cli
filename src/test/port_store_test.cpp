@@ -362,7 +362,7 @@ int main() {
         check(inputs.at("os_sdk").at("settings_sha256") == file_sha256(port_os_sdk(toolchain) / "SDKSettings.json"),
               "the configured OS SDK metadata is a key input");
         auto moved_toolchain = toolchain;
-        moved_toolchain.os_sdk = scratch / "OS SDK copy";
+        moved_toolchain.os_sdk = (scratch / "OS SDK copy").string();
         fs::create_directory(moved_toolchain.os_sdk);
         fs::copy_file(port_os_sdk(toolchain) / "SDKSettings.json", fs::path(moved_toolchain.os_sdk) / "SDKSettings.json");
         auto moved_request = request; moved_request.toolchain = &moved_toolchain;
