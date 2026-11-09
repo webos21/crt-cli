@@ -51,6 +51,25 @@ The initial scope excludes a general-purpose C/C++ package manager, a public
 registry server, automatic execution of arbitrary recipes, a complete LLVM
 port, and an IDE plugin marketplace.
 
+### D3 closure and first preview (adopted 2026-11-09)
+
+The current ordered work is documentation/evidence alignment, bounded D3
+producer review and affected Linux/macOS replay, then Dev SDK + CLI preview
+qualification. Preserve D0-D7 IDs and the existing per-host inputs/failures;
+technical execution, contract adoption and public release are separate states.
+The Windows/x64 final D3 record is reusable for unchanged policy/product;
+Windows/arm64 D3 is separate without downgrading its existing D2 support.
+
+Freeze shared recipe/adapter/key/lock rules before parallel D4 work. SQLite
+needs an amalgamation executor (the current parser accepts configure only),
+and libpng -> zlib needs dependency/provider/variant/key policy, including the
+Windows oracle layout difference. These do not enlarge D3 or block the first
+preview. Full SDK delivery has its own final artifact/source/license/security
+checks and is not a first-CLI-preview installation requirement. Preserve prior
+Full approvals for their original inputs; review changes and validity for the
+new candidate. Promote/verify SDK artifacts before production CLI pin adoption
+and publication; do not infer publication authority from a successful replay.
+
 ## 2. Product and Internal Boundaries
 
 ```text

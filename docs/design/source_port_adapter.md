@@ -1,6 +1,11 @@
 # D3 Design: Native Source-port Recipe Adapter (zlib first)
 
-Status: **bounded design adopted 2026-11-06; Linux implementation and macOS replay records now exist.**
+Status (2026-11-09): **bounded zlib implementation has native Linux/x86_64,
+macOS/arm64 and Windows/x64 evidence; formal CRT approval and affected-host
+closure remain pending.** The original slice below is retained as design history;
+project providers/port locks and OS adapters are now implemented where acceptance
+records them. Other recipes, generic resolution and Windows/arm64 D3 remain separate.
+The current closure/handoff procedure is in the [development guide](../guides/development.md#d3-common-change-closure-and-native-handoff).
 The original scope and proposed extensions below are not all implemented. A command, store layout or manifest is a current CLI contract only where the matching
 [acceptance](../acceptance/sdk_install_acceptance.md) record exists. The architecture, build-key rule and
 non-negotiable constraints stay owned by [the CLI design](crt_cli.md#5-source-first-port-recipe-engine); this
@@ -17,7 +22,7 @@ and prove that a consumer links and runs against those bytes in both the static 
 In scope: fetch-or-seed and verify the source, pristine copy, configure/make/install in a job directory, the recipe's
 own `tests`, a binary audit, atomic store publish, and a consumer proof.
 
-Out of scope for this slice (each stays on its own queue item): registry/index resolution and channels, any recipe whose
+Originally out of scope for the initial Linux slice (not a current capability list): registry/index resolution and channels, any recipe whose
 `build.system` is not `configure`, dependency ports (SQLite, libpng-to-zlib), project `crt.json`/`crt.lock` fields for
 ports, `--locked`/`--offline` project semantics, trusted binary caches, other hosts. Windows CRT-shell/make static/shared
 remains a required gate for **full** D3 closure (TODO 4.2); this slice must not be written so that it blocks it (§7).

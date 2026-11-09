@@ -11,6 +11,29 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-09
 
+### Replay the latest D3 common changes on Linux and prepare native macOS handoff
+
+Fresh public-SDK-only CLI build and seven input-enabled suites pass: recipe
+141, build 35, store 87, project 81, command 33, oracle 23 and native 881 checks.
+The isolated driver passes 29/29 gates including actual publish/reuse/verify,
+warm cache, original-tree denial, bare CLI/import and unchanged input inventories.
+Reused the identified dirty developer SDK/local host tools without relabeling
+provenance or refreshing binaries/root locks. The old SDK C shared control
+maps host libz; this remains explicitly unendorsed, not positive SDK evidence.
+[Acceptance](docs/acceptance/sdk_install_acceptance.md#linux-d3-common-change-replay-and-macos-handoff-2026-11-09)
+owns exact inputs/source/binary/results and the owner's macOS continuation.
+No product, SDK or recipe change was required; formal review/closure stays pending.
+
+### Adopt D3 closure, preview boundaries and the native handoff sequence
+
+At the owner's request, refreshed README/TODO/design and STATUS against CRT
+`21b9d0e` / CLI `2ae74d4`. Current implementation/host evidence is separated
+from pending producer approval and latest common-change proof. Dev SDK + CLI
+preview is separate from Full delivery; D4 amalgamation/dependency work does
+not enlarge D3 or block the first preview. Added an explicit Linux/macOS
+handoff procedure. Existing failures/approvals and root/artifact pins remain
+unchanged; actual replay results are recorded separately in acceptance.
+
 ### Windows/x64 native zlib adapter
 
 Implemented CRT-shell/make tool-path handling, Windows layout/OS-SDK key inputs, PE audit,

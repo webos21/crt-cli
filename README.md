@@ -30,10 +30,12 @@ A fresh unresolved project can bind to an installed SDK on its first `build`
 using declared LLVM paths, then use plain build/test/run. This increment has
 [Linux/x86_64 evidence](docs/acceptance/sdk_install_acceptance.md#first-build-without-configure-linuxx86_64-2026-11-06)
 and [macOS/arm64 replay](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-macosarm64-2026-11-06);
-Windows replay remains separate. General cxx/upper-stage profile
+[Windows/x64](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsx64-2026-11-06) and
+[Windows/arm64](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsarm64-2026-11-06)
+also have identified replay baselines. General cxx/upper-stage profile
 selection, multi-port dependency management and self-upgrade remain planned.
 [Explicit pinned HTTPS SDK acquisition](docs/reference/bootstrap_contract.md#explicit-pinned-https-sdk-source-experimental-format-0)
-is implemented with Linux and macOS replay evidence: `sdk acquire --source <file>` or first
+is implemented with Linux, macOS and Windows replay evidence: `sdk acquire --source <file>` or first
 `build --sdk-source <file>` verifies a caller-pinned source and reuses an exact
 installed identity. `fetch` also supports explicit-key RSA-PSS verification.
 Official default-download trust, channels and publisher promotion remain pending.
@@ -87,22 +89,24 @@ and LLVM paths in ignored `.sdk.json` and run plain `build`. `new` downloads
 nothing; existing project pins change only through explicit configure. This
 workflow has [Linux evidence](docs/acceptance/sdk_install_acceptance.md#pinned-https-sdk-acquisition-linuxx86_64-2026-11-06);
 the [macOS replay](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-macosarm64-2026-11-06)
-also exercises this workflow. Windows needs its affected-feature replay.
+and [Windows replay](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsx64-2026-11-06)
+also exercise this workflow at their recorded baselines.
 
 
 ## Next User Workflow
 
-[The active plan](TODO.md) retains the remaining native store/collision gates
-and qualifies a Linux preview beyond the implemented first-build/acquisition
-workflow. The bounded zlib source-port adapter is implemented; formal producer review and remaining-host gates stay
-in the active plan. Full-stage metadata, general updates,
-self-upgrade, multi-port resolution and Studio are later increments. A preview
-candidate is qualified for its declared hosts before wider support is claimed.
+[The active plan](TODO.md) finishes D3 producer review and affected Linux/macOS
+replay, then prepares a Dev SDK + CLI preview. Linux, macOS and Windows/x64
+zlib evidence is retained; the latest common delta still needs its own closure.
+Windows/arm64 D3 remains a separate qualification target.
 
-The implemented developer flow keeps `new` source-only and can acquire a
-missing SDK on first configure/build from explicit pinned inputs. Default
-channels and publication require approved trust and actual producer artifact
-promotion before production CLI adoption.
+Preview qualification covers the actual packaged CLI, promoted SDK pin, trust,
+notices/resources, external LLVM setup and a source-hidden user flow. Full SDK
+assembly and its source/license/security checks remain separate; generic Full
+installation is not currently a CLI capability. Existing Full approval evidence
+is preserved and rechecked for the final candidate's changes and validity.
+D4 SQLite/libpng work can proceed against fixed contracts without blocking that
+first preview. General updates, self-upgrade and Studio remain later work.
 
 ## Platforms and Requirements
 

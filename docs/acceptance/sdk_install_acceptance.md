@@ -1743,3 +1743,111 @@ This qualifies native Windows/x64 only. Formal CRT adapter-table approval remain
 affected common-change Linux/macOS replay, Windows/arm64, multi-port dependencies,
 official trust and public release qualification remain separate work. Existing host baselines
 retain their original inputs. No new producer SDK or runtime acceptance is implied.
+
+## Linux D3 common-change replay and macOS handoff (2026-11-09)
+
+Owner-requested closure baseline: CRT `21b9d0e`, CLI `2ae74d4`. Only documentation
+and a Linux replay-host driver are added for this pass; product/recipe/runtime
+bytes are not changed and `crt_review` remains pending. Prior Linux/macOS/Windows
+records keep their own input identities; this is not a new three-host matrix.
+
+### Exact inputs
+
+LF-normalized `src`, `include`, `crt.json` compact relative path/hash snapshot:
+`22720f7d9e223af06e41887ec0bed9ede55568ecdd6b9b5ef3499769893bee16`.
+Fresh copied-source CLI: SHA-256
+`c1da5728795f79d4f8a9bb610ba2bc3ca2cad08d8a55fd09d74b443fc1e63267`,
+23,974,000 bytes. Source/SDK-only cold build executes 21 commands with no reuse.
+The CLI is not a refreshed committed binary.
+
+Reused Linux Dev SDK content
+`ecbb920a8e63e337095c0839b2d897f653f012162164a1b7b4e85a66486b32cd`
+and provider `30e67672117ae9b8d3b3d9476f381c3ec4049291bb593208abe541966953d956`.
+This is the retained **dirty, unpromoted** developer SDK from producer
+`b6bf52be64047e718dc0f2870472a5ffece913f9`; explicit dirty-SDK opt-in is preserved.
+It is not a new clean producer build, rehearsal.9 reuse or release qualification.
+Independent host tools `v0.1.0-hosttools.20261102.3` use manifest
+`b13ae8a8e392f5c0310de8ae4c342a7c33fb45ac4270306b0fe9a78906fe72d6`;
+source SDK is clean `49879bf`, assembler `8616fd6` dirty/local-only as recorded.
+No provenance is relabeled. Native Clang/LLD 21 and explicit llvm-ar/ranlib are
+identified by path and SHA-256 in the input receipt.
+
+Producer/SDK recipe and test match the adapter exactly:
+`dde944984d799197c0af1553ac7cf38139edc7b2e4e673ef9b4c17dd8c1a349b`
+and `3d7460fb51e215424ef4fa36593cd7662bdcf83bbd1e986eb0ed746b07aebe62`.
+Seeded zlib archive is
+`9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23`.
+The copied public SDK contains the packaged oracle; its exact bytes are included
+in the full SDK inventory rather than substituted from the producer checkout.
+
+### Isolation, scope and observed control limitation
+
+`tools/replay_port_linux.py` copies public inputs outside source/producer trees.
+Bubblewrap hides originals, denies network, exposes read-only SDK/host-tools/root
+and private writable HOME/tmp/project output with the host PID namespace shared
+for owner liveness. A native probe actually fails to read original repositories,
+SDK and tools. SDK/source-free version/doctor and ELF inspection find no CLI
+`DT_NEEDED`, RPATH or RUNPATH. Execve traces separate the native executor from
+the explicitly labeled Python packaged oracle. Python/bwrap/strace are host
+replay tools, not CLI/control/app prerequisites.
+
+Input-enabled suite results (a skipped environment-free suite is not accepted):
+
+| Suite | Checks passed |
+| --- | ---: |
+| port-recipe-test | 141 |
+| port-build-test | 35 |
+| port-store-test | 87 |
+| port-project-test | 81 |
+| port-command-test | 33 |
+| port-oracle-test | 23 |
+
+The port-provider proof maps the shared library from the immutable item and
+names its archive/header in static link/dependency evidence; provider/lock
+refusal and packaged oracle checks pass. The **SDK-provider C shared control**
+prints `/usr/lib/x86_64-linux-gnu/libz.so.1.3.1`: this is a historical explicitly
+unendorsed control in the test, not successful SDK shared binding. Its old
+assertion proves absence of the port item only. Static SDK-provider evidence is
+separate. Do not use the 81-check result to approve that C shared SDK mode;
+producer TODO 6.4 retains C shared/compiler-policy/runtime-search review.
+No host fallback is accepted as positive port/SDK binding evidence.
+
+### Native macOS continuation
+
+Use the same product/test snapshot above, with a native macOS SDK/provider,
+independent bundle, LLVM/OS-SDK and seed from the identified macOS handoff.
+Do not substitute Linux binaries/provider/tool pins. Run the six D3 suites and
+native project regression through the [handoff procedure](../guides/development.md#d3-common-change-closure-and-native-handoff),
+retaining exact input inventory and no-skips results. Inspect actual SDK and
+port mapped-image controls and preserve old failures. Existing Windows/x64
+qualification is reused for unchanged policy/product; Windows/arm64 D3 remains
+separate. After macOS delta and producer decision, record adoption and only then
+change the review marker/close D3. A review-marker-only edit must not change keys.
+
+### Raw evidence
+
+Ignored CLI `out/d3-closure-linux-20261109/replay-r1/` contains full source/SDK/
+host-tools inventories, driver hash, per-call argv/stdout/stderr and result.
+Work/handoff root is `/home/syszone/GitLocal/crt-cli-replay/d3-linux-819mdo83`.
+Native execve traces are in `scratch/traces/`; compiler maps, port manifests,
+negative/recovery fixtures and oracle trees are retained by input-enabled tests.
+The completed closure is recorded below. This does not promote an SDK, update root/default locks,
+refresh binaries, qualify Full installation or grant release approval.
+
+The accepted replay passes **29/29 gates**, including **881 native checks**.
+Actual `port build zlib` publishes once, repeats with `already_published: true`
+and the same key, then `port verify` succeeds. The key is
+`81dda528e5c9d082b0c16b4a77d0ebe6c60a3eb785cf7e458b0bb6ec19ddc46b`.
+Warm CLI build executes zero commands. All original/copied SDK and host-tool
+inventories and the product/test snapshot remain unchanged. Post-review of
+3,473 non-oracle execve lines finds no host shell/interpreter or host
+make/cmake/ninja/libtool execution; declared native compiler/linker/archiver,
+pinned CRT tools and generated programs retain their own trace scope.
+
+Accepted `result.json` SHA-256:
+`817bd2ac03537554e3603ff0f9974f731c6b7737e8f656f1aa444c2adf4d5f10`.
+`qualification.json` binds all input/result/command/ELF digests and captures the
+unendorsed SDK shared-control output. All suites ran with inputs; no skip is
+counted. This closes the Linux affected-common-code replay at this developer
+combination only. macOS continuation and final producer/adoption review remain
+open; the shared SDK control limitation is not waived by the aggregate pass.

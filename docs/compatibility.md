@@ -6,6 +6,30 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## D3 closure review and affected-host handoff (2026-11-09)
+
+At the owner's request, review CRT `21b9d0e` / CLI `2ae74d4` without
+relabeling the earlier three-host technical records. The zlib recipe/test
+pins match the producer and the compiled adapter. Review topics are host/target
+dependency roles, supported field subset, generated-Makefile workaround,
+OS layout/environment/make arguments, binary audit, provider/lock boundaries
+and the documented packaged-oracle differences. SDK/recipe/runtime formats
+and bytes are not changed by documentation cleanup.
+
+`crt_review` remains pending. `adapter_json` excludes review metadata and
+`port_key_inputs` includes the declared executor environment/make policy;
+recording approval alone must not invalidate an item. Actual policy changes
+need new keys and affected-host evidence. The [Linux affected-delta replay](acceptance/sdk_install_acceptance.md#linux-d3-common-change-replay-and-macos-handoff-2026-11-09)
+passes at its retained dirty developer inputs; the owner runs the matching
+native macOS delta. The historical SDK C shared control's host libz mapping is
+explicitly unendorsed and remains a producer-policy review item. Existing final
+Windows/x64 evidence is reused only for unchanged inputs. Windows/arm64 D3,
+Full installation and public release/promotion remain separate gates.
+
+The [development handoff](guides/development.md#d3-common-change-closure-and-native-handoff)
+and producer acceptance own exact replay inputs/results. This paragraph is a
+review plan, not final producer approval or a fresh three-host run.
+
 ## D3 Windows/x64 Adapter Implementation (2026-11-09)
 
 Reviewed producer `ff6b9e2` and CLI `3db09d7` plus the Windows delta. The unchanged

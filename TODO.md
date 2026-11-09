@@ -22,92 +22,38 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
 
 ## In Progress
 
-### First user workflow: local SDK selection -> first build -> pinned acquisition
+### D3 closure: producer contract review and affected-host replay
 
-The local D2 installer and Stage 2 stored-contract/project-selection flow have
-native evidence on Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64/arm64.
-Retain those exact per-host baselines in [SDK installation acceptance](docs/acceptance/sdk_install_acceptance.md);
-Windows/x64 Stage 2 is complete. The later receipt/pinned-repair increment has
-its own [Linux isolated evidence](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-linuxx86_64-2026-11-05)
-and [macOS replay](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-macosarm64-2026-11-05).
-The [Windows/x64 receipt boundaries pass](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-windowsx64-2026-11-05); its
-concurrent-install native crash was root-caused in the CRT libunwind recipe and is
-[closed](docs/acceptance/sdk_install_acceptance.md#windowsx64-concurrent-install-sigsegv-fix-2026-11-06).
-The earlier shape-only verify guard keeps its original developer/unit scope.
-[STATUS](STATUS.md) is the separately refreshed, dated baseline snapshot.
+The bounded zlib executor/store/provider/lock/oracle has native Linux/x86_64,
+macOS/arm64 and Windows/x64 records in [acceptance](docs/acceptance/sdk_install_acceptance.md).
+These retain their exact inputs; they are not a latest-source three-host pass.
+D2 receipts/selection/first-build/pinned HTTPS are implemented at the linked
+[per-host baselines](docs/acceptance/sdk_install_acceptance.md). Completed work
+belongs to HISTORY; STATUS is the separately requested dated snapshot.
 
-Keep D0-D7 identifiers. Dependencies are working capabilities, not completion
-of every checkbox in an earlier stage. The execution/validation policy belongs
-to [the CLI design](docs/design/crt_cli.md#execution-priorities-adopted-2026-11-05).
+- [ ] Review the digest-keyed CRT adapter policy and record producer/consumer
+  adoption. Keep `crt_review: pending` until the closure gates below pass.
+- [ ] Complete the owner's native macOS replay on the Linux-verified product
+  baseline; [Linux closure passes](docs/acceptance/sdk_install_acceptance.md#linux-d3-common-change-replay-and-macos-handoff-2026-11-09).
+  Reuse Windows/x64's qualification unless a changed policy/product affects it.
+- [ ] Close D3 after review and affected-host proof; retain original failures,
+  compare build keys and preserve store/project pins. Approval metadata alone
+  is excluded from the key. Windows/arm64 D3 is a separate qualification target.
 
-Work can proceed in three coordinated streams: CLI workflow implementation,
-affected-host replay/producer fixes, and preview trust/packaging. Pin shared
-contracts before parallel work; changes to the same manifest/store/lock format
-need one coordinated producer/consumer review. No new implementation or replay
-is claimed by this queue update.
+### Dev SDK / CLI Preview preparation
 
-### D2 - Close the bounded local installation/selection baseline first
+- [ ] Freeze a bounded Linux/x86_64 Dev SDK + CLI candidate, LLVM prerequisites,
+  resources/notices/trust inputs and a source-hidden first-user workflow.
+- [ ] Verify/promote the SDK before adopting its actual published pin in the
+  CLI. Apply final-package replay to each advertised host. Publisher trust and
+  publication remain separate from rehearsal or a developer test CA.
+- [ ] Keep Full SDK packaging/security/source/license review on its own path;
+  Full installation/profile support is not a prerequisite for the first CLI preview.
 
-Installation-time receipts, required/absent contract pin checks and explicit
-release-based repair are verified on Linux/macOS and bounded Windows/x64 paths; details
-live in [Linux acceptance](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-linuxx86_64-2026-11-05),
-[macOS replay](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-macosarm64-2026-11-05)
-and [HISTORY](HISTORY.md).
-
-- [x] Replay the bounded receipt/repair delta on Windows/x64 with the existing
-  identified SDK, including pin replacement, dead/live metadata writers and an
-  actual symlink receipt; [evidence](docs/acceptance/sdk_install_acceptance.md#installation-receipts-and-explicit-repair-windowsx64-2026-11-05).
-- [x] Windows/x64 concurrent-install native SIGSEGV: root-caused to the pinned
-  libunwind not restoring callee-saved XMM6-XMM15 on catch, fixed in the CRT
-  recipe, and replayed with a CLI self-built against the fixed SDK
-  ([record](docs/acceptance/sdk_install_acceptance.md#windowsx64-concurrent-install-sigsegv-fix-2026-11-06)). Windows/arm64 repeated the scenario 15 of 15 times without a crash.
-- [x] Replay the receipt/repair delta on Windows/arm64 using its existing
-  identified SDK ([installer/receipt driver 101/101](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsarm64-2026-11-06)).
-  Earlier Stage 2 evidence is not a replay of the new code.
-- [x] Replay the full-identity matcher fix and installed-SDK collision cases
-  on Windows/x64 ([68/68](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsx64-2026-11-06), including decoy executables and a documented working-directory DLL limitation) and Windows/arm64 ([68/68](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsarm64-2026-11-06)). The
-  [Linux selection slice passes](docs/acceptance/sdk_install_acceptance.md#installed-sdk-selection-and-search-path-collisions-linuxx86_64-2026-11-05);
-  [macOS replay passes](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-macosarm64-2026-11-06).
-  Preserve per-host SDK/tool pins and keep Windows concurrency closure separate.
-
-### D2 / basic D5 - First build and acquisition, in this order
-
-Installed-SDK first build now has a bounded
-[Linux implementation and acceptance](docs/acceptance/sdk_install_acceptance.md#first-build-without-configure-linuxx86_64-2026-11-06);
-completed details live in HISTORY.
-
-Explicit pinned HTTPS acquisition and installed-identity reuse also have
-[Linux evidence](docs/acceptance/sdk_install_acceptance.md#pinned-https-sdk-acquisition-linuxx86_64-2026-11-06);
-first build and acquisition currently support the native `dev` profile. General
-profiles, channels and registry resolution remain separate work.
-The [macOS selection/first-build/acquisition replay](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-macosarm64-2026-11-06)
-also passes, with a shared consumer correction for actual producer release envelopes.
-
-- [ ] Qualify one Linux preview candidate: CLI/resources/notices, an identified
-  SDK and portable contract, external-tool setup and the end-to-end user flow.
-  A developer pin/test key is not official publisher trust. General default
-  downloads require approved official trust inputs and actual producer promotion
-  before consumer adoption/publication.
-- [x] Replay the new workflow on Windows/x64 ([first build 86/86, pinned HTTPS 74/74](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsx64-2026-11-06))
-  and Windows/arm64 ([first build 86/86, pinned HTTPS 74/74](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsarm64-2026-11-06))
-  before claiming that feature there. Existing aarch64/Windows-arm64 evidence stays valid for
-  its recorded scope; extending new-feature support has its own replay queue.
-- [x] Replay the release-envelope correction with original producer assets on
-  Windows/x64 (rehearsal.8, same record) and Windows/arm64 (original rehearsal.7 manifest, [record](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsarm64-2026-11-06)); Linux/aarch64 if wanted remains. Linux/x86_64 passes
-  ([record](docs/acceptance/sdk_install_acceptance.md#release-envelope-correction-with-original-producer-assets-linuxx86_64-2026-11-06));
-  the earlier Linux fixture evidence is not relabeled as a run of the corrected candidate.
-
-### D3 - First source-built port, parallel with first-build/acquisition work
-
-The bounded implementation, separate port store, provider/lock proof and oracle comparison have
-[Linux evidence](docs/acceptance/sdk_install_acceptance.md#crtlock-port-pins-d3-linuxx86_64-2026-11-09) and
-[macOS replay](docs/acceptance/sdk_install_acceptance.md#source-port-d3-replay-macosarm64-2026-11-09).
-Completed details live in acceptance/HISTORY, not this checklist.
-
-- [ ] Obtain formal CRT approval of the digest-keyed adapter table and its macOS/Windows
-  layout, tool and binary-audit policies; keep `crt_review: pending` until adoption is recorded.
-- [ ] Replay affected common changes on Linux/macOS and qualify Windows/arm64 as needed;
-  the [Windows/x64 implementation](docs/acceptance/sdk_install_acceptance.md#source-port-d3-windowsx64-implementation-and-replay-2026-11-09) has its own native evidence.
+D4 may proceed against the frozen D3 contracts; it does not enlarge D3 or
+become a first-preview release gate. General updates/self-upgrade and Studio
+retain their later queues. Execution policy remains in
+[the design](docs/design/crt_cli.md#execution-priorities-adopted-2026-11-05).
 
 ## Planned
 
@@ -124,8 +70,11 @@ Completed details live in acceptance/HISTORY, not this checklist.
 
 ### D4 - Dependencies, Variants, Locks, and Local Cache
 
-- [ ] Add SQLite and libpng-to-zlib resolution, build keys, project views,
-  collision handling, and validated local-cache reuse.
+- [ ] Add a bounded `amalgamation` executor/adapter for sqlite-amalgamation;
+  the current D3 parser accepts only `configure`. Prove static/shared consumption.
+- [ ] Add libpng -> zlib dependency selection and transitive build keys, provider/
+  variant/lock/view/cache handling. Revisit the Windows oracle's `z.lib` layout
+  difference before dependent ports; preserve existing immutable items.
 - [ ] Replay ABI mismatch, rerun/recovery, and static/shared behavior on the
   initial three native host pairs.
 

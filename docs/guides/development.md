@@ -493,3 +493,78 @@ refused. A D3 follow-up may reuse the verified workspace but needs a fresh outpu
 The driver allows generated recipe executables under the test HOME's port jobs and copies
 its replay-host Python runtime into the workspace for the packaged oracle. This grants no
 Python dependency to the CLI. Keep the interpreter's original installation/ACLs unchanged.
+
+## D3 common-change closure and native handoff
+
+The 2026-11-09 closure baseline is CRT `21b9d0e` / CLI `2ae74d4` (resolve full
+commits in the acceptance input record). Documentation refresh does not approve
+the adapter or requalify the SDK. The user runs Linux here and macOS on a native
+macOS host. Keep `crt_review: pending` until producer review and both affected
+host deltas are recorded; Windows/x64's final native record remains the baseline
+unless a changed policy/product input affects it. Windows/arm64 D3 is separate.
+
+1. Reuse an identified public Dev SDK/provider and independent CRT host-tools
+   bundle outside original checkouts. Verify recipe/test/source digests, tools,
+   SDK and bundle inventories; preserve any dirty/unpromoted provenance.
+2. Use a fresh CLI export/output and actual native tool paths. Run the affected
+   recipe/build/store/project/command/oracle suites with input environment set;
+   their skipped environment-free pass is not D3 proof. Run native project
+   regression for common project changes, bare CLI/import checks and one actual
+   port-command publication/reuse cycle. Inspect static/shared provider and lock
+   evidence. The packaged Python driver runs only as a separately labeled oracle.
+3. Keep raw argv/stdout/stderr, source/CLI/SDK/provider/host-tools/archive hashes,
+   key/cache results and unchanged inventories. Do not relabel older failures,
+   rebuild unrelated GFX/Web or refresh root locks/defaults/binaries.
+
+For Linux, `tools/replay_port_linux.py` accepts the same identified source/SDK/
+provider/host-tools/archive/seed and explicit LLVM inputs, plus fresh output and
+work-parent paths outside hidden trees. It runs the six input-enabled D3 suites,
+native project regression, source-hidden probe, SDK-free/import checks and actual
+port publish/reuse/verify. `--allow-dirty-sdk` is an explicit developer-only opt-in
+when the retained SDK really is dirty; it is recorded, never treated as release
+qualification. Inputs/results and execve traces retain the separate oracle scope.
+No environment-gated skipped suite counts as a pass.
+
+For macOS, reuse `tools/replay_port_macos.py` on the same CLI product baseline:
+
+```text
+python3 tools/replay_port_macos.py --source /absolute/crt-cli --sdk-root /absolute/dev --contract /absolute/provider.json --contract-sha256 <sha256> --host-tools /absolute/host-tools --host-tools-sha256 <sha256> --archive /absolute/zlib-1.3.1.tar.gz --seed /absolute/native-crt-cli --output /absolute/fresh-evidence --work-parent /private/tmp --cc /absolute/clang --cxx /absolute/clang++ --linker /absolute/ld --ar /absolute/ar --hide /absolute/crt --cases port-recipe-test port-build-test port-store-test port-project-test port-command-test port-oracle-test native-test
+```
+
+Use real per-host paths/hashes, not Linux's binary/tool/provider pins. The SDK
+must contain the reviewed zlib recipe/test and oracle. The seed must understand
+the project's current manifest. Archiver/OS-SDK strings still require one shell
+word for the recipe's Makefile. Fresh output/workspace is preferred; continuation
+is allowed only through the driver's full input checks. If fixtures/product
+change, retain the failed input and identify exactly what the new run covers.
+
+After Linux results are recorded, the acceptance handoff records the exact
+portable product/test snapshot and any product changes that macOS must replay.
+A metadata-only review decision must leave adapter build keys unchanged; policy
+changes instead need new keys/items and affected-host evidence before adoption.
+
+Inspect the shared SDK-provider control's mapped image, not only its exit/count.
+The retained Linux developer provider can resolve the C shared SDK control to
+host `libz`; that historical diagnostic is not endorsed SDK shared support.
+Positive port-provider mapping and static SDK-provider evidence are separate.
+Record an unsupported mode/producer-policy follow-up rather than calling a host
+fallback a successful SDK binding. This boundary participates in final contract
+review even when the bounded D3 suite's own assertions pass.
+
+Linux closure is now [recorded](../acceptance/sdk_install_acceptance.md#linux-d3-common-change-replay-and-macos-handoff-2026-11-09)
+with the unchanged `2ae74d4` product/test baseline. Before native macOS replay,
+compare the normalized source fingerprint to
+`22720f7d9e223af06e41887ec0bed9ede55568ecdd6b9b5ef3499769893bee16`.
+From the CLI checkout, this host-only check uses the Linux driver's portable
+inventory helper (it does not run the Linux main function):
+
+```text
+python3 -c 'from pathlib import Path; import hashlib,json; from tools.replay_port_linux import source_inputs; print(hashlib.sha256(json.dumps(source_inputs(Path.cwd()),separators=(",",":")).encode()).hexdigest())'
+```
+
+Use a fresh macOS output/workspace with the seven `--cases` listed above. Return
+`inputs.json`, `result.json`, `commands.json`, source/CLI/provider/SDK/host-tools
+identities, mapped-image observations and all retained failures. Do not adopt
+Linux's dirty SDK/provenance or compiler policy merely to match its binary pin.
+The macOS artifact/code result and supported/excluded SDK modes remain distinct
+from final CRT approval and any preview/publication decision.
