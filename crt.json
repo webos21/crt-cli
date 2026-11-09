@@ -34,7 +34,8 @@
       "src/main/sdk_acquire.cpp",
       "src/main/port_recipe.cpp",
       "src/main/port_build.cpp",
-      "src/main/port_store.cpp"
+      "src/main/port_store.cpp",
+      "src/main/port_command.cpp"
     ],
     "sdk_consumer_option_sources": [
       "src/main/http.cpp"
@@ -170,6 +171,29 @@
         "src/main/core.cpp",
         "src/main/process.cpp",
         "src/main/environment.cpp"
+      ],
+      "sdk_libraries": [
+        "lzma",
+        "z",
+        "mbedcrypto"
+      ]
+    },
+    {
+      "name": "port-command-test",
+      "timeout_seconds": 1800,
+      "sources": [
+        "src/test/port_command_test.cpp",
+        "src/main/port_store.cpp",
+        "src/main/port_build.cpp",
+        "src/main/port_recipe.cpp",
+        "src/main/host_tools.cpp",
+        "src/main/sdk_store.cpp",
+        "src/main/toolchain.cpp",
+        "src/main/archive.cpp",
+        "src/main/core.cpp",
+        "src/main/process.cpp",
+        "src/main/environment.cpp",
+        "src/main/port_command.cpp"
       ],
       "sdk_libraries": [
         "lzma",

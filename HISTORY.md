@@ -9,6 +9,12 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-09
+
+### D3: `crt-cli port build|list|verify|recover`
+
+`port build <name> --archive <file> --host-tools <dir> --host-tools-sha256 <hex> [--project <dir>]` reads the selected SDK's own `porting/recipes/<name>.json` (accepted only through the reviewed adapter table), requires the archive to be the recipe's pinned source, computes the build key first and, if that item exists, re-verifies and reports it without building; otherwise it extracts the archive, runs the executor in `ports/work/<pid>-<tick>/`, publishes, removes the work directory and prints the key and the `ports` declaration to put in `crt.json` (`--json` carries it as `declaration`). A failed build keeps its job directory and names it. `list`, `verify <key>` and `recover` act on the store. `port-command-test` 33 checks, plus the real binary run twice (published, then already published). Experimental CLI-owned surface. Record: `docs/acceptance/sdk_install_acceptance.md`.
+
 ## 2026-11-08
 
 ### D3 step 6: oracle differential

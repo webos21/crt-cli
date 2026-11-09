@@ -1,6 +1,7 @@
 #include <crtcli/core.h>
 #include <crtcli/host_tools.h>
 #include <crtcli/sdk_store.h>
+#include <crtcli/port_store.h>
 #include <set>
 int main(int argc, char** argv) {
     using namespace crtcli;
@@ -11,7 +12,7 @@ int main(int argc, char** argv) {
             if (std::string(argv[i]) == "--json") { require(!json, "duplicate --json"); json = true; }
             else args.emplace_back(argv[i]);
         }
-        if (args.empty() || args == std::vector<std::string>{"--help"}) return print_reply({0, "help", {{"usage", "crt-cli [--json] --help|--version|doctor|shell|fetch|sdk|env|new|configure|build|test|run"}},
+        if (args.empty() || args == std::vector<std::string>{"--help"}) return print_reply({0, "help", {{"usage", "crt-cli [--json] --help|--version|doctor|shell|fetch|sdk|port|env|new|configure|build|test|run"}},
             "crt-cli [--json]\n"
             "  --help | --version\n"
             "  doctor [--scope self] [--resources <dir> --resources-sha256 <hex>] [--publisher-key <pem> --signature <file>]\n"
@@ -26,6 +27,8 @@ int main(int argc, char** argv) {
             "  sdk repair <sdk-directory> --archive <file> --release-manifest <file> --release-manifest-sha256 <hex> [--store <dir>]\n"
             "  sdk acquire --source <pinned-source.json> [--store <dir>]\n"
             "  sdk list|recover [--store <dir>]; sdk verify <sdk-directory> [--store <dir>]\n"
+            "  port build <name> --archive <file> --host-tools <dir> --host-tools-sha256 <hex> [--project <dir>] [--jobs <n>] [--timeout <seconds>]\n"
+            "  port list|recover; port verify <build-key> [--project <dir>]\n"
             "  new <dir> [--language c|cxx]\n"
             "  configure/build/test/run [--project <dir>]\n"
             "  First build: declare --cc <clang> --cxx <clang++> --linker <lld> --ar <llvm-ar> or local .sdk.json.\n"
@@ -38,6 +41,7 @@ int main(int argc, char** argv) {
         if (command == "shell") return print_reply(shell(args), json);
         if (command == "fetch") return print_reply(fetch(args), json);
         if (command == "sdk") return print_reply(sdk_command(args), json);
+        if (command == "port") return print_reply(port_command(args), json);
         if (command == "env") return print_reply(environment_report(args), json);
         if (!std::set<std::string>{"new", "configure", "build", "test", "run"}.count(command)) throw Error("unsupported command or arguments; use --help", 2);
         return print_reply(workflow(args), json);

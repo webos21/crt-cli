@@ -85,4 +85,7 @@ private:
     fs::path root_;
 };
 
+// `crt-cli port build|list|verify|recover` (experimental; see src/main/port_command.cpp).
+Reply port_command(const std::vector<std::string>& args);
+
 }  // namespace crtcli
