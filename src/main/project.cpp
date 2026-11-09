@@ -84,6 +84,7 @@ struct Builder {
     std::map<std::string, std::vector<PortUse>> target_ports;
     std::map<std::string, fs::path> port_items;      // build key -> verified item directory
     std::set<std::string> rpaths;                    // -Wl,-rpath for the shared port libraries of the target being linked
+    bool pinned = false;                             // crt.lock pins every provider-"port" dependency and the build matched them
     Json manifest, consumer_options, commands = Json::array(), artifacts = Json::object();
     size_t executed = 0, reused = 0;
     const Toolchain& toolchain;
@@ -177,6 +178,55 @@ struct Builder {
                 "port item " + use.build_key + " was built for another SDK than the one this project selects");
         require(inputs.at("target") == native_target(), "port item " + use.build_key + " was built for another target");
         return port_items.emplace(use.build_key, item).first->second;
+    }
+
+    // One entry per port that uses provider "port", in name order.
+    std::vector<PortUse> port_uses() const {
+        std::map<std::string, PortUse> distinct;
+        for (const auto& entry : target_ports)
+            for (const auto& use : entry.second) if (use.provider == "port") distinct.emplace(use.name, use);
+        std::vector<PortUse> result;
+        for (const auto& entry : distinct) result.push_back(entry.second);
+        return result;
+    }
+
+    // What `crt.lock` records for a port: the key, the SHA-256 of the item's manifest (which lists every file's hash, so the
+    // pin names the exact content, not only the inputs) and the SDK identity it was built for.
+    Json pin_of(const PortUse& use) {
+        auto directory = port_item(use);
+        return {{"name", use.name}, {"build_key", use.build_key}, {"manifest_sha256", file_sha256(directory / "manifest.json")},
+                {"sdk_content_sha256", toolchain.selection.at("sdk_content_sha256")}};
+    }
+
+    // Optional pins (experimental): a lock without `ports` keeps the earlier behavior; a lock with `ports` must match the
+    // project's provider-"port" dependencies exactly, and every item must still be the pinned one.
+    void check_pins() {
+        const auto lock = read_json(root / "crt.lock");
+        if (!lock.contains("ports")) return;
+        require(lock.at("ports").is_array(), "crt.lock 'ports' must be an array");
+        std::map<std::string, Json> pins;
+        for (const auto& pin : lock.at("ports")) {
+            require(pin.is_object() && pin.size() == 4, "a crt.lock port pin must be an object with name, build_key, manifest_sha256 and sdk_content_sha256");
+            for (const char* field : {"name", "build_key", "manifest_sha256", "sdk_content_sha256"})
+                require(pin.contains(field) && pin.at(field).is_string(), std::string("a crt.lock port pin needs a string '") + field + "'");
+            require(pins.emplace(pin.at("name").get<std::string>(), pin).second, "crt.lock pins port '" + pin.at("name").get<std::string>() + "' twice");
+        }
+        auto uses = port_uses();
+        std::set<std::string> declared;
+        for (const auto& use : uses) {
+            declared.insert(use.name);
+            auto found = pins.find(use.name);
+            require(found != pins.end(), "port '" + use.name + "' uses provider 'port' but crt.lock does not pin it; run `crt-cli port lock`");
+            const auto& pin = found->second;
+            require(pin.at("build_key") == use.build_key, "crt.lock pins port '" + use.name + "' to key " + pin.at("build_key").get<std::string>() +
+                    " but the project declares " + use.build_key);
+            auto current = pin_of(use);
+            require(current.at("sdk_content_sha256") == pin.at("sdk_content_sha256"), "crt.lock pins port '" + use.name + "' for another SDK than the selected one");
+            require(current.at("manifest_sha256") == pin.at("manifest_sha256"), "port item " + use.build_key + " differs from the crt.lock pin (manifest digest)");
+        }
+        for (const auto& pin : pins)
+            require(declared.count(pin.first), "crt.lock pins port '" + pin.first + "' that no target declares with provider 'port'");
+        pinned = true;
     }
 
     void add(const Json& target, bool test) {
@@ -369,6 +419,27 @@ Reply environment_report(const std::vector<std::string>& args) {
     return {0, "env", data, data.dump(2)};
 }
 
+Reply port_lock(const std::vector<std::string>& args) {
+    require(args.size() == 2 || (args.size() == 4 && args[2] == "--project"), "usage: port lock [--project <dir>]");
+    auto root = fs::canonical(args.size() == 4 ? fs::path(args[3]) : fs::current_path());
+    auto manifest = project(root);
+    binding_outputs(root);
+    auto toolchain = Toolchain::load(root);
+    match_request(manifest, toolchain);
+    Builder builder(root, inside(root, "out/native"), manifest, toolchain);
+    Json pins = Json::array();
+    for (const auto& use : builder.port_uses()) pins.push_back(builder.pin_of(use));
+    auto original = read_text(root / "crt.lock");
+    auto lock = Json::parse(original);
+    if (pins.empty()) lock.erase("ports"); else lock["ports"] = pins;
+    const auto pending = root / ("crt.lock.tmp-" + std::to_string(getpid()));
+    write_text(pending, lock.dump(2) + "\n");
+    if (read_text(root / "crt.lock") != original) { std::error_code ignored; fs::remove(pending, ignored); throw Error("crt.lock changed while pinning; run again"); }
+    fs::rename(pending, root / "crt.lock");
+    return {0, "port", {{"pins", pins}}, pins.empty() ? "no provider 'port' dependency; crt.lock carries no port pins"
+                                                      : "pinned " + std::to_string(pins.size()) + " port(s) in crt.lock"};
+}
+
 Reply workflow(const std::vector<std::string>& args) {
     require(!args.empty(), "missing workflow command");
     if (args[0] == "new") return create(args);
@@ -431,10 +502,24 @@ Reply workflow(const std::vector<std::string>& args) {
     if (args[0] == "configure") {
         binding_outputs(root);
         fs::create_directories(inside(root, ".crt"));
+        auto new_lock = binding_lock(toolchain);
+        Json data{{"selection", toolchain.selection}, {"promotion", "none"}};
+        // Port pins belong to one SDK identity: they survive a configure that selects the same SDK and are dropped, visibly,
+        // when it selects another (the items were built for the old one).
+        if (fs::exists(root / "crt.lock")) {
+            auto old_lock = read_json(root / "crt.lock");
+            if (old_lock.contains("ports") && old_lock.at("ports").is_array() && !old_lock.at("ports").empty()) {
+                bool same = true;
+                for (const auto& pin : old_lock.at("ports")) same = same && pin.value("sdk_content_sha256", "") == toolchain.selection.at("sdk_content_sha256");
+                if (same) { new_lock["ports"] = old_lock.at("ports"); data["port_pins"] = "kept"; }
+                else data["port_pins"] = "dropped: pinned for another SDK; run `crt-cli port lock` after rebuilding the ports";
+            }
+        }
         write_text(inside(root, ".crt/local.json"), toolchain.local.dump(2) + "\n");
-        write_text(inside(root, "crt.lock"), binding_lock(toolchain).dump(2) + "\n");
-        return {0, "configure", {{"selection", toolchain.selection}, {"promotion", "none"}}, "configured local SDK experiment"};
+        write_text(inside(root, "crt.lock"), new_lock.dump(2) + "\n");
+        return {0, "configure", data, "configured local SDK experiment"};
     }
+    builder.check_pins();
     auto build = builder.build;
     require(!fs::is_symlink(root / "out") && !fs::is_symlink(root / "out/native") && !fs::is_symlink(build / "generated") &&
             !fs::is_symlink(build / "generated/bootstrap_config.h") && !fs::is_symlink(build / "last-build.json"), "build outputs must not be symlinks");
@@ -475,7 +560,7 @@ Reply workflow(const std::vector<std::string>& args) {
             for (const auto& use : entry.second)
                 if (seen.insert(use.name).second) {
                     Json item{{"name", use.name}, {"provider", use.provider}};
-                    if (use.provider == "port") { item["build_key"] = use.build_key; if (builder.port_items.count(use.build_key)) item["path"] = builder.port_items.at(use.build_key).string(); }
+                    if (use.provider == "port") { item["build_key"] = use.build_key; item["pinned"] = builder.pinned; if (builder.port_items.count(use.build_key)) item["path"] = builder.port_items.at(use.build_key).string(); }
                     ports.push_back(item);
                 }
     }

@@ -88,4 +88,8 @@ private:
 // `crt-cli port build|list|verify|recover` (experimental; see src/main/port_command.cpp).
 Reply port_command(const std::vector<std::string>& args);
 
+// `crt-cli port lock [--project <dir>]`: records the key, manifest digest and SDK identity of every provider-"port"
+// dependency in the project's `crt.lock` (defined in project.cpp, which owns the manifest and the lock).
+Reply port_lock(const std::vector<std::string>& args);
+
 }  // namespace crtcli

@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
             "  sdk acquire --source <pinned-source.json> [--store <dir>]\n"
             "  sdk list|recover [--store <dir>]; sdk verify <sdk-directory> [--store <dir>]\n"
             "  port build <name> --archive <file> --host-tools <dir> --host-tools-sha256 <hex> [--project <dir>] [--jobs <n>] [--timeout <seconds>]\n"
-            "  port list|recover; port verify <build-key> [--project <dir>]\n"
+            "  port list|recover; port verify <build-key> [--project <dir>]; port lock [--project <dir>]\n"
             "  new <dir> [--language c|cxx]\n"
             "  configure/build/test/run [--project <dir>]\n"
             "  First build: declare --cc <clang> --cxx <clang++> --linker <lld> --ar <llvm-ar> or local .sdk.json.\n"
@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
         if (command == "shell") return print_reply(shell(args), json);
         if (command == "fetch") return print_reply(fetch(args), json);
         if (command == "sdk") return print_reply(sdk_command(args), json);
-        if (command == "port") return print_reply(port_command(args), json);
+        if (command == "port") return print_reply(args.size() > 1 && args[1] == "lock" ? port_lock(args) : port_command(args), json);
         if (command == "env") return print_reply(environment_report(args), json);
         if (!std::set<std::string>{"new", "configure", "build", "test", "run"}.count(command)) throw Error("unsupported command or arguments; use --help", 2);
         return print_reply(workflow(args), json);

@@ -11,6 +11,10 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-09
 
+### D3: `crt.lock` port pins
+
+`crt-cli port lock [--project]` writes `ports: [{name, build_key, manifest_sha256, sdk_content_sha256}]` into `crt.lock` for every provider-`port` dependency (re-verifying each item first; removes the list when there are none). A lock with `ports` is enforced at every `build`/`test`/`run`: the declared set must equal the pinned set, keys must match, the item's `manifest.json` digest (which lists every file hash) must be the pinned one and the SDK identity must be the selected one; a lock without `ports` keeps the earlier behavior and the receipt says `pinned: false`. `configure` keeps pins for the same SDK and drops them, visibly (`port_pins`), for another. A consistently rewritten item manifest passes the store's own verification but is refused by the pin. `port-project-test` 81 checks (30 new). Experimental CLI-owned field of lock format 1. Record: `docs/acceptance/sdk_install_acceptance.md`.
+
 ### D3: `crt-cli port build|list|verify|recover`
 
 `port build <name> --archive <file> --host-tools <dir> --host-tools-sha256 <hex> [--project <dir>]` reads the selected SDK's own `porting/recipes/<name>.json` (accepted only through the reviewed adapter table), requires the archive to be the recipe's pinned source, computes the build key first and, if that item exists, re-verifies and reports it without building; otherwise it extracts the archive, runs the executor in `ports/work/<pid>-<tick>/`, publishes, removes the work directory and prints the key and the `ports` declaration to put in `crt.json` (`--json` carries it as `declaration`). A failed build keeps its job directory and names it. `list`, `verify <key>` and `recover` act on the store. `port-command-test` 33 checks, plus the real binary run twice (published, then already published). Experimental CLI-owned surface. Record: `docs/acceptance/sdk_install_acceptance.md`.

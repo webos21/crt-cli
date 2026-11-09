@@ -265,6 +265,92 @@ int main() {
         check(store.verify(key, toolchain.sdk) > 0, "the restored item verifies");
     }
 
+    // ---- crt.lock pins -----------------------------------------------------------------------------------------------------
+    {
+        auto pinned = make_project(scratch, "pinned", bound, toolchain.sdk, port_targets, roundtrip);
+        auto lock_path = pinned / "crt.lock";
+        auto lock_text = [&] { return read_text(lock_path); };
+        auto run_lock = [&](const fs::path& p) { return port_lock(std::vector<std::string>{"port", "lock", "--project", p.string()}); };
+        auto first = workflow_in(pinned, "build");
+        check(first.at("ports")[0].at("pinned") == false, "without pins the receipt says the port is not pinned");
+        check(!read_json(lock_path).contains("ports"), "...and the lock carries no pins");
+
+        auto locked = run_lock(pinned);
+        check(locked.code == 0 && locked.data.at("pins").size() == 1, "port lock pins the one provider-'port' dependency");
+        auto pin = read_json(lock_path).at("ports")[0];
+        check(pin.at("name") == "zlib" && pin.at("build_key") == key && pin.at("manifest_sha256") == file_sha256(item / "manifest.json") &&
+              pin.at("sdk_content_sha256") == toolchain.selection.at("sdk_content_sha256"), "the pin names the key, the manifest digest and the SDK identity");
+        check(read_json(lock_path).at("selection") == toolchain.selection, "the SDK selection in the lock is untouched");
+        auto again = workflow_in(pinned, "build");
+        check(again.at("ports")[0].at("pinned") == true && again.at("cache").at("executed") == 0, "a pinned build is accepted and reuses its outputs");
+        auto before = lock_text();
+        check(run_lock(pinned).code == 0 && lock_text() == before, "locking again is idempotent");
+
+        // The configure that keeps the same SDK keeps the pins; one that selects another drops them and says so.
+        auto configured = workflow_in(pinned, "configure");
+        check(configured.at("port_pins") == "kept" && read_json(lock_path).contains("ports"), "configure keeps pins for the same SDK");
+        check(lock_text() == before, "...and rewrites the lock byte-identically");
+
+        auto refused_build = [&](const std::string& expected, const std::string& why) {
+            auto message = error_of([&] { workflow({"build", "--project", pinned.string()}); });
+            check(message.find(expected) != std::string::npos, why + " (got: " + message + ")");
+        };
+        auto edit = [&](const std::function<void(Json&)>& change) { auto lock = read_json(lock_path); change(lock); write_text(lock_path, lock.dump(2) + "\n"); };
+        edit([](Json& lock) { lock["ports"][0]["manifest_sha256"] = std::string(64, '0'); });
+        refused_build("differs from the crt.lock pin", "a changed manifest digest is refused");
+        write_text(lock_path, before);
+        edit([](Json& lock) { lock["ports"][0]["build_key"] = std::string(64, 'c'); });
+        refused_build("crt.lock pins port 'zlib' to key", "a pin for another key is refused");
+        write_text(lock_path, before);
+        edit([](Json& lock) { lock["ports"][0]["sdk_content_sha256"] = std::string(64, 'd'); });
+        refused_build("for another SDK", "a pin for another SDK is refused");
+        write_text(lock_path, before);
+        edit([](Json& lock) { lock["ports"] = Json::array(); });
+        refused_build("does not pin it", "an empty pin list does not silently unpin");
+        write_text(lock_path, before);
+        edit([](Json& lock) { auto extra = lock["ports"][0]; extra["name"] = "other"; lock["ports"].push_back(extra); });
+        refused_build("no target declares", "a pin for an undeclared port is refused");
+        write_text(lock_path, before);
+        edit([](Json& lock) { lock["ports"].push_back(lock["ports"][0]); });
+        refused_build("twice", "a duplicated pin is refused");
+        write_text(lock_path, before);
+        edit([](Json& lock) { lock["ports"][0]["extra"] = 1; });
+        refused_build("must be an object with name", "an unknown pin field is refused");
+        write_text(lock_path, before);
+        edit([](Json& lock) { lock["ports"] = "zlib"; });
+        refused_build("must be an array", "a malformed pin list is refused");
+        write_text(lock_path, before);
+
+        // A consistently rewritten item (same key, different bytes) passes the item's own verification but not the pin.
+        {
+            auto manifest_path = item / "manifest.json";
+            auto original = read_text(manifest_path);
+            auto manifest = Json::parse(original);
+            manifest["note"] = "rewritten";
+            write_text(manifest_path, manifest.dump(2) + "\n");
+            refused_build("differs from the crt.lock pin", "a rewritten item manifest is caught by the pin, not only by verify");
+            write_text(manifest_path, original);
+        }
+        check(workflow_in(pinned, "build").at("ports")[0].at("pinned") == true, "the restored pin is accepted again");
+
+        // Pins follow the SDK identity: a lock whose pins name another SDK is dropped by configure, visibly.
+        edit([](Json& lock) { lock["ports"][0]["sdk_content_sha256"] = std::string(64, 'e'); });
+        auto dropped = workflow_in(pinned, "configure");
+        check(dropped.at("port_pins").get<std::string>().rfind("dropped", 0) == 0 && !read_json(lock_path).contains("ports"), "configure drops pins for another SDK and says so");
+
+        // A project with no provider-'port' dependency has nothing to pin and an existing pin list is removed.
+        edit([&](Json& lock) { lock["ports"] = Json::array({pin}); });
+        auto sdk_only = make_project(scratch, "pin-sdk-only", bound, toolchain.sdk,
+            "{\"name\":\"sdk-only\",\"sources\":[\"src/zlib_roundtrip.c\"],\"ports\":[{\"name\":\"zlib\",\"provider\":\"sdk\"}],\"sdk_libraries\":[\"z\"]}", roundtrip);
+        edit([&](Json& lock) { (void)lock; });
+        write_text(sdk_only / "crt.lock", [&] { auto l = read_json(sdk_only / "crt.lock"); l["ports"] = Json::array({pin}); return l.dump(2) + "\n"; }());
+        auto message = error_of([&] { workflow({"build", "--project", sdk_only.string()}); });
+        check(message.find("no target declares") != std::string::npos, "a pin in a project that uses the SDK's zlib is refused (" + message + ")");
+        check(run_lock(sdk_only).data.at("pins").empty() && !read_json(sdk_only / "crt.lock").contains("ports"), "port lock removes pins the project no longer declares");
+        check(workflow_in(sdk_only, "build").at("ports")[0].at("provider") == "sdk", "...and the project builds again");
+        check(!error_of([&] { port_lock(std::vector<std::string>{"port", "lock", "--bogus"}); }).empty(), "port lock refuses unknown arguments");
+    }
+
     check(read_identity(toolchain.sdk).content_sha256 == sdk_before, "the SDK is byte-identical after the whole run");
     std::error_code ignored;
     if (!std::getenv("KEEP")) fs::remove_all(scratch, ignored);

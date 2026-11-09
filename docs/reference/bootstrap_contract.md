@@ -185,6 +185,10 @@ unless `--allow-dirty-sdk true` is explicitly selected; that choice and the true
 dirty provenance are locked. It is an unpromoted local experiment, never a clean
 release claim. The repository lock remains unresolved.
 
+Experimental, CLI-owned: `crt-cli port lock` may add `ports` (name, build key, manifest digest, SDK content identity) to a
+local-experiment lock to pin the project's source-built ports; a lock with `ports` is enforced at every build and `configure`
+keeps it only for the same SDK. See the [pin record](../acceptance/sdk_install_acceptance.md#crtlock-port-pins-d3-linuxx86_64-2026-11-09).
+
 ### Explicit pinned HTTPS SDK source (experimental format 0)
 
 The CLI owns `crt-cli.sdk-source`, format 0. It is a caller-trusted acquisition
