@@ -31,12 +31,19 @@ using declared LLVM paths, then use plain build/test/run. This increment has
 [Linux/x86_64 evidence](docs/acceptance/sdk_install_acceptance.md#first-build-without-configure-linuxx86_64-2026-11-06)
 and [macOS/arm64 replay](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-macosarm64-2026-11-06);
 Windows replay remains separate. General cxx/upper-stage profile
-selection, source-port/dependency management and self-upgrade remain planned.
+selection, multi-port dependency management and self-upgrade remain planned.
 [Explicit pinned HTTPS SDK acquisition](docs/reference/bootstrap_contract.md#explicit-pinned-https-sdk-source-experimental-format-0)
 is implemented with Linux and macOS replay evidence: `sdk acquire --source <file>` or first
 `build --sdk-source <file>` verifies a caller-pinned source and reuses an exact
 installed identity. `fetch` also supports explicit-key RSA-PSS verification.
 Official default-download trust, channels and publisher promotion remain pending.
+
+The experimental D3 source-port path implements `port build|list|verify|recover|lock` for the pinned zlib recipe on Linux
+and macOS. It builds both static/shared forms through explicitly selected CRT host tools into a separate port store,
+never into the SDK. Projects choose provider `sdk` or `port`; optional lock pins bind the latter's exact manifest.
+See the [adapter policy](docs/design/source_port_adapter.md) and
+[native replay evidence](docs/acceptance/sdk_install_acceptance.md#source-port-d3-replay-macosarm64-2026-11-09).
+Other recipes, general dependency resolution and the Windows native port gate remain separate work.
 
 ## Try the Local Workflow
 
@@ -86,8 +93,8 @@ also exercises this workflow. Windows needs its affected-feature replay.
 
 [The active plan](TODO.md) retains the remaining native store/collision gates
 and qualifies a Linux preview beyond the implemented first-build/acquisition
-workflow. The zlib source-port adapter can proceed in
-parallel against fixed contracts. Full-stage metadata, general updates,
+workflow. The bounded zlib source-port adapter is implemented; formal producer review and remaining-host gates stay
+in the active plan. Full-stage metadata, general updates,
 self-upgrade, multi-port resolution and Studio are later increments. A preview
 candidate is qualified for its declared hosts before wider support is claimed.
 

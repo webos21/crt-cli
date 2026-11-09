@@ -38,6 +38,13 @@ int main() {
     // ---- the reviewed recipe ---------------------------------------------------------------------------------------
     check(sha256(bytes) == port_adapter_for(sha256(bytes)).recipe_sha256, "fixture digest is in the reviewed table");
     check(port_adapters().size() == 1 && port_adapters()[0].crt_review == "pending", "adapter table is the seeded zlib entry, CRT review pending");
+    const auto& adapter = port_adapters()[0];
+    check(port_layout(adapter, "linux").shared_library == "lib/libz.so", "the Linux layout is unchanged");
+    check(port_layout(adapter, "macos").shared_library == "lib/libz.dylib" &&
+          port_layout(adapter, "macos").expected_names == std::vector<std::string>{"@rpath/libz.1.dylib"}, "the macOS layout declares its dylib and install name");
+    check(port_executor_env(adapter, "linux").empty() && port_executor_make_args(adapter, "linux").empty(), "Linux has no added executor policy");
+    check(port_executor_env(adapter, "macos").size() == 1 &&
+          port_executor_make_args(adapter, "macos") == std::vector<std::string>{"AR=@AR@", "ARFLAGS=rc"}, "macOS declares the install-name and archiver policies");
     auto linux_recipe = parse_port_recipe(bytes, "linux");
     check(linux_recipe.name == "zlib" && linux_recipe.version == "1.3.1" && linux_recipe.target_os == "linux", "identity");
     check(linux_recipe.source.sha256 == "9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23" && linux_recipe.source.archive == "zlib-1.3.1.tar.gz"

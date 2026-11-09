@@ -1,7 +1,7 @@
 #pragma once
 // D3 step 4: the binary audit of a finished port build, the build key, and the port store (`ports/store/<build-key>/`).
-// See docs/design/source_port_adapter.md D3-7/D3-8 and docs/design/crt_cli.md §5. Linux ELF only for now; a prefix that
-// holds a binary this module cannot read is refused, never skipped.
+// See docs/design/source_port_adapter.md D3-7/D3-8 and docs/design/crt_cli.md §5. Linux ELF and macOS Mach-O only for now;
+// a prefix that holds a binary this module cannot read is refused, never skipped.
 //
 // A store item is published only after the recipe tests passed and the audit found nothing; it is created in private
 // staging on the store's file system and appears with one directory rename. Failed builds never become items.
@@ -22,6 +22,19 @@ struct ElfDynamic {
 // (not 64-bit little-endian, truncated tables, strings outside the string table, ...): the audit fails closed.
 std::optional<ElfDynamic> read_elf_dynamic(const fs::path& file);
 
+// ---- Mach-O reader ----------------------------------------------------------------------------------------------------
+// The install-relevant load commands of a 64-bit little-endian Mach-O image. A fat/universal file, a 32-bit or big-endian
+// image, or any table this reader cannot account for is an error, never a skip.
+struct MachoImage {
+    std::string kind;                         // "shared" (MH_DYLIB), "executable" or "relocatable"
+    unsigned cpu_type = 0;                    // CPU_TYPE_ARM64 0x0100000c, CPU_TYPE_X86_64 0x01000007
+    std::string install_name;                 // LC_ID_DYLIB (empty for anything but a dylib)
+    std::vector<std::string> needed;          // LC_LOAD_DYLIB, LC_LOAD_WEAK_DYLIB, LC_REEXPORT_DYLIB, LC_LOAD_UPWARD_DYLIB
+    std::vector<std::string> rpaths;          // LC_RPATH
+};
+// nullopt when the file does not start with a Mach-O magic. Throws Error for an image this reader cannot account for.
+std::optional<MachoImage> read_macho_image(const fs::path& file);
+
 // ---- audit ------------------------------------------------------------------------------------------------------------
 struct PortAuditFinding {
     std::string path, rule, detail;
@@ -35,6 +48,7 @@ struct PortAuditRequest {
     std::vector<std::string> forbidden;       // strings that must not occur in any file (build-job paths)
     std::vector<std::string> skip_top_level;  // top-level names that are not part of the install ("evidence", "manifest.json")
     std::string target_arch;                  // "x86_64" or "aarch64"
+    std::string target_os = "linux";          // "linux" (ELF) or "macos" (Mach-O): picks the adapter layout and the binary format
 };
 struct PortAudit {
     std::vector<PortAuditFinding> findings;

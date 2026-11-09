@@ -1,7 +1,7 @@
 # D3 Design: Native Source-port Recipe Adapter (zlib first)
 
-Status: **design record, adopted for implementation planning 2026-11-06. Nothing described here is implemented.**
-No command, store layout or manifest below is a current CLI contract until the matching
+Status: **bounded design adopted 2026-11-06; Linux implementation and macOS replay records now exist.**
+The original scope and proposed extensions below are not all implemented. A command, store layout or manifest is a current CLI contract only where the matching
 [acceptance](../acceptance/sdk_install_acceptance.md) record exists. The architecture, build-key rule and
 non-negotiable constraints stay owned by [the CLI design](crt_cli.md#5-source-first-port-recipe-engine); this
 document only fixes what the *first slice* means, so that producer and consumer can build it in parallel. The
@@ -194,3 +194,31 @@ host-tools bundle and the SDK (virtual shell paths versus native LLVM paths are 
 (and refused unless the slice is run on Windows) rather than silently dropped. The Developer-Mode symlink requirement
 for zlib's `libz.so` link, spaces and Korean characters in paths, and the Windows mksh/make behaviors documented in
 `zlib.json` are the 4.2 gate's own tests.
+
+## 8. macOS adapter policy (2026-11-09)
+
+The same pinned zlib recipe and source are used; upstream files and SDK bytes are not patched. The compiled-in adapter
+selects an OS-specific `port_layout`: macOS installs `libz.a`, `libz.dylib`, `libz.1.dylib` and `libz.1.3.1.dylib`.
+The executor adds `LDSHARED=@CC@ -dynamiclib -install_name @rpath/libz.1.dylib -compatibility_version 1 -current_version 1.3.1`
+and make command-line `AR=<declared archiver> ARFLAGS=rc`. These are explicit policy inputs to the macOS build key:
+zlib's Darwin configure otherwise forces the host's `/usr/bin/libtool` and an absolute temporary install name.
+The configured archiver's sibling `ranlib` is required and hashed. Apple `ar`/`ranlib`, as well as LLVM names, are accepted;
+this does not grant an implicit `/usr/bin` fallback. Whitespace/metacharacters in archiver and OS SDK paths remain refused.
+
+`SDKROOT` is the explicitly configured OS SDK (or the existing explicit provider's `external_os_sdk`), not an inherited
+environment value. Its `SDKSettings.json` hash is an additional macOS key input; this identifies metadata, not every byte
+of the vendor SDK. The location itself is not part of the key. Linux's adapter serialization and environment/key shape stay
+unchanged. No shared recipe schema, SDK profile or project-lock version changes.
+
+The audit reads thin 64-bit little-endian Mach-O load commands: CPU type, install name/alias, dylib dependencies and
+`LC_RPATH`. Fat/32-bit/big-endian/malformed images, foreign ELF images, outside-item/SDK search paths, job-path leaks and
+undeclared dylib dependencies are refused. The OS boundary is `/usr/lib/libSystem.B.dylib`; SDK/item dependencies are
+relative names. This is an install-level bounded audit, not a general dyld resolver, code-signature verifier or exported-symbol audit.
+The project consumer selects the OS layout; actual mapped images are observed through the existing public
+`crt_dl_iterate_images` PAL, not Darwin APIs in CLI product code.
+
+The oracle deliberately differs in two ways: its install name is its temporary prefix, and its `LC_RPATH` has an extra
+`@loader_path` because the oracle sets `CRT_PORT_RPATH_DIR` during every link. The native executor leaves that variable
+empty during build and sets it only for unpublished test executables. Static archive container metadata can differ
+between `libtool` and `ar`/`ranlib`; member names and object bytes must still agree. Native replay and its limitations
+belong to [acceptance](../acceptance/sdk_install_acceptance.md#source-port-d3-replay-macosarm64-2026-11-09).

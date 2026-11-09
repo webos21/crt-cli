@@ -11,6 +11,18 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-09
 
+### D3 macOS adapter and native source-port replay
+
+Added OS layouts, a relocatable zlib dylib install name, declared ar/ranlib overrides and explicit OS SDK delivery;
+Mach-O load-command audit and the macOS SDK-settings build-key input; project port-library selection by OS. Linux key
+serialization is preserved. Native macOS source builds run through pinned CRT host tools into a separate store; both
+C/C++ linkage modes, actual provider mapping, lock pins and the packaged oracle are exercised with original trees hidden.
+The oracle keeps exact 15/15 static-object comparison; the documented install-name/RPATH differences are asserted.
+Nine suites pass (including 921 full-native checks); provider maps pass 2/2 and binding audit passes on nine images.
+The replay tool retains failures and supports input-checked test-only continuation. SDKs, upstream files, recipe bytes,
+root lock, committed executables and STATUS are untouched. Exact inputs, per-suite counts, launcher/Seatbelt corrections
+and remaining-host/formal-review limits: [acceptance](docs/acceptance/sdk_install_acceptance.md#source-port-d3-replay-macosarm64-2026-11-09).
+
 ### D3: `crt.lock` port pins
 
 `crt-cli port lock [--project]` writes `ports: [{name, build_key, manifest_sha256, sdk_content_sha256}]` into `crt.lock` for every provider-`port` dependency (re-verifying each item first; removes the list when there are none). A lock with `ports` is enforced at every `build`/`test`/`run`: the declared set must equal the pinned set, keys must match, the item's `manifest.json` digest (which lists every file hash) must be the pinned one and the SDK identity must be the selected one; a lock without `ports` keeps the earlier behavior and the receipt says `pinned: false`. `configure` keeps pins for the same SDK and drops them, visibly (`port_pins`), for another. A consistently rewritten item manifest passes the store's own verification but is refused by the pin. `port-project-test` 81 checks (30 new). Experimental CLI-owned field of lock format 1. Record: `docs/acceptance/sdk_install_acceptance.md`.

@@ -28,7 +28,9 @@ int main() {
     }
     std::string here = __FILE__;
     auto bytes = read_text(fs::path(here).parent_path() / "data" / "zlib.recipe.json");
-    auto recipe = parse_port_recipe(bytes, "linux");
+    const std::string host_os = native_target().at("os").get<std::string>();
+    const bool darwin = host_os == "macos";
+    auto recipe = parse_port_recipe(bytes, host_os);
     check(file_sha256(archive) == recipe.source.sha256, "the supplied archive is the recipe's pinned source");
 
     const char* temporary = std::getenv("TMPDIR") ? std::getenv("TMPDIR") : "/tmp";
@@ -81,22 +83,42 @@ int main() {
     check(record.at("patches").size() == 1 && record.at("patches")[0].at("replacements") == 1, "the generated Makefile prefix was patched once");
     for (const auto& step : record.at("steps")) check(step.at("exit_code") == 0 && !step.at("timed_out"), "step ok: " + step.at("name").get<std::string>());
     check(record.at("tests").size() == 2 && record.at("tests")[0].at("passed") == true && record.at("tests")[1].at("passed") == true, "both recipe tests passed");
-    for (const char* relative : {"include/zlib.h", "include/zconf.h", "lib/libz.a", "lib/libz.so", "lib/libz.so.1", "lib/libz.so.1.3.1", "lib/pkgconfig/zlib.pc"})
-        check(fs::exists(result.prefix / relative), std::string("installed: ") + relative);
-    check(fs::is_symlink(result.prefix / "lib/libz.so") && fs::is_symlink(result.prefix / "lib/libz.so.1"), "shared aliases are symlinks");
+    const std::vector<std::string> installed = darwin
+        ? std::vector<std::string>{"include/zlib.h", "include/zconf.h", "lib/libz.a", "lib/libz.dylib", "lib/libz.1.dylib", "lib/libz.1.3.1.dylib", "lib/pkgconfig/zlib.pc"}
+        : std::vector<std::string>{"include/zlib.h", "include/zconf.h", "lib/libz.a", "lib/libz.so", "lib/libz.so.1", "lib/libz.so.1.3.1", "lib/pkgconfig/zlib.pc"};
+    for (const auto& relative : installed) check(fs::exists(result.prefix / relative), "installed: " + relative);
+    check(fs::is_symlink(result.prefix / (darwin ? "lib/libz.dylib" : "lib/libz.so")) && fs::is_symlink(result.prefix / (darwin ? "lib/libz.1.dylib" : "lib/libz.so.1")), "shared aliases are symlinks");
     check(result.prefix.string().find(' ') != std::string::npos, "the install prefix contains a space");
     check(read_text(result.prefix / "lib/pkgconfig/zlib.pc").find("prefix=" + result.prefix.string()) != std::string::npos, "the pkg-config file records the real prefix");
 
     const auto& environment = record.at("environment");
-    check(environment.at("CFLAGS") == "-O2 -O2 -fPIC", "CFLAGS follow the oracle's append semantics");
+    check(environment.at("CFLAGS") == (darwin ? "-O2" : "-O2 -O2 -fPIC"), "CFLAGS follow the oracle's append semantics");
     check(environment.at("CC").get<std::string>().rfind("/system/bin/sh /crt-bin/crt-cc", 0) == 0, "CC is the job wrapper started through the bundle shell");
     check(environment.at("PATH") == (tools.root / "system/bin").string(), "PATH holds only the host-tools directory");
-    check(environment.at("LDSHARED").get<std::string>().find("-Wl,-soname,libz.so.1") != std::string::npos, "LDSHARED comes from the recipe override");
-    check(!environment.contains("LD_LIBRARY_PATH"), "the build environment has no loader search path");
+    if (darwin) {
+        // zlib's Darwin configure names the shared object by its install directory; the adapter's executor policy replaces that.
+        check(environment.at("LDSHARED").get<std::string>().find("-install_name @rpath/libz.1.dylib") != std::string::npos, "LDSHARED carries the relocatable install name");
+        check(environment.at("AR") == toolchain.archiver.string() && environment.at("RANLIB") == port_ranlib_for(toolchain.archiver).string(), "AR and RANLIB are the declared archiver and its ranlib");
+    } else {
+        check(environment.at("LDSHARED").get<std::string>().find("-Wl,-soname,libz.so.1") != std::string::npos, "LDSHARED comes from the recipe override");
+    }
+    check(!environment.contains("LD_LIBRARY_PATH") && !environment.contains("DYLD_LIBRARY_PATH"), "the build environment has no loader search path");
 
-    // The produced shared object must be the one that was just linked, not the host's: it carries the recipe's SONAME.
-    auto so = read_text(result.prefix / "lib/libz.so.1.3.1");
-    check(so.find("libz.so.1") != std::string::npos, "the shared object names its SONAME");
+    if (darwin) {
+        // The oracle runs the host's libtool here (zlib's Darwin configure forces it); the native executor must not.
+        std::string make_log;
+        for (const auto& step : record.at("steps")) if (step.at("name") == "make") make_log = read_text(result.logs / step.at("log").get<std::string>());
+        check(!make_log.empty() && make_log.find("libtool") == std::string::npos, "the make step never ran libtool");
+        check(make_log.find(toolchain.archiver.string() + " rc libz.a") != std::string::npos, "libz.a was archived by the declared archiver");
+        std::string make_argv;
+        for (const auto& step : record.at("steps")) if (step.at("name") == "make") for (const auto& arg : step.at("argv")) make_argv += arg.get<std::string>() + "\n";
+        check(make_argv.find("AR=" + toolchain.archiver.string() + "\n") != std::string::npos && make_argv.find("ARFLAGS=rc\n") != std::string::npos, "the make command line carries the AR override");
+    }
+
+    // The produced shared object must be the one that was just linked, not the host's: it carries the recipe's SONAME / install name.
+    auto so = read_text(result.prefix / (darwin ? "lib/libz.1.3.1.dylib" : "lib/libz.so.1.3.1"));
+    check(so.find(darwin ? "@rpath/libz.1.dylib" : "libz.so.1") != std::string::npos, "the shared object names its SONAME / install name");
+    if (darwin) check(so.find(result.prefix.string()) == std::string::npos, "the shared object records no job path");
 
     // An untouched pristine tree: the build ran on a copy.
     check(!fs::exists(pristine / recipe.source.source_dir / "configure.log") && !fs::exists(pristine / recipe.source.source_dir / "libz.a"), "the pristine source tree was not configured or built in place");

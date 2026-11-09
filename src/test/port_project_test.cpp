@@ -35,6 +35,27 @@ int main(void) {
 }
 )";
 
+// The same question through the PAL's format-neutral image enumeration (macOS has no /proc/self/maps).
+const char* kImagesSource = R"(#include <crt/dl.h>
+#include <stdio.h>
+#include <string.h>
+#include <zlib.h>
+static int report(const struct crt_dl_image* image, size_t size, void* data) {
+  (void)size; (void)data;
+  if (image->path && strstr(image->path, "libz")) printf("maps: %s\n", image->path);
+  return 0;
+}
+int main(void) {
+  unsigned char in[4096], out[8192];
+  uLongf n = sizeof(out);
+  memset(in, 'a', sizeof(in));
+  if (compress2(out, &n, in, sizeof(in), 6) != Z_OK) return 1;
+  if (crt_dl_iterate_images(report, 0) != 0) return 2;
+  printf("zlib_maps: ok version=%s\n", zlibVersion());
+  return 0;
+}
+)";
+
 const char* kCxxSource = R"(#include <zlib.h>
 #include <cstdio>
 #include <string>
@@ -75,7 +96,7 @@ fs::path make_project(const fs::path& scratch, const std::string& name, const fs
     fs::copy_file(bound / ".crt/local.json", project / ".crt/local.json");
     write_text(project / "crt.json", manifest_with(targets));
     fs::copy_file(roundtrip, project / "src/zlib_roundtrip.c");
-    write_text(project / "src/zlib_maps.c", kMapsSource);
+    write_text(project / "src/zlib_maps.c", native_target().at("os") == "macos" ? kImagesSource : kMapsSource);
     write_text(project / "src/zlib_cxx.cpp", kCxxSource);
     (void)sdk;
     return project;
@@ -107,7 +128,9 @@ int main() {
         return 0;
     }
     std::string here = __FILE__;
-    auto recipe = parse_port_recipe(read_text(fs::path(here).parent_path() / "data" / "zlib.recipe.json"), "linux");
+    const std::string host_os = native_target().at("os").get<std::string>();
+    const bool darwin = host_os == "macos";
+    auto recipe = parse_port_recipe(read_text(fs::path(here).parent_path() / "data" / "zlib.recipe.json"), host_os);
     const char* temporary = std::getenv("TMPDIR") ? std::getenv("TMPDIR") : "/tmp";
     std::string pattern = std::string(temporary) + "/crt-port-project-XXXXXX";
     std::vector<char> buffer(pattern.begin(), pattern.end());
@@ -157,7 +180,8 @@ int main() {
         "{\"name\":\"static-cxx\",\"sources\":[\"src/zlib_cxx.cpp\"]," + port_entry() + "}";
     auto project = make_project(scratch, "port-project", bound, toolchain.sdk, port_targets, roundtrip);
     auto receipt = workflow_in(project, "build");
-    const auto out = project / "out/native";
+    // The CLI canonicalizes the project root (macOS: /var -> /private/var); the receipt's paths follow it.
+    const auto out = fs::canonical(project) / "out/native";
     check(receipt.at("ports").size() == 1 && receipt.at("ports")[0].at("provider") == "port" && receipt.at("ports")[0].at("build_key") == key &&
           receipt.at("ports")[0].at("path") == item.string(), "the build receipt records the provider, key and item");
 
@@ -173,7 +197,7 @@ int main() {
         auto command = link_command_for(receipt, (out / "static-roundtrip").string(), (scratch / "static-roundtrip.relinked").string());
         check(!command.empty(), "the static link command is in the receipt");
         auto map = scratch / "static.map";
-        command.push_back("-Wl,-Map=" + map.string());
+        command.push_back((darwin ? "-Wl,-map," : "-Wl,-Map=") + map.string());
         auto result = execute(command, 120, false, true);
         check(result.exit_code == 0, "the static consumer relinks with a linker map (" + result.output + ")");
         auto text = read_text(map);
@@ -192,7 +216,10 @@ int main() {
     {
         auto text = run_output(out / "shared-maps", toolchain.sdk);
         check(text.find("zlib_maps: ok") != std::string::npos, "the shared consumer runs");
-        check(text.find((item / "lib/libz.so.1.3.1").string()) != std::string::npos, "the loader mapped the item's libz.so.1 (" + text + ")");
+        // dyld reports the real path of the image it opened; the item may be reached through a symlinked temporary directory.
+        const auto mapped = darwin ? fs::canonical(item) / "lib/libz.1.3.1.dylib" : item / "lib/libz.so.1.3.1";
+        check(text.find(mapped.string()) != std::string::npos || (darwin && text.find((fs::canonical(item) / "lib/libz.1.dylib").string()) != std::string::npos),
+              "the loader mapped the item's libz (" + text + ")");
         check(text.find((toolchain.sdk / "lib").string()) == std::string::npos, "...and no libz from the SDK");
     }
     // The build is repeatable without rework.
@@ -212,9 +239,9 @@ int main() {
         auto control_receipt = workflow_in(control, "build");
         check(control_receipt.at("ports").size() == 1 && control_receipt.at("ports")[0].at("provider") == "sdk" && !control_receipt.at("ports")[0].contains("path"),
               "the receipt records the SDK provider");
-        auto command = link_command_for(control_receipt, (control / "out/native/static-roundtrip").string(), (scratch / "control.relinked").string());
+        auto command = link_command_for(control_receipt, (fs::canonical(control) / "out/native/static-roundtrip").string(), (scratch / "control.relinked").string());
         auto map = scratch / "control.map";
-        command.push_back("-Wl,-Map=" + map.string());
+        command.push_back((darwin ? "-Wl,-map," : "-Wl,-Map=") + map.string());
         check(execute(command, 120, false, true).exit_code == 0, "the control relinks with a map");
         auto text = read_text(map);
         check(text.find((toolchain.sdk / "lib/libz.a").string()) != std::string::npos && text.find((item / "lib").string()) == std::string::npos,

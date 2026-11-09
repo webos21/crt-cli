@@ -1412,3 +1412,108 @@ Evidence (`port-project-test`, now 81 checks, 30 new): receipt `pinned` false be
 
 Not covered: pins for ports other than zlib, an official lock format for pins (D4), `crt.lock` pins for the SDK provider (it has no item), the pin surviving a *store* move, automatic lock updates when a port is rebuilt (the user must run `port lock`), and Windows/macOS.
 
+## Source-port D3 replay (macOS/arm64, 2026-11-09)
+
+The bounded zlib path is implemented and exercised on native macOS/arm64. This is not global D3 closure, formal CRT
+adapter-table approval, an SDK promotion, or a Windows/Linux revalidation of this delta. The original Linux records above
+retain their own revisions. No upstream source, producer runtime, pinned recipe, immutable SDK, root repository lock,
+default channel or committed CLI binary was changed for this replay.
+
+### Inputs and boundary
+
+- CRT producer: clean `2f4103d97880d5a51c474ef7b65fe810186c49de`, a new local `v0.0.1-rehearsal.7` Dev SDK.
+  SDK content SHA-256: `02e67f3ef8e8eef48f4497c1f5f5ad938e2fdc98ff143fd6cdf849b46fec999b`.
+- Portable compiler contract: `912094d0016e8d1a8a6c116e1b257867cfc2f284b148de8d5b419f4d6c97e189`.
+  Explicit Xcode Clang/Clang++, linker, ar and OS SDK are recorded in `configure.stdout`; no dirty-SDK opt-in.
+- CLI base: `1427da0` plus this macOS delta. The compact inventory of `include/`, `src/main/` and `crt.json` hashes to
+  `e55ce9ed997e619527aae9b62887a7ebee44d2cfe297c4bf0f2336c97cf80ca7` (SHA-256 over UTF-8 compact JSON rows).
+  Tested executable SHA-256: `5564545c6b3e49e8f6b2cc3b0966360552e20c972e3da1a612c4b4ce4e110d84`.
+- Independent host-tools manifest: `0a81db3eacb89b54c106d8f57bfd5a0e6bb57a24977e124f583e7c81751f1160`.
+  This reuses the identified static bundle, not the separate shared-AWK private-dylib fixture.
+- zlib 1.3.1 archive: `9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23`;
+  recipe: `dde944984d799197c0af1553ac7cf38139edc7b2e4e673ef9b4c17dd8c1a349b`;
+  recipe test: `3d7460fb51e215424ef4fa36593cd7662bdcf83bbd1e986eb0ed746b07aebe62`.
+
+`tools/replay_port_macos.py` copies the public SDK, pinned host tools, source archive, seed and CLI source to
+`/private/tmp/d3-macos-adhp3u29`. Seatbelt denies reads/writes of both repositories and the original producer worktree,
+networking, writes outside private scratch, and undeclared executable paths. Native recipe jobs execute the bundle's
+mksh/make/applets and declared vendor tools, not host shell/make/Python. The boundary probe actually attempts the denied
+reads and executable launches. SDK/bundle copies are read-only to children and their full inventories remain unchanged;
+the original public SDK is also compared afterwards. Projects/jobs exercise spaces and Korean paths. Archiver and OS SDK
+paths still must be a single Makefile shell word; this remains an explicit limitation.
+
+The oracle alone has a labeled wider executable policy: host Python/interpreters/platform utilities and the pinned
+SDK's `tools`, `bin` and `system/bin`. This SDK's oracle selects **SDK `system/bin/make`**, while zlib's Darwin configure
+uses `libtool` and `/usr/bin/ranlib`. That is reference-driver behavior, not native-executor fallback evidence. Python,
+Clang and Seatbelt are replay prerequisites, not new CLI control/app prerequisites.
+
+### Results
+
+| Suite | Passed Checks |
+|---|---:|
+| Recipe subset / OS adapter fixtures | 141 |
+| Archive safety | 221 |
+| SDK store | 114 |
+| Native configure/build/install/static+shared recipe runs | 40 |
+| Mach-O audit / key / publication / tamper / concurrent publication / recovery | 102 |
+| C/C++ consumers / provider controls / lock pins | 81 |
+| Port commands / cache reuse / failure retention | 33 |
+| Packaged oracle differential | 41 |
+| Full native CLI regression | 921 |
+
+All nine suites are qualified across their pinned receipts; this is not a relabeling of one uninterrupted green run.
+`qualification.json` binds each passing suite and its stdout to a result digest and checks the current product/test
+source hashes. The final native-only continuation (`replay-r12`) passes 9/9 requested replay gates. The Mach-O binding
+audit and both provider-mapping probes are additional evidence, not substitutes for the recipe and consumer suites.
+
+Both builds install the same eight paths, kinds and symlink targets. Headers/manual are byte-identical and `zlib.pc`
+is identical after prefix normalization. The static archive containers differ (`libtool` versus declared ar/ranlib),
+but **all 15 member objects are byte-identical**. Both static/shared recipe tests emit the same round-trip result.
+The two intended shared differences are asserted, not waived: native install name `@rpath/libz.1.dylib` versus the
+oracle's temporary absolute prefix, and oracle `LC_RPATH = native LC_RPATH + @loader_path`. Both carry the selected
+SDK's `lib/`; the native dylib names no job path. CPU and dylib dependency lists agree.
+
+The static consumer's linker map and compiler depfile name the port item's archive/header, not the SDK's. The shared
+C/C++ consumers run, and the PAL's image enumeration reports the port item's `libz.1.3.1.dylib`. The SDK-provider
+control instead reports `<copied-sdk>/lib/libz.1.3.1.dylib`. Separate retained runtime probes pass **2/2**; the existing
+CRT Mach-O binding/mixed-runtime audit passes on **nine images** (CLI, five port consumers, two controls and port dylib).
+The CLI's sole external dylib dependency is `/usr/lib/libSystem.B.dylib`; no host C++ runtime is substituted.
+
+### Reproduction and retained failures
+
+Raw evidence is in CRT's ignored `out/d3-macos-20261109/`: `replay-r6` carries the first seven passing suites,
+`replay-r11` the corrected oracle, `replay-r12` the full native regression, plus `qualification.json`,
+`mapped-providers.json`, `consumer-bindings.json` and `cli-bindings.json`.
+The retained work directory holds the raw link maps, depfiles and actual consumer images. Resume receipts pin their
+predecessors and require unchanged product-source, SDK, archive, seed and bundle inputs before reusing outputs;
+changed test fixtures are separately inventoried. Earlier failed records are not relabeled as passing.
+
+For a fresh complete replay, export a matching portable policy with CRT's `tools/export_cli_toolchain.py --portable`,
+then supply real paths and independently checked pins:
+
+```text
+python3 tools/replay_port_macos.py --source /absolute/crt-cli --sdk-root /absolute/dev \
+  --contract /absolute/provider.json --contract-sha256 <policy-sha256> \
+  --host-tools /absolute/host-tools --host-tools-sha256 <manifest-sha256> \
+  --archive /absolute/zlib-1.3.1.tar.gz --seed /absolute/seed-cli \
+  --output /absolute/fresh-evidence --work-parent /private/tmp \
+  --hide /absolute/crt --hide /absolute/producer-worktree \
+  --cc /absolute/clang --cxx /absolute/clang++ --linker /absolute/ld --ar /absolute/ar
+```
+
+The first development runs used rehearsal.6 and are not the final SDK claim. Replay harness failures exposed missing
+explicit test-target builds, incomplete alias/TMPDIR execution permissions, a test-only string/path type error, and
+Seatbelt's stripping/refusal of new setuid bits. The final negative fixture is created as data before sandbox entry;
+the test requires its real setuid bit and the audit rejection, never skips it and never executes it. Oracle-only
+failures identified a profile syntax error and the framework-Python/SDK-wrapper/SDK-make launcher chain. Finally,
+denied xcrun cache writes changed configure's visibility probe and only 7/15 objects agreed. The oracle now receives
+the same explicit compiler and OS SDK plus documented `xcrun_nocache=1`; the 15/15 assertion remains intact.
+Native regression initially lacked its required CLI/project argv; the corrected invocation passes 921 checks. Its
+retained stderr includes the intentional compilation-failure control, deprecated linker warnings and denied xcrun
+cache writes from unrelated native fixture queries; all assertions still pass. The oracle's configure probes are
+specifically cache-free, so those diagnostics cannot change the oracle's capability decisions.
+
+Remaining: formal CRT table approval, native Windows static/shared replay, current-delta Linux replay where affected,
+other ports/architectures, signature/export auditing and general dyld resolution. The audit is bounded to the declared
+item/SDK, not a general loader emulator; a moved store/SDK root, official trust and release promotion are not qualified.
+

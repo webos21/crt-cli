@@ -34,6 +34,9 @@ PortBuildResult run_port_build(const PortBuildRequest& request);
 
 // The llvm-ranlib that sits beside the archiver (llvm-ar-21 -> llvm-ranlib-21); throws when there is none.
 fs::path port_ranlib_for(const fs::path& archiver);
+// The host OS SDK the toolchain was configured with (macOS: the Xcode MacOSX.sdk), from a portable contract's local state or an
+// explicit provider's `external_os_sdk`; empty when the target needs none. The executor hands it to the compiler as SDKROOT.
+fs::path port_os_sdk(const Toolchain& toolchain);
 
 // The environment a build declares and therefore keys on: the executor's fixed flag defaults and the recipe's own ops,
 // with nothing that names a job directory. (Part of the store build key.)

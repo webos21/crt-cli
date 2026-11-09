@@ -33,6 +33,13 @@ struct PortRecipe {
     std::vector<PortTest> tests;
 };
 
+// What a correct install of one OS looks like. `expected_names` are the SONAMEs (ELF) or install names (Mach-O) the shared
+// objects must carry; for Mach-O they are written as the audit compares them, e.g. "@rpath/libz.1.dylib".
+struct PortOsLayout {
+    std::vector<std::string> expected_files, expected_names;
+    std::string static_library, shared_library;
+};
+
 // CRT-owned meaning of a reviewed recipe, keyed by the SHA-256 of the recipe file. Roles are never guessed from names.
 struct PortAdapter {
     std::string recipe_sha256, name, version;
@@ -46,7 +53,24 @@ struct PortAdapter {
     // How a project consumes the item (D3 step 5): the SDK contract library name the port replaces (a closure may not
     // reach both), and the item-relative include directory and link inputs.
     std::string sdk_library, include_dir, static_library, shared_library;
+    // The Linux layout above is the first slice; other hosts add their own (D3 macOS). `layouts` is keyed by OS name and
+    // never holds "linux" (see port_layout()).
+    std::map<std::string, PortOsLayout> layouts;
+    // Environment the executor adds after the recipe's own ops for one OS, for toolchain policy the recipe does not carry
+    // (macOS: the install name of the shared library). Part of the build key; empty for Linux.
+    std::map<std::string, std::vector<PortEnvOp>> executor_env;
+    // `make` arguments the executor appends after the recipe's own for one OS. The literal token @AR@ becomes the configured
+    // archiver. macOS: zlib's Darwin configure forces AR to the host's /usr/bin/libtool whatever the environment says, which
+    // would bring an undeclared host tool into the build; the command line overrides it with the declared archiver.
+    std::map<std::string, std::vector<std::string>> executor_make_args;
 };
+
+// The layout this adapter entry declares for `os` ("linux", "macos"); throws when the entry has none for that OS.
+PortOsLayout port_layout(const PortAdapter& adapter, const std::string& os);
+// The executor-added environment for `os` (empty when none).
+const std::vector<PortEnvOp>& port_executor_env(const PortAdapter& adapter, const std::string& os);
+// The executor-added make arguments for `os` (empty when none).
+const std::vector<std::string>& port_executor_make_args(const PortAdapter& adapter, const std::string& os);
 
 // The reviewed table (compiled in). Throws for a digest that is not listed.
 const PortAdapter& port_adapter_for(const std::string& recipe_sha256);

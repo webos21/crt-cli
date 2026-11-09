@@ -262,7 +262,8 @@ struct Builder {
             for (const auto& use : declared->second) {
                 if (use.provider != "port") continue;
                 auto item = port_item(use);
-                auto library = item / (selected == "static" ? use.adapter->static_library : use.adapter->shared_library);
+                const auto layout = port_layout(*use.adapter, toolchain.selection.at("target").at("os").get<std::string>());
+                auto library = item / (selected == "static" ? layout.static_library : layout.shared_library);
                 require(fs::exists(library), "port item lacks " + library.string());
                 libraries.push_back(library.string());
                 if (selected == "shared") rpaths.insert("-Wl,-rpath," + (item / "lib").string());

@@ -113,9 +113,36 @@ const std::vector<PortAdapter>& port_adapters() {
          {{"porting/tests/zlib_roundtrip.c", "3d7460fb51e215424ef4fa36593cd7662bdcf83bbd1e986eb0ed746b07aebe62"}}, "pending",
          /*expected_files*/ {"include/zlib.h", "include/zconf.h", "lib/libz.a", "lib/libz.so", "lib/libz.so.1", "lib/pkgconfig/zlib.pc"},
          /*expected_sonames*/ {"libz.so.1"},
-         /*sdk_library*/ "z", /*include_dir*/ "include", /*static_library*/ "lib/libz.a", /*shared_library*/ "lib/libz.so"},
+         /*sdk_library*/ "z", /*include_dir*/ "include", /*static_library*/ "lib/libz.a", /*shared_library*/ "lib/libz.so",
+         // macOS: zlib's own Darwin configure names the shared object by its absolute install directory, which stops existing
+         // when the job directory is published. The executor therefore passes LDSHARED with a relocatable install name
+         // (@rpath/libz.1.dylib, the Mach-O counterpart of SONAME libz.so.1); the rest of the line is configure's Darwin default.
+         /*layouts*/ {{"macos", {{"include/zlib.h", "include/zconf.h", "lib/libz.a", "lib/libz.dylib", "lib/libz.1.dylib", "lib/libz.1.3.1.dylib",
+                                 "lib/pkgconfig/zlib.pc"},
+                                {"@rpath/libz.1.dylib"}, "lib/libz.a", "lib/libz.dylib"}}},
+         /*executor_env*/ {{"macos", {{"LDSHARED", "@CC@ -dynamiclib -install_name @rpath/libz.1.dylib -compatibility_version 1 -current_version 1.3.1", false}}}},
+         /*executor_make_args*/ {{"macos", {"AR=@AR@", "ARFLAGS=rc"}}}},
     };
     return table;
+}
+
+PortOsLayout port_layout(const PortAdapter& adapter, const std::string& os) {
+    if (os == "linux") return {adapter.expected_files, adapter.expected_sonames, adapter.static_library, adapter.shared_library};
+    auto found = adapter.layouts.find(os);
+    if (found == adapter.layouts.end()) throw Error("the adapter entry for " + adapter.name + " has no layout for " + os);
+    return found->second;
+}
+
+const std::vector<PortEnvOp>& port_executor_env(const PortAdapter& adapter, const std::string& os) {
+    static const std::vector<PortEnvOp> none;
+    auto found = adapter.executor_env.find(os);
+    return found == adapter.executor_env.end() ? none : found->second;
+}
+
+const std::vector<std::string>& port_executor_make_args(const PortAdapter& adapter, const std::string& os) {
+    static const std::vector<std::string> none;
+    auto found = adapter.executor_make_args.find(os);
+    return found == adapter.executor_make_args.end() ? none : found->second;
 }
 
 const PortAdapter& port_adapter_for(const std::string& recipe_sha256) {

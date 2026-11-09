@@ -6,6 +6,21 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## D3 Source-port Adapter on macOS/arm64 (2026-11-09)
+
+CRT `2f4103d97880d5a51c474ef7b65fe810186c49de` produced a clean local Dev SDK `v0.0.1-rehearsal.7`, content
+`02e67f3ef8e8eef48f4497c1f5f5ad938e2fdc98ff143fd6cdf849b46fec999b`, with portable provider
+`912094d0016e8d1a8a6c116e1b257867cfc2f284b148de8d5b419f4d6c97e189`.
+CLI `1427da0` plus the macOS delta is qualified by the
+[native D3 record](acceptance/sdk_install_acceptance.md#source-port-d3-replay-macosarm64-2026-11-09), including exact source/executable and
+independent host-tools pins, actual static/shared consumption and the reference-driver differences.
+
+The CLI-owned experimental adapter/store policy now includes Mach-O layouts/audit and macOS OS-SDK metadata in the
+key. Linux key serialization and recipe schema 1, native compiler policy 1, host-tools format 1 and project lock 1 are
+unchanged. This is local native macOS adoption, not approval of arbitrary future dylibs or a new release. Formal CRT
+adapter-table approval remains pending; no producer promotion, consumer root lock/default change, Windows D3 acceptance
+or current-delta Linux replay is implied. The earlier Linux records keep their exact tested inputs.
+
 ## Windows/x64 Concurrent-install Fix (2026-11-06)
 
 Reviewed CRT `05b5678` (libunwind recipe patch; no SDK format, asset schema or CLI source change) and CLI `ea9b8cd`. The

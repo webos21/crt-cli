@@ -15,14 +15,15 @@ void require_plain_word(const std::string& value, const std::string& what) {
             what + " must be a single shell word without whitespace or shell metacharacters: " + value);
 }
 
-// llvm-ar -> llvm-ranlib in the same directory (llvm-ar-21 -> llvm-ranlib-21), required to exist.
+// llvm-ar -> llvm-ranlib, ar -> ranlib, in the same directory (llvm-ar-21 -> llvm-ranlib-21), required to exist.
 fs::path ranlib_beside(const fs::path& archiver) {
     auto name = archiver.filename().string();
     auto at = name.find("llvm-ar");
-    require(at != std::string::npos, "cannot derive llvm-ranlib from the archiver name: " + name);
-    name.replace(at, 7, "llvm-ranlib");
+    if (at != std::string::npos) name.replace(at, 7, "llvm-ranlib");
+    else if (name == "ar") name = "ranlib";
+    else throw Error("cannot derive the ranlib from the archiver name: " + name);
     auto result = archiver.parent_path() / name;
-    require(fs::exists(result), "llvm-ranlib not found beside the archiver: " + result.string());
+    require(fs::exists(result), "ranlib not found beside the archiver: " + result.string());
     native_executable(result);
     return result;
 }
@@ -103,10 +104,26 @@ std::string trim_end(std::string value) {
 
 fs::path port_ranlib_for(const fs::path& archiver) { return ranlib_beside(archiver); }
 
+fs::path port_os_sdk(const Toolchain& toolchain) {
+    if (!toolchain.os_sdk.empty()) return toolchain.os_sdk;
+    if (toolchain.contract.contains("external_os_sdk")) return toolchain.contract.at("external_os_sdk").get<std::string>();
+    return {};
+}
+
 Json port_declared_environment(const PortRecipe& recipe) {
     Json ops = Json::array();
     for (const auto& op : recipe.env) ops.push_back({{"name", op.name}, {"value", op.value}, {"append_flags", op.append_flags}});
-    return {{"defaults", flag_defaults()}, {"recipe", ops}};
+    Json declared{{"defaults", flag_defaults()}, {"recipe", ops}};
+    // Executor policy beyond the recipe (macOS) is part of what the build depends on; Linux has none, so its keys are unchanged.
+    const auto& adapter = port_adapter_for(recipe.recipe_sha256);
+    const auto& extra = port_executor_env(adapter, recipe.target_os);
+    const auto& make_args = port_executor_make_args(adapter, recipe.target_os);
+    if (!extra.empty() || !make_args.empty()) {
+        Json executor = Json::array();
+        for (const auto& op : extra) executor.push_back({{"name", op.name}, {"value", op.value}, {"append_flags", op.append_flags}});
+        declared["executor"] = {{"env", executor}, {"make_args", make_args}};
+    }
+    return declared;
 }
 
 std::map<std::string, std::string> port_build_environment(const PortBuildRequest& request, const fs::path& prefix) {
@@ -141,16 +158,27 @@ std::map<std::string, std::string> port_build_environment(const PortBuildRequest
     // each installed library (a path that stops existing the moment the item is published), so the build steps run
     // without it; only the recipe tests, which are never published, get it (and LD_LIBRARY_PATH as well).
     env["CRT_PORT_RPATH_DIR"] = "";
+    if (target.at("os") == "macos") {
+        // The compiler is the external Xcode clang, started directly: unlike /usr/bin/clang it has no xcrun shim to find the OS
+        // SDK, and the job environment has no xcrun. The declared SDK is handed over explicitly (libSystem lives there).
+        auto os_sdk = port_os_sdk(toolchain);
+        require(!os_sdk.empty() && fs::is_directory(os_sdk) && fs::exists(os_sdk / "SDKSettings.json"), "the macOS port build needs the configured OS SDK (SDKSettings.json)");
+        require_plain_word(os_sdk.string(), "OS SDK path");
+        env["SDKROOT"] = os_sdk.string();
+    }
     for (const auto& item : flag_defaults()) env[item.first] = item.second;
-    apply_port_env(env, recipe.env, PortPlaceholders{prefix.string(), env["CC"]});
+    PortPlaceholders placeholders{prefix.string(), env["CC"]};
+    apply_port_env(env, recipe.env, placeholders);
+    apply_port_env(env, port_executor_env(port_adapter_for(recipe.recipe_sha256), recipe.target_os), placeholders);
     return env;
 }
 
 PortBuildResult run_port_build(const PortBuildRequest& request) {
     require(request.toolchain && request.tools, "port build needs a toolchain and host tools");
     const auto& recipe = request.recipe;
-    require(native_target().at("os") == "linux", "the port executor supports Linux hosts only so far");
-    require(recipe.target_os == "linux", "the recipe was parsed for another OS than this host");
+    const auto host_os = native_target().at("os").get<std::string>();
+    require(host_os == "linux" || host_os == "macos", "the port executor supports Linux and macOS hosts so far");
+    require(recipe.target_os == host_os, "the recipe was parsed for another OS than this host");
     const auto adapter_ = port_adapter_for(recipe.recipe_sha256);
     auto job = fs::absolute(request.job).lexically_normal();
     require(!fs::exists(job) && !fs::is_symlink(job), "port build job must be a new path");
@@ -212,11 +240,20 @@ PortBuildResult run_port_build(const PortBuildRequest& request) {
         patches.push_back({{"file", patch.file}, {"reason", patch.reason}, {"replacements", count}});
     }
 
+    // Executor-added make arguments (the literal @AR@ is the configured archiver) follow the recipe's own.
+    std::vector<std::string> executor_args;
+    for (auto arg : port_executor_make_args(adapter_, recipe.target_os)) {
+        for (size_t at = 0; (at = arg.find("@AR@", at)) != std::string::npos; at += request.toolchain->archiver.string().size())
+            arg.replace(at, 4, request.toolchain->archiver.string());
+        executor_args.push_back(arg);
+    }
     std::vector<std::string> build{make, "-j", std::to_string(jobs)};
     for (const auto& arg : recipe.make_args) build.push_back(substitute_port_placeholders(arg, placeholders));
+    build.insert(build.end(), executor_args.begin(), executor_args.end());
     runner.run("make", build, child, source);
     std::vector<std::string> install{make, "install"};
     for (const auto& arg : recipe.make_args) install.push_back(substitute_port_placeholders(arg, placeholders));
+    install.insert(install.end(), executor_args.begin(), executor_args.end());
     runner.run("make-install", install, child, source);
 
     // Recipe tests: compile with the same SDK wrapper, run with the port's library directory first in the loader path.
@@ -233,7 +270,9 @@ PortBuildResult run_port_build(const PortBuildRequest& request) {
         compile_env["CRT_PORT_RPATH_DIR"] = (prefix / "lib").string();
         runner.run("test-build-" + test.name, compile, as_child(compile_env, base), tests);
         auto run_env = env;
-        run_env["LD_LIBRARY_PATH"] = (prefix / "lib").string();
+        // Linux resolves the port's shared object through the loader path; macOS through the LC_RPATH crt-cc stamped above
+        // (DYLD_* variables are neither needed nor reliable there).
+        if (host_os == "linux") run_env["LD_LIBRARY_PATH"] = (prefix / "lib").string();
         auto result = runner.run("test-run-" + test.name, {binary.string()}, as_child(run_env, base), tests);
         // Like the oracle, the expected text must appear in the output (a fragment, not the whole line).
         bool ok = result.output.find(test.expect_stdout) != std::string::npos;

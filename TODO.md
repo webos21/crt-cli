@@ -99,18 +99,17 @@ also passes, with a shared consumer correction for actual producer release envel
 
 ### D3 - First source-built port, parallel with first-build/acquisition work
 
-- [x] Define the bounded recipe/compiler adapter: [design record](docs/design/source_port_adapter.md)
-  (2026-11-06; design only, producer review of its adapter table pending).
-- [ ] Implement it in order (design §3): ~~hardened `tar.gz` reading~~ (done, [record](docs/acceptance/sdk_install_acceptance.md#hardened-targz-reading-d3-step-1-linuxx86_64-2026-11-07)), ~~recipe subset reader~~ (done, [record](docs/acceptance/sdk_install_acceptance.md#recipe-subset-reader-d3-step-2-linuxx86_64-2026-11-07); CRT review of the adapter table pending), ~~executor through the host-tools
-  bundle~~ (done, [record](docs/acceptance/sdk_install_acceptance.md#port-executor-d3-step-3-linuxx86_64-2026-11-08); `crt-cc` under the bundle's `mksh` shown to work; executor must pass the linker explicitly and use a space-free `SHELL`, [record](docs/acceptance/sdk_install_acceptance.md#crt-cc-under-the-bundles-mksh-linuxx86_64-2026-11-08)), ~~audit/store publish~~ (done, [record](docs/acceptance/sdk_install_acceptance.md#binary-audit-build-key-and-port-store-d3-step-4-linuxx86_64-2026-11-08)), ~~explicit provider choice with the consumer proof~~ (done, [record](docs/acceptance/sdk_install_acceptance.md#project-provider-choice-and-consumer-proof-d3-step-5-linuxx86_64-2026-11-08)), ~~`crt-port-build.py` differential~~ (done, [record](docs/acceptance/sdk_install_acceptance.md#oracle-differential-d3-step-6-linuxx86_64-2026-11-09)). ~~CLI command that builds/publishes an item~~ (`crt-cli port build|list|verify|recover`, [record](docs/acceptance/sdk_install_acceptance.md#port-command-d3-linuxx86_64-2026-11-09)). ~~`crt.lock` key pinning~~ (`port lock`, [record](docs/acceptance/sdk_install_acceptance.md#crtlock-port-pins-d3-linuxx86_64-2026-11-09)). Remaining for D3: CRT review of the adapter table, other hosts.
-  Executes the reviewed zlib JSON recipe natively into a separate immutable port store.
-- [ ] Prove fresh source build, static/shared link/run and actual consumption
-  from that store. The Dev SDK already contains zlib: define SDK-provided versus
-  explicit isolated source-build handling; do not overwrite it or count linking
-  its existing library as the first source port. Classify make as a host tool.
-- [ ] Preserve SDK/source inputs and host-tool/compiler identities. Linux is
-  the first implementation slice; full D3 closure retains the native Windows
-  CRT-shell/make static/shared gate and applicable native OS replay.
+The bounded implementation, separate port store, provider/lock proof and oracle comparison have
+[Linux evidence](docs/acceptance/sdk_install_acceptance.md#crtlock-port-pins-d3-linuxx86_64-2026-11-09) and
+[macOS replay](docs/acceptance/sdk_install_acceptance.md#source-port-d3-replay-macosarm64-2026-11-09).
+Completed details live in acceptance/HISTORY, not this checklist.
+
+- [ ] Obtain formal CRT approval of the digest-keyed adapter table and its macOS
+  layout/install-name/tool policies; keep `crt_review: pending` until adoption is recorded.
+- [ ] Complete native Windows CRT-shell/make static/shared build and actual store
+  consumption; preserve SDK/source bytes and independently pinned tool identities.
+- [ ] Replay affected common changes on Linux and qualify other architectures as needed;
+  the existing Linux baseline is not silently relabeled as a run of the macOS delta.
 
 ## Planned
 
