@@ -11,6 +11,10 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-08
 
+### D3 step 6: oracle differential
+
+`port-oracle-test` (environment-gated) builds the reviewed zlib recipe with the native executor and with the SDK's own `tools/crt-port-build.py --sdk-root ... --test` on the same pristine source, then compares. Both install the same 8 paths with identical kinds and symlink targets; `zlib.h`, `zconf.h`, `zlib.3` are byte-identical; `libz.a` is byte-identical; `zlib.pc` is identical apart from the install prefix; both recipe tests print the same line (`compressed=3476 decoded=131072 version=1.3.1`). The only binary difference is expected: `libz.so.1.3.1` carries `$ORIGIN:<sdk>/lib` in both, and the oracle appends its own install `lib` (the `CRT_PORT_RPATH_DIR` difference recorded in step 4). The SDK is byte-identical after both builds. 23 checks. Record: `docs/acceptance/sdk_install_acceptance.md`.
+
 ### D3 step 5: explicit provider choice and consumer proof
 
 Targets may declare `ports` with provider `sdk` or `port` (+ build key); the build re-verifies the store item, requires it to match the SDK and target, refuses one project/closure that can reach both providers, and links the item's headers and library in place of the SDK's. Path evidence: linker map, compiler dependency file and the process's own memory map name the item (and, in the SDK-provider control, not the item). The first shared run exposed that the link recipe silently dropped an extra argument (the host's libz was loaded); `Toolchain::invoke` now refuses that. `port-project-test` 51 checks. Record: `docs/acceptance/sdk_install_acceptance.md`.

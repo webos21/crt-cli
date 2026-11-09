@@ -156,6 +156,28 @@
       ]
     },
     {
+      "name": "port-oracle-test",
+      "timeout_seconds": 1800,
+      "sources": [
+        "src/test/port_oracle_test.cpp",
+        "src/main/port_store.cpp",
+        "src/main/port_build.cpp",
+        "src/main/port_recipe.cpp",
+        "src/main/host_tools.cpp",
+        "src/main/sdk_store.cpp",
+        "src/main/toolchain.cpp",
+        "src/main/archive.cpp",
+        "src/main/core.cpp",
+        "src/main/process.cpp",
+        "src/main/environment.cpp"
+      ],
+      "sdk_libraries": [
+        "lzma",
+        "z",
+        "mbedcrypto"
+      ]
+    },
+    {
       "name": "port-project-test",
       "timeout_seconds": 1800,
       "sources": [

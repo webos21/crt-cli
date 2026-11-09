@@ -1386,3 +1386,11 @@ Proof (`port-project-test`, 51 checks, about 30 s with a real zlib build and pub
 
 Not covered: building a port from a project (no CLI command builds or publishes an item; the test drives the executor and store directly), the item-built-for-another-SDK refusal (implemented, not exercised: it needs a second SDK), transitive SDK libraries that themselves link zlib (the closure check sees only declared `sdk_libraries`), `crt.lock` pinning of the key, Windows/macOS, other ports, and the oracle differential (step 6).
 
+## Oracle differential, D3 step 6 (Linux/x86_64, 2026-11-09)
+
+`port-oracle-test` (environment-gated like the other port tests, plus an optional `CRT_CLI_TEST_PORT_PYTHON`) builds zlib-1.3.1 twice from one pristine extracted tree and the same rehearsal.9 SDK: with the native executor, and with the SDK's own `tools/crt-port-build.py --sdk-root <sdk> --port zlib --test` (the packaged oracle, run through `env -i` with a minimal host `PATH`, because the oracle uses the host's shell and `make` by design; the CLI never depends on it). The oracle takes about 2 s.
+
+Result (23 checks): the two prefixes hold the same 8 files/symlinks with identical kinds and symlink targets. Byte-identical: `zlib.h`, `zconf.h`, `zlib.3` and `libz.a`. `zlib.pc` is identical once its install prefix is normalized. `libz.so.1.3.1` has the same SONAME, `e_machine` and `DT_NEEDED` (`libc.so`, `libm.so`, `libdl.so`) and differs in bytes only through its runpath: both carry crt-cc's standard `$ORIGIN:<sdk>/lib`, and the oracle's has its own install `lib` appended (the `CRT_PORT_RPATH_DIR` difference recorded under step 4; the native one names no job path). The recipe test output is the same in both for both tests (`zlib_roundtrip_test: ok compressed=3476 decoded=131072 version=1.3.1`). The SDK inventory is unchanged after both builds. Regressions: `native-test` 881, `archive-test` 221, `sdk-store-test` 114, `port-recipe-test` 137 green; the other port tests were not re-run for this test-only increment, no CLI source changed.
+
+Not covered: other recipes (zlib is the only one in the adapter table), other hosts, the oracle's duplicate `-O2 -O2 -fPIC` flags (the native executor matches the same accumulation), and hosts where the oracle needs the CRT shell (Windows).
+
