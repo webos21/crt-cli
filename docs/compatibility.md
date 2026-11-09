@@ -6,6 +6,19 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## D3 Common-change Replay on macOS/arm64 (2026-11-09)
+
+Reviewed CRT `2fdce21d687936c313a3a5990d7acdc3ab824c54` / CLI `938518c4b3bb2c887e921af602082b46ac9be5b4`.
+The product/test snapshot is exactly Linux's `22720f7d...bee16` baseline from `2ae74d4`. The
+[native macOS continuation](acceptance/sdk_install_acceptance.md#macos-d3-common-change-closure-replay-2026-11-09) passes
+29/29 gates against the unchanged clean rehearsal.7 SDK (`02e67f3e...c999b`) and provider (`912094d0...e189`), not Linux's
+dirty developer inputs. Source-hidden self-build, SDK-free checks, six D3 suites, 921 native checks, actual store use,
+key/cache/inventory checks and observed port/SDK provider maps qualify the exact new executable `929f7291...114175`.
+
+No product/recipe/SDK or shared-format change is adopted here. The unchanged macOS key and new host-only replay
+receipts are technical evidence for the pending review, not final approval, binary publication or consumer-lock migration.
+Windows/x64 keeps its exact unchanged baseline; Windows/arm64 D3 and Linux's unendorsed C shared SDK mode remain separate.
+
 ## D3 closure review and affected-host handoff (2026-11-09)
 
 At the owner's request, review CRT `21b9d0e` / CLI `2ae74d4` without
@@ -20,8 +33,8 @@ and bytes are not changed by documentation cleanup.
 `port_key_inputs` includes the declared executor environment/make policy;
 recording approval alone must not invalidate an item. Actual policy changes
 need new keys and affected-host evidence. The [Linux affected-delta replay](acceptance/sdk_install_acceptance.md#linux-d3-common-change-replay-and-macos-handoff-2026-11-09)
-passes at its retained dirty developer inputs; the owner runs the matching
-native macOS delta. The historical SDK C shared control's host libz mapping is
+passes at its retained dirty developer inputs; the [matching native macOS delta also passes](acceptance/sdk_install_acceptance.md#macos-d3-common-change-closure-replay-2026-11-09)
+on its own identified clean SDK. The historical Linux SDK C shared control's host libz mapping is
 explicitly unendorsed and remains a producer-policy review item. Existing final
 Windows/x64 evidence is reused only for unchanged inputs. Windows/arm64 D3,
 Full installation and public release/promotion remain separate gates.

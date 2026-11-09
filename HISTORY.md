@@ -11,6 +11,17 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-09
 
+### Close the native macOS D3 common-change replay
+
+Replayed the Linux-verified `22720f7d...bee16` product/test snapshot with the retained clean macOS rehearsal.7 SDK and
+independent host tools. A fresh source-hidden build passes 29/29 gates: all six input-enabled D3 suites, 921 native
+checks, SDK/source-free CLI, actual publish/reuse/verify, warm cache and unchanged original/copied inputs. Actual
+provider maps pass 2/2 and binding audit passes on nine images; macOS's SDK control maps its SDK libz, unlike the
+explicitly unendorsed historical Linux control. No product/recipe/SDK change, binary refresh, root lock, STATUS or
+promotion. The driver adds Linux-equivalent ledger and command/bare checks with seven fast host fixtures.
+[Acceptance](docs/acceptance/sdk_install_acceptance.md#macos-d3-common-change-closure-replay-2026-11-09) owns exact receipts and limits.
+Final CRT approval/adoption and global D3 closure remain separate decisions.
+
 ### Replay the latest D3 common changes on Linux and prepare native macOS handoff
 
 Fresh public-SDK-only CLI build and seven input-enabled suites pass: recipe

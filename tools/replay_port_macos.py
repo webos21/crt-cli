@@ -28,6 +28,18 @@ def inventory(root):
     return rows
 
 
+def source_inputs(root):
+    paths = sorted([*root.joinpath('src').rglob('*'), *root.joinpath('include').rglob('*'), root / 'crt.json'])
+    return [[path.relative_to(root).as_posix(), hashlib.sha256(path.read_bytes().replace(b'\r\n', b'\n')).hexdigest()]
+            for path in paths if path.is_file()]
+
+
+def deny_inputs(text, paths):
+    for path in paths:
+        text += '(deny file-read* file-write* (subpath ' + json.dumps(str(path), ensure_ascii=False) + '))\n'
+    return text
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('source', 'sdk-root', 'contract', 'host-tools', 'archive', 'seed', 'output', 'work-parent',
@@ -70,13 +82,18 @@ def main():
         shutil.copytree(args.host_tools, bundle, symlinks=True)
         shutil.copy2(args.contract, contract); shutil.copy2(args.archive, archive); shutil.copy2(args.seed, seed)
         scratch.mkdir()
-        shutil.copytree(args.source, project, symlinks=True,
-                        ignore=shutil.ignore_patterns('.git', '.crt', 'out', '__pycache__', 'crt.lock', '.sdk.json'))
+        project.mkdir()
+        for name in ('src', 'include'): shutil.copytree(args.source / name, project / name)
+        shutil.copy2(args.source / 'crt.json', project / 'crt.json')
     before = inventory(sdk)
-    inputs = {'cli_source': inventory(project), 'sdk': before, 'host_tools': inventory(bundle),
-              'contract_sha256': digest(contract), 'archive_sha256': digest(archive), 'seed_sha256': digest(seed)}
-    (output / 'inputs.json').write_text(json.dumps(inputs, ensure_ascii=False, indent=2) + '\n')
+    source_rows = source_inputs(project)
     tools = {name: getattr(args, name).absolute() for name in ('cc', 'cxx', 'linker', 'ar')}
+    inputs = {'cli_source': inventory(project), 'sdk': before, 'host_tools': inventory(bundle),
+              'contract_sha256': digest(contract), 'archive_sha256': digest(archive), 'seed_sha256': digest(seed),
+              'source': source_rows, 'source_sha256': hashlib.sha256(json.dumps(source_rows, separators=(',', ':')).encode()).hexdigest(),
+              'external_tools': {name: {'path': str(path), 'sha256': digest(path)} for name, path in tools.items()},
+              'driver_sha256': digest(Path(__file__))}
+    (output / 'inputs.json').write_text(json.dumps(inputs, ensure_ascii=False, indent=2) + '\n')
     home = scratch / 'home'; home.mkdir(exist_ok=True)
     setuid_item = scratch / 'setuid-item'
     (setuid_item / 'lib').mkdir(parents=True, exist_ok=True)
@@ -87,7 +104,7 @@ def main():
         alias = setuid_file.parent / name
         if not alias.is_symlink(): alias.symlink_to(target)
     assert setuid_file.stat().st_mode & 0o4000
-    hidden = [args.source.resolve(), args.sdk_root.resolve(), *[p.resolve() for p in args.hide]]
+    hidden = [args.source.resolve(), args.sdk_root.resolve(), args.host_tools.resolve(), *[p.resolve() for p in args.hide]]
     assert all(not work.is_relative_to(p) and not p.is_relative_to(work) for p in hidden)
     sandbox = MacSandbox(); sandbox.prepare(work, scratch, seed, tools, hidden)
     # These suites create native test executables below TMPDIR, unlike selection's data-only temp use. Keep them inside
@@ -100,13 +117,13 @@ def main():
     host_manifest = json.loads((bundle / 'manifest.json').read_bytes())
     sandbox.allowed += [bundle / value for value in host_manifest['executable_files']]
     sandbox.allowed += [(tools['ar'].parent / 'ranlib').resolve()]
-    results, commands = [], []
+    results, commands, outcomes = [], [], {}
 
     def record(case, passed, detail=''):
         results.append({'case': case, 'passed': bool(passed), 'detail': str(detail)[:2000]})
         print(('PASS ' if passed else 'FAIL ') + case, flush=True)
 
-    def run(label, argv, *, environment=None, oracle=False, timeout=1800):
+    def run(label, argv, *, environment=None, oracle=False, hidden_extra=(), timeout=1800):
         base = sandbox.command([], home)
         policy = Path(base[2])
         if oracle:
@@ -123,6 +140,8 @@ def main():
                 '(subpath ' + json.dumps(str(p)) + ')' for p in [scratch, *extra]) + ' ' + ' '.join(
                 '(literal ' + json.dumps(str(p)) + ')' for p in sandbox.allowed) + ')))\n'
             policy.write_text(text)
+        if hidden_extra:
+            policy.write_text(deny_inputs(policy.read_text(), hidden_extra))
         options = sandbox.process_options(home)
         options['env'].update(environment or {})
         command = base[:3] + list(map(str, argv))
@@ -148,6 +167,20 @@ def main():
         assert built.returncode == 0
         cli = project / 'out/native/crt-cli'
         sandbox.cli = cli
+        bare = work / 'bare-cli'; shutil.copy2(cli, bare)
+        sandbox.allowed.append(bare)
+        absent = (sdk, contract, project, bundle)
+        for label, tail in [('version', ['--version']), ('doctor', ['doctor', '--bootstrap'])]:
+            proc = run('bare-' + label, [bare, '--json', *tail], hidden_extra=absent)
+            reply = json.loads(proc.stdout)
+            record('SDK/source/provider/bundle-free ' + label, proc.returncode == 0 and reply.get('ok') is True, proc.stderr)
+        proc = run('bare-visibility', [sandbox.probe, *[value for path in absent for value in ('read', str(path))]],
+                   hidden_extra=absent)
+        record('native probe cannot read the hidden copied inputs', proc.returncode == 0 and 'boundary probe: pass' in proc.stdout)
+        imports = subprocess.check_output(['/usr/bin/otool', '-L', str(cli)], text=True)
+        (output / 'cli-otool.txt').write_text(imports)
+        dependencies = [line.strip().split(' (compatibility', 1)[0] for line in imports.splitlines()[1:] if line.strip()]
+        record('CLI imports only the declared libSystem boundary', dependencies == ['/usr/lib/libSystem.B.dylib'], dependencies)
         env = {'CRT_CLI_TEST_PORT_PROJECT': str(project), 'CRT_CLI_TEST_PORT_HOST_TOOLS': str(bundle),
                'CRT_CLI_TEST_PORT_HOST_TOOLS_SHA256': args.host_tools_sha256,
                'CRT_CLI_TEST_PORT_ARCHIVE': str(archive), 'CRT_CLI_TEST_PORT_PYTHON': str(Path(sys.executable).resolve()),
@@ -164,10 +197,22 @@ def main():
             matched = re.search(r'(\d+) checks passed', proc.stdout)
             record(name, proc.returncode == 0 and matched is not None and 'skipped' not in proc.stdout,
                    proc.stdout[-2000:] + proc.stderr[-1000:])
+            outcomes[name] = {'passed': results[-1]['passed'], 'checks': int(matched.group(1)) if matched else None}
             if proc.returncode != 0:
                 break
         else:
             completed = True
+        if completed:
+            tail = ['port', 'build', 'zlib', '--project', project, '--archive', archive,
+                    '--host-tools', bundle, '--host-tools-sha256', args.host_tools_sha256]
+            cold = run('port-cold', [cli, '--json', *tail])
+            reused = run('port-reuse', [cli, '--json', *tail])
+            a, b = json.loads(cold.stdout), json.loads(reused.stdout)
+            record('actual port command publishes once and reuses the exact key', cold.returncode == reused.returncode == 0 and
+                   a['data']['already_published'] is False and b['data']['already_published'] is True and
+                   a['data']['build_key'] == b['data']['build_key'])
+            verified = run('port-verify', [cli, '--json', 'port', 'verify', a['data']['build_key'], '--project', project])
+            record('actual published port item verifies', verified.returncode == 0, verified.stderr)
         warm = run('warm-build', [cli, '--json', 'build', '--project', project], timeout=3600)
         reply = json.loads(warm.stdout)
         record('the rebuilt CLI reuses every unchanged build command', warm.returncode == 0 and
@@ -176,11 +221,14 @@ def main():
         record('SDK inventory unchanged', inventory(sdk) == before)
         record('original public SDK inventory unchanged', inventory(args.sdk_root) == before)
         record('host-tools payload unchanged', inventory(bundle) == inputs['host_tools'])
+        record('original host-tools payload unchanged', inventory(args.host_tools) == inputs['host_tools'])
+        record('CLI product/test source matches the baseline', source_inputs(project) == source_rows == source_inputs(args.source))
     except Exception as error:
         record('replay completed without a harness exception', False, repr(error))
     finally:
         summary = {'passed': completed and all(r['passed'] for r in results), 'cases': results, 'work': str(work),
                    'suites': args.cases or list(suites),
+                   'suite_results': outcomes, 'source_sha256': inputs['source_sha256'],
                    'contract_sha256': digest(contract), 'host_tools_sha256': args.host_tools_sha256,
                    'archive_sha256': digest(archive), 'sdk_content_sha256': json.loads(contract.read_bytes())['sdk_content_sha256'],
                    'isolation': sandbox.isolation, 'oracle_exception': 'host Python, shell, make and coreutils permitted only in differential test'}

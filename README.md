@@ -95,9 +95,10 @@ also exercise this workflow at their recorded baselines.
 
 ## Next User Workflow
 
-[The active plan](TODO.md) finishes D3 producer review and affected Linux/macOS
-replay, then prepares a Dev SDK + CLI preview. Linux, macOS and Windows/x64
-zlib evidence is retained; the latest common delta still needs its own closure.
+[The active plan](TODO.md) finishes D3 producer review/adoption, then prepares a Dev SDK + CLI preview.
+The common delta has [Linux proof](docs/acceptance/sdk_install_acceptance.md#linux-d3-common-change-replay-and-macos-handoff-2026-11-09)
+and [macOS replay](docs/acceptance/sdk_install_acceptance.md#macos-d3-common-change-closure-replay-2026-11-09);
+Windows/x64 retains its identified qualification. These technical records do not grant final CRT approval.
 Windows/arm64 D3 remains a separate qualification target.
 
 Preview qualification covers the actual packaged CLI, promoted SDK pin, trust,

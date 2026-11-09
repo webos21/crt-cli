@@ -568,3 +568,10 @@ identities, mapped-image observations and all retained failures. Do not adopt
 Linux's dirty SDK/provenance or compiler policy merely to match its binary pin.
 The macOS artifact/code result and supported/excluded SDK modes remain distinct
 from final CRT approval and any preview/publication decision.
+
+The [native macOS continuation is now recorded](../acceptance/sdk_install_acceptance.md#macos-d3-common-change-closure-replay-2026-11-09).
+The driver records the same normalized source fingerprint as Linux, copied/original input inventories, external tool
+and driver hashes, SDK/source/provider/bundle-free CLI checks and the actual `port build`/reuse/verify cycle. Its strict
+native path allowlist and denial probes are distinct from the oracle-only interpreter/SDK-tool exception; it does not
+provide an execve trace. Use the accepted input/result/qualification receipts, not a path or a suite count alone, at
+the pending producer/adoption decision. Do not repeat unchanged gates merely for the review-marker edit.

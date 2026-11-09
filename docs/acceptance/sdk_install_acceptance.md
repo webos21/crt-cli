@@ -1851,3 +1851,102 @@ unendorsed SDK shared-control output. All suites ran with inputs; no skip is
 counted. This closes the Linux affected-common-code replay at this developer
 combination only. macOS continuation and final producer/adoption review remain
 open; the shared SDK control limitation is not waived by the aggregate pass.
+
+## macOS D3 common-change closure replay (2026-11-09)
+
+**Pass, native macOS/arm64: 29/29 gates on the first complete run.** This is the native continuation
+of the Linux handoff above, not another SDK production, automatic adapter approval or a new three-host release matrix.
+Review inputs: CRT `2fdce21d687936c313a3a5990d7acdc3ab824c54` and CLI
+`938518c4b3bb2c887e921af602082b46ac9be5b4`. The latter's product/test inputs are unchanged from `2ae74d4`;
+the later commits add documentation and the Linux replay driver. The macOS driver/fast host tests are the only code
+changes made in this pass; `src`, `include`, `crt.json`, the root lock, committed binaries and STATUS are untouched.
+
+### Exact native inputs
+
+The copied LF-normalized `src`, `include`, `crt.json` snapshot contains 46 files and hashes to
+`22720f7d9e223af06e41887ec0bed9ede55568ecdd6b9b5ef3499769893bee16`, exactly the Linux handoff fingerprint.
+It is a fresh export and output, not reuse of the earlier macOS product binaries. Cold self-build executes **21**
+commands with **0** reused. The resulting CLI SHA-256 is
+`929f72913e28a4786cd51cb337a8ee7fb59bb4c4650a08ca594c048ee3114175`.
+
+The existing clean local macOS/arm64 Dev SDK from producer `2f4103d97880d5a51c474ef7b65fe810186c49de` is reused:
+version `v0.0.1-rehearsal.7`, content `02e67f3ef8e8eef48f4497c1f5f5ad938e2fdc98ff143fd6cdf849b46fec999b`,
+portable provider `912094d0016e8d1a8a6c116e1b257867cfc2f284b148de8d5b419f4d6c97e189`.
+The producer delta since that SDK is documentation plus the Windows-only contract replay script, which is not shipped
+in this SDK. No runtime, wrapper, recipe or public ABI changed, so no SDK/GFX/Web/Full rebuild is required. This does
+not relabel the SDK as built from CRT's newer documentation commit or adopt Linux's dirty developer provenance.
+
+Independent host-tools manifest is `0a81db3eacb89b54c106d8f57bfd5a0e6bb57a24977e124f583e7c81751f1160`;
+zlib archive `9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23`;
+recipe `dde944984d799197c0af1553ac7cf38139edc7b2e4e673ef9b4c17dd8c1a349b`;
+test `3d7460fb51e215424ef4fa36593cd7662bdcf83bbd1e986eb0ed746b07aebe62`.
+The bootstrap seed is the prior qualified macOS CLI (`5564545c6b3e49e8f6b2cc3b0966360552e20c972e3da1a612c4b4ce4e110d84`).
+Explicit Xcode Clang/Clang++, linker, ar, sibling ranlib and OS SDK are identified in the input/configuration receipts;
+there is no dirty-SDK opt-in, inherited compiler search path or SDK modification.
+
+### Boundary and evidence ownership
+
+`tools/replay_port_macos.py` creates `/private/tmp/d3-macos-av_7os4h`, copies only the CLI's source/header/manifest inputs
+and public SDK/tool/archive/seed payloads, and uses fresh private HOME/tmp/jobs. Seatbelt denies network and original
+repository/producer/old-handoff access, outside-scratch writes and undeclared executable paths; generated scratch
+programs are permitted. Native recipe execution uses pinned CRT tools plus declared vendor tools, not host shell/make.
+This is an executable-path policy with actual denial probes, **not a macOS execve trace** or a general untrusted-code sandbox.
+
+Separate bare-CLI calls hide the copied SDK, source, provider and bundle too. `version` and `doctor --bootstrap` pass,
+and a native probe fails to open those inputs. The CLI's only direct dylib import is `/usr/lib/libSystem.B.dylib`.
+Only the packaged-oracle call has a labeled wider interpreter/SDK-tool policy; its Python and producer driver are
+replay prerequisites, not native CLI/control/app prerequisites. The pre-created setuid data-only audit fixture is
+never executed. The source snapshot and original/copied SDK/tool inventories are checked after the suites.
+
+Raw evidence: CRT's ignored `out/d3-common-macos-20261109/replay-r1/` holds the source/SDK/tool inventories, external
+tool/driver hashes, per-call argv/stdout/stderr and final result. The retained work directory holds the actual
+consumers, link maps, dependency files, negative fixtures and installed items. Run the seven `--cases` in the
+[native handoff procedure](../guides/development.md#d3-common-change-closure-and-native-handoff) with fresh output/work
+paths and these native identities. Do not substitute Linux SDK/binary/tool pins. Unchanged archive and SDK-store
+implementations retain their earlier macOS baselines rather than being counted as newly run suites here.
+
+### Completed results and receipts
+
+| Input-enabled suite | Checks passed |
+| --- | ---: |
+| port-recipe-test | 141 |
+| port-build-test | 40 |
+| port-store-test | 102 |
+| port-project-test | 81 |
+| port-command-test | 33 |
+| port-oracle-test | 41 |
+| native-test | 921 |
+
+All seven suites ran with inputs; no skip is counted. The actual JSON `port build zlib` publishes once, repeats with
+`already_published: true` and the same key, then `port verify` succeeds. The key is
+`d1cf55d897313fb79b1b25c5d7ba20027bbd18a4ae2be49a20041db4025e2797`, unchanged from the earlier macOS adapter
+qualification. This demonstrates unchanged key inputs on macOS, not byte reproducibility or approval of review metadata.
+Warm self-build executes **0** commands and reuses **21**. The tested CLI is **4,494,632 bytes** and is not copied into `bin/`.
+
+The project suite still proves static C/C++ consumption with compiler depfiles/link maps and actual shared loading.
+Separate `mapped-providers.json` probes pass **2/2** using the strict native executable policy: the port process names
+its immutable item's `libz.1.3.1.dylib`; the SDK-provider control names `<copied-sdk>/lib/libz.1.3.1.dylib`, not host libz.
+`consumer-bindings.json` passes the existing CRT binding/mixed-runtime audit on **nine images** (CLI, five port consumers,
+two controls and port dylib). The new Windows runtime-path list does not inject `DYLD_*` on macOS; these are actual
+Mach-O loader choices. The oracle installs the same eight paths and **15/15 static member objects are byte-identical**;
+its intentional absolute install name and extra `@loader_path` entry remain separately asserted.
+
+Original/copied SDK and host-tools inventories and the current product/test fingerprint are unchanged. The owner-process
+check finds no remaining child under the new workspace. No product/SDK/recipe correction, fixture synchronization or
+failed native replay was required. Seven fast replay-host Python fixtures also pass. Retained native stderr contains
+intentional compile-failure controls, deprecated linker warnings and denied xcrun-cache writes from fixture queries;
+all assertions pass. Oracle capability probes remain explicitly cache-free as in the prior macOS record.
+
+Accepted `replay-r1/result.json` SHA-256:
+`1f9f01cf43914e192e350759d31d734fc48356b0701f9f9ac5fc88480136650b`.
+`qualification.json` binds source/CLI/SDK identity, input/command/result digests, suite counts, published key/manifest,
+the replay-driver hash and both mapping/binding evidence files; its SHA-256 is
+`6c68d56a680a9a20053aad5f66d849ed824b3c88fa28bd2170fbba568154dae2`.
+Current source files match the recorded fingerprint. This closes the requested macOS affected-common-code gate only;
+older records and failed identities retain their original scope.
+
+Formal CRT adapter approval/adoption and D3 closure stay pending. Review metadata remains excluded from build keys;
+no store/project pins, trust defaults, SDK assets or binary snapshots are promoted by this replay. The historical
+Linux SDK-provider C shared control's host-libz resolution remains unendorsed under producer TODO 6.4; macOS's
+provider controls must be observed on this native SDK independently. Windows/x64 keeps its exact unchanged
+qualification; Windows/arm64 D3 and later dependency/preview work remain separate gates.

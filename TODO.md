@@ -32,10 +32,10 @@ D2 receipts/selection/first-build/pinned HTTPS are implemented at the linked
 belongs to HISTORY; STATUS is the separately requested dated snapshot.
 
 - [ ] Review the digest-keyed CRT adapter policy and record producer/consumer
-  adoption. Keep `crt_review: pending` until the closure gates below pass.
-- [ ] Complete the owner's native macOS replay on the Linux-verified product
-  baseline; [Linux closure passes](docs/acceptance/sdk_install_acceptance.md#linux-d3-common-change-replay-and-macos-handoff-2026-11-09).
-  Reuse Windows/x64's qualification unless a changed policy/product affects it.
+  adoption. Keep `crt_review: pending` until the explicit approval/adoption decision is recorded.
+  Affected-source proof is available on [Linux](docs/acceptance/sdk_install_acceptance.md#linux-d3-common-change-replay-and-macos-handoff-2026-11-09)
+  and [macOS](docs/acceptance/sdk_install_acceptance.md#macos-d3-common-change-closure-replay-2026-11-09);
+  reuse Windows/x64's qualification only for its unchanged inputs.
 - [ ] Close D3 after review and affected-host proof; retain original failures,
   compare build keys and preserve store/project pins. Approval metadata alone
   is excluded from the key. Windows/arm64 D3 is a separate qualification target.
