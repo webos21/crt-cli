@@ -97,10 +97,19 @@ def main():
     declared_tools = {Path(local[name]).resolve() for name in ('cc', 'cxx', 'linker', 'ar')}
     declared_tools |= {p.parent / name for p in declared_tools
                        for name in ('lld.exe', 'llvm-ranlib.exe')}
-    generated = [project / 'out/native', work / 'tmp', bundle]
+    # Programs a port build generates live in the port store's job directories under the test HOME.
+    generated = [project / 'out/native', work / 'tmp', bundle, work / 'home/.crt/ports']
+    # The oracle suite runs the SDK's own crt-port-build.py: its Python is a workspace copy of the replay host's (the original lives
+    # in a private profile directory the restricted SID cannot read, and no ACL is changed), and it starts the SDK's CRT shell and make.
+    python_copy = work / 'test-host-python'
+    if not python_copy.exists():
+        skip = shutil.ignore_patterns('Doc', 'Tools', 'test', 'tests', '__pycache__', 'site-packages', 'idlelib', 'tkinter', 'turtledemo')
+        shutil.copytree(Path(sys.executable).resolve().parent, python_copy, ignore=skip)
+    environment['CRT_CLI_TEST_PORT_PYTHON'] = str(python_copy / 'python.exe')
+    oracle_roots = [python_copy, sdk]
     system_console = Path(os.environ['SystemRoot'], 'System32/conhost.exe').resolve()
 
-    def run(label, argv):
+    def run(label, argv, extra_roots=()):
         status = trace.run(list(map(str, argv)), work=work, sid=args.sid, env=environment, cwd=project,
                            stdout=output / (label + '.stdout'), stderr=output / (label + '.stderr'), timeout=1800)
         def declared(image):
@@ -108,7 +117,7 @@ def main():
                 return False
             path = Path(image).resolve()
             return (path in declared_tools or path in {cli.resolve(), (work / 'probe.exe').resolve(), system_console}
-                    or any(path.is_relative_to(root.resolve()) for root in generated))
+                    or any(path.is_relative_to(root.resolve()) for root in [*generated, *extra_roots]))
         status['undeclared_images'] = [p for p in status['processes'] if not declared(p['image'])]
         commands.append({'case': label, 'argv': list(map(str, argv)), **status})
         (output / 'commands.json').write_text(json.dumps(commands, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -130,7 +139,7 @@ def main():
             continue
         executable = project / 'out/native' / (suite + '.exe')
         assert executable.is_file()
-        status, stdout = run(suite, [executable])
+        status, stdout = run(suite, [executable], oracle_roots if suite == 'port-oracle-test' else ())
         matched = re.search(r'(\d+) checks passed', stdout)
         passed = (status['exit_code'] == 0 and not status['timed_out'] and not status['undeclared_images']
                   and matched and 'skipped' not in stdout)

@@ -30,6 +30,7 @@ int main() {
     auto bytes = read_text(fs::path(here).parent_path() / "data" / "zlib.recipe.json");
     const std::string host_os = native_target().at("os").get<std::string>();
     const bool darwin = host_os == "macos";
+    const bool windows = host_os == "windows";   // the build shell is spelled with forward slashes there
     auto recipe = parse_port_recipe(bytes, host_os);
     check(file_sha256(archive) == recipe.source.sha256, "the supplied archive is the recipe's pinned source");
 
@@ -89,16 +90,20 @@ int main() {
     for (const auto& relative : installed) check(fs::exists(result.prefix / relative), "installed: " + relative);
     check(fs::is_symlink(result.prefix / (darwin ? "lib/libz.dylib" : "lib/libz.so")) && fs::is_symlink(result.prefix / (darwin ? "lib/libz.1.dylib" : "lib/libz.so.1")), "shared aliases are symlinks");
     check(result.prefix.string().find(' ') != std::string::npos, "the install prefix contains a space");
-    check(read_text(result.prefix / "lib/pkgconfig/zlib.pc").find("prefix=" + result.prefix.string()) != std::string::npos, "the pkg-config file records the real prefix");
+    check(read_text(result.prefix / "lib/pkgconfig/zlib.pc").find("prefix=" + result.prefix.generic_string()) != std::string::npos, "the pkg-config file records the real prefix");
 
     const auto& environment = record.at("environment");
-    check(environment.at("CFLAGS") == (darwin ? "-O2" : "-O2 -O2 -fPIC"), "CFLAGS follow the oracle's append semantics");
-    check(environment.at("CC").get<std::string>().rfind("/system/bin/sh /crt-bin/crt-cc", 0) == 0, "CC is the job wrapper started through the bundle shell");
+    check(environment.at("CFLAGS") == (darwin ? "-O2" : windows ? "-O2 -U_WIN32 -U_WIN32_WCE -U__WIN32__ -UWIN32 -U_MSC_VER" : "-O2 -O2 -fPIC"), "CFLAGS follow the oracle's append semantics");
+    check(environment.at("CC").get<std::string>().rfind(tools.manifest.at("rootfs").at("shell").get<std::string>() + " /crt-bin/crt-cc", 0) == 0, "CC is the job wrapper started through the bundle shell");
     check(environment.at("PATH") == (tools.root / "system/bin").string(), "PATH holds only the host-tools directory");
     if (darwin) {
         // zlib's Darwin configure names the shared object by its install directory; the adapter's executor policy replaces that.
         check(environment.at("LDSHARED").get<std::string>().find("-install_name @rpath/libz.1.dylib") != std::string::npos, "LDSHARED carries the relocatable install name");
         check(environment.at("AR") == toolchain.archiver.string() && environment.at("RANLIB") == port_ranlib_for(toolchain.archiver).string(), "AR and RANLIB are the declared archiver and its ranlib");
+    } else if (windows) {
+        // The recipe declares no shared-library policy for Windows: zlib's own configure chooses, and crt-cc -shared builds the DLL.
+        check(!environment.contains("LDSHARED"), "no LDSHARED override on Windows");
+        check(environment.at("CRT_WINDOWS_SDK_LIBPATH") == port_os_sdk(toolchain).generic_string(), "the Windows SDK import libraries are declared explicitly");
     } else {
         check(environment.at("LDSHARED").get<std::string>().find("-Wl,-soname,libz.so.1") != std::string::npos, "LDSHARED comes from the recipe override");
     }

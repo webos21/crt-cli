@@ -22,11 +22,14 @@ bool has_rule(const PortAudit& audit, const std::string& rule) {
 
 const std::string host_os = native_target().at("os").get<std::string>();
 const bool darwin = host_os == "macos";
+const bool windows = host_os == "windows";
 
 PortAuditRequest audit_of(const fs::path& root, const fs::path& sdk, std::vector<std::string> forbidden = {}) {
     PortAdapter adapter;
     if (darwin) {
         adapter.layouts["macos"] = {{"lib/libz.1.dylib"}, {"@rpath/libz.1.dylib"}, "lib/libz.a", "lib/libz.dylib"};
+    } else if (windows) {
+        adapter.layouts["windows"] = {{"lib/libz.so.1"}, {"libz.so.1.3.1"}, "lib/libz.a", "lib/libz.so"};
     } else {
         adapter.expected_files = {"lib/libz.so.1"};
         adapter.expected_sonames = {"libz.so.1"};
@@ -77,7 +80,7 @@ int main() {
     const std::string main_library = darwin ? "lib/libz.1.3.1.dylib" : "lib/libz.so.1.3.1";
     const std::string alias_name = darwin ? "lib/libz.1.dylib" : "lib/libz.so.1", link_name = darwin ? "lib/libz.dylib" : "lib/libz.so";
 
-    if (!darwin) {
+    if (!darwin && !windows) {
     // ---- ELF reader --------------------------------------------------------------------------------------------------
     {
         write_text(scratch / "text.txt", "not an ELF\n");
@@ -343,6 +346,130 @@ int main() {
         }
     }
 
+    if (windows) {
+        // ---- PE reader ---------------------------------------------------------------------------------------------------
+        const bool arm = native_target().at("arch") == "aarch64";
+        auto get32 = [](const std::string& d, size_t at) { uint32_t v = 0; for (int i = 3; i >= 0; --i) v = (v << 8) | static_cast<unsigned char>(d[at + i]); return v; };
+        auto put32 = [](std::string& d, size_t at, uint32_t v) { for (int i = 0; i < 4; ++i) d[at + i] = static_cast<char>((v >> (8 * i)) & 0xff); };
+        {
+            write_text(scratch / "text.txt", "not a PE\n");
+            check(!read_pe_image(scratch / "text.txt").has_value(), "a text file is not PE");
+            write_text(scratch / "dos.exe", std::string("MZ") + std::string(200, '\0'));
+            check(!read_pe_image(scratch / "dos.exe").has_value(), "an MZ file without a PE signature is not a PE image");
+            auto info = read_pe_image(library);
+            check(info && info->kind == "shared" && info->dll_name == "libz.so.1.3.1", "the SDK libz is a DLL named libz.so.1.3.1 (the POSIX spelling is kept)");
+            check(info && std::find(info->needed.begin(), info->needed.end(), "KERNEL32.dll") != info->needed.end(), "it imports the OS kernel32");
+            check(info && info->machine == (arm ? 0xaa64u : 0x8664u), "its machine is the target's");
+            for (const auto& name : info ? info->needed : std::vector<std::string>{})
+                check(name == "KERNEL32.dll" || name.rfind("api-ms-win-", 0) == 0, "it imports only OS libraries, no other C runtime (" + name + ")");
+
+            auto data = read_text(library);
+            const size_t pe = get32(data, 0x3c), optional = pe + 24, directories = optional + 112;
+            auto broken = [&](const std::string& name, const std::function<void(std::string&)>& mutate) {
+                auto copy = data;
+                mutate(copy);
+                auto file = scratch / name;
+                write_text(file, copy);
+                return error_of([&] { read_pe_image(file); });
+            };
+            check(!broken("short.dll", [&](std::string& d) { d.resize(pe + 30); }).empty(), "a truncated header is refused");
+            check(!broken("half.dll", [&](std::string& d) { d.resize(600); }).empty(), "a file cut inside its section table is refused");
+            check(broken("pe32.dll", [&](std::string& d) { d[optional] = 0x0b; d[optional + 1] = 0x01; }).find("64-bit") != std::string::npos, "32-bit (PE32) is refused");
+            check(!broken("importdir.dll", [&](std::string& d) { put32(d, directories + 8, 0x7ffff000); }).empty(), "an import directory outside every section is refused");
+            check(!broken("exportdir.dll", [&](std::string& d) { put32(d, directories, 0x7ffff000); }).empty(), "an export directory outside every section is refused");
+            check(!broken("sections.dll", [&](std::string& d) { d[pe + 6] = 0x7f; }).empty(), "a section count past the file is refused");
+        }
+
+        // ---- audit rules -------------------------------------------------------------------------------------------------
+        {
+            auto item = scratch / "item";
+            make_item(item, library);
+            auto clean = audit_port_item(audit_of(item, toolchain.sdk));
+            check(clean.findings.empty(), "a DLL with the zlib alias layout and the SDK's imports passes" + (clean.findings.empty() ? std::string() : " (" + clean.findings[0].rule + ": " + clean.findings[0].detail + ")"));
+            check(clean.libraries.size() == 1 && clean.libraries[0].at("dll_name") == "libz.so.1.3.1", "the audit lists the library");
+
+            auto fresh = [&](const std::string& name) { auto d = scratch / name; make_item(d, library); return d; };
+            auto replace_in = [&](const fs::path& d, const std::string& from, const std::string& to) {
+                auto text = read_text(d / "lib/libz.so.1.3.1");
+                auto at = text.find(from);
+                check(at != std::string::npos && from.size() == to.size(), "the fixture carries " + from);
+                patch_bytes(d / "lib/libz.so.1.3.1", at, to);
+            };
+            { auto d = fresh("absolute"); fs::create_symlink("C:/Windows/win.ini", d / "lib/abs"); check(has_rule(audit_port_item(audit_of(d, toolchain.sdk)), "symlink-absolute"), "an absolute symlink is a finding"); }
+            { auto d = fresh("escape"); fs::create_symlink("../../../etc/passwd", d / "lib/out"); check(has_rule(audit_port_item(audit_of(d, toolchain.sdk)), "symlink-escapes"), "a symlink out of the item is a finding"); }
+            { auto d = fresh("dangling"); fs::create_symlink("nothing.dll", d / "lib/dangling"); check(has_rule(audit_port_item(audit_of(d, toolchain.sdk)), "symlink-dangling"), "a dangling symlink is a finding"); }
+            {
+                auto d = fresh("noalias");
+                fs::remove(d / "lib/libz.so.1");
+                fs::remove(d / "lib/libz.so");
+                check(has_rule(audit_port_item(audit_of(d, toolchain.sdk)), "expected-file"), "an install without the alias the layout names is a finding");
+            }
+            { auto d = fresh("missing"); fs::remove_all(d / "lib"); fs::create_directory(d / "lib");
+              auto audit = audit_port_item(audit_of(d, toolchain.sdk));
+              check(has_rule(audit, "expected-soname") && has_rule(audit, "expected-file"), "an install without the expected library is a finding"); }
+            {
+                auto d = fresh("leak");
+                write_text(d / "lib/note.txt", "built in C:/Users/someone/job/prefix\n");
+                check(has_rule(audit_port_item(audit_of(d, toolchain.sdk, {"C:/Users/someone/job"})), "host-path-reference"), "a file naming the build job is a finding");
+                check(!has_rule(audit_port_item(audit_of(d, toolchain.sdk, {"C:/elsewhere"})), "host-path-reference"), "...and only then");
+            }
+            {
+                // The DLL's export name is what a consumer's import library records; renaming the file is not enough.
+                auto d = fresh("dllname");
+                replace_in(d, "libz.so.1.3.1", "libz.so.9.9.9");
+                auto audit = audit_port_item(audit_of(d, toolchain.sdk));
+                check(has_rule(audit, "expected-soname") && has_rule(audit, "dll-name-alias"), "a DLL whose export name differs from the layout is a finding");
+            }
+            {
+                auto d = fresh("needed");
+                replace_in(d, "KERNEL32.dll", "KERNELQQ.dll");
+                check(has_rule(audit_port_item(audit_of(d, toolchain.sdk)), "needed-not-in-sdk"), "an import that neither the OS, the SDK nor the item provides is a finding");
+            }
+            {
+                auto d = fresh("hostruntime");
+                replace_in(d, "KERNEL32.dll", "ucrtbase.dll");
+                check(has_rule(audit_port_item(audit_of(d, toolchain.sdk)), "needed-not-in-sdk"), "an import of the host's own C runtime is a finding");
+            }
+            {
+                auto d = fresh("sdkdll");
+                // A DLL the SDK ships in bin/ is a legitimate dependency, found case-insensitively like the loader does.
+                auto fake_sdk = scratch / "sdk-with-dll";
+                fs::create_directories(fake_sdk / "bin");
+                write_text(fake_sdk / "bin" / "qqqqqq32.DLL", "x");
+                replace_in(d, "KERNEL32.dll", "QQQQQQ32.dll");
+                check(!has_rule(audit_port_item(audit_of(d, fake_sdk)), "needed-not-in-sdk"), "an import of an SDK DLL is accepted");
+                check(has_rule(audit_port_item(audit_of(d, toolchain.sdk)), "needed-not-in-sdk"), "...and only when the SDK ships it");
+            }
+            {
+                auto d = fresh("machine");
+                auto data = read_text(d / "lib/libz.so.1.3.1");
+                const size_t pe = get32(data, 0x3c);
+                patch_bytes(d / "lib/libz.so.1.3.1", pe + 4, arm ? std::string("\x64\x86", 2) : std::string("\x64\xaa", 2));
+                check(has_rule(audit_port_item(audit_of(d, toolchain.sdk)), "machine"), "a binary for another CPU is a finding");
+            }
+            {
+                auto d = fresh("broken");
+                auto data = read_text(d / "lib/libz.so.1.3.1");
+                patch_bytes(d / "lib/libz.so.1.3.1", get32(data, 0x3c) + 24, std::string("\x0b\x01", 2));
+                check(has_rule(audit_port_item(audit_of(d, toolchain.sdk)), "pe-unreadable"), "a PE the reader cannot account for fails the audit instead of being skipped");
+            }
+            {
+                auto d = fresh("elf");
+                write_text(d / "lib/foreign.so", std::string("\x7f" "ELF") + std::string(100, '\0'));
+                check(has_rule(audit_port_item(audit_of(d, toolchain.sdk)), "foreign-format"), "an ELF image in a Windows item is a finding");
+            }
+            {
+                auto d = fresh("skip");
+                fs::create_directories(d / "evidence/logs");
+                write_text(d / "evidence/logs/1.log", "C:/Users/someone/job\n");
+                write_text(d / "manifest.json", "{}\n");
+                PortAuditRequest request = audit_of(d, toolchain.sdk, {"C:/Users/someone/job"});
+                request.skip_top_level = {"evidence", "manifest.json"};
+                check(audit_port_item(request).findings.empty(), "skipped top-level names (evidence, manifest) are outside the audit");
+            }
+        }
+    }
+
     // ---- build key ---------------------------------------------------------------------------------------------------
     auto pristine = scratch / "pristine";
     fs::create_directory(pristine);
@@ -369,6 +496,21 @@ int main() {
         check(port_build_key(port_key_inputs(moved_request)) == key, "the OS SDK's location is not a key input");
         write_text(fs::path(moved_toolchain.os_sdk) / "SDKSettings.json", "{\"Version\":\"changed-test-fixture\"}\n");
         check(port_build_key(port_key_inputs(moved_request)) != key, "changed OS SDK metadata changes the build key");
+    } else if (windows) {
+        // Content of the import libraries, not their location, is a key input.
+        const auto libpath = port_os_sdk(toolchain);
+        check(inputs.at("os_sdk").at("kind") == "windows-um-import-libraries" &&
+              inputs.at("os_sdk").at("libraries").at("kernel32.lib") == file_sha256(libpath / "kernel32.lib") &&
+              inputs.at("os_sdk").at("libraries").at("synchronization.lib") == file_sha256(libpath / "synchronization.lib"),
+              "the configured Windows SDK import libraries are key inputs");
+        auto moved_toolchain = toolchain;
+        moved_toolchain.os_sdk = (scratch / "OS SDK copy").string();
+        fs::create_directory(moved_toolchain.os_sdk);
+        for (const char* name : {"kernel32.lib", "synchronization.lib"}) fs::copy_file(libpath / name, fs::path(moved_toolchain.os_sdk) / name);
+        auto moved_request = request; moved_request.toolchain = &moved_toolchain;
+        check(port_build_key(port_key_inputs(moved_request)) == key, "the Windows SDK's location is not a key input");
+        write_text(fs::path(moved_toolchain.os_sdk) / "kernel32.lib", "changed test fixture\n");
+        check(port_build_key(port_key_inputs(moved_request)) != key, "a changed import library changes the build key");
     } else {
         check(!inputs.contains("os_sdk") && !inputs.at("environment").contains("executor"), "Linux key inputs keep their previous shape");
     }
@@ -391,7 +533,8 @@ int main() {
         check(port_build_key(port_key_inputs(changed)) != key, "a different source digest changes the key");
 
         auto compiler_copy = toolchain;
-        const char* true_binary = fs::exists("/bin/true") ? "/bin/true" : "/usr/bin/true";
+        // Any other native program stands in for "a different binary": /bin/true on POSIX, the bundle's awk on Windows.
+        const std::string true_binary = windows ? (tools.root / "system/bin/awk.exe").string() : fs::exists("/bin/true") ? "/bin/true" : "/usr/bin/true";
         compiler_copy.cc = true_binary;
         changed = request;
         changed.toolchain = &compiler_copy;
@@ -426,7 +569,7 @@ int main() {
     PortStore store(scratch / "crt home 한글" / "ports");
     {
         // A finished build whose prefix names its job directory is refused, and nothing is published or left staged.
-        write_text(result.prefix / "share/leak.txt", "built in " + result.prefix.string() + "\n");
+        write_text(result.prefix / "share/leak.txt", "built in " + result.prefix.generic_string() + "\n");
         auto message = error_of([&] { store.publish(request, result, inputs); });
         check(message.find("host-path-reference") != std::string::npos, "a leaked job path stops the publication (" + message + ")");
         check(store.list().empty() && fs::is_empty(store.root() / ".staging"), "the refused publication left no item and no staging");
@@ -456,14 +599,15 @@ int main() {
         check(fs::is_regular_file(item / relative), "the item holds " + relative);
     check(fs::is_symlink(item / alias_name) && fs::read_symlink(item / alias_name) == fs::path(main_library).filename(), "the SONAME / install-name alias is a relative symlink");
     auto pc = read_text(item / "lib/pkgconfig/zlib.pc");
-    check(pc.find("prefix=" + item.string()) != std::string::npos && pc.find(request.job.string()) == std::string::npos,
-          "zlib.pc names the item, not the job");
+    // The build shell on Windows takes forward slashes, so the recorded prefix is spelled that way (identical elsewhere).
+    check(pc.find("prefix=" + item.generic_string()) != std::string::npos && pc.find(request.job.generic_string()) == std::string::npos &&
+          pc.find(request.job.string()) == std::string::npos, "zlib.pc names the item, not the job");
     check(published.manifest.at("relocations").size() == 1 && published.manifest.at("relocations")[0].at("file") == "lib/pkgconfig/zlib.pc",
           "the one relocation is recorded");
     auto manifest = read_json(item / "manifest.json");
     check(manifest == published.manifest, "the returned manifest is the stored one");
     check(manifest.at("build_key") == key && manifest.at("key_inputs") == inputs && manifest.at("tests").size() == 2, "the manifest records the key, its inputs and the tests");
-    check(manifest.at("libraries").size() == 1 && manifest.at("libraries")[0].at(darwin ? "install_name" : "soname") == (darwin ? "@rpath/libz.1.dylib" : "libz.so.1"), "the manifest lists the shared object");
+    check(manifest.at("libraries").size() == 1 && manifest.at("libraries")[0].at(darwin ? "install_name" : windows ? "dll_name" : "soname") == (darwin ? "@rpath/libz.1.dylib" : windows ? "libz.so.1.3.1" : "libz.so.1"), "the manifest lists the shared object");
     check(manifest.dump().find(result.prefix.parent_path().string()) == std::string::npos, "the manifest names no build-job path");
     check(!manifest.at("unsupported_scope").empty() && manifest.at("crt_review") == "pending", "unsupported scope and the pending CRT review are stated");
     check(store.verify(key, toolchain.sdk) == manifest.at("files").size() + 1, "verify accepts the item and counts the manifest too");

@@ -222,3 +222,41 @@ The oracle deliberately differs in two ways: its install name is its temporary p
 empty during build and sets it only for unpublished test executables. Static archive container metadata can differ
 between `libtool` and `ar`/`ranlib`; member names and object bytes must still agree. Native replay and its limitations
 belong to [acceptance](../acceptance/sdk_install_acceptance.md#source-port-d3-replay-macosarm64-2026-11-09).
+
+## 9. Windows adapter policy (2026-11-09)
+
+Windows is a default CLI platform, so the same pinned zlib recipe runs on it through the CRT shell and CRT-built `make` of the
+selected host-tools bundle. The recipe's own `windows` overrides apply unchanged (`-U_WIN32 ...`, `RANLIB=true`); upstream source,
+the SDK and the recipe are not patched. The adapter selects a `windows` `port_layout`: `libz.a`, the PE DLL `libz.so.1.3.1`
+and the links `libz.so`, `libz.so.1` that zlib's own Makefile makes (Developer Mode, as before), `zlib.pc` and the headers.
+The DLL keeps the POSIX spelling because the recipe and the SDK's own libz do; the audit reads PE, not the extension.
+
+Executor policy, none of it a new recipe/SDK/lock format:
+
+- **Shell spelling.** The CRT shell treats a backslash as an escape, so every path handed to configure/make, to the wrappers and to
+  the build steps uses forward slashes. The job prefix therefore appears in `zlib.pc` with forward slashes; publication rewrites
+  and forbids both spellings.
+- **Tools with spaces.** `AR` and `RANLIB` are started like the compiler, through job-local scripts under `/crt-bin` that `exec`
+  the real tool (`C:/Program Files/LLVM/bin/llvm-ar.exe`), so Makefile word splitting never sees the space. A job-rootfs link to the
+  tool directory is not used: a restricted-token run was observed to be refused access through it.
+- **OS SDK.** The import-library directory of the portable contract's `windows-um-import-libraries` kind is passed explicitly as
+  `CRT_WINDOWS_SDK_LIBPATH`. The content (SHA-256) of `kernel32.lib` and `synchronization.lib`, the default system libraries of the
+  compiler wrapper, is a Windows build-key input; the location is not. Linux and macOS key shapes are unchanged.
+- **Recipe tests.** Test programs get `.exe`; the loader finds the port's DLL through a native `PATH` of the port's `lib/` followed by
+  the SDK's `bin/` (the Windows loader has no run path, so nothing is stamped into the images).
+- **Consumers.** `run`/`test` put each used port item's `lib/` before the SDK's `bin/` and `lib/` in the child's search path. The
+  Windows SDK contract declares no shared `z`; a target asking for it gets a clear refusal instead of a silent fallback.
+
+The audit reads 64-bit PE images: machine, DLL kind, export-directory DLL name, and the import and delay-import tables. An image the
+reader cannot account for (32-bit, truncated, a directory or string outside the file) fails the audit instead of being skipped.
+A dependency is accepted only when it is a Windows system DLL (`kernel32`, `ntdll`, `api-ms-win-*` and a short fixed list), a DLL in the
+SDK's `bin/` or `lib/` (compared case-insensitively, like the loader), or a DLL this item exports. The host's C runtimes
+(`ucrtbase`, `msvcrt`, `vcruntime`) are deliberately not on the list. The export name must equal the layout's name and exist beside
+the image. ELF and Mach-O images in a Windows item, and PE images in a Linux or macOS item, are findings. Run-path and
+POSIX mode-bit rules do not exist for PE and are not claimed; this is an install-level audit, not a loader emulator, an
+export-symbol audit or an Authenticode check.
+
+The oracle (`crt-port-build.py`) also installs `lib/z.lib`, a byte copy of `libz.a` for a later port's plain `-lz`. The executor has no
+dependent ports in this slice and does not install it; the oracle test requires the copy to be byte-identical and nothing else to differ in
+the file set. The executed policy and its limits are recorded in
+[acceptance](../acceptance/sdk_install_acceptance.md#source-port-d3-windowsx64-implementation-and-replay-2026-11-09).

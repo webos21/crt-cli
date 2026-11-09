@@ -271,8 +271,10 @@ struct Builder {
         for (const auto& value : target.value("sdk_libraries", Json::array())) {
             std::string name = value;
             require(identifier(name), "invalid SDK library name");
-            auto library = toolchain.contract.at("libraries").at(name).at(selected).get<std::string>();
-            libraries.push_back(inside(toolchain.sdk, library).string());
+            require(toolchain.contract.at("libraries").contains(name), "the SDK contract declares no library '" + name + "'");
+            const auto& variants = toolchain.contract.at("libraries").at(name);
+            require(variants.contains(selected), "the SDK contract declares no " + selected + " variant of library '" + name + "' for this target");
+            libraries.push_back(inside(toolchain.sdk, variants.at(selected).get<std::string>()).string());
         }
     }
 
@@ -536,7 +538,12 @@ Reply workflow(const std::vector<std::string>& args) {
     else for (const auto& target : list) builder.build_one(target.at("name"));
     Json outcomes = Json::array(); int code = 0;
     // The SDK's runtime images (Windows DLLs live in bin/ and lib/) for programs linked against its shared runtime.
-    const std::vector<std::string> runtime_path{(toolchain.sdk / "bin").string(), (toolchain.sdk / "lib").string()};
+    // A port item's own shared libraries come first: the Windows loader has no run path, so the item's lib/ must precede the
+    // SDK's (whose lib/ may ship another libz) for a consumer that links the item's DLL.
+    std::vector<std::string> runtime_path;
+    for (const auto& item : builder.port_items) runtime_path.push_back((item.second / "lib").string());
+    runtime_path.push_back((toolchain.sdk / "bin").string());
+    runtime_path.push_back((toolchain.sdk / "lib").string());
     if (args[0] == "test") {
         require(manifest.contains("tests") && !manifest.at("tests").empty(), "project declares no tests");
         for (const auto& target : manifest.at("tests")) {

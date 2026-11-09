@@ -1647,3 +1647,99 @@ Use `--cases` for an explicit changed-fixture subset; retain the earlier receipt
 The follow-up returns nonzero for the unsupported suites rather than accepting skips.
 Final follow-up driver SHA-256:
 `0732eec9b4c9e624b37833341871020ca686152b372414d3e3f74c14c74c5257`.
+
+## Source-port D3 Windows/x64 implementation and replay (2026-11-09)
+
+The CLI now implements the previously refused Windows zlib slice: CRT-shell/make execution,
+Windows layout, PE install audit, immutable port-store publication, project provider selection,
+lock checks and the packaged producer-driver oracle. The earlier negative replay above retains
+its original sources and outcome. Policy and rationale are owned by
+[the Windows adapter design](../design/source_port_adapter.md#9-windows-adapter-policy-2026-11-09).
+
+### Exact inputs and scope
+
+Reviewed CRT `ff6b9e2` and CLI base `3db09d7563b25c2c9c487185dea84fee94a70703` plus the Windows implementation
+and fixtures recorded by the final inventory. CRT runtime/SDK/recipe bytes are unchanged:
+the existing clean `v0.0.1-rehearsal.10` SDK comes from producer
+`05b56788501b02f71a8b8084cc4041effa1475a9`. Native policy is
+`5b1ad5ba0465268a8485035f92066b19e0df9942458c212804cd7121366d29d1`; compiler-policy SDK content is
+`2e7843bcf3b77b09894a4172e8d7639835564ec7e70b2ee565f58762fb0b65e6`;
+the full copied SDK inventory is `69cce5d9c9e1abdca6a1aa3e712b2df5689690c05257c3fe1f886feebf0e34b0`.
+Independent host-tools manifest is `513eab805ed0753b67d00939fd8b00e03a577f6f14cbe74b2ad4e3862691b1cf`
+(`v0.1.0-hosttools.20261103.windows.5`, existing local/dirty-assembler provenance).
+The unchanged zlib 1.3.1 archive is `9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23` and recipe is
+`dde944984d799197c0af1553ac7cf38139edc7b2e4e673ef9b4c17dd8c1a349b`.
+Native LLVM 22.1.8 and Windows SDK `10.0.28000.0/um/x64` remain explicitly declared inputs.
+
+Final LF-normalized exported source inventory: `d6358a28c73958ec48403fb26b2c303598909f45bac3eb9ed40183f0cc4fd891`.
+`qualification-final.json` records each product/test input hash and binds these receipts.
+The tested CLI is 45,542,400 bytes, SHA-256 `d2208a85bbe5aa3ce85dd05fc45ddfdfe50ed0d3cb8883f222087d994a7ae07c`;
+that exact image refreshes `bin/win-x64/crt-cli.exe` after qualification.
+No root SDK/port lock, STATUS, public tag, trust default or release is changed.
+
+### Native results
+
+| Check | Result |
+|---|---|
+| Native / archive safety / SDK-store regression | 972 / 214 / 113 checks passed |
+| port-recipe-test | 141 checks passed |
+| port-build-test | 36 checks passed |
+| port-store-test | 94 checks passed |
+| port-project-test | 83 checks passed |
+| port-command-test | 33 checks passed |
+| port-oracle-test | 21 checks passed |
+| Actual JSON `port build zlib` | Passed, both recipe roundtrips |
+| Cold / warm self-build | 21 executed, 0 reused / 0 executed, 21 reused |
+| SDK-free visibility/help/version/doctor and PE imports | 5/5 passed |
+
+The project suite builds/runs C and C++ static/shared consumers and checks the actual provider:
+static link evidence names the store archive; shared loaded-image evidence names the store DLL.
+It exercises lock rejection and SDK-provider separation. This SDK has no declared shared-z variant;
+that SDK-provider control is explicitly refused, rather than counted as a successful shared SDK build.
+The store suite covers altered CPU, export name, unknown/host-runtime imports, SDK DLL lookup,
+unreadable PE, foreign ELF, leaked paths, key sensitivity, publication/verify/recovery and reuse.
+Both native and forward-slash job-path spellings are excluded from the published payload.
+
+The oracle builds the unchanged recipe with the installed `crt-port-build.py`, compares the
+file set, normalized pkg-config data, headers/man page, PE machine/export name/imports and
+both recipe outputs. Its extra `lib/z.lib` must be a byte copy of `libz.a`; this sole layout
+difference is explicit. In this run `libz.a` is byte-identical and the PE DLL differs;
+machine, export DLL name, imports and recipe outputs agree. This is not a byte-reproducibility claim.
+
+### Isolation, retained failures and reproduction
+
+Fresh contract replay uses `C:/Users/Lee/s8/w`, a per-workspace restricted SID, empty PATH,
+visibility probes and job-object process accounting. Repositories and original SDK are hidden;
+the SDK-free checks additionally hide the copied source/SDK/provider. All declared product and
+test inputs match the current checkout; no fixture synchronization was needed. Original/copied
+host-tools and copied SDK inventories are unchanged. Contract replay observed
+704 processes. D3 traces have no undeclared images/timeouts. Direct CLI
+imports are only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`.
+This is an observed process boundary, not network/executable denial or a ban on OS-internal CRT mappings.
+
+Earlier attempts remain in `C:/Users/Lee/s5`, `s6`, `s7` and the unfinished `s8/d3`.
+The restricted token exposed denied `llvm-ar` access through the rootfs tool-directory link;
+job-local ar/ranlib scripts now execute the declared native tools directly. Replay accounting
+then needed the store job directory for generated roundtrip executables. The oracle needed a
+workspace copy of its test-host Python because the restricted SID could not read the profile
+installation; no existing account/tool ACL was changed. A restart reused `s7/w` and stopped
+with `FileExistsError`; final contract replay used fresh `s8/w`. The interrupted `s8/d3` is not
+relabelled as complete: `s8/d3-final` reruns every D3 suite and actual command on those same
+verified product/SDK inputs.
+
+Use [the Windows replay procedure](../guides/development.md#windows-d3-replay): contract first,
+then all follow-up suites with pinned host-tools/archive and the contract workspace SID.
+Final follow-up driver SHA-256: `d22a45d9831b59984514a7ad1666224628df818864ca792455278aa091575d06`.
+Full receipts/raw logs are retained under `C:/Users/Lee/s8` and copied to ignored
+`out/windows-d3-20261109/final-s8/` for checkout-local inspection:
+
+- `contract/inputs.json`: `919c2497af8e1d63c9a5915ab9ed29d6e8049ae688bb83de5ec7487d44e87d0b`.
+- `contract/commands.json`: `c6b61aed07202f86e3f526a0a0ce5eb46f1b90c6f84237d9edffb7680b171a1c`.
+- `contract/result.json`: `9bbfa8928b29b275d798d6e446dadec21f570f2c59ea933b105164af720f27c4`.
+- `d3-final/commands.json`: `7d3a09d08e25bd0bea0a788069931c27af00317dab3a27ea68d08d38882ac535`.
+- `d3-final/result.json`: `bf95dada9f0e49589e9530be629eaa5a8bef263b1133f2dbc99c9f31606c1335`.
+
+This qualifies native Windows/x64 only. Formal CRT adapter-table approval remains pending;
+affected common-change Linux/macOS replay, Windows/arm64, multi-port dependencies,
+official trust and public release qualification remain separate work. Existing host baselines
+retain their original inputs. No new producer SDK or runtime acceptance is implied.

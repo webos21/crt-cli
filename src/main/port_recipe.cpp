@@ -119,7 +119,12 @@ const std::vector<PortAdapter>& port_adapters() {
          // (@rpath/libz.1.dylib, the Mach-O counterpart of SONAME libz.so.1); the rest of the line is configure's Darwin default.
          /*layouts*/ {{"macos", {{"include/zlib.h", "include/zconf.h", "lib/libz.a", "lib/libz.dylib", "lib/libz.1.dylib", "lib/libz.1.3.1.dylib",
                                  "lib/pkgconfig/zlib.pc"},
-                                {"@rpath/libz.1.dylib"}, "lib/libz.a", "lib/libz.dylib"}}},
+                                {"@rpath/libz.1.dylib"}, "lib/libz.a", "lib/libz.dylib"}},
+                     // Windows: the recipe keeps zlib's POSIX spelling, so the PE DLL is lib/libz.so.1.3.1 with libz.so.1 and libz.so
+                     // as the links its own Makefile makes. The audit reads PE, not the extension.
+                     {"windows", {{"include/zlib.h", "include/zconf.h", "lib/libz.a", "lib/libz.so", "lib/libz.so.1", "lib/libz.so.1.3.1",
+                                   "lib/pkgconfig/zlib.pc"},
+                                  {"libz.so.1.3.1"}, "lib/libz.a", "lib/libz.so"}}},
          /*executor_env*/ {{"macos", {{"LDSHARED", "@CC@ -dynamiclib -install_name @rpath/libz.1.dylib -compatibility_version 1 -current_version 1.3.1", false}}}},
          /*executor_make_args*/ {{"macos", {"AR=@AR@", "ARFLAGS=rc"}}}},
     };

@@ -4,8 +4,10 @@
 //   CRT_CLI_TEST_PORT_PROJECT / _HOST_TOOLS / _HOST_TOOLS_SHA256 / _ARCHIVE   as in port-build-test
 //   CRT_CLI_TEST_PORT_PYTHON   optional python3 (default: python3 from PATH)
 #include <crtcli/archive.h>
+#include <crtcli/environment.h>
 #include <crtcli/port_build.h>
 #include <crtcli/port_store.h>
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <map>
@@ -63,6 +65,7 @@ int main() {
     if (python.empty()) python = "python3";
     const std::string host_os = native_target().at("os").get<std::string>();
     const bool darwin = host_os == "macos";
+    const bool windows = host_os == "windows";
     auto recipe = parse_port_recipe(read_text(fs::path(__FILE__).parent_path() / "data" / "zlib.recipe.json"), host_os);
     check(file_sha256(archive) == recipe.source.sha256, "the supplied archive is the recipe's pinned source");
 
@@ -108,7 +111,25 @@ int main() {
     oracle_command.insert(oracle_command.end(), {python, "-I", script.string(), "--sdk-root", toolchain.sdk.string(), "--port", "zlib", "--test",
                         "--source-root", pristine.string(), "--work-root", (oracle_root / "work").string(),
                         "--install-prefix", oracle_prefix.string(), "--jobs", "4"});
-    auto ran = execute(oracle_command, 900, false, true);
+    ProcessResult ran;
+    if (windows) {
+        // No env(1): the oracle gets an explicit environment. The CRT shell takes forward slashes, and the LLVM directory is on PATH
+        // so the script can find the same host tools the executor was given.
+        auto slashes = [](const fs::path& p) { return p.generic_string(); };
+        auto system_root = getenv_or_empty("SystemRoot");
+        ChildEnvironment environment{{"HOME=" + oracle_root.string(), "USERPROFILE=" + oracle_root.string(), "TMPDIR=" + scratch.string(),
+                                      "TEMP=" + scratch.string(), "TMP=" + scratch.string(), "PYTHONUTF8=1", "SystemRoot=" + system_root,
+                                      "CRT_SPAWN_NATIVE_WINDOWS=1",   // CRT's posix_spawn redirects a non-CRT child's stdio only when told so
+                                      "PATH=" + toolchain.cc.parent_path().string() + ";" + system_root + "\\System32;" + system_root,
+                                      "CRT_HOST_CC=" + slashes(toolchain.cc), "CRT_HOST_CXX=" + slashes(toolchain.cxx),
+                                      "CRT_WINDOWS_SDK_LIBPATH=" + slashes(port_os_sdk(toolchain))}, Json::object(), Json::array()};
+        std::vector<std::string> direct{python, "-I", script.string(), "--sdk-root", toolchain.sdk.string(), "--port", "zlib", "--test",
+                                        "--source-root", pristine.string(), "--work-root", (oracle_root / "work").string(),
+                                        "--install-prefix", oracle_prefix.string(), "--jobs", "4"};
+        ran = execute_child(direct, environment, {}, 900, false);
+    } else {
+        ran = execute(oracle_command, 900, false, true);
+    }
     write_text(oracle_root / "oracle.log", ran.output);
     check(ran.exit_code == 0 && !ran.timed_out, "the oracle build and its tests succeeded (log: " + (oracle_root / "oracle.log").string() + ")");
 
@@ -122,6 +143,15 @@ int main() {
         else if (entry.kind == "file" && other->second.value != entry.value) content_differs.push_back(path);
     }
     for (const auto& item : theirs) if (!ours.count(item.first)) only_theirs.push_back(item.first);
+    if (windows) {
+        // crt-port-build.py aliases every installed libfoo.a as foo.lib so that a *later* port's plain -lfoo resolves (lld-link looks
+        // for foo.lib). The executor has no dependent ports in this slice and installs only what zlib's make install installs.
+        auto alias = std::find(only_theirs.begin(), only_theirs.end(), "lib/z.lib");
+        if (alias != only_theirs.end()) {
+            check(theirs.at("lib/z.lib").kind == "file" && theirs.at("lib/z.lib").value == theirs.at("lib/libz.a").value, "the oracle-only lib/z.lib is a byte copy of its libz.a");
+            only_theirs.erase(alias);
+        }
+    }
     auto join = [](const std::vector<std::string>& v) { std::string s; for (auto& x : v) s += (s.empty() ? "" : ", ") + x; return s; };
     check(only_ours.empty(), "no installed path is missing from the oracle: " + join(only_ours));
     check(only_theirs.empty(), "no installed path is missing from the native build: " + join(only_theirs));
@@ -134,14 +164,31 @@ int main() {
         check(known, "an unexpected content difference: " + path);
     }
     // The pkg-config file differs only in the install prefix.
-    auto pc_ours = replace_all(read_text(native.prefix / "lib/pkgconfig/zlib.pc"), native.prefix.string(), "@PREFIX@");
+    auto pc_ours = replace_all(replace_all(read_text(native.prefix / "lib/pkgconfig/zlib.pc"), native.prefix.generic_string(), "@PREFIX@"), native.prefix.string(), "@PREFIX@");
     // The oracle resolves its --install-prefix (macOS: /var is a symlink to /private/var), so both spellings are normalized.
     auto pc_theirs = replace_all(replace_all(read_text(oracle_prefix / "lib/pkgconfig/zlib.pc"), fs::canonical(oracle_prefix).string(), "@PREFIX@"), oracle_prefix.string(), "@PREFIX@");
+    if (windows) {
+        // The oracle hands the CRT shell /c/Users/... where the executor hands C:/Users/...; both name the same directory.
+        auto posix = oracle_prefix.generic_string();
+        if (posix.size() > 2 && posix[1] == ':') posix = "/" + std::string(1, static_cast<char>(std::tolower(static_cast<unsigned char>(posix[0])))) + posix.substr(2);
+        pc_theirs = replace_all(replace_all(pc_theirs, posix, "@PREFIX@"), oracle_prefix.generic_string(), "@PREFIX@");
+    }
     check(pc_ours == pc_theirs, "zlib.pc is identical apart from the install prefix");
     for (const char* path : {"include/zlib.h", "include/zconf.h", "share/man/man3/zlib.3"})
         check(ours.at(path).value == theirs.at(path).value, std::string(path) + " is byte-identical");
 
-    if (!darwin) {
+    if (windows) {
+        // ---- 3. PE identity of the shared object ---------------------------------------------------------------------------
+        auto pe_ours = read_pe_image(native.prefix / "lib/libz.so.1.3.1"), pe_theirs = read_pe_image(oracle_prefix / "lib/libz.so.1.3.1");
+        check(pe_ours && pe_theirs && pe_ours->kind == "shared" && pe_theirs->kind == "shared", "both shared objects are readable PE DLLs");
+        check(pe_ours->dll_name == "libz.so.1.3.1" && pe_ours->dll_name == pe_theirs->dll_name, "the export DLL name agrees (the POSIX spelling is kept)");
+        check(pe_ours->machine == pe_theirs->machine && pe_ours->needed == pe_theirs->needed, "machine and imports agree");
+        // PE has no run path: unlike ELF and Mach-O, there is nothing job-specific for the two builds to disagree about.
+        std::printf("port-oracle-test: libz.a identical=%s libz.so.1.3.1 identical=%s\n",
+                    ours.at("lib/libz.a").value == theirs.at("lib/libz.a").value ? "yes" : "no",
+                    ours.at("lib/libz.so.1.3.1").value == theirs.at("lib/libz.so.1.3.1").value ? "yes" : "no");
+    }
+    if (!darwin && !windows) {
     // ---- 3. ELF identity of the shared object -----------------------------------------------------------------------------
     auto elf_ours = read_elf_dynamic(native.prefix / "lib/libz.so.1.3.1"), elf_theirs = read_elf_dynamic(oracle_prefix / "lib/libz.so.1.3.1");
     check(elf_ours && elf_theirs, "both shared objects are readable ELF");
@@ -207,6 +254,7 @@ int main() {
     while (from < ran.output.size()) {
         auto end = ran.output.find('\n', from);
         auto line = ran.output.substr(from, end == std::string::npos ? std::string::npos : end - from);
+        while (!line.empty() && line.back() == '\r') line.pop_back();   // a Windows child writes CRLF
         if (line.rfind("zlib_roundtrip_test:", 0) == 0) oracle_lines.push_back(line);
         if (end == std::string::npos) break;
         from = end + 1;

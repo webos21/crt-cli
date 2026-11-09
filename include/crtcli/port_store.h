@@ -1,6 +1,6 @@
 #pragma once
 // D3 step 4: the binary audit of a finished port build, the build key, and the port store (`ports/store/<build-key>/`).
-// See docs/design/source_port_adapter.md D3-7/D3-8 and docs/design/crt_cli.md §5. Linux ELF and macOS Mach-O only for now;
+// See docs/design/source_port_adapter.md D3-7/D3-8 and docs/design/crt_cli.md §5. Linux ELF, macOS Mach-O and Windows PE;
 // a prefix that holds a binary this module cannot read is refused, never skipped.
 //
 // A store item is published only after the recipe tests passed and the audit found nothing; it is created in private
@@ -35,6 +35,20 @@ struct MachoImage {
 // nullopt when the file does not start with a Mach-O magic. Throws Error for an image this reader cannot account for.
 std::optional<MachoImage> read_macho_image(const fs::path& file);
 
+// ---- PE reader ----------------------------------------------------------------------------------------------------------
+// The install-relevant parts of a 64-bit (PE32+) Windows image. Only the DLL name, the machine and the imports matter to a
+// port item: the Windows loader has no run path, so a dependency is satisfied by its file name alone. A 32-bit image, a
+// directory this reader cannot account for or a string outside the file is an error, never a skip.
+struct PeImage {
+    std::string kind;                         // "shared" (IMAGE_FILE_DLL) or "executable"
+    unsigned machine = 0;                     // IMAGE_FILE_MACHINE_AMD64 0x8664, IMAGE_FILE_MACHINE_ARM64 0xaa64
+    std::string dll_name;                     // the export directory's name (empty when the image exports nothing)
+    std::vector<std::string> needed;          // import and delay-import DLL names, in file order, without duplicates
+};
+// nullopt when the file is not a PE image (no "MZ" with a PE signature at e_lfanew). Throws Error for a PE image this reader
+// cannot account for.
+std::optional<PeImage> read_pe_image(const fs::path& file);
+
 // ---- audit ------------------------------------------------------------------------------------------------------------
 struct PortAuditFinding {
     std::string path, rule, detail;
@@ -48,7 +62,7 @@ struct PortAuditRequest {
     std::vector<std::string> forbidden;       // strings that must not occur in any file (build-job paths)
     std::vector<std::string> skip_top_level;  // top-level names that are not part of the install ("evidence", "manifest.json")
     std::string target_arch;                  // "x86_64" or "aarch64"
-    std::string target_os = "linux";          // "linux" (ELF) or "macos" (Mach-O): picks the adapter layout and the binary format
+    std::string target_os = "linux";          // "linux" (ELF), "macos" (Mach-O) or "windows" (PE): picks the adapter layout and the binary format
 };
 struct PortAudit {
     std::vector<PortAuditFinding> findings;

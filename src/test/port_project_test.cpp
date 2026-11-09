@@ -14,6 +14,23 @@ void check(bool condition, const std::string& message) { require(condition, "tes
 std::string getenv_or_empty(const char* name) { const char* v = std::getenv(name); return v ? v : ""; }
 std::string error_of(const std::function<void()>& action) { try { action(); } catch (const Error& e) { return e.what(); } return {}; }
 
+const bool windows = native_target().at("os") == "windows";
+// A Windows program carries .exe; paths there may mix separators and differ in case, so evidence text is compared folded.
+std::string exe(const std::string& name) { return name + (windows ? ".exe" : ""); }
+std::string fold(std::string text) {
+    for (auto& c : text) c = c == '\\' ? '/' : static_cast<char>(windows ? std::tolower(static_cast<unsigned char>(c)) : c);
+    return text;
+}
+// lld's --reproduce archive mirrors every input under its path with the drive colon dropped (C:/x -> C/x).
+bool mentions(const std::string& text, const fs::path& path) {
+    auto folded = fold(path.string()), body = fold(text);
+    if (body.find(folded) != std::string::npos) return true;
+    auto colon = folded.find(':');
+    if (!windows || colon == std::string::npos) return false;
+    folded.erase(colon, 1);
+    return body.find(folded) != std::string::npos;
+}
+
 // Prints every distinct mapped file whose name contains "libz": the loader's own answer to "which libz is in this process".
 const char* kMapsSource = R"(#include <stdio.h>
 #include <string.h>
@@ -96,14 +113,17 @@ fs::path make_project(const fs::path& scratch, const std::string& name, const fs
     fs::copy_file(bound / ".crt/local.json", project / ".crt/local.json");
     write_text(project / "crt.json", manifest_with(targets));
     fs::copy_file(roundtrip, project / "src/zlib_roundtrip.c");
-    write_text(project / "src/zlib_maps.c", native_target().at("os") == "macos" ? kImagesSource : kMapsSource);
+    write_text(project / "src/zlib_maps.c", native_target().at("os") == "linux" ? kMapsSource : kImagesSource);
     write_text(project / "src/zlib_cxx.cpp", kCxxSource);
     (void)sdk;
     return project;
 }
 
-std::string run_output(const fs::path& exe, const fs::path& sdk) {
-    return execute({exe.string()}, 60, false, false, {(sdk / "bin").string(), (sdk / "lib").string()}).output;
+// `first` names directories searched before the SDK's (Windows: a port item's lib/, which holds the DLL the consumer links).
+std::string run_output(const fs::path& program, const fs::path& sdk, std::vector<std::string> first = {}) {
+    first.push_back((sdk / "bin").string());
+    first.push_back((sdk / "lib").string());
+    return execute({program.string()}, 60, false, false, first).output;
 }
 
 // The last link command of `target` from a build receipt, with the artifact path swapped so re-running it does not touch the build output.
@@ -111,10 +131,10 @@ std::vector<std::string> link_command_for(const Json& receipt, const std::string
     std::vector<std::string> found;
     for (const auto& command : receipt.at("commands")) {
         bool links = false;
-        for (const auto& arg : command) links |= arg.get<std::string>() == artifact;
+        for (const auto& arg : command) links |= fold(arg.get<std::string>()) == fold(artifact);
         bool compile = false;
         for (const auto& arg : command) compile |= arg.get<std::string>() == "-c";
-        if (links && !compile) { found.clear(); for (const auto& arg : command) found.push_back(arg.get<std::string>() == artifact ? replacement : arg.get<std::string>()); }
+        if (links && !compile) { found.clear(); for (const auto& arg : command) found.push_back(fold(arg.get<std::string>()) == fold(artifact) ? replacement : arg.get<std::string>()); }
     }
     return found;
 }
@@ -186,42 +206,44 @@ int main() {
     check(receipt.at("ports").size() == 1 && receipt.at("ports")[0].at("provider") == "port" && receipt.at("ports")[0].at("build_key") == key &&
           receipt.at("ports")[0].at("path") == item.string(), "the build receipt records the provider, key and item");
 
+    const std::vector<std::string> item_lib{(item / "lib").string()};
     for (const char* name : {"static-roundtrip", "shared-roundtrip"}) {
-        auto text = run_output(out / name, toolchain.sdk);
+        auto text = run_output(out / exe(name), toolchain.sdk, item_lib);
         check(text.find(recipe.tests[0].expect_stdout) != std::string::npos, std::string(name) + " prints the recipe's expected line");
     }
-    check(run_output(out / "static-cxx", toolchain.sdk).find("zlib_cxx: ok") != std::string::npos, "the static C++ consumer round-trips");
-    check(run_output(out / "shared-cxx", toolchain.sdk).find("zlib_cxx: ok") != std::string::npos, "the shared C++ consumer round-trips");
+    check(run_output(out / exe("static-cxx"), toolchain.sdk, item_lib).find("zlib_cxx: ok") != std::string::npos, "the static C++ consumer round-trips");
+    check(run_output(out / exe("shared-cxx"), toolchain.sdk, item_lib).find("zlib_cxx: ok") != std::string::npos, "the shared C++ consumer round-trips");
 
     // Static: the link evidence (a linker map from the same command line) names the item's libz.a and not the SDK's.
     {
-        auto command = link_command_for(receipt, (out / "static-roundtrip").string(), (scratch / "static-roundtrip.relinked").string());
+        auto command = link_command_for(receipt, (out / exe("static-roundtrip")).string(), (scratch / "static-roundtrip.relinked").string());
         check(!command.empty(), "the static link command is in the receipt");
         auto map = scratch / "static.map";
-        command.push_back((darwin ? "-Wl,-map," : "-Wl,-Map=") + map.string());
+        // lld's PE map lists archive members by bare name; its --reproduce archive holds every input file under its full path.
+        command.push_back(windows ? "-Wl,--reproduce=" + (scratch / "static.reproduce.tar").string() : (darwin ? "-Wl,-map," : "-Wl,-Map=") + map.string());
         auto result = execute(command, 120, false, true);
         check(result.exit_code == 0, "the static consumer relinks with a linker map (" + result.output + ")");
-        auto text = read_text(map);
-        check(text.find((item / "lib/libz.a").string()) != std::string::npos, "the link map names the item's libz.a");
-        check(text.find((toolchain.sdk / "lib/libz.a").string()) == std::string::npos, "...and not the SDK's libz.a");
+        auto text = read_text(windows ? scratch / "static.reproduce.tar" : map);
+        check(mentions(text, item / "lib/libz.a"), "the link map names the item's libz.a");
+        check(!mentions(text, toolchain.sdk / "lib/libz.a"), "...and not the SDK's libz.a");
     }
     // Headers: the compiler's own dependency file shows which zlib.h each translation unit included.
     {
         std::string depfiles;
         for (const auto& entry : fs::directory_iterator(out))
             if (entry.path().extension() == ".d" && entry.path().filename().string().rfind("static-roundtrip", 0) == 0) depfiles += read_text(entry.path());
-        check(depfiles.find((item / "include/zlib.h").string()) != std::string::npos, "the compiler included the item's zlib.h");
-        check(depfiles.find((toolchain.sdk / "include/zlib.h").string()) == std::string::npos, "...and not the SDK's zlib.h");
+        check(mentions(depfiles, item / "include/zlib.h"), "the compiler included the item's zlib.h");
+        check(!mentions(depfiles, toolchain.sdk / "include/zlib.h"), "...and not the SDK's zlib.h");
     }
     // Shared: the process's own memory map (loader resolution), not a hash.
     {
-        auto text = run_output(out / "shared-maps", toolchain.sdk);
+        auto text = run_output(out / exe("shared-maps"), toolchain.sdk, item_lib);
         check(text.find("zlib_maps: ok") != std::string::npos, "the shared consumer runs");
         // dyld reports the real path of the image it opened; the item may be reached through a symlinked temporary directory.
         const auto mapped = darwin ? fs::canonical(item) / "lib/libz.1.3.1.dylib" : item / "lib/libz.so.1.3.1";
-        check(text.find(mapped.string()) != std::string::npos || (darwin && text.find((fs::canonical(item) / "lib/libz.1.dylib").string()) != std::string::npos),
+        check(mentions(text, mapped) || (darwin && text.find((fs::canonical(item) / "lib/libz.1.dylib").string()) != std::string::npos),
               "the loader mapped the item's libz (" + text + ")");
-        check(text.find((toolchain.sdk / "lib").string()) == std::string::npos, "...and no libz from the SDK");
+        check(!mentions(text, toolchain.sdk / "lib"), "...and no libz from the SDK");
     }
     // The build is repeatable without rework.
     {
@@ -235,23 +257,26 @@ int main() {
     {
         auto sdk_targets =
             "{\"name\":\"static-roundtrip\",\"sources\":[\"src/zlib_roundtrip.c\"]," + sdk_entry + "},"
-            "{\"name\":\"shared-maps\",\"runtime_linkage\":\"shared\",\"sources\":[\"src/zlib_maps.c\"]," + sdk_entry + "}";
+            // The Windows SDK contract ships no shared libz (see the refusal below), so its control links the static one.
+            "{\"name\":\"shared-maps\",\"runtime_linkage\":\"shared\",\"sources\":[\"src/zlib_maps.c\"]," + sdk_entry +
+            (windows ? ",\"sdk_library_linkage\":\"static\"" : "") + "}";
         auto control = make_project(scratch, "sdk-project", bound, toolchain.sdk, sdk_targets, roundtrip);
         auto control_receipt = workflow_in(control, "build");
         check(control_receipt.at("ports").size() == 1 && control_receipt.at("ports")[0].at("provider") == "sdk" && !control_receipt.at("ports")[0].contains("path"),
               "the receipt records the SDK provider");
-        auto command = link_command_for(control_receipt, (fs::canonical(control) / "out/native/static-roundtrip").string(), (scratch / "control.relinked").string());
+        auto command = link_command_for(control_receipt, (fs::canonical(control) / "out/native" / exe("static-roundtrip")).string(), (scratch / "control.relinked").string());
         auto map = scratch / "control.map";
-        command.push_back((darwin ? "-Wl,-map," : "-Wl,-Map=") + map.string());
-        check(execute(command, 120, false, true).exit_code == 0, "the control relinks with a map");
-        auto text = read_text(map);
-        check(text.find((toolchain.sdk / "lib/libz.a").string()) != std::string::npos && text.find((item / "lib").string()) == std::string::npos,
+        command.push_back(windows ? "-Wl,--reproduce=" + (scratch / "control.reproduce.tar").string() : (darwin ? "-Wl,-map," : "-Wl,-Map=") + map.string());
+        auto linked = execute(command, 120, false, true);
+        check(linked.exit_code == 0, "the control relinks with a map");
+        auto text = read_text(windows ? scratch / "control.reproduce.tar" : map);
+        check(mentions(text, toolchain.sdk / "lib/libz.a") && !mentions(text, item / "lib"),
               "the control's map names the SDK's libz.a: the evidence discriminates between the providers");
         // Observed, not endorsed: a consumer linked to the SDK's *shared* libz carries only `$ORIGIN` as its runpath, so on this
         // Linux host the loader resolves libz.so.1 through the host's cache (/usr/lib...), i.e. not the SDK's. The control only
         // needs to show that the process maps no libz from the item.
-        auto maps = run_output(control / "out/native/shared-maps", toolchain.sdk);
-        check(maps.find("zlib_maps: ok") != std::string::npos && maps.find(item.string()) == std::string::npos,
+        auto maps = run_output(control / "out/native" / exe("shared-maps"), toolchain.sdk);
+        check(maps.find("zlib_maps: ok") != std::string::npos && !mentions(maps, item),
               "the control's process maps no libz from the item: " + maps);
         std::printf("port-project-test: SDK-provider shared control resolved: %s", maps.c_str());
     }
@@ -261,8 +286,10 @@ int main() {
         auto refused = make_project(scratch, name, bound, toolchain.sdk, targets, roundtrip);
         auto message = error_of([&] { workflow({"build", "--project", refused.string()}); });
         check(message.find(expected) != std::string::npos, name + ": " + expected + " (got: " + message + ")");
-        check(!fs::exists(refused / "out/native/refused"), name + ": nothing was built for the refused project");
+        check(!fs::exists(refused / "out/native" / exe("refused")), name + ": nothing was built for the refused project");
     };
+    if (windows)
+        refuse("sdk-shared-libz", "{\"name\":\"refused\",\"runtime_linkage\":\"shared\",\"sources\":[\"src/zlib_roundtrip.c\"]," + sdk_entry + "}", "declares no shared variant of library 'z'");
     refuse("both-providers", "{\"name\":\"refused\",\"sources\":[\"src/zlib_roundtrip.c\"]," + port_entry(",\"sdk_libraries\":[\"z\"]") + "}", "reaches both");
     refuse("both-via-dependency",
            "{\"name\":\"libz-user\",\"kind\":\"static-library\",\"sources\":[\"src/zlib_cxx.cpp\"],\"sdk_libraries\":[\"z\"]},"

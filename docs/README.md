@@ -10,7 +10,7 @@ evidence snapshot. [AGENTS.md](../AGENTS.md) defines development rules.
 ## Architecture and Policy
 
 - [D3 native source-port adapter (zlib first)](design/source_port_adapter.md): bounded Linux implementation,
-  macOS replay and per-host limits in [acceptance](acceptance/sdk_install_acceptance.md).
+  macOS/Windows adapters, native replay and per-host limits in [acceptance](acceptance/sdk_install_acceptance.md).
 - [CRT-CLI: Development Environment and Source-first Ports](design/crt_cli.md):
   product boundaries, installation layout, environment/recipe/project contracts,
   and D0-D7 dependency order. This repository owns subsequent CLI design.

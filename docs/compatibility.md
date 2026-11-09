@@ -6,6 +6,19 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## D3 Windows/x64 Adapter Implementation (2026-11-09)
+
+Reviewed producer `ff6b9e2` and CLI `3db09d7` plus the Windows delta. The unchanged
+clean rehearsal.10 SDK from CRT `05b5678` and native policy
+`5b1ad5ba0465268a8485035f92066b19e0df9942458c212804cd7121366d29d1`
+are exercised with independently pinned CRT host tools. [Native evidence](acceptance/sdk_install_acceptance.md#source-port-d3-windowsx64-implementation-and-replay-2026-11-09)
+binds final source/binary/receipt hashes and passes executor, PE/store, provider/lock and oracle cases.
+Windows layout and import-library key inputs are CLI adapter policy; recipe schema 1,
+native policy 1, host-tools 1 and project lock 1 are unchanged. No producer artifact
+promotion or consumer root-lock migration occurs. The Windows/x64 binary is refreshed.
+Formal table approval, common-change replay on other hosts and Windows/arm64 remain open.
+This local result supersedes the missing-capability boundary below for its tested inputs only.
+
 ## D3 Replay Boundary on Windows/x64 (2026-11-09)
 
 Reviewed CRT `a62d5e2d3a17ed0984e659552413a6d044330f6c` and CLI

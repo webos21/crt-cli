@@ -11,6 +11,15 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-09
 
+### Windows/x64 native zlib adapter
+
+Implemented CRT-shell/make tool-path handling, Windows layout/OS-SDK key inputs, PE audit,
+store relocation and project DLL selection. Fresh isolated contract replay and all six
+input-enabled D3 suites pass, including static/shared C/C++ provider/lock proof and the
+packaged oracle. Refreshed the committed Windows/x64 executable from the qualified image.
+Retained earlier failures; SDK/recipe/root lock and STATUS stay unchanged.
+[Exact inputs, results and limits](docs/acceptance/sdk_install_acceptance.md#source-port-d3-windowsx64-implementation-and-replay-2026-11-09).
+
 ### Windows/x64 replay of the Linux/macOS D3 increment
 
 Reused the identified clean rehearsal.10 SDK after confirming the CRT delta is documentation only. Current product

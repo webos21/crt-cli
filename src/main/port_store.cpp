@@ -194,6 +194,115 @@ MachoImage parse_macho(const std::string& data) {
     return image;
 }
 
+// ---- PE ---------------------------------------------------------------------------------------------------------------
+bool is_pe_magic(const std::string& data) {
+    if (data.size() < 0x40 || data[0] != 'M' || data[1] != 'Z') return false;
+    uint64_t lfanew = 0;
+    for (unsigned i = 0; i < 4; ++i) lfanew |= static_cast<uint64_t>(static_cast<unsigned char>(data[0x3c + i])) << (8 * i);
+    return lfanew <= data.size() && data.size() - lfanew >= 4 && data[lfanew] == 'P' && data[lfanew + 1] == 'E' &&
+           data[lfanew + 2] == 0 && data[lfanew + 3] == 0;
+}
+
+PeImage parse_pe(const std::string& data) {
+    auto fail = [](const std::string& what) { throw Error("PE is truncated or inconsistent at " + what); };
+    auto field = [&](uint64_t offset, unsigned width, const char* what) {
+        if (offset > data.size() || width > data.size() - offset) fail(what);
+        uint64_t value = 0;
+        for (unsigned i = 0; i < width; ++i) value |= static_cast<uint64_t>(static_cast<unsigned char>(data[offset + i])) << (8 * i);
+        return value;
+    };
+    const uint64_t pe = field(0x3c, 4, "e_lfanew");
+    const uint64_t optional = pe + 24;
+    const auto sections = field(pe + 6, 2, "NumberOfSections");
+    const auto optional_size = field(pe + 20, 2, "SizeOfOptionalHeader");
+    if (field(optional, 2, "optional header magic") != 0x20b) throw Error("only 64-bit (PE32+) images are supported");
+    if (optional_size < 112 + 16 * 8) fail("the optional header (data directories)");
+    PeImage image;
+    image.machine = static_cast<unsigned>(field(pe + 4, 2, "Machine"));
+    image.kind = (field(pe + 22, 2, "Characteristics") & 0x2000) ? "shared" : "executable";
+    struct Section { uint64_t rva, virtual_size, raw, raw_size; };
+    std::vector<Section> table;
+    if (sections > 96) fail("the section count");
+    const uint64_t section_table = optional + optional_size;
+    for (uint64_t i = 0; i < sections; ++i) {
+        const uint64_t at = section_table + 40 * i;
+        table.push_back({field(at + 12, 4, "section RVA"), field(at + 8, 4, "section size"), field(at + 20, 4, "section data"), field(at + 16, 4, "section data size")});
+    }
+    auto offset_of = [&](uint64_t rva, const char* what) -> uint64_t {
+        for (const auto& section : table)
+            if (rva >= section.rva && rva - section.rva < std::max(section.virtual_size, section.raw_size)) {
+                const uint64_t delta = rva - section.rva;
+                if (delta >= section.raw_size) break;
+                return section.raw + delta;
+            }
+        fail(what);
+        return 0;
+    };
+    auto text_at = [&](uint64_t rva, const char* what) {
+        uint64_t at = offset_of(rva, what);
+        std::string out;
+        while (true) {
+            if (at >= data.size() || out.size() > 512) fail(what);
+            if (data[at] == 0) break;
+            out += data[at++];
+        }
+        if (out.empty() || !valid_utf8(out)) fail(what);
+        return out;
+    };
+    auto directory = [&](unsigned index) { return std::make_pair(field(optional + 112 + 8 * index, 4, "data directory RVA"), field(optional + 112 + 8 * index + 4, 4, "data directory size")); };
+    auto add_needed = [&](const std::string& name) {
+        if (std::find(image.needed.begin(), image.needed.end(), name) == image.needed.end()) image.needed.push_back(name);
+    };
+    const auto exports = directory(0);
+    if (exports.first && exports.second) image.dll_name = text_at(field(offset_of(exports.first, "the export directory") + 12, 4, "export name RVA"), "the export DLL name");
+    const auto imports = directory(1);
+    if (imports.first && imports.second) {
+        uint64_t at = offset_of(imports.first, "the import directory");
+        for (unsigned count = 0;; ++count) {
+            if (count > 4096) fail("the import descriptor count");
+            const auto name_rva = field(at + 12, 4, "import name RVA");
+            if (name_rva == 0 && field(at, 4, "import descriptor") == 0 && field(at + 16, 4, "import descriptor") == 0) break;
+            add_needed(text_at(name_rva, "an import DLL name"));
+            at += 20;
+        }
+    }
+    const auto delayed = directory(13);
+    if (delayed.first && delayed.second) {
+        uint64_t at = offset_of(delayed.first, "the delay-import directory");
+        for (unsigned count = 0;; ++count) {
+            if (count > 4096) fail("the delay-import descriptor count");
+            const auto name_rva = field(at + 4, 4, "delay-import name RVA");
+            if (name_rva == 0) break;
+            add_needed(text_at(name_rva, "a delay-import DLL name"));
+            at += 32;
+        }
+    }
+    return image;
+}
+
+unsigned pe_machine_for(const std::string& arch) { return arch == "x86_64" ? 0x8664 : arch == "aarch64" ? 0xaa64 : 0u; }
+
+// Windows system DLLs a port may import: the OS boundary every CRT-built image already uses. A C runtime that is not the SDK's
+// (ucrtbase, msvcrt, vcruntime) is deliberately not listed.
+bool windows_system_dll(std::string name) {
+    std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    static const std::set<std::string> known{"kernel32.dll", "ntdll.dll", "kernelbase.dll", "advapi32.dll", "bcrypt.dll", "ws2_32.dll", "user32.dll",
+                                             "shell32.dll", "ole32.dll", "userenv.dll", "crypt32.dll", "iphlpapi.dll", "secur32.dll"};
+    return known.count(name) > 0 || name.rfind("api-ms-win-", 0) == 0;
+}
+
+bool same_file_name(const std::string& a, const std::string& b) {
+    return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), [](unsigned char x, unsigned char y) { return std::tolower(x) == std::tolower(y); });
+}
+
+// Does `directory` hold a file whose name is `name` (compared like the Windows loader does, case-insensitively)?
+bool has_file_named(const fs::path& directory, const std::string& name) {
+    std::error_code error;
+    for (fs::directory_iterator it(directory, error), end; !error && it != end; it.increment(error))
+        if (same_file_name(it->path().filename().string(), name)) return true;
+    return false;
+}
+
 unsigned macho_cpu_for(const std::string& arch) { return arch == "x86_64" ? 0x01000007u : arch == "aarch64" ? 0x0100000cu : 0u; }
 
 unsigned machine_for(const std::string& arch) { return arch == "x86_64" ? 62 : arch == "aarch64" ? 183 : 0; }
@@ -241,6 +350,14 @@ std::optional<MachoImage> read_macho_image(const fs::path& file) {
     return parse_macho(data);
 }
 
+std::optional<PeImage> read_pe_image(const fs::path& file) {
+    require(fs::is_regular_file(file), "not a regular file: " + file.string());
+    require(fs::file_size(file) <= kMaxAuditedFileBytes, "file is too large to audit: " + file.string());
+    auto data = read_text(file);
+    if (!is_pe_magic(data)) return std::nullopt;
+    return parse_pe(data);
+}
+
 Json PortAudit::to_json() const {
     Json found = Json::array();
     for (const auto& finding : findings) found.push_back(finding.to_json());
@@ -266,14 +383,18 @@ PortAudit audit_port_item(const PortAuditRequest& request) {
 
     struct Elf { std::string relative; fs::path directory; ElfDynamic info; };
     struct Macho { std::string relative; fs::path directory; MachoImage info; };
+    struct Pe { std::string relative; fs::path directory; PeImage info; };
     std::vector<Elf> elves;
     std::vector<Macho> machos;
+    std::vector<Pe> pes;
     std::set<std::string> sonames;
     const bool darwin = request.target_os == "macos";
-    if (!darwin && request.target_os != "linux") throw Error("the binary audit supports linux and macos targets, not " + request.target_os);
+    const bool windows = request.target_os == "windows";
+    if (!darwin && !windows && request.target_os != "linux") throw Error("the binary audit supports linux, macos and windows targets, not " + request.target_os);
     auto expected_machine = machine_for(request.target_arch);
     auto expected_cpu = macho_cpu_for(request.target_arch);
-    if (!(darwin ? expected_cpu : expected_machine)) add("", "target", "unsupported target architecture '" + request.target_arch + "'");
+    auto expected_pe = pe_machine_for(request.target_arch);
+    if (!(darwin ? expected_cpu : windows ? expected_pe : expected_machine)) add("", "target", "unsupported target architecture '" + request.target_arch + "'");
     const auto layout = port_layout(request.adapter, request.target_os);
 
     for (fs::recursive_directory_iterator it(root, fs::directory_options::none), end; it != end; ++it) {
@@ -300,8 +421,19 @@ PortAudit audit_port_item(const PortAuditRequest& request) {
         auto data = read_text(path);
         for (const auto& needle : request.forbidden)
             if (!needle.empty() && data.find(needle) != std::string::npos) add(relative, "host-path-reference", "contains a build-job path");
-        if (darwin && data.size() >= 4 && memcmp(data.data(), "\x7f" "ELF", 4) == 0) {
-            add(relative, "foreign-format", "an ELF image in a macos item");
+        if ((darwin || windows) && data.size() >= 4 && memcmp(data.data(), "\x7f" "ELF", 4) == 0) {
+            add(relative, "foreign-format", std::string("an ELF image in a ") + request.target_os + " item");
+        } else if (is_pe_magic(data)) {
+            try {
+                auto info = parse_pe(data);
+                if (!windows) add(relative, "foreign-format", "a PE image in a " + request.target_os + " item");
+                else if (expected_pe && info.machine != expected_pe)
+                    add(relative, "machine", "Machine 0x" + hex_value(info.machine) + " is not the target's 0x" + hex_value(expected_pe));
+                audit.libraries.push_back({{"path", relative}, {"kind", info.kind}, {"dll_name", info.dll_name}, {"needed", info.needed}});
+                pes.push_back({relative, path.parent_path(), std::move(info)});
+            } catch (const Error& problem) {
+                add(relative, "pe-unreadable", problem.what());
+            }
         } else if (data.size() >= 4 && memcmp(data.data(), "\x7f" "ELF", 4) == 0) {
             try {
                 auto info = parse_elf(data);
@@ -390,9 +522,26 @@ PortAudit audit_port_item(const PortAuditRequest& request) {
             if (!fs::is_regular_file(alias)) add(elf.relative, "soname-alias", "no file or symlink named " + elf.info.soname + " beside it");
         }
     }
+    // PE: the loader finds a dependency by file name alone (no run path), so a dependency is a Windows system DLL, a DLL of the
+    // SDK (bin/ or lib/) or a DLL this item provides under that export name.
+    std::set<std::string> dll_names;
+    for (const auto& image : pes)
+        if (image.info.kind == "shared" && !image.info.dll_name.empty()) dll_names.insert(image.info.dll_name);
+    for (const auto& image : pes) {
+        for (const auto& name : image.info.needed) {
+            bool provided = std::any_of(dll_names.begin(), dll_names.end(), [&](const std::string& own) { return same_file_name(own, name); });
+            bool ok = name.find('/') == std::string::npos && name.find('\\') == std::string::npos &&
+                      (windows_system_dll(name) || provided || has_file_named(request.sdk / "bin", name) || has_file_named(request.sdk / "lib", name));
+            if (!ok) add(image.relative, "needed-not-in-sdk", "import " + name + " is neither a Windows system DLL, in the SDK bin/ or lib/, nor provided by this item");
+        }
+        if (image.info.kind == "shared") {
+            if (image.info.dll_name.empty()) add(image.relative, "dll-name", "a DLL without an export directory name");
+            else if (!fs::is_regular_file(image.directory / image.info.dll_name)) add(image.relative, "dll-name-alias", "no file or symlink named " + image.info.dll_name + " beside it");
+        }
+    }
     for (const auto& name : layout.expected_names) {
-        bool present = darwin ? install_names.count(name) > 0 : sonames.count(name) > 0;
-        if (!present) add("", "expected-soname", std::string("no shared object carries ") + (darwin ? "install name " : "SONAME ") + name);
+        bool present = darwin ? install_names.count(name) > 0 : windows ? dll_names.count(name) > 0 : sonames.count(name) > 0;
+        if (!present) add("", "expected-soname", std::string("no shared object carries ") + (darwin ? "install name " : windows ? "DLL name " : "SONAME ") + name);
     }
     for (const auto& file : layout.expected_files)
         if (!fs::is_regular_file(root / file)) add(file, "expected-file", "missing from the install");
@@ -435,6 +584,17 @@ Json port_key_inputs(const PortBuildRequest& request) {
         auto settings = port_os_sdk(toolchain) / "SDKSettings.json";
         require(fs::is_regular_file(settings), "the configured macOS SDK has no SDKSettings.json");
         inputs["os_sdk"] = {{"kind", "macos-xcode-sdk"}, {"settings_sha256", file_sha256(settings)}};
+    }
+    if (native_target().at("os") == "windows") {
+        // The Windows SDK import libraries every link names are outside the CRT SDK too. Their content, not their location, is what
+        // the build depends on: the system libraries the compiler wrapper links by default (CRT_WINDOWS_SYSTEM_LIBS).
+        Json libraries = Json::object();
+        for (const char* name : {"kernel32.lib", "synchronization.lib"}) {
+            auto library = port_os_sdk(toolchain) / name;
+            require(fs::is_regular_file(library), std::string("the configured Windows SDK has no ") + name);
+            libraries[name] = file_sha256(library);
+        }
+        inputs["os_sdk"] = {{"kind", "windows-um-import-libraries"}, {"libraries", libraries}};
     }
     return inputs;
 }
@@ -541,18 +701,32 @@ PortPublishResult PortStore::publish(const PortBuildRequest& request, const Port
     // and a path inside them is data for a consumer's tools, so the staged copy names the item's real location. Any other
     // file naming the job is an audit failure below, not something to patch.
     Json relocations = Json::array();
-    auto prefix_text = result.prefix.string();
+    // A Windows build hands the prefix to the CRT shell with forward slashes, so a file may carry either spelling; both are
+    // rewritten (and both are forbidden elsewhere). On POSIX hosts the two spellings are the same string.
+    std::vector<std::pair<std::string, std::string>> spellings{{result.prefix.string(), final_path.string()}};
+    if (result.prefix.generic_string() != result.prefix.string()) spellings.push_back({result.prefix.generic_string(), final_path.generic_string()});
+    std::vector<std::string> forbidden;
+    for (const auto& spelling : spellings) forbidden.push_back(spelling.first);
+    for (const auto& spelling : {result.prefix.parent_path().string(), result.prefix.parent_path().generic_string()})
+        if (std::find(forbidden.begin(), forbidden.end(), spelling) == forbidden.end()) forbidden.push_back(spelling);
     for (const auto& entry : fs::recursive_directory_iterator(item)) {
         if (entry.is_symlink() || !entry.is_regular_file() || entry.path().extension() != ".pc") continue;
         auto text = read_text(entry.path());
-        if (text.find(prefix_text) == std::string::npos) continue;
+        bool named = false;
+        for (const auto& spelling : spellings) named = named || text.find(spelling.first) != std::string::npos;
+        if (!named) continue;
         require(valid_utf8(text) && text.find('\0') == std::string::npos, "pkg-config file is not text: " + entry.path().string());
         size_t count = 0;
-        write_text(entry.path(), replace_all(text, prefix_text, final_path.string(), count));
+        for (const auto& spelling : spellings) {
+            size_t replaced = 0;
+            text = replace_all(text, spelling.first, spelling.second, replaced);
+            count += replaced;
+        }
+        write_text(entry.path(), text);
         relocations.push_back({{"file", entry.path().lexically_relative(item).generic_string()}, {"replacements", count}});
     }
 
-    PortAuditRequest audit_request{item, final_path, request.toolchain->sdk, adapter, {prefix_text, result.prefix.parent_path().string()},
+    PortAuditRequest audit_request{item, final_path, request.toolchain->sdk, adapter, forbidden,
                                    {}, native_target().at("arch").get<std::string>(), native_target().at("os").get<std::string>()};
     auto audit = audit_port_item(audit_request);
     if (!audit.findings.empty()) {
@@ -568,7 +742,12 @@ PortPublishResult PortStore::publish(const PortBuildRequest& request, const Port
     for (const auto& step : record.at("steps")) steps.push_back({{"name", step.at("name")}, {"exit_code", step.at("exit_code")}});
     for (const auto& test : record.at("tests")) tests.push_back({{"name", test.at("name")}, {"expected", test.at("expected")}, {"actual", test.at("actual")}, {"passed", test.at("passed")}});
     const bool darwin = native_target().at("os") == "macos";
-    Json unsupported_scope = darwin
+    const bool windows = native_target().at("os") == "windows";
+    Json unsupported_scope = windows
+        ? Json::array({"Windows/x86_64 only", "no other target port is consumed", "static and shared are produced together",
+                       "no license/SBOM data yet", "audit covers PE machine, imports, DLL names and job-path leaks only",
+                       "images are not Authenticode-signed"})
+        : darwin
         ? Json::array({"macOS/arm64 only", "no other target port is consumed", "static and shared are produced together", "no license/SBOM data yet",
                        "audit covers Mach-O install names, dependencies, LC_RPATH and job-path leaks only", "images are not code-signed or notarized"})
         : Json::array({"Linux/x86_64 only", "no other target port is consumed", "static and shared are produced together",

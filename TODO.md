@@ -104,14 +104,10 @@ The bounded implementation, separate port store, provider/lock proof and oracle 
 [macOS replay](docs/acceptance/sdk_install_acceptance.md#source-port-d3-replay-macosarm64-2026-11-09).
 Completed details live in acceptance/HISTORY, not this checklist.
 
-- [ ] Obtain formal CRT approval of the digest-keyed adapter table and its macOS
-  layout/install-name/tool policies; keep `crt_review: pending` until adoption is recorded.
-- [ ] Complete native Windows CRT-shell/make static/shared build and actual store
-  consumption; preserve SDK/source bytes and independently pinned tool identities.
-  The [current Windows/x64 replay](docs/acceptance/sdk_install_acceptance.md#source-port-d3-replay-windowsx64-2026-11-09)
-  passes common checks but confirms missing Windows executor/layout/PE-audit support.
-- [ ] Replay affected common changes on Linux and qualify other architectures as needed;
-  the existing Linux baseline is not silently relabeled as a run of the macOS delta.
+- [ ] Obtain formal CRT approval of the digest-keyed adapter table and its macOS/Windows
+  layout, tool and binary-audit policies; keep `crt_review: pending` until adoption is recorded.
+- [ ] Replay affected common changes on Linux/macOS and qualify Windows/arm64 as needed;
+  the [Windows/x64 implementation](docs/acceptance/sdk_install_acceptance.md#source-port-d3-windowsx64-implementation-and-replay-2026-11-09) has its own native evidence.
 
 ## Planned
 

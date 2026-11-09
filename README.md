@@ -38,12 +38,13 @@ is implemented with Linux and macOS replay evidence: `sdk acquire --source <file
 installed identity. `fetch` also supports explicit-key RSA-PSS verification.
 Official default-download trust, channels and publisher promotion remain pending.
 
-The experimental D3 source-port path implements `port build|list|verify|recover|lock` for the pinned zlib recipe on Linux
-and macOS. It builds both static/shared forms through explicitly selected CRT host tools into a separate port store,
+The experimental D3 source-port path implements `port build|list|verify|recover|lock` for the pinned zlib recipe on Linux,
+macOS and Windows/x64. It builds both static/shared forms through explicitly selected CRT host tools into a separate port store,
 never into the SDK. Projects choose provider `sdk` or `port`; optional lock pins bind the latter's exact manifest.
 See the [adapter policy](docs/design/source_port_adapter.md) and
-[native replay evidence](docs/acceptance/sdk_install_acceptance.md#source-port-d3-replay-macosarm64-2026-11-09).
-Other recipes, general dependency resolution and the Windows native port gate remain separate work.
+[macOS replay](docs/acceptance/sdk_install_acceptance.md#source-port-d3-replay-macosarm64-2026-11-09) and
+[Windows/x64 implementation evidence](docs/acceptance/sdk_install_acceptance.md#source-port-d3-windowsx64-implementation-and-replay-2026-11-09).
+Other recipes, general dependency resolution, formal adapter review and Windows/arm64 replay remain separate work.
 
 ## Try the Local Workflow
 

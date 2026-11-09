@@ -481,7 +481,15 @@ python tools/replay_port_windows.py --contract-evidence C:/evidence/contract \
 The example is one argv invocation; line-continuation syntax depends on the host
 shell. The driver keeps per-suite stdout/stderr, exit codes and process images.
 It returns nonzero when a D3 suite is unsupported, fails or skips. Inspect the
-[Windows result](../acceptance/sdk_install_acceptance.md#source-port-d3-replay-windowsx64-2026-11-09)
+[Windows implementation result](../acceptance/sdk_install_acceptance.md#source-port-d3-windowsx64-implementation-and-replay-2026-11-09)
 before interpreting a passing bootstrap as D3 support. Python is a replay-host
 tool, not a CLI/runtime prerequisite. No network or executable-denial boundary is
 claimed on Windows.
+
+### Final Windows D3 replay inputs
+
+Use a new contract workspace/output on each full restart; an existing work directory is
+refused. A D3 follow-up may reuse the verified workspace but needs a fresh output directory.
+The driver allows generated recipe executables under the test HOME's port jobs and copies
+its replay-host Python runtime into the workspace for the packaged oracle. This grants no
+Python dependency to the CLI. Keep the interpreter's original installation/ACLs unchanged.

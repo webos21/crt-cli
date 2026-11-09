@@ -189,7 +189,12 @@ Experimental, CLI-owned: `crt-cli port lock` may add `ports` (name, build key, m
 local-experiment lock to pin the project's source-built ports; a lock with `ports` is enforced at every build and `configure`
 keeps it only for the same SDK. See the [pin record](../acceptance/sdk_install_acceptance.md#crtlock-port-pins-d3-linuxx86_64-2026-11-09).
 
-The native D3 executor supports Linux and macOS for the single pinned zlib recipe. macOS uses the adapter's dylib
+The native D3 executor supports Linux, macOS and Windows for the single pinned zlib recipe. Windows uses the adapter's PE
+layout (`libz.so.1.3.1` plus its links), forward-slash shell paths, job-local `AR`/`RANLIB` scripts and the explicit Windows SDK
+import-library directory; its build key binds the content of `kernel32.lib` and `synchronization.lib`; the audit reads PE images. See
+the [Windows policy](../design/source_port_adapter.md#9-windows-adapter-policy-2026-11-09) and
+[acceptance](../acceptance/sdk_install_acceptance.md#source-port-d3-windowsx64-implementation-and-replay-2026-11-09).
+macOS uses the adapter's dylib
 layout, relocatable `@rpath/libz.1.dylib` install name, declared archiver/sibling ranlib and explicit OS `SDKROOT`.
 The macOS build key also binds `SDKSettings.json`; Linux key serialization is unchanged. These are CLI-owned
 experimental executor/audit policy extensions, not new recipe/SDK/lock formats. See the
