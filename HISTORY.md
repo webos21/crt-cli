@@ -11,6 +11,25 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-09
 
+### Adopt the bounded D3 zlib adapter contract
+
+Reviewed the synchronized macOS affected-change evidence and the existing
+Linux/Windows-x64 records against CRT `dfb83c4` / CLI `8ad11dd`. CRT records
+explicit approval of the fixed zlib recipe/table/field/key policy and CLI adopts
+it in [compatibility](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09).
+Only the publication-time review marker changes in product code. Added focused
+regression for verification/idempotent reuse of a disposable pending manifest;
+retained real pending items and a previously pinned consumer also remain usable
+without manifest/lock migration. Exact new CLI/input hashes, suite results and
+old-item evidence live in [acceptance](docs/acceptance/sdk_install_acceptance.md#d3-review-metadata-and-existing-item-reuse-2026-11-09).
+
+D3 is closed for its exercised Linux/x86_64, macOS/arm64 and Windows/x64 scope;
+Windows/arm64 and Linux's unendorsed C shared SDK-provider control are not added.
+The current queue moves to clean Dev SDK + CLI Preview input qualification;
+D4 and Full remain independent. Existing dirty developer fixtures, root locks,
+committed binaries and STATUS are preserved. No public artifact or production
+pin is promoted by the technical approval.
+
 ### Close the native macOS D3 common-change replay
 
 Replayed the Linux-verified `22720f7d...bee16` product/test snapshot with the retained clean macOS rehearsal.7 SDK and

@@ -609,13 +609,32 @@ int main() {
     check(manifest.at("build_key") == key && manifest.at("key_inputs") == inputs && manifest.at("tests").size() == 2, "the manifest records the key, its inputs and the tests");
     check(manifest.at("libraries").size() == 1 && manifest.at("libraries")[0].at(darwin ? "install_name" : windows ? "dll_name" : "soname") == (darwin ? "@rpath/libz.1.dylib" : windows ? "libz.so.1.3.1" : "libz.so.1"), "the manifest lists the shared object");
     check(manifest.dump().find(result.prefix.parent_path().string()) == std::string::npos, "the manifest names no build-job path");
-    check(!manifest.at("unsupported_scope").empty() && manifest.at("crt_review") == "pending", "unsupported scope and the pending CRT review are stated");
+    check(!manifest.at("unsupported_scope").empty() && manifest.at("crt_review") == "approved", "unsupported scope and the CRT review decision are stated");
     check(store.verify(key, toolchain.sdk) == manifest.at("files").size() + 1, "verify accepts the item and counts the manifest too");
     check(read_identity(toolchain.sdk).content_sha256 == sdk_before, "the SDK is byte-identical after the publication");
 
     // The same finished build again is idempotent.
     auto again = store.publish(request, result, inputs);
     check(again.already_published && again.path == item, "publishing the same key again changes nothing");
+
+    // A pre-approval item retains its original manifest bytes: project locks pin that digest.
+    // This edits only a disposable test fixture, never a retained user's item.
+    {
+        auto approved_bytes = read_text(item / "manifest.json");
+        auto pending = manifest;
+        pending["crt_review"] = "pending";
+        write_text(item / "manifest.json", pending.dump(2) + "\n");
+        auto pending_digest = file_sha256(item / "manifest.json");
+        check(port_build_key(pending.at("key_inputs")) == key && port_build_key(port_key_inputs(request)) == key,
+              "pre-approval and approved builds have the same key");
+        check(store.verify(key, toolchain.sdk) == pending.at("files").size() + 1,
+              "approved adapter verifies a pre-approval item");
+        auto reused = store.publish(request, result, inputs);
+        check(reused.already_published && reused.manifest.at("crt_review") == "pending" &&
+              file_sha256(item / "manifest.json") == pending_digest,
+              "approved adapter reuses a pre-approval item without rewriting its pinned manifest");
+        write_text(item / "manifest.json", approved_bytes);
+    }
 
     // ---- concurrent publication of one key ----------------------------------------------------------------------------
     {

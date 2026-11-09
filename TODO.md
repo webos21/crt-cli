@@ -22,28 +22,20 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
 
 ## In Progress
 
-### D3 closure: producer contract review and affected-host replay
-
-The bounded zlib executor/store/provider/lock/oracle has native Linux/x86_64,
-macOS/arm64 and Windows/x64 records in [acceptance](docs/acceptance/sdk_install_acceptance.md).
-These retain their exact inputs; they are not a latest-source three-host pass.
-D2 receipts/selection/first-build/pinned HTTPS are implemented at the linked
-[per-host baselines](docs/acceptance/sdk_install_acceptance.md). Completed work
-belongs to HISTORY; STATUS is the separately requested dated snapshot.
-
-- [ ] Review the digest-keyed CRT adapter policy and record producer/consumer
-  adoption. Keep `crt_review: pending` until the explicit approval/adoption decision is recorded.
-  Affected-source proof is available on [Linux](docs/acceptance/sdk_install_acceptance.md#linux-d3-common-change-replay-and-macos-handoff-2026-11-09)
-  and [macOS](docs/acceptance/sdk_install_acceptance.md#macos-d3-common-change-closure-replay-2026-11-09);
-  reuse Windows/x64's qualification only for its unchanged inputs.
-- [ ] Close D3 after review and affected-host proof; retain original failures,
-  compare build keys and preserve store/project pins. Approval metadata alone
-  is excluded from the key. Windows/arm64 D3 is a separate qualification target.
-
 ### Dev SDK / CLI Preview preparation
 
-- [ ] Freeze a bounded Linux/x86_64 Dev SDK + CLI candidate, LLVM prerequisites,
-  resources/notices/trust inputs and a source-hidden first-user workflow.
+D3's bounded zlib adapter contract is adopted for the exercised Linux/x86_64,
+macOS/arm64 and Windows/x64 combinations. [The adoption ledger](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09)
+links the producer decision and metadata/key/old-item regression. Windows/arm64
+D3 remains separate. D2's recorded installation/selection/first-build/pinned
+HTTPS baselines are retained. Completed work belongs to HISTORY; STATUS is the
+separately requested dated snapshot.
+
+- [ ] Freeze a clean bounded Linux/x86_64 Dev SDK + CLI candidate, LLVM prerequisites,
+  resources/notices/trust inputs and a source-hidden first-user workflow. Follow
+  [input qualification](docs/guides/development.md#first-preview-input-qualification).
+  Preserve dirty developer fixtures; exclude unqualified Linux C shared SDK mode
+  until the producer policy in CRT 6.4 is resolved and replayed.
 - [ ] Verify/promote the SDK before adopting its actual published pin in the
   CLI. Apply final-package replay to each advertised host. Publisher trust and
   publication remain separate from rehearsal or a developer test CA.

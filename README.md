@@ -46,7 +46,8 @@ never into the SDK. Projects choose provider `sdk` or `port`; optional lock pins
 See the [adapter policy](docs/design/source_port_adapter.md) and
 [macOS replay](docs/acceptance/sdk_install_acceptance.md#source-port-d3-replay-macosarm64-2026-11-09) and
 [Windows/x64 implementation evidence](docs/acceptance/sdk_install_acceptance.md#source-port-d3-windowsx64-implementation-and-replay-2026-11-09).
-Other recipes, general dependency resolution, formal adapter review and Windows/arm64 replay remain separate work.
+The bounded adapter contract is [approved and adopted](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09).
+Other recipes, general dependency resolution and Windows/arm64 replay remain separate work.
 
 ## Try the Local Workflow
 

@@ -37,7 +37,7 @@ int main() {
 
     // ---- the reviewed recipe ---------------------------------------------------------------------------------------
     check(sha256(bytes) == port_adapter_for(sha256(bytes)).recipe_sha256, "fixture digest is in the reviewed table");
-    check(port_adapters().size() == 1 && port_adapters()[0].crt_review == "pending", "adapter table is the seeded zlib entry, CRT review pending");
+    check(port_adapters().size() == 1 && port_adapters()[0].crt_review == "approved", "adapter table contains the CRT-approved bounded zlib entry");
     const auto& adapter = port_adapters()[0];
     check(port_layout(adapter, "linux").shared_library == "lib/libz.so", "the Linux layout is unchanged");
     check(port_layout(adapter, "macos").shared_library == "lib/libz.dylib" &&

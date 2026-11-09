@@ -1,8 +1,8 @@
 # D3 Design: Native Source-port Recipe Adapter (zlib first)
 
 Status (2026-11-09): **bounded zlib implementation has native Linux/x86_64,
-macOS/arm64 and Windows/x64 evidence; formal CRT approval and affected-host
-closure remain pending.** The original slice below is retained as design history;
+macOS/arm64 and Windows/x64 evidence, and its bounded CRT contract is approved
+and adopted.** See the [adoption decision](../compatibility.md#d3-bounded-adapter-adoption-2026-11-09). The original slice below is retained as design history;
 project providers/port locks and OS adapters are now implemented where acceptance
 records them. Other recipes, generic resolution and Windows/arm64 D3 remain separate.
 The current closure/handoff procedure is in the [development guide](../guides/development.md#d3-common-change-closure-and-native-handoff).

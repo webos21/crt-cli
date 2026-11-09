@@ -6,6 +6,34 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## D3 Bounded Adapter Adoption (2026-11-09)
+
+**Adopted technical contract, unpromoted artifacts.** Reviewed producer CRT
+`dfb83c4` and consumer CLI `8ad11dd95d09c416c62ddf4ea6d393e4f7c5279f` plus the
+review-metadata/regression delta (normalized product/test fingerprint
+`dcc249452758589253093f21ed48f98fbf65f94bdfb0d9d00e4362e73550d4e5`).
+CRT's [explicit producer approval](https://github.com/webos21/crt/blob/90989acc52406bc036789f2f80b06bfb4c184473/docs/acceptance/sdk_split_acceptance.md#d3-adapter-contract-approval-2026-11-09)
+(CRT `90989acc52406bc036789f2f80b06bfb4c184473`) accepts the existing digest-keyed zlib roles/fields, native per-host policy,
+key/store and provider/lock boundaries. CLI adopts `crt_review: approved` for
+new publications. Recipe schema 1, SDK/native compiler policy, host-tools format
+1, project lock 1 and experimental item format 0 are unchanged.
+
+The [focused Linux regression](acceptance/sdk_install_acceptance.md#d3-review-metadata-and-existing-item-reuse-2026-11-09)
+builds the new CLI against the retained developer SDK/provider/bundle and proves
+key equality plus actual reuse of original pending items and project pins.
+Old item manifests keep their pending marker and digest. No SDK/provider/runtime,
+executor, key/audit policy, repository lock, committed binary or artifact is
+replaced. Linux's dirty replay inputs are not promoted to clean release inputs.
+
+The [Linux common-change](acceptance/sdk_install_acceptance.md#linux-d3-common-change-replay-and-macos-handoff-2026-11-09),
+[macOS affected-change](acceptance/sdk_install_acceptance.md#macos-d3-common-change-closure-replay-2026-11-09)
+and [Windows/x64 implementation](acceptance/sdk_install_acceptance.md#source-port-d3-windowsx64-implementation-and-replay-2026-11-09)
+records qualify their exact retained combinations. This closes bounded D3;
+unchanged host execution proof is reused, not relabeled as a fresh three-host
+run of the metadata-only binary. Windows/arm64 D3, Linux C shared SDK-provider
+policy (CRT 6.4), D4, Full installation, production pinning and public delivery
+remain separate. Dev SDK + CLI Preview input qualification is the next focus.
+
 ## D3 Common-change Replay on macOS/arm64 (2026-11-09)
 
 Reviewed CRT `2fdce21d687936c313a3a5990d7acdc3ab824c54` / CLI `938518c4b3bb2c887e921af602082b46ac9be5b4`.

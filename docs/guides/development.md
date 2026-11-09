@@ -499,8 +499,9 @@ Python dependency to the CLI. Keep the interpreter's original installation/ACLs 
 The 2026-11-09 closure baseline is CRT `21b9d0e` / CLI `2ae74d4` (resolve full
 commits in the acceptance input record). Documentation refresh does not approve
 the adapter or requalify the SDK. The user runs Linux here and macOS on a native
-macOS host. Keep `crt_review: pending` until producer review and both affected
-host deltas are recorded; Windows/x64's final native record remains the baseline
+macOS host. Those deltas and the [bounded approval/adoption](../compatibility.md#d3-bounded-adapter-adoption-2026-11-09)
+are now recorded; `crt_review` is `approved` for new items and retained pending
+items must not be rewritten. Windows/x64's final native record remains the baseline
 unless a changed policy/product input affects it. Windows/arm64 D3 is separate.
 
 1. Reuse an identified public Dev SDK/provider and independent CRT host-tools
@@ -574,4 +575,40 @@ The driver records the same normalized source fingerprint as Linux, copied/origi
 and driver hashes, SDK/source/provider/bundle-free CLI checks and the actual `port build`/reuse/verify cycle. Its strict
 native path allowlist and denial probes are distinct from the oracle-only interpreter/SDK-tool exception; it does not
 provide an execve trace. Use the accepted input/result/qualification receipts, not a path or a suite count alone, at
-the pending producer/adoption decision. Do not repeat unchanged gates merely for the review-marker edit.
+the recorded producer/adoption decision. Do not repeat unchanged gates merely for the review-marker edit.
+
+
+## First preview input qualification
+
+The first candidate is bounded to native Linux/x86_64 Dev `02-cxx` and the
+implemented CLI first-user workflow. D3 technical adoption does not promote an
+SDK, prove publisher trust or turn old developer fixtures into release inputs.
+Before collecting the candidate:
+
+1. Choose a clean committed CRT producer and explicit prerelease version. Produce
+   a fresh Dev candidate using the producer's existing `crt-development-sdk-test`
+   and `crt-dev-release` gates, retaining actual archives, checksums, source offer,
+   manifests and portable compiler contract. A local version parameter creates
+   neither a public release nor a Git tag. Do not rebuild Full/Web for this gate.
+2. Verify/extract that exact archive into an immutable external handoff, preserve
+   SDK and provider identities separately, and declare exact LLVM binaries.
+   Rebuild the CLI from a fresh export/output against those public inputs; never
+   use a sibling build tree or update the repository's old lock implicitly.
+3. Fix the candidate's supported workflow before final-package replay: new C/C++
+   sources, pinned install/acquisition or installed-SDK first build, test/run,
+   static SDK control and optional source-port zlib with pinned CRT host tools.
+   Linux C shared SDK-provider mode is excluded until CRT Tranche 6.4 resolves
+   compiler/runtime-search policy with new evidence. Port-provider shared proof
+   does not qualify that SDK-provider mode.
+4. Bind final CLI executable, licenses/notices/resources, explicit CA/trust inputs,
+   OS/LLVM prerequisites and source-hidden/SDK-free execution receipts. Existing
+   developer test CAs and unsigned checksums are not publisher authentication.
+   Every advertised host needs final-package evidence at its own exact inputs.
+5. Promote the verified producer artifact first, verify its actual promoted bytes,
+   then adopt that SDK pin in the CLI and prepare CLI delivery with independent
+   versions. Publication and trust decisions remain separately authorized.
+
+The retained Linux D3 SDK has dirty development provenance and the host-tools
+bundle is local-only; preserve both for reproducible technical regression. They
+are not the first preview release candidate. Full delivery, D4 dependency ports,
+general updates/self-upgrade and Studio do not block this bounded preparation.

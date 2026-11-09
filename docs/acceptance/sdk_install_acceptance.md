@@ -1950,3 +1950,79 @@ no store/project pins, trust defaults, SDK assets or binary snapshots are promot
 Linux SDK-provider C shared control's host-libz resolution remains unendorsed under producer TODO 6.4; macOS's
 provider controls must be observed on this native SDK independently. Windows/x64 keeps its exact unchanged
 qualification; Windows/arm64 D3 and later dependency/preview work remain separate gates.
+
+
+## D3 review metadata and existing item reuse (2026-11-09)
+
+Scope: adopt CRT's [bounded zlib approval](https://github.com/webos21/crt/blob/90989acc52406bc036789f2f80b06bfb4c184473/docs/acceptance/sdk_split_acceptance.md#d3-adapter-contract-approval-2026-11-09)
+after the synchronized macOS affected-source replay. Review baselines are CRT
+`dfb83c47791ae4dce85a433e92e268b656cdf34d` and CLI
+`8ad11dd95d09c416c62ddf4ea6d393e4f7c5279f`. Product code changes only
+`crt_review` from `pending` to `approved`; the header/comment and focused test
+changes are included in normalized product/test fingerprint
+`dcc249452758589253093f21ed48f98fbf65f94bdfb0d9d00e4362e73550d4e5`.
+Executor, key serialization, audits, recipe/test source and provider bytes are
+unchanged. Old `pending` manifests are retained publication records, not a reason
+to invalidate or silently rewrite a pinned item.
+
+Inputs reuse the prior Linux public handoff: developer Dev SDK content
+`ecbb920a8e63e337095c0839b2d897f653f012162164a1b7b4e85a66486b32cd`
+(dirty producer `b6bf52be64047e718dc0f2870472a5ffece913f9`, never a clean RC),
+provider `30e67672117ae9b8d3b3d9476f381c3ec4049291bb593208abe541966953d956`,
+local-only host-tools manifest `b13ae8a8e392f5c0310de8ae4c342a7c33fb45ac4270306b0fe9a78906fe72d6`
+and upstream zlib archive `9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23`.
+External LLVM21 tool hashes and exact paths are in `inputs.json`. Producer and
+SDK recipe/roundtrip-source hashes match the approved table. A fresh export
+builds CLI `f926d397a8e83dce7a402bc565c636233dd7ddb355e31466abc291cf56f8d03d`.
+
+Run `tools/replay_port_linux.py` with those inputs, the previous Linux D3 CLI as
+`--seed`, `--allow-dirty-sdk`, `--hide /home/syszone/GitLocal/crt` and
+`--cases port-recipe-test port-store-test port-project-test`. Exact argv and raw
+stdout/stderr live under ignored
+`out/d3-approval-linux-20261109/replay-r1/{inputs,commands,result}.json`;
+external workspace is `/home/syszone/GitLocal/crt-cli-replay/d3-linux-j2t3sqw4`.
+Result: **21/21 gates pass**, with input-enabled `port-recipe-test` **141/141**,
+`port-store-test` **90/90** and `port-project-test` **81/81**. The actual CLI port
+command publishes then reuses/verifies its new approved item; warm CLI build
+executes zero commands. Bare version/doctor and import checks, native source-denial
+probe, unchanged original/copied SDK/bundle inventories and no-host-interpreter
+trace checks pass. The pure C shared SDK-provider control again maps host libz;
+that observation remains unendorsed under CRT 6.4 and is not source-port proof.
+`qualification.json` binds the input/command/result and retained-item receipts.
+Its SHA-256 is `b3eff423726a92925ea106e469502f8da1eff3bfe9808d8bba6d93eb5f41cff2`; result SHA-256 is
+`a6b20a3b1f97b3ba1aa2ede4df84cc6b8db38bdd3933a6229dd673b8f52c2cee`.
+
+The focused store test adds a disposable pending-manifest fixture, proves equal
+keys and verification/idempotent publication without changing its manifest
+digest, then restores the fixture. No retained user item is edited by that test.
+
+A separate read-only retained-input proof uses the new executable against the
+previous run's actual pending items, not only a synthesized fixture:
+
+- The original `port build zlib` inputs recompute key
+  `81dda528e5c9d082b0c16b4a77d0ebe6c60a3eb785cf7e458b0bb6ec19ddc46b`,
+  report `already_published: true` and pass `port verify`.
+- The original command item's manifest stays
+  `f5537655c06b1579b4c4c4824093f5a864838f268cdfb0782675759337a77ac0`.
+  The prior project-test item has the same key and its own original evidence/
+  manifest `56a0372b9545523fbbcc59d6bce09338bde74ac51ba55a284a319728f8cd4281`.
+- A fresh copy of the prior pinned consumer's source, manifest, lock and local
+  selection builds against that second item. C/C++ static/shared runs pass;
+  the shared mapping names the original port item. Original/copied locks,
+  manifests and selections, both store inventories, SDK and bundle are unchanged.
+  Old roots are read-only in bubblewrap; only the new proof workspace is writable.
+
+The retained-item proof passes **10/10 checks**; exact argv, file/inventory hashes
+and outcomes are in `out/d3-approval-linux-20261109/existing-item-reuse.json`
+(SHA-256 `111c5b3de8c7522e973a22fbbe2f4f92794e7dfffafc55623348c1630b088ae4`).
+This explicitly preserves different immutable manifests for independently
+published same-key builds; equal build keys are not byte-reproducibility proof.
+
+This closes bounded D3 with the producer decision and [CLI adoption](../compatibility.md#d3-bounded-adapter-adoption-2026-11-09).
+Existing Linux/macOS common-change and Windows/x64 qualification keep their
+original exact inputs. No new native macOS/Windows run is claimed for the review
+marker; unchanged execution/key/audit policy reuses that evidence. Full native
+regression/oracle suites were not repeated for metadata-only adoption. Windows/
+arm64 D3, Linux's unendorsed C shared SDK-provider control, D4, Full installation,
+production locks, publisher trust and public release remain separate. Root locks,
+committed binaries and old SDK/provider bytes are preserved.
