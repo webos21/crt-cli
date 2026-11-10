@@ -11,6 +11,14 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-10
 
+### Qualify the macOS final CLI package
+
+Assembled the committed macOS executable with its pinned notices from the actual public SDK bytes, packed them into a deterministic 30-file archive
+(1222100 bytes, `f1a20b50...a876`) and verified a safe extraction against the manifest. The extracted package runs `--version`, `--help` and `doctor --scope self`
+with resources under Seatbelt with the SDK, sources and compilers hidden; wrong pins, a changed notice and an extra file are refused. The new
+`tools/package_cli_archive.py` has four unit tests. Nothing is published and the archive is a local, unsigned test aid.
+[Acceptance](docs/acceptance/preview_acceptance.md#macos-final-cli-package-2026-11-10).
+
 ### Consume the published macOS Dev SDK Preview
 
 The committed macOS executable installs the actual public bytes of `v0.0.1-preview.20261110.macos.1` from the pinned manifest and builds C and C++ projects without configure under Seatbelt
