@@ -5,7 +5,7 @@
 #include <csignal>
 #include <thread>
 #include <unistd.h>
-#include "store_lock.h"
+#include <crtcli/store_lock.h>
 
 namespace crtcli {
 namespace {

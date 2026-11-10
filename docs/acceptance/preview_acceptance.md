@@ -156,3 +156,26 @@ source/assets, reviewed trust commit, CLI and consumer receipts. No root/default
 SDK lock is migrated and no CLI executable release is published by this SDK
 promotion. CLI delivery, other-host final packages, Linux C shared SDK mode,
 Full/D4, updates and Studio remain in their owning queues.
+
+## macOS local candidate (2026-11-10)
+
+Scope: native macOS/arm64 Dev `02-cxx` Preview candidate `v0.0.1-preview.20261110.macos.1` from clean CRT
+`445f127dc2e1ef4ab538166aa2e374f25773a803` (Release; producer
+[candidate record](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#macos-dev-preview-candidate-2026-11-10)
+owns the SDK/manifest/policy hashes). The CLI is built from `1e821d1b8665eb44f4d34b9582049c09a59fd3a6` plus one relocation: the private
+`src/main/store_lock.h` (introduced by D3) moves to `include/crtcli/store_lock.h`, because the repository rule is that headers live under
+`include/`. No behavior change; the Linux and Windows records stay at their own sources.
+
+| Gate | Result |
+| --- | --- |
+| Self-build from the Preview SDK alone (Seatbelt contract replay, previous binary as bootstrap seed) | 21 sources: cold 21 executed / 0 reused, warm 0 / 21; bootstrap loop code and data identical |
+| Native / archive / SDK-store / recipe regression | **922** / **221** / **114** / **141** checks |
+| Imports | only `libSystem` |
+| Executable | `558c13c15ffdf0394fb66e85d3a11c4f9c21c6606aae0e3f39aade353e3c7e53`, 4368360 bytes (committed as `bin/macos/crt-cli`) |
+| Consumer of the local handoff, `tools/replay_preview_public_macos.py` (Seatbelt) | **30/30**: pin and asset digests, pinned install/verify/idempotence, wrong-pin refusal, C and C++ first build without configure, test, run, zero-command warm build, unchanged locks and inputs |
+
+The producer replay driver's two guard corrections (documented `_WIN32` in a JSON fixture; the private header location) and the retained
+failed attempts are recorded in the producer candidate section. Not covered at this checkpoint: a packaged CLI archive with pinned notices for macOS
+(the Linux package assembly is not replayed), Developer ID signing or notarization, port/provider replays against this exact SDK, other hosts. The
+executable is a local, unpromoted test aid, not a published release.
+
