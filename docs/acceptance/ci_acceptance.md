@@ -357,3 +357,13 @@ summary result/test counts/cold caches, stage equality and binary SHA-256 agree.
 The original `.3` failure remains above. Additional host/loader versions and
 Linux/aarch64 remain unqualified; fallback lifecycle and pure-C shared SDK
 limits are unchanged. No replacement CLI package or existing-project migration.
+
+### Whole required matrix and artifact verification
+
+The same run subsequently concludes **success, all four required jobs**:
+Ubuntu 24.04, Ubuntu 26.04, macOS/arm64 and Windows/x64. All four artifact
+summaries and stage-2 executable digests were downloaded and independently
+checked against source `5d148ba`, result `pass`, cold-build receipts and suite
+results (`hosted-verification.json`, `hosted-artifacts/`). Both Linux stage
+pairs are byte-identical. macOS/Windows retain their own original SDK pins and
+reported byte-difference limitations; this adds no other-host `.4` SDK claim.
