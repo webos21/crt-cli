@@ -22,7 +22,7 @@ store, and configure can select an installed SDK with its stored portable
 compiler contract. Local installation and Stage 2 project selection have native
 records on Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64/arm64 at
 identified snapshots. They are local technical results, not a current-source
-support matrix; the only published CLI is the [Linux/x86_64 Preview](#download-the-linuxx86_64-preview). See [STATUS](STATUS.md) for scope and
+support matrix; the published CLIs are the [Linux/x86_64 and macOS/arm64 Previews](#download-the-previews). See [STATUS](STATUS.md) for scope and
 [SDK installation acceptance](docs/acceptance/sdk_install_acceptance.md) for evidence.
 
 The current installer/project selection supports the native `dev` profile.
@@ -39,7 +39,7 @@ is implemented with Linux, macOS and Windows replay evidence: `sdk acquire --sou
 `build --sdk-source <file>` verifies a caller-pinned source and reuses an exact
 installed identity. Public GitHub release assets need the opt-in
 [restricted redirect policy](docs/reference/bootstrap_contract.md#restricted-https-redirects-experimental-cli-owned)
-(`"redirect_policy": "github-release"`; default is refusal), exercised on Linux/x86_64 only. `fetch` also supports explicit-key RSA-PSS verification.
+(`"redirect_policy": "github-release"`; default is refusal), exercised on Linux/x86_64 and macOS/arm64 (Windows is not replayed). `fetch` also supports explicit-key RSA-PSS verification.
 Official default-download trust, channels and publisher promotion remain pending.
 
 The experimental D3 source-port path implements `port build|list|verify|recover|lock` for the pinned zlib recipe on Linux,
@@ -51,15 +51,17 @@ See the [adapter policy](docs/design/source_port_adapter.md) and
 The bounded adapter contract is [approved and adopted](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09).
 Other recipes, general dependency resolution and Windows/arm64 replay remain separate work.
 
-## Download the Linux/x86_64 Preview
+## Download the Previews
 
-The [`v0.1.0-preview.20261110.linux-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.linux-x86_64.1)
-prerelease carries one static `crt-cli` with its notices and a pinned inventory. It is
-unsigned: verify the archive against a digest you trust independently. It still needs LLVM 21
-tools and a CA bundle you choose, and installs the Dev SDK separately (the public
-[CRT Dev SDK](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.3)). Release tags carry the
-OS and architecture; macOS and Windows packages are not published yet. See the
-[release record](docs/acceptance/preview_acceptance.md#linuxx86_64-cli-preview-release-2026-11-10).
+Two prereleases carry one static `crt-cli` each, with its notices and a pinned inventory. Both are
+unsigned: verify the archive against a digest you trust independently. Each needs the host's LLVM-compatible
+tools and a CA bundle you choose, and installs the Dev SDK separately. Release tags carry the OS and architecture;
+a Windows package is not published yet.
+
+| Host | Release | SDK it acquires |
+| --- | --- | --- |
+| Linux/x86_64 | [`v0.1.0-preview.20261110.linux-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.linux-x86_64.1) ([record](docs/acceptance/preview_acceptance.md#linuxx86_64-cli-preview-release-2026-11-10)) | [`v0.0.1-preview.20261110.3`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.3); needs LLVM 21 |
+| macOS/arm64 | [`v0.1.0-preview.20261110.macos-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.macos-arm64.1) ([record](docs/acceptance/preview_acceptance.md#macos-cli-preview-release-2026-11-10)) | [`v0.0.1-preview.20261110.macos.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.macos.1); needs Xcode's command-line tools |
 
 ## Try the Local Workflow
 
@@ -108,8 +110,8 @@ also exercise this workflow at their recorded baselines.
 
 ## Next User Workflow
 
-[The active plan](TODO.md) continues the Dev SDK + CLI preview: the Linux/x86_64 package is out; macOS/arm64 and
-Windows/x64 packages, redirect replays on those hosts and default/project pin adoption are next. The D3 zlib contract is
+[The active plan](TODO.md) continues the Dev SDK + CLI preview: the Linux/x86_64 and macOS/arm64 packages are out; the
+Windows/x64 package, its redirect replay and default/project pin adoption are next. The D3 zlib contract is
 [approved and adopted](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09) for the three exercised host pairs;
 Windows/arm64 D3 remains a separate qualification target.
 

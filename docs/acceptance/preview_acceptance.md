@@ -401,6 +401,12 @@ identity equals the promoted SDK. Then C and C++ `new`, first `build --sdk <iden
 current delivery host, not a promise of its stability: a changed host fails closed as `redirect` until the reviewed list is updated. Publisher authentication stays `not_verified`.
 
 Receipts are under the CRT checkout's ignored `out/cli-preview-macos/` (`replay-cli/`, `redirect-replay/`, `acquire.json`, `package/`, `package-run/`, `release/`). Not claimed: publisher authentication (digests
-only), Developer ID signing or notarization, a quarantined (browser) download, Intel macOS, a source-port build from this package, updates or self-upgrade. The post-publication public-download check
-is recorded below once performed.
+only), Developer ID signing or notarization, a quarantined (browser) download, Intel macOS, a source-port build from this package, updates or self-upgrade. 
+
+**Published.** The draft carried the two assets; before publishing, their names, sizes and digests matched the pins and an authenticated re-download was byte-identical to the local files. The
+prerelease was then published (`2026-11-10T04:20:48Z`, not marked latest); the tag resolves to `541b2afd53980654591a1c6e0a49ceca4057f9b7`, and the published notes are identical to the frozen file. An
+**unauthenticated** public download (`curl`, HTTPS only, TLS >= 1.2, proxies disabled) followed one redirect per file to `release-assets.githubusercontent.com` and matched `SHA256SUMS-macos-aarch64`
+and the local archive byte for byte. The archive extracted from those public bytes (`package_cli_archive.py verify`: 30 files, manifest `6c7f553f...c01e63`) runs under Seatbelt with `--version`, self
+`doctor --resources` against the pin (`publisher_authentication: not_verified`) and a real GitHub `sdk acquire` (three redirects, installed identity `e3dc7fb1...bac8`). The committed
+`bin/macos/crt-cli` is now this executable (`42727cca...a6`). Executable publication does not change root locks, defaults or STATUS.
 

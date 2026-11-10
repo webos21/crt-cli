@@ -10,7 +10,7 @@ release artifacts.
 
 | Host | Path | Status |
 | --- | --- | --- |
-| macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `558c13c15ffdf0394fb66e85d3a11c4f9c21c6606aae0e3f39aade353e3c7e53` (4,368,360 bytes; 2026-11-10 self-build of `1e821d1` plus the `store_lock.h` move, clean local CRT `445f127` Preview SDK) |
+| macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `42727ccaef0e46551bcb9578d5eee771166e8211b8434f8121b589ab57eddfa6` (4,389,112 bytes; 2026-11-10 self-build of `541b2af` with restricted redirects, the executable of the published macOS Preview) |
 | Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `9b82bd300379b45be4cb36becfbef56bf41b1ff5cc3d2cb510b9e60447b10284` (13,889,400 bytes; 2026-11-02 D1 working-tree candidate based on `adc03b0`, clean local CRT `49879bf`) |
 | Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `69118ac17f998ea0cc42ff7fcf422155ee3fefd016a617374a5701dd439bbfef` (16,352,720 bytes; 2026-11-05 Stage 2 replay of `9d711d2`, clean local CRT `78ed80f`) |
 | Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `3e8c0491d2e385bbaba5c0e8bd63eeac3896f498fed762ecab4370ecf277bd90` (44,920,832 bytes, built `-O1 -g`; 2026-11-10 Windows Preview candidate of `9a5272d`, SDK from clean CRT `b31276a` Release `v0.0.1-preview.20261110.windows.1`) |
