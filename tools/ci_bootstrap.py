@@ -12,6 +12,7 @@ Inputs come from .github/ci/pins.json. Byte equality of stage 1 and stage 2 is r
 import argparse
 import hashlib
 import json
+import math
 import os
 import platform
 import re
@@ -30,6 +31,29 @@ EXE = '.exe' if os.name == 'nt' else ''
 
 class CiError(Exception):
     pass
+
+
+def native_phase_report(stderr, passed_checks):
+    expected = {'startup', 'process', 'selection', 'projects/c', 'projects/cxx'} | {
+        'variants/' + language + '/' + kind for language in ('c', 'cxx')
+        for kind in ('static-library', 'shared-library', 'executable')}
+    try:
+        phases = [json.loads(line[len('native-phase: '):]) for line in stderr.splitlines() if line.startswith('native-phase: ')]
+        if len(phases) != len(expected) or {p['name'] for p in phases} != expected:
+            raise CiError('native-test phase coverage is incomplete or duplicated')
+        for phase in phases:
+            if phase['completed'] is not True:
+                raise CiError('native-test phase did not complete')
+            if type(phase['checks']) is not int or phase['checks'] < 0:
+                raise CiError('native-test phase has an invalid check count')
+            seconds = phase['seconds']
+            if type(seconds) not in (int, float) or not math.isfinite(seconds) or seconds < 0:
+                raise CiError('native-test phase has an invalid duration')
+        if sum(p['checks'] for p in phases) != passed_checks:
+            raise CiError('native-test phase counts differ from its final check count')
+        return sorted(phases, key=lambda p: p['name'])
+    except (ValueError, TypeError, KeyError) as error:
+        raise CiError('malformed native-test phase report') from error
 
 
 def log(message):
@@ -270,7 +294,12 @@ class Ci:
 
     def run_tests(self, exe, project):
         results, failures = {}, {}
-        for name in self.args.tests or self.pins['pr_tests']:
+        selected = self.args.tests or self.pins['pr_tests']
+        if 'native-test' in selected:
+            # Test-only local state: never weaken the CLI's SDK/tool verification or share mutable fixture roots.
+            (project / '.crt/native-test-settings.json').write_text(json.dumps({'format': 0, 'jobs': self.args.native_test_jobs}) + '\n')
+            self.summary['native_test_jobs'] = self.args.native_test_jobs
+        for name in selected:
             try:
                 data, err = self.cli('test-' + name, exe, 'test', project, ['--target', name], timeout=3700)
                 outcome = data['outcomes']
@@ -281,7 +310,10 @@ class Ci:
                 counted = re.findall(r'(\d+) checks passed', err)
                 if not counted:
                     raise CiError('%s did not report a passed-check count' % name)
-                results[name] = int(counted[-1])
+                passed = int(counted[-1])
+                if name == 'native-test':
+                    self.summary['native_phases'] = native_phase_report(err, passed)
+                results[name] = passed
             except CiError as error:
                 # Later suites and stages still run, so one CI pass reports everything that is broken.
                 failures[name] = str(error)
@@ -379,7 +411,7 @@ class Ci:
         if target:
             rows = ['### crt-cli CI: %s (%s)' % (self.host, self.summary.get('result', 'fail')), '', '| Item | Value |', '| --- | --- |',
                     '| source | `%s` |' % self.summary['source_commit']]
-            for key in ('bootstrap', 'sdk', 'host_versions', 'stage1', 'stage2', 'tests', 'test_failures', 'stage_bytes_identical', 'audit', 'ca_sha256'):
+            for key in ('bootstrap', 'sdk', 'host_versions', 'stage1', 'stage2', 'tests', 'native_test_jobs', 'native_phases', 'test_failures', 'stage_bytes_identical', 'audit', 'ca_sha256'):
                 if key in self.summary:
                     rows.append('| %s | `%s` |' % (key, json.dumps(self.summary[key], sort_keys=True)))
             with open(target, 'a', encoding='utf-8') as stream:
@@ -394,6 +426,8 @@ def main():
     parser.add_argument('--llvm-bin', help='directory with clang, clang++, ld.lld and llvm-ar (not used on macOS)')
     parser.add_argument('--os-sdk', help='Windows um/x64 import-library directory (default: newest installed)')
     parser.add_argument('--tests', nargs='+', help='run only these declared tests (default: the pinned PR set)')
+    parser.add_argument('--native-test-jobs', type=int, choices=range(1, 5), default=2,
+                        help='bounded workers for independent native-test projects/variants (default: 2; use 1 for serial comparison)')
     args = parser.parse_args()
     ci = None
     try:

@@ -244,6 +244,19 @@ The repository carries no executables (`bin/` was removed); CI bootstraps from a
 
 The stage-2 executable, `SHA256SUMS`, `ci-summary.json`, logs and the generated source file are uploaded as an artifact.
 
+CI uses `--native-test-jobs 2` for independent C/C++ project and variant cases.
+The native C++ test joins its bounded workers before changing HOME, environment
+variables or SDK-store fixtures; every concurrent case has its own project root.
+All existing cases, SDK/tool hashes and both cold self-builds remain required.
+The driver records eleven `native_phases` with check counts and durations and
+rejects missing/duplicate/incomplete sections or a sum different from the final
+native count. `tools/test_ci_bootstrap.py` exercises those report failure gates.
+
+For a serial comparison, pass `--native-test-jobs 1`; the driver accepts 1-4.
+It writes test-only local `.crt/native-test-settings.json` with `format: 0` and
+`jobs`. A normal native-test invocation without this file uses one worker.
+This is test-harness state, not a product manifest, SDK schema or public command.
+
 The five `port-*` suites (except `port-recipe-test`) print `skipped` and exit 0 without the machine-local
 `CRT_CLI_TEST_PORT_*` inputs, so they are **not** in the PR set: the driver fails if a suite prints `skipped`, and also
 if `crt.json` declares a test that `pins.json` classifies neither as PR-set nor as input-gated. They belong to a

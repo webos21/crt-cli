@@ -57,6 +57,10 @@ Linux/x86_64 (`ubuntu-26.04`), macOS/arm64 (`macos-15`) and Windows/x64
 (`windows-2022`) are required legs and pass at the
 [recorded hosted combination](docs/acceptance/ci_acceptance.md#windows-hosted-qualification-2026-11-10).
 
+- [ ] Reduce CI latency with timed native-test sections and bounded parallel
+  execution of independent project/variant fixtures. Keep environment/store
+  mutation serial, preserve check counts and full integrity/cold-build gates,
+  and compare all three hosted legs against run `42782205090`.
 - [ ] Resolve or explicitly bound Ubuntu 24.04/glibc 2.39 shared-runtime support
   in CRT before claiming that compatibility; retain its
   [producer-side reproducer](docs/acceptance/ci_acceptance.md#first-github-hosted-run-2026-11-10)

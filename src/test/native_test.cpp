@@ -8,10 +8,58 @@
 #include <spawn.h>
 #include <cstdlib>
 #include <map>
+#include <atomic>
+#include <chrono>
+#include <exception>
+#include <thread>
+#include <mutex>
 using namespace crtcli;
 namespace {
-size_t checks = 0;
-void check(bool condition, const std::string& message) { require(condition, "test failed: " + message); ++checks; }
+std::atomic<size_t> checks{0};
+thread_local size_t worker_checks = 0;
+std::mutex phase_mutex;
+std::vector<Json> phases;
+void check(bool condition, const std::string& message) { require(condition, "test failed: " + message); ++checks; ++worker_checks; }
+struct NativePhase {
+    std::string name;
+    size_t before = worker_checks;
+    int exceptions = std::uncaught_exceptions();
+    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+    explicit NativePhase(std::string value) : name(std::move(value)) {}
+    ~NativePhase() {
+        Json data{{"name", name}, {"checks", worker_checks - before},
+                  {"seconds", std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count()},
+                  {"completed", std::uncaught_exceptions() == exceptions}};
+        std::lock_guard<std::mutex> guard(phase_mutex);
+        phases.push_back(std::move(data));
+    }
+};
+void report_phases() {
+    for (const auto& phase : phases) std::fprintf(stderr, "native-phase: %s\n", phase.dump().c_str());
+}
+// Only independent roots run here. Environment and store mutation stay on the joining thread outside this function.
+template<class Work> void parallel_cases(const std::string& group, const std::vector<std::string>& cases, unsigned jobs, Work work) {
+    std::atomic<size_t> next{0};
+    std::vector<std::exception_ptr> errors(cases.size());
+    auto worker = [&]() {
+        for (;;) {
+            size_t index = next++;
+            if (index >= cases.size()) return;
+            try { NativePhase phase(group + "/" + cases[index]); work(cases[index]); }
+            catch (...) { errors[index] = std::current_exception(); }
+        }
+    };
+    std::vector<std::thread> threads;
+    try {
+        for (unsigned i = 1; i < std::min<size_t>(jobs, cases.size()); ++i) threads.emplace_back(worker);
+    } catch (...) {
+        for (auto& thread : threads) thread.join();
+        throw;
+    }
+    worker();
+    for (auto& thread : threads) thread.join();
+    for (const auto& error : errors) if (error) std::rethrow_exception(error);
+}
 void portable_vendor_paths(Json& value, const std::string& location) {
     if (value.is_array() || value.is_object()) {
         for (auto& child : value) portable_vendor_paths(child, location);
@@ -65,6 +113,17 @@ int main(int argc, char** argv) {
         require(argc == 3, "test needs CLI executable and source project");
         std::string cli = fs::canonical(argv[1]).string();
         fs::path project_root = fs::canonical(argv[2]);
+        unsigned jobs = 1;
+        const auto settings_path = project_root / ".crt/native-test-settings.json";
+        if (fs::exists(settings_path)) {
+            auto settings = read_json(settings_path);
+            require(settings.is_object() && settings.size() == 2 && settings.at("format") == 0 &&
+                    settings.at("jobs").is_number_integer() && settings.at("jobs") >= 1 && settings.at("jobs") <= 4,
+                    "native test settings require format 0 and jobs between 1 and 4");
+            jobs = settings.at("jobs").get<unsigned>();
+        }
+        {
+        NativePhase phase("startup");
         check(sha256("abc") == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", "SHA256 vector");
         auto raw = [](std::initializer_list<int> values) { std::string bytes; for (int value : values) bytes += static_cast<char>(value); return bytes; };
         check(valid_utf8("") && valid_utf8("space 한글 é") && valid_utf8(raw({0xf0, 0x9f, 0x98, 0x80})) && !valid_utf8(raw({0xff})) && !valid_utf8(raw({0xc0, 0x80})) &&
@@ -114,6 +173,7 @@ int main(int argc, char** argv) {
         auto invalid_key = fetch_base;
         invalid_key.insert(invalid_key.end(), {"--publisher-key", cli, "--signature", cli});
         invoke(cli, invalid_key, false);
+        }
         // The temporary root comes from the environment (TMPDIR, then TEMP); a literal /tmp does not exist everywhere.
         const char* temporary_root = std::getenv("TMPDIR") ? std::getenv("TMPDIR") : std::getenv("TEMP") ? std::getenv("TEMP") : "/tmp";
         std::string temporary = (fs::path(temporary_root) / "crt-cli-native-XXXXXX").string();
@@ -124,6 +184,10 @@ int main(int argc, char** argv) {
         // the Windows loader also splits its DLL search path at ';', so a program importing a DLL beside it cannot start from a
         // directory whose name contains one: the semicolon is exercised on the other hosts only.
         const bool windows_host = std::string(crt_get_platform_info()->os) == "windows";
+        auto hostile = fixture / (windows_host ? "space 한글 é @ $(touch never-execute)" : "space 한글 @ ; $(touch never-execute)");
+        fs::create_directories(hostile);
+        {
+        NativePhase phase("process");
         // Compare the actual spawned environment with the shared builder while the parent carries hostile inputs.
         std::map<std::string, Json> saved;
         for (const auto& name : {"CRT_CLI_TEST_SECRET", "CPATH", "LIBRARY_PATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH"}) {
@@ -169,8 +233,6 @@ int main(int argc, char** argv) {
              {"env", "--profile", "port-build"}, {"env", "--profile", "control", "--project", fixture.string()},
              {"env", "--profile", "control", "--profile", "app-run"}, {"env", "--profile", "control", "--bad", "x"}})
             invoke(cli, args, false);
-        auto hostile = fixture / (windows_host ? "space 한글 é @ $(touch never-execute)" : "space 한글 @ ; $(touch never-execute)");
-        fs::create_directories(hostile);
         write_text(fixture / "duplicate.json", "{\"x\":1,\"x\":2}");
         bool rejected = false;
         try { read_json(fixture / "duplicate.json"); } catch (const Error&) { rejected = true; }
@@ -193,9 +255,10 @@ int main(int argc, char** argv) {
               "child cwd handles spaced Unicode paths without changing parent cwd");
         auto flood = execute({fs::canonical(argv[0]).string(), "--flood"}, 30, false);
         check(flood.exit_code == 0 && flood.output_truncated && flood.output.size() == 8 * 1024 * 1024, "bounded stdout capture without pipe deadlock");
-        auto local = read_json(project_root / ".crt/local.json");
-        auto lock = read_json(project_root / "crt.lock");
-        for (const auto& language : {"cxx", "c"}) {
+        }
+        const auto local = read_json(project_root / ".crt/local.json");
+        const auto lock = read_json(project_root / "crt.lock");
+        parallel_cases("projects", {"cxx", "c"}, jobs, [&](const std::string& language) {
             auto root = hostile / (std::string("hello-") + language);
             auto created = invoke(cli, {"new", root.string(), "--language", language});
             check(created.at("sdk_acquired") == false && !fs::exists(root / ".crt") && !fs::exists(root / "out"), "source-only creation");
@@ -274,9 +337,11 @@ int main(int argc, char** argv) {
             write_text(root / "crt.lock", bad_lock.dump()); invoke(cli, {"build", "--project", root.string()}, false);
             invoke(cli, {"env", "--profile", "app-run", "--project", root.string()}, false);
             check(read_json(root / "crt.lock") == bad_lock, "failed build preserves lock");
-        }
-        for (const auto& language : {"c", "cxx"}) {
-            for (const auto& type : {"static-library", "shared-library", "executable"}) {
+        });
+        parallel_cases("variants", {"c/static-library", "c/shared-library", "c/executable",
+                                   "cxx/static-library", "cxx/shared-library", "cxx/executable"}, jobs, [&](const std::string& value) {
+            const auto slash = value.find('/');
+            const auto language = value.substr(0, slash), type = value.substr(slash + 1);
                 auto root = hostile / (std::string("variant-") + language + "-" + type);
                 std::vector<std::string> create{"new", root.string(), "--language", language, "--kind", type};
                 if (std::string(type) == "executable") create.insert(create.end(), {"--runtime-linkage", "shared"});
@@ -323,8 +388,9 @@ int main(int argc, char** argv) {
                     write_text(root / "crt.json", bad.dump()); invoke(cli, {"build", "--project", root.string()}, false);
                 }
                 write_text(root / "crt.json", manifest.dump());
-            }
-        }
+        });
+        {
+        NativePhase phase("selection");
         // The local, uncommitted .sdk.json supplies configure defaults; explicit flags override it per key.
         Json sdk_config{{"format", 0}, {"origin", "native test"}, {"seed", "/not/used/by/configure"}, {"sdk_root", local.at("sdk_root")}, {"sdk_contract", local.at("sdk_contract")},
             {"contract_sha256", lock.at("selection").at("contract_sha256")}, {"cc", local.at("cc")}, {"cxx", local.at("cxx")}, {"linker", local.at("linker")}, {"ar", local.at("ar")},
@@ -548,9 +614,12 @@ int main(int argc, char** argv) {
         if (old_profile.empty()) unsetenv("USERPROFILE"); else setenv("USERPROFILE", old_profile.c_str(), 1);
         check(!fs::exists(hostile / "never-execute"), "shell metacharacters stay literal");
         fs::remove_all(fixture);
-        std::printf("native tests: %zu checks passed\n", checks);
+        }
+        report_phases();
+        std::printf("native tests: %zu checks passed\n", checks.load());
         return 0;
     } catch (const std::exception& error) {
+        report_phases();
         std::fprintf(stderr, "%s (fixture retained at %s)\n", error.what(), fixture.string().c_str());
         return 1;
     }

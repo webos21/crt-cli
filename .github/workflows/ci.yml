@@ -63,6 +63,9 @@ jobs:
           /usr/lib/llvm-21/bin/llvm-ar --version
           ldd --version
 
+      - name: Check CI report gates
+        run: python -m unittest discover -s tools -p test_ci_bootstrap.py
+
       - name: Install LLVM 22.1.8 (Windows)
         if: matrix.host == 'win-x64'
         shell: pwsh
@@ -79,7 +82,7 @@ jobs:
             win-x64)   llvm_bin='C:/Program Files/LLVM/bin' ;;
             *)         llvm_bin= ;;
           esac
-          args=(--work "$RUNNER_TEMP/crt-cli-ci" --host "${{ matrix.host }}")
+          args=(--work "$RUNNER_TEMP/crt-cli-ci" --host "${{ matrix.host }}" --native-test-jobs 2)
           if [ -n "$llvm_bin" ]; then args+=(--llvm-bin "$llvm_bin"); fi
           python tools/ci_bootstrap.py "${args[@]}"
 
