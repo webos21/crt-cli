@@ -9,6 +9,16 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-11
+
+### Publish the Linux/aarch64 CLI Preview
+
+Published prerelease `v0.1.0-preview.20261111.linux-arm64.1` (tag target `6a00885`, not marked latest): a static `crt-cli` built from the clean commit by the public
+Linux/aarch64 Dev SDK `v0.0.1-preview.20261110.linux.arm64.2` alone (cold 21/0, warm 0/21, native 913, 32 distinct executed paths, no `DT_NEEDED`), packed deterministically with notices and a pinned
+30-file inventory. The extracted package acquires the SDK from GitHub through the `github-release` redirect policy and passes C/C++ `new`/first `build`/`test`/`run`/warm build (12/12); the unauthenticated public
+download matches the sums byte for byte. Not claimed: publisher authentication, the 54-case redirect replay and a sandboxed SDK/source-hidden run on this host, other glibc versions.
+[Record](docs/acceptance/preview_acceptance.md#linuxaarch64-cli-preview-release-2026-11-11).
+
 ## 2026-11-10
 
 ### Consume the Linux/aarch64 Dev SDK Preview

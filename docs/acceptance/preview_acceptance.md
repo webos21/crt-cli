@@ -545,3 +545,31 @@ reinstall, wrong-pin refusal with nothing published, C and C++ source-only `new`
 Public result SHA-256 `2c2495bba6002d7e5669de6974b2a73babe9ecd7fe1428b6d625f2213ae01974`. Receipts are under the ignored `out/linux-arm64-preview-20261110/`.
 
 Limits: glibc 2.43 only; the executable is neither committed nor published; GitHub `sdk acquire` on this host, the older loader, Full SDKs and default/production locks are not covered.
+
+## Linux/aarch64 CLI Preview release (2026-11-11)
+
+Published prerelease [`v0.1.0-preview.20261111.linux-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261111.linux-arm64.1)
+(tag target `6a008856d4a92fafbea1221b0f6c88a4559ccc29`; tags carry the OS-architecture and assets the machine name, as for macOS), staged as a draft, verified, then published as a non-latest prerelease.
+Assets: `crt-cli-0.1.0-dev-linux-aarch64-preview.20261111.1.tar.xz` (5039156 bytes, SHA-256 `fa28ec8d6644da3dc32aaa8e9281c8b953b85d97498cc3cdc12f55b156014cff`) and `SHA256SUMS-linux-aarch64`.
+
+**Inputs.** A fresh clone checked out at the clean commit `6a00885` is built by the producer's `replay_cli_contract_linux.py` (CRT `bcce264`, clean) with the actual public SDK bytes of
+`v0.0.1-preview.20261110.linux.arm64.2` alone: the three assets were downloaded unauthenticated and matched the pins (manifest `ba77b26e...67be3`, archive `5c99dc59...a1c4`, contract `a3df2fbd...34d4`), and the
+archive was extracted to the handoff (content `cd2ab657...0cc6`, source `e6a94ab`). Host: Ubuntu 26.04.1, glibc 2.43, LLVM 21.1.8. 21 sources, cold 21 executed / 0 reused, warm 0 / 21, native **913** checks,
+execve audit 705 calls / **32** distinct paths with none unexpected, SDK inventory unchanged, help/version/doctor with SDK, source, provider and compilers hidden. The executable is `9fbef82541e237eeba2b28729b60f55b2e301c0be1f0dd14c9b31e6eb00ae1db`
+(23162152 bytes, static, no `DT_NEEDED`, interpreter `/lib/ld-linux-aarch64.so.1`); the executable the suite tested, the bare executable and the packaged one are the same bytes. It differs from the earlier consumer-adoption
+executable `ae5f2b21...` because that was built from `5d148ba`. `create_bootstrap_resources.py` assembled the notices from the extracted SDK (manifest SHA-256 `f7739366a3b972aa1db0278ac0edc7e6696c914902bd34b12052fea7cfb13810`, 30 files,
+no CA file) and `package_cli_archive.py` packed them deterministically (packing twice is byte-identical; `verify` passes and the extracted executable is byte-identical).
+
+**Packaged-executable run** (extracted archive, `env -i`, empty `PATH`, fresh HOME, real network, host LLVM passed by flag): `--version`, self `doctor` with the manifest pin (`resources: pass`, compiled-in SDK input equals the promoted SDK), a wrong pin
+("manifest SHA-256 mismatch") and a changed notice ("inventory mismatch") refused, then real GitHub `sdk acquire` (CA bundle `/etc/ssl/certs/ca-certificates.crt`, SHA-256 `0e4c9a8e...6b71`, one redirect per file, all three digests matched,
+installed identity equals the promoted SDK). C and C++ `new`, first `build --sdk <identity>` without configure, `test`, `run`, warm rebuild and project `doctor` then pass (12/12, under a parent path with spaces and Korean characters).
+Project directory names must be package identifiers; a first attempt used a non-identifier name and was refused by `new`, a mistake of the run and not a CLI defect, and is not counted.
+
+**Published.** The draft carried the two assets; an authenticated re-download was byte-identical before publication (`2026-11-10T23:52:09Z` UTC, not marked latest). An **unauthenticated** public download (HTTPS, TLS >= 1.2, proxies disabled)
+followed one redirect per file and matched `SHA256SUMS-linux-aarch64` and the local archive byte for byte; the archive from those public bytes passes `verify` (30 files, same manifest), `--version`, self `doctor --resources` and `sdk acquire`.
+The repository still carries no executable.
+
+Receipts are in the local evidence directory `/home/cmjo/GitLocal/crt-cli-preview-linux-arm64-20261111/` (`replay/`, `assemble.out`, `pack.out`, `acquire.json`, `public-dl/`). Not claimed: publisher authentication (digests only),
+the restricted-redirect replay cases (54/54 on the other hosts) on aarch64, a sandboxed SDK- and source-hidden run of this exact package, other glibc versions or distributions, Linux C shared-SDK mode, source-port builds from this
+package, updates or self-upgrade, and default/project lock adoption.
+

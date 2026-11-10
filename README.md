@@ -22,7 +22,7 @@ store, and configure can select an installed SDK with its stored portable
 compiler contract. Local installation and Stage 2 project selection have native
 records on Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64/arm64 at
 identified snapshots. They are local technical results, not a current-source
-support matrix; the published CLIs are the [Linux/x86_64 and macOS/arm64 Previews](#download-the-previews). See [STATUS](STATUS.md) for scope and
+support matrix; the published CLIs are the [Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64 Previews](#download-the-previews). See [STATUS](STATUS.md) for scope and
 [SDK installation acceptance](docs/acceptance/sdk_install_acceptance.md) for evidence.
 
 The current installer/project selection supports the native `dev` profile.
@@ -53,13 +53,14 @@ Other recipes, general dependency resolution and Windows/arm64 replay remain sep
 
 ## Download the Previews
 
-Three host prereleases each carry one static CLI executable, its notices and a pinned inventory. They are
+Four host prereleases each carry one static CLI executable, its notices and a pinned inventory. They are
 unsigned: verify the archive against a digest you trust independently. Each needs the host's LLVM-compatible
 tools and a CA bundle you choose, and installs the Dev SDK separately. Release tags carry the OS and architecture.
 
 | Host | Release | SDK it acquires |
 | --- | --- | --- |
 | Linux/x86_64 | [`v0.1.0-preview.20261110.linux-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.linux-x86_64.1) ([record](docs/acceptance/preview_acceptance.md#linuxx86_64-cli-preview-release-2026-11-10)) | [`v0.0.1-preview.20261110.4`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.4); needs LLVM 21 |
+| Linux/aarch64 | [`v0.1.0-preview.20261111.linux-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261111.linux-arm64.1) ([record](docs/acceptance/preview_acceptance.md#linuxaarch64-cli-preview-release-2026-11-11)) | [`v0.0.1-preview.20261110.linux.arm64.2`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.linux.arm64.2); needs LLVM 21 |
 | macOS/arm64 | [`v0.1.0-preview.20261110.macos-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.macos-arm64.1) ([record](docs/acceptance/preview_acceptance.md#macos-cli-preview-release-2026-11-10)) | [`v0.0.1-preview.20261110.macos.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.macos.1); needs Xcode's command-line tools |
 | Windows/x64 | [`v0.1.0-preview.20261110.windows-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.windows-x86_64.1) ([guide](docs/guides/windows_preview.md), [record](docs/acceptance/preview_acceptance.md#windowsx64-cli-preview-release-2026-11-10)) | [`v0.0.1-preview.20261110.windows.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.windows.1); needs LLVM and Windows SDK |
 

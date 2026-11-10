@@ -48,8 +48,15 @@ The producer's public prerelease [v0.0.1-preview.20261110.linux.arm64.2](https:/
 `e6a94ab9e69b05497b3804328971d24d6071a53d`, manifest pin `ba77b26edfa0413df5e8c17309506d7ae6ecf134ae7e9908e3742bc562067be3`, SDK content `cd2ab657615c0fa52a1804f301a57dfa21b1067e3e5ed5a9f9a07d86ae050cc6`)
 is consumed by a CLI (`ae5f2b21...c543`, 23,162,944 bytes) that this SDK built from `5d148ba` (cold 21/0, warm 0/21; native 913, archive 221, SDK-store 114, port-recipe 142) in the
 [Linux/aarch64 record](acceptance/preview_acceptance.md#linuxaarch64-public-sdk-promotion-and-consumer-adoption-2026-11-10): 30/30 over the actual public bytes. The release includes the Linux loader/TLS repair; glibc 2.43 is the
-only exercised loader here. Native policy 1, install metadata 1, project lock 1 and recipe schema 1 are unchanged. That executable is not committed and no Linux/aarch64 CLI Preview is published; redirect-aware acquisition on this host,
+only exercised loader here. Native policy 1, install metadata 1, project lock 1 and recipe schema 1 are unchanged. That executable is not committed. The Linux/aarch64 CLI Preview was published on 2026-11-11 (see below); the redirect-replay cases on this host,
 other glibc versions, Full SDKs and production/default-lock adoption remain separate.
+
+## Linux/aarch64 CLI Preview (2026-11-11)
+
+[`v0.1.0-preview.20261111.linux-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261111.linux-arm64.1) (tag target `6a008856d4a92fafbea1221b0f6c88a4559ccc29`, executable `9fbef825...e1db`)
+was built by the producer's Linux contract replay with the published SDK `v0.0.1-preview.20261110.linux.arm64.2` alone (manifest pin `ba77b26e...67be3`, content `cd2ab657...0cc6`) and run as the extracted package against the real
+GitHub delivery host. The exercised combination is this CLI, that SDK, Ubuntu 26.04 glibc 2.43 and LLVM 21.1.8. Native policy 1, install metadata 1, project lock 1 and recipe schema 1 are unchanged; no default/root lock migration;
+publisher authentication stays `not_verified`. Record: [Linux/aarch64 CLI Preview](acceptance/preview_acceptance.md#linuxaarch64-cli-preview-release-2026-11-11).
 
 ## Published Windows Dev SDK Adoption (2026-11-10)
 

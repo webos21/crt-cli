@@ -62,8 +62,8 @@ owns the completed combinations, including both repaired Linux paths.
   pinned independent host tools, zlib source archive and oracle, plus redirect/transport replays. Daily and manual.
 - [ ] `release.yml`: protected, manually approved packaging from a tested CI artifact, independent extraction and
   GitHub SDK acquisition before publication. CI success is not publication authority.
-- [ ] Define how CI pins are promoted (new Preview release, digest review) and add Linux/arm64 and Windows/arm64
-  legs once their public SDK and CLI packages exist.
+- [ ] Define how CI pins are promoted (new Preview release, digest review) and add a Linux/arm64 leg (its public SDK and [CLI Preview](docs/acceptance/preview_acceptance.md#linuxaarch64-cli-preview-release-2026-11-11) now exist, 2026-11-11) and a Windows/arm64 leg
+  once its public SDK and CLI package exist.
 
 ## Planned
 
