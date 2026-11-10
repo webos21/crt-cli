@@ -239,6 +239,8 @@ The repository carries no executables (`bin/` was removed); CI bootstraps from a
    `LC_RPATH`; Windows: `kernel32` and `api-ms-win-core-synch` only), then the copied executable runs
    `--version`, `--help` and `doctor --bootstrap` with no SDK store, an empty `PATH` and a fresh home.
    The native suite reads its scratch root from `TMPDIR`, which the driver therefore sets on every host.
+   Its nested project fixtures also carry the parent's local OS SDK selection
+   explicitly in `--os-sdk` or `.sdk.json` when the contract needs it.
 
 The stage-2 executable, `SHA256SUMS`, `ci-summary.json`, logs and the generated source file are uploaded as an artifact.
 
@@ -260,8 +262,8 @@ The Python driver is a build-host orchestrator like the other `tools/*.py` repla
 
 Pins change only in a reviewed commit that cites the release record and re-checks the asset digests against the
 published `SHA256SUMS`; never use a moving tag or `latest`. Linux/x86_64 uses explicit `ubuntu-26.04` and LLVM 21 from
-the Ubuntu archive, matching the local rehearsal's host generation. Linux and macOS/arm64 are required checks;
-Windows remains experimental with `continue-on-error`. The Ubuntu 24.04 shared-runtime loader failure remains a
+the Ubuntu archive, matching the local rehearsal's host generation. Linux, macOS/arm64 and Windows/x64
+are required checks. The Ubuntu 24.04 shared-runtime loader failure remains a
 producer compatibility limit, not a qualified platform. A suite failure
 no longer stops the later stages, so one run reports everything that is broken. The [TODO](../../TODO.md#github-ci) owns the
 open legs and the integration/release workflows. [CI acceptance](../acceptance/ci_acceptance.md) records what has actually
@@ -269,6 +271,13 @@ been run, including the first hosted run and the Linux loader gap it found.
 The [Ubuntu 26.04 hosted qualification](../acceptance/ci_acceptance.md#ubuntu-2604-hosted-linux-qualification-2026-11-10)
 passes all Linux stages; its runner setting is retained. This does not qualify
 the older Ubuntu 24.04 shared-runtime path.
+
+The reviewed `src/test/data/zlib.recipe.json` fixture is checked out with LF
+through `.gitattributes` on every host. Recipe verification hashes exact bytes;
+line-ending conversion produces a different, unreviewed input.
+The [Windows hosted qualification](../acceptance/ci_acceptance.md#windows-hosted-qualification-2026-11-10)
+records a complete passing run of all three required legs, including the common
+fixture regressions. Windows/macOS byte differences remain reported separately.
 
 ## Replay the Local SDK Installer (D2)
 

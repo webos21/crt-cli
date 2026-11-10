@@ -53,12 +53,10 @@ retain their later queues. Execution policy remains in
 
 `ci.yml` (PR and main) bootstraps from the pinned published Preview and is described in the
 [development guide](docs/guides/development.md#continuous-integration); completed steps live in HISTORY.
+Linux/x86_64 (`ubuntu-26.04`), macOS/arm64 (`macos-15`) and Windows/x64
+(`windows-2022`) are required legs and pass at the
+[recorded hosted combination](docs/acceptance/ci_acceptance.md#windows-hosted-qualification-2026-11-10).
 
-- [x] macOS/arm64 (`macos-15`) passes every stage on a hosted image and is the required leg
-  ([record](docs/acceptance/ci_acceptance.md#first-github-hosted-run-2026-11-10)).
-- [ ] Fix Windows/x64 (`windows-2022`) native fixtures to pass the selected OS
-  SDK explicitly and preserve the reviewed recipe's LF bytes on checkout;
-  replay all stages on the hosted runner, then make the leg required.
 - [ ] Resolve or explicitly bound Ubuntu 24.04/glibc 2.39 shared-runtime support
   in CRT before claiming that compatibility; retain its
   [producer-side reproducer](docs/acceptance/ci_acceptance.md#first-github-hosted-run-2026-11-10)

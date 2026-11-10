@@ -48,7 +48,9 @@ Workflow run [`42773306405`](https://github.com/webos21/crt-cli/actions/runs/427
 | Windows/x64 | Bootstrap, LLVM 22.1.8 choco install, Windows SDK discovery, SDK acquisition, stage 1 (21/0) pass. `native-test` aborts at start: `mkdtemp failed` |
 
 **Windows cause (driver).** The suite takes its scratch root from `TMPDIR`, then `TEMP`, then `/tmp`; the CLI forwards only `TMPDIR` to
-children, and the driver set `TMPDIR` on POSIX hosts only. Windows has no `/tmp`. The driver now sets it everywhere. Not yet re-run on GitHub.
+children, and the driver set `TMPDIR` on POSIX hosts only. Windows has no `/tmp`.
+The driver now sets it everywhere; the later hosted diagnosis below records
+the subsequent fixture failures and their resolution.
 
 **Linux cause (producer side, reproduced locally).** The failing binary is not host-specific: the executable built on the Ubuntu 26.04 rehearsal
 host (glibc 2.43, where it passes) fails identically under Ubuntu 24.04's glibc 2.39 loader. Its dynamic section needs only the SDK's
@@ -112,11 +114,83 @@ no CRT fix or broader glibc support range is claimed. Input-gated port suites,
 transport replays and release publication remain separate. Windows/macOS keep
 their existing workflow settings; this Linux result does not qualify Windows.
 
+## Windows Hosted Failure Diagnosis (2026-11-10)
+
+Run [`42777416265`](https://github.com/webos21/crt-cli/actions/runs/42777416265),
+Windows job [`129699079264`](https://github.com/webos21/crt-cli/actions/runs/42777416265/job/129699079264),
+tests `4897690` after the driver-level TMPDIR fix. The native suite now starts,
+but two suites fail. Archive and SDK-store suites, both builds, warm reuse,
+standalone execution and PE import audits pass. Two fixture defects explain
+the failures:
+
+- **Native configure inputs:** the parent CI binding explicitly selects the
+  Windows SDK `um/x64` import-library directory, but nested fixture configure
+  commands and `.sdk.json` defaults omit `local.os_sdk`. The portable contract
+  needs this location; the deliberately filtered child environment does not
+  inherit `CRT_WINDOWS_SDK_LIBPATH`. The fixture must pass the recorded
+  `--os-sdk` input, including store selection and first-build cases. Failure
+  diagnostics previously printed only `expected command exit: configure`;
+  the helper now also includes the child exit code and structured message.
+- **Reviewed recipe bytes:** the recipe's LF SHA-256 is
+  `dde944984d799197c0af1553ac7cf38139edc7b2e4e673ef9b4c17dd8c1a349b`.
+  Replacing LF with CRLF yields exactly the failing digest
+  `87d71bc7e02525dce5df204a09e2f1f3180b59a0519903b44ed32d552f08dd0f`.
+  `.gitattributes` now sets `text eol=lf` for this one reviewed fixture. A
+  fresh Git checkout with `core.autocrlf=true` keeps those recipe bytes while
+  a control text file converts to CRLF. A new native recipe regression still
+  rejects CRLF bytes as unreviewed; the production digest gate is unchanged.
+
+The fix changes tests, the fixture checkout policy and CI gating. Product
+code, the reviewed adapter digest and published bootstrap/SDK pins are
+unchanged. Failed artifacts and the checkout reproduction receipt remain in
+`out/ci-windows-20261110/`.
+
+## Windows Hosted Qualification (2026-11-10)
+
+**Pass, native Windows/x64; complete three-host workflow passes.** Run
+[`42782205090`](https://github.com/webos21/crt-cli/actions/runs/42782205090)
+tests `7c9f228800ce152de96e9be382bb0323037baa48`. Windows job
+[`129714680727`](https://github.com/webos21/crt-cli/actions/runs/42782205090/job/129714680727)
+and the overall workflow conclude success with all three matrix entries set to
+`experimental: false`. Linux/macOS also execute the changed common tests.
+
+| Item | Measured identity/result |
+| --- | --- |
+| Windows image | Windows Server 2022, `windows-2022` image `20261101.353.1` |
+| External tools | LLVM/Clang/LLD 22.1.8; Windows SDK `10.0.26100.0/um/x64`, explicitly selected |
+| Bootstrap | Unchanged Windows Preview `v0.1.0-preview.20261110.windows-x86_64.1`, archive SHA-256 `4bafc8464b729049840f1f21807f505bbcc09e7d5f7bc260e63d8f971ade75c0` |
+| SDK | Unchanged public `v0.0.1-preview.20261110.windows.1`, content `5bb55372ec10e3cfa24c84de981a7130f56aeb57ef0d43d5da22a65036dec7ef`, contract `7762f572b4614b3068e1ea99694ce19360e213d31c5bd01019e4ad6ce005b726` |
+| Windows suites | Native **991**, archive **214**, SDK-store **113**, recipe **142** checks pass, none skipped |
+| Cold/warm builds | Stage 1 and 2 each **21 executed / 0 reused**; warm **0 / 21** |
+| PE imports | Only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll` |
+| Standalone execution | Both stages pass version/help/bootstrap doctor with fresh home, empty PATH and no SDK store |
+| Stage-1 binary | SHA-256 `76ee07ffd0b52aafe7b64b2c22da217f27a77120ddf91fe6764e2f68829971d7` |
+| Stage-2 binary | SHA-256 `1baa5eb7decdc7b3010c75a83f6ecabd70dd004045befe73a494b9f1b12238c8` |
+| Linux regression | **901 / 221 / 114 / 142** checks; both stages, cache, ELF/import and standalone audits pass; stage bytes identical |
+| macOS regression | **941 / 221 / 114 / 142** checks; both stages, cache, Mach-O/import and standalone audits pass; stage bytes differ |
+
+The native suite now completes configure, project/store selection, first build,
+static/shared consumers and vendor SDK fixtures. The recipe suite accepts the
+unchanged reviewed LF fixture on Windows and rejects CRLF conversion. Product
+source, manifest, CI driver and release pins match the failing run; fixes are
+limited to test inputs, checkout policy, diagnostic text and workflow gating.
+
+Full original-failure and new three-host artifacts, Windows job logs/metadata,
+workflow result and local checkout proof are retained under
+`out/ci-windows-20261110/`. `verified-result.json` checks each downloaded final
+binary against its SHA256SUMS and stage-2 receipt, all step exits, suite counts
+and warm reuse. An independent local `llvm-readobj-21 --coff-imports` confirms
+the Windows artifact's two allowed OS DLLs. Windows native tests take 658.3 s.
+
+Windows/macOS stage byte differences remain reported, not gated or claimed
+byte-reproducible; their cause is not investigated in this fix. This is the
+deterministic PR suite, not the five input-gated port integrations, transport
+replays, ARM matrix or release qualification. No artifact is published.
+
 ## Not run
 
 - Ubuntu 24.04's full native suite remains blocked by the producer-side loader
-  gap above; Ubuntu 26.04 passes at the recorded combination. Windows/x64's
-  required-leg qualification remains separate from this Linux migration.
+  gap above; Ubuntu 26.04 passes at the recorded combination.
 - The Linux, macOS and Windows driver paths ran on hosted images up to the points recorded above; Python 3.12, `actions/*` at
   their pinned commits, the LLVM 21 apt install and artifact upload worked on Linux.
 - Input-gated port suites, redirect/transport replays, Linux/aarch64 and Windows/arm64 are not covered.

@@ -11,6 +11,21 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-10
 
+### Fix Windows CI fixtures and qualify all three required hosted legs
+
+Passed the selected vendor OS SDK explicitly through native fixture configure,
+store and first-build inputs. Pinned the reviewed recipe fixture to LF checkout
+bytes and added a regression that rejects CRLF bytes; the production trust gate
+and reviewed digest are unchanged. Test failures now include the structured
+child message. Product code and published SDK/bootstrap pins are unchanged.
+
+Hosted run `42782205090` at `7c9f228` passes Windows/x64 (991/214/113/142 checks),
+Linux/x86_64 (901/221/114/142) and macOS/arm64 (941/221/114/142), with all three
+legs required. Cold/warm rebuilds, imports and standalone execution pass.
+Windows/macOS stage bytes differ and are not claimed reproducible. Exact
+failure causes, identities, receipts and remaining CI limits belong to
+[CI acceptance](docs/acceptance/ci_acceptance.md#windows-hosted-qualification-2026-11-10).
+
 ### Qualify Linux CI on Ubuntu 26.04 and keep it required
 
 Moved Linux/x86_64 to explicit `ubuntu-26.04` and Ubuntu's LLVM 21 packages,
