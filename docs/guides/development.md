@@ -219,6 +219,50 @@ and spaces work in paths. Earlier binaries/SDKs retain their recorded ANSI limit
 current sources require the new encoding capability. Treat a directory name containing `;` as
 unsupported for programs that import a DLL beside them.
 
+## Continuous Integration
+
+`.github/workflows/ci.yml` runs on pull requests, pushes to `main` and manual dispatch with read-only
+repository permissions and no secrets. It builds nothing from CRT: it consumes published artifacts.
+The repository carries no executables (`bin/` was removed); CI bootstraps from a release.
+
+1. **Bootstrap.** `tools/ci_bootstrap.py` downloads the host's published CRT-CLI Preview and checks its size and
+   SHA-256 against `.github/ci/pins.json`. TLS is transport only; the pin authenticates the bytes.
+2. **SDK.** The bootstrap CLI runs `sdk acquire` with a generated `crt-cli.sdk-source` carrying the pinned public Dev SDK
+   manifest, archive, contract and content digests, the `github-release` redirect policy and the runner's system roots as
+   the caller-chosen CA (its hash is recorded). Publisher authentication stays `not_verified`.
+3. **Stage 1.** The bootstrap CLI builds a clean export of the checked-out sources (tracked and unignored files only).
+4. **Tests.** The deterministic suites `native-test`, `archive-test`, `sdk-store-test` and `port-recipe-test` run on the
+   **stage-1** executable. A bootstrap CLI's own test results are never evidence for the sources under test.
+5. **Stage 2.** Stage 1 rebuilds another clean export (cold, nothing reused), then an unchanged rebuild must execute
+   nothing. Byte equality of the two executables is reported, not required; both must behave identically.
+6. **Audit.** Imports are checked per host (Linux: no `DT_NEEDED`/`RPATH`/`RUNPATH`; macOS: `libSystem` only, no
+   `LC_RPATH`; Windows: `kernel32` and `api-ms-win-core-synch` only), then the copied executable runs
+   `--version`, `--help` and `doctor --bootstrap` with no SDK store, an empty `PATH` and a fresh home.
+
+The stage-2 executable, `SHA256SUMS`, `ci-summary.json`, logs and the generated source file are uploaded as an artifact.
+
+The five `port-*` suites (except `port-recipe-test`) print `skipped` and exit 0 without the machine-local
+`CRT_CLI_TEST_PORT_*` inputs, so they are **not** in the PR set: the driver fails if a suite prints `skipped`, and also
+if `crt.json` declares a test that `pins.json` classifies neither as PR-set nor as input-gated. They belong to a
+future `integration.yml` with pinned independent host tools.
+
+Run the same driver on a native host with LLVM installed (it creates `--work`, which must be new or empty, and sets
+`HOME` inside it, so the default SDK store is untouched):
+
+```text
+python3 tools/ci_bootstrap.py --work /absolute/new-dir --llvm-bin /usr/lib/llvm-21/bin
+```
+
+On macOS the Xcode tools come from `xcrun -f`; on Windows pass `--llvm-bin` and, if the newest installed Windows SDK is
+not wanted, `--os-sdk`. `--tests` restricts the suites for a quick local pass; CI always runs the pinned set.
+The Python driver is a build-host orchestrator like the other `tools/*.py` replays, not a CLI prerequisite.
+
+Pins change only in a reviewed commit that cites the release record and re-checks the asset digests against the
+published `SHA256SUMS`; never use a moving tag or `latest`. Only the Linux/x86_64 leg is a required check. The macOS and
+Windows legs run with `continue-on-error` until their first qualified run on GitHub-hosted images; the
+[TODO](../../TODO.md#github-ci) owns that and the integration/release workflows. [CI acceptance](../acceptance/ci_acceptance.md)
+records what has actually been run.
+
 ## Replay the Local SDK Installer (D2)
 
 `crt-cli sdk install|list|verify|recover` is replayed per host with a driver in `tools/` that runs every CLI call in the host's

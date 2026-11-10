@@ -49,6 +49,22 @@ become a first-preview release gate. General updates/self-upgrade and Studio
 retain their later queues. Execution policy remains in
 [the design](docs/design/crt_cli.md#execution-priorities-adopted-2026-11-05).
 
+### GitHub CI
+
+`ci.yml` (PR and main) bootstraps from the pinned published Preview and is described in the
+[development guide](docs/guides/development.md#continuous-integration); completed steps live in HISTORY.
+
+- [ ] Qualify the macOS/arm64 (`macos-15`) and Windows/x64 (`windows-2022`) legs on GitHub-hosted images, then
+  make them required (they run with `continue-on-error` until their first green run). Confirm LLVM,
+  Xcode and Windows SDK versions against the SDK contracts.
+- [ ] Qualify the Linux leg's first GitHub run (the LLVM 21 apt install and runner image are not exercised locally).
+- [ ] `integration.yml`: the five input-gated port suites (`port-build|store|oracle|command|project-test`) with the
+  pinned independent host tools, zlib source archive and oracle, plus redirect/transport replays. Daily and manual.
+- [ ] `release.yml`: protected, manually approved packaging from a tested CI artifact, independent extraction and
+  GitHub SDK acquisition before publication. CI success is not publication authority.
+- [ ] Define how CI pins are promoted (new Preview release, digest review) and add Linux/arm64 and Windows/arm64
+  legs once their public SDK and CLI packages exist.
+
 ## Planned
 
 ### D2 - Management beyond the first workflow

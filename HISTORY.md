@@ -11,6 +11,17 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-10
 
+### Add GitHub CI bootstrapped from the published Preview and remove `bin/`
+
+The repository no longer commits executables. `.github/workflows/ci.yml` (PR, `main`, manual) runs
+`tools/ci_bootstrap.py`: a Preview pinned by SHA-256 in `.github/ci/pins.json` acquires the pinned public Dev SDK,
+builds the checked-out sources (stage 1), the four deterministic suites run on that executable, stage 1 rebuilds
+them (stage 2) and the imports and an SDK-free run are audited. The five input-gated port suites stay out because they
+print `skipped` and exit 0 without their inputs. A local Linux/x86_64 rehearsal against the real downloads passes
+(901/221/114/141 checks, stage 1 equals stage 2 byte for byte, no `DT_NEEDED`). The workflow itself has not run on GitHub,
+and its macOS/arm64 and Windows/x64 legs are unqualified (`continue-on-error`).
+[Inputs, results, fixed driver faults and what is not run](docs/acceptance/ci_acceptance.md).
+
 ### Publish the Windows/x64 CLI Preview with GitHub SDK acquisition
 
 Qualified the common restricted redirect implementation on Windows (54/54), built the

@@ -24,7 +24,7 @@ Linux/macOS Preview and other-host records retain their own exact source commits
 Windows/x64's earlier concurrent-install crash was root-caused/fixed in the
 producer libunwind recipe and replayed with the fixed SDK; its retained failure
 is not a current unresolved gate. Windows/arm64 D2 is distinct from unqualified
-D3. Current committed binaries retain their [dated identities](bin/README.md).
+D3. The repository no longer commits executables (`bin/` was removed); their dated identities remain in Git history.
 Apart from the Linux/x86_64, macOS/arm64 and Windows/x64 Previews above, none of these records is a CLI release or a universal latest-source support matrix.
 
 ## Limits and ordered follow-up

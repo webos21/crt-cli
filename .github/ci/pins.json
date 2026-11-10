@@ -1,0 +1,72 @@
+{
+  "schema": "crt-cli.ci-pins",
+  "format": 0,
+  "note": "Exact CI inputs. Each host pins the published CRT-CLI Preview that bootstraps CI and the public Dev SDK it acquires. Change a pin only in a reviewed commit that cites the release record; never use a moving tag or 'latest'.",
+  "pr_tests": ["native-test", "archive-test", "sdk-store-test", "port-recipe-test"],
+  "input_gated_tests": {
+    "port-build-test": "needs CRT_CLI_TEST_PORT_* host tools, source archive and project; prints 'skipped' and exits 0 without them",
+    "port-store-test": "same inputs as port-build-test",
+    "port-oracle-test": "same inputs plus a Python oracle",
+    "port-command-test": "same inputs as port-build-test",
+    "port-project-test": "same inputs as port-build-test"
+  },
+  "hosts": {
+    "linux-x64": {
+      "bootstrap": {
+        "release": "v0.1.0-preview.20261110.linux-x86_64.1",
+        "asset": "crt-cli-0.1.0-dev-linux-x86_64-preview.20261110.1.tar.xz",
+        "sha256": "ad43afbf7e810bb7b1a587c47568ba6d17bc404e5ee05069a83d9ef56edc1383",
+        "size": 5232844,
+        "version": "0.1.0-dev"
+      },
+      "sdk": {
+        "release_base": "https://github.com/webos21/crt/releases/download/v0.0.1-preview.20261110.3/",
+        "version": "v0.0.1-preview.20261110.3",
+        "manifest": {"name": "release-manifest-dev-linux-x86_64.json", "sha256": "d4211d3298a764ff22f6e262073f834bbb36cb5d07c22e1ecb10f7f83f8fca60", "size": 1683},
+        "archive": "crt-v0.0.1-preview.20261110.3-linux-x86_64-dev.tar.xz",
+        "contract": "crt-v0.0.1-preview.20261110.3-linux-x86_64-dev-toolchain.json",
+        "content_sha256": "36623957fbdd5a384cc173991e20253ff83148028ab8072298dcd434a55a2b3f",
+        "contract_sha256": "90b3bb59aaac7df481becbad4e2b87473e2fefcb803123332689d7f1135e4e30"
+      },
+      "allowed_imports": []
+    },
+    "macos-arm64": {
+      "bootstrap": {
+        "release": "v0.1.0-preview.20261110.macos-arm64.1",
+        "asset": "crt-cli-0.1.0-dev-macos-aarch64-preview.20261110.1.tar.xz",
+        "sha256": "2767f18da7e7d51e3e3fc1172da99581bf0508c1f6b6794817488c0c58950011",
+        "size": 1229408,
+        "version": "0.1.0-dev"
+      },
+      "sdk": {
+        "release_base": "https://github.com/webos21/crt/releases/download/v0.0.1-preview.20261110.macos.1/",
+        "version": "v0.0.1-preview.20261110.macos.1",
+        "manifest": {"name": "release-manifest-dev-macos-aarch64.json", "sha256": "0981110c84e5d24a903dbd3965dbe92eb2fe405edfa89804e3086dfeb75983de", "size": 1728},
+        "archive": "crt-v0.0.1-preview.20261110.macos.1-macos-aarch64-dev.tar.xz",
+        "contract": "crt-v0.0.1-preview.20261110.macos.1-macos-aarch64-dev-toolchain.json",
+        "content_sha256": "e3dc7fb1810a3f78ab8ef33882225ccb562d21f6f5977a2037ab92819326bac8",
+        "contract_sha256": "d5a100fdd0d38f940fe1c398996f013d57ccc7c4743af2b9ab4988c42b8de464"
+      },
+      "allowed_imports": ["/usr/lib/libSystem.B.dylib"]
+    },
+    "win-x64": {
+      "bootstrap": {
+        "release": "v0.1.0-preview.20261110.windows-x86_64.1",
+        "asset": "crt-cli-0.1.0-dev-windows-x86_64-preview.20261110.1.tar.xz",
+        "sha256": "4bafc8464b729049840f1f21807f505bbcc09e7d5f7bc260e63d8f971ade75c0",
+        "size": 5430536,
+        "version": "0.1.0-dev"
+      },
+      "sdk": {
+        "release_base": "https://github.com/webos21/crt/releases/download/v0.0.1-preview.20261110.windows.1/",
+        "version": "v0.0.1-preview.20261110.windows.1",
+        "manifest": {"name": "release-manifest-dev-windows-x86_64.json", "sha256": "b0fca4c81d29b8eee28e0d9fb7d6e26950b094a8be4f2c091e43922366a46976", "size": 1800},
+        "archive": "crt-v0.0.1-preview.20261110.windows.1-windows-x86_64-dev.zip",
+        "contract": "crt-v0.0.1-preview.20261110.windows.1-windows-x86_64-dev-toolchain.json",
+        "content_sha256": "5bb55372ec10e3cfa24c84de981a7130f56aeb57ef0d43d5da22a65036dec7ef",
+        "contract_sha256": "7762f572b4614b3068e1ea99694ce19360e213d31c5bd01019e4ad6ce005b726"
+      },
+      "allowed_imports": ["kernel32.dll", "api-ms-win-core-synch-l1-2-0.dll"]
+    }
+  }
+}

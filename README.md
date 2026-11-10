@@ -65,9 +65,8 @@ tools and a CA bundle you choose, and installs the Dev SDK separately. Release t
 
 ## Try the Local Workflow
 
-Use a CLI built from the implementation being exercised; the dated
-[local executable snapshots](bin/README.md) may predate first-build/acquisition
-commands. For the local flow, select a native CRT Dev SDK release archive,
+Use a CLI built from the implementation being exercised, or a published
+[Preview](#download-the-previews) (the repository no longer carries executables). For the local flow, select a native CRT Dev SDK release archive,
 its manifest and named portable contract asset beside it, plus external LLVM tools. Substitute actual paths and the independently trusted
 manifest SHA-256 below:
 
@@ -128,8 +127,9 @@ first preview. General updates, self-upgrade and Studio remain later work.
 External Clang/LLD/LLVM ar and required vendor OS SDKs are prerequisites; neither
 CRT nor this CLI bundles LLVM. The CLI ships toward one executable per host
 with declared OS dependencies, resources/notices/certificate data and no
-permanent launcher. Committed binaries under `bin/` are local test snapshots with
-per-host provenance in [bin/README](bin/README.md); the release archive is the only packaged build.
+permanent launcher. The repository carries no executables: the published release archive
+is the only packaged build, and [CI](docs/guides/development.md#continuous-integration) bootstraps
+from a pinned release.
 
 The independent CRT host-tools profile supplies mksh, toybox, awk and make for
 explicit shell/port workflows. It is separate from native app builds and target

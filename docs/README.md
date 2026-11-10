@@ -39,6 +39,8 @@ from the SDK build baseline:
 
 ## Acceptance Contracts and Evidence
 
+- [GitHub CI](acceptance/ci_acceptance.md): what the CI driver has been run against
+  (Linux/x86_64 local rehearsal) and what is not yet run on GitHub-hosted images.
 - [Dev SDK / CLI Preview](acceptance/preview_acceptance.md): bounded local candidate,
   actual SDK/CLI/resource identities, first-user rehearsal and publication limits.
 - [D0/D1 Bootstrap Acceptance](acceptance/bootstrap_acceptance.md): SDK-only
