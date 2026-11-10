@@ -5,7 +5,7 @@ import package_cli_archive as tool
 
 def make_package(root):
     root.mkdir(parents=True)
-    files = {'crt-cli': b'\x7fexe', 'LICENSE.md': b'sdk license', 'share/licenses/crt-cli/LICENSE': b'apache'}
+    files = {'crt-cli': b'\x7fELF' + bytes(64), 'LICENSE.md': b'sdk license', 'share/licenses/crt-cli/LICENSE': b'apache'}
     for component in tool.REQUIRED_COMPONENTS:
         files[f'share/licenses/{component}/LICENSE'] = component.encode()
     inventory = []
@@ -29,8 +29,14 @@ class Package(unittest.TestCase):
         self.assertEqual(first['sha256'], second['sha256'])
         result = tool.verify(self.tmp / 'a.tar.xz', self.tmp / 'out')
         self.assertEqual(first['files'], result['files'])
-        self.assertTrue(os.access(Path(result['root']) / 'crt-cli', os.X_OK))
-        self.assertFalse(os.access(Path(result['root']) / 'LICENSE.md', os.X_OK))
+        # Archive modes are set from the manifest, not from the host's execute bits (Windows has none).
+        with tarfile.open(self.tmp / 'a.tar.xz') as archive:
+            modes = {Path(m.name).relative_to(self.package.name).as_posix(): m.mode for m in archive.getmembers() if m.isfile()}
+        self.assertEqual(0o755, modes['crt-cli'])
+        self.assertEqual({0o644}, {mode for name, mode in modes.items() if name != 'crt-cli'})
+        if os.name != 'nt':
+            self.assertTrue(os.access(Path(result['root']) / 'crt-cli', os.X_OK))
+            self.assertFalse(os.access(Path(result['root']) / 'LICENSE.md', os.X_OK))
 
     def test_refusals_before_and_after_packing(self):
         with self.assertRaisesRegex(ValueError, 'already exists'):
@@ -55,8 +61,29 @@ class Package(unittest.TestCase):
         manifest['inventory'].append(['share/licenses/xz/NOTICE', 'file', hashlib.sha256(b'n').hexdigest()])
         (self.package / 'manifest.json').write_text(json.dumps(manifest))
         (self.package / 'share/licenses/xz/NOTICE').chmod(0o755)
-        with self.assertRaisesRegex(ValueError, 'only executable'):
-            tool.inspect(self.package)
+        if os.name != 'nt':
+            with self.assertRaisesRegex(ValueError, 'only executable'):
+                tool.inspect(self.package)
+
+    def test_a_second_native_image_is_refused_whatever_its_mode(self):
+        pe = bytearray(0x100); pe[:2] = b'MZ'; pe[0x3c:0x40] = (0x80).to_bytes(4, 'little'); pe[0x80:0x84] = b'PE\x00\x00'
+        for kind, data in (('pe', bytes(pe)), ('elf', b'\x7fELF' + bytes(32)), ('macho', b'\xcf\xfa\xed\xfe' + bytes(32))):
+            with self.subTest(kind=kind):
+                package = make_package(self.tmp / f'second-{kind}')
+                name = 'share/licenses/xz/NOTICE'
+                (package / name).write_bytes(data)
+                manifest = json.loads((package / 'manifest.json').read_text())
+                manifest['inventory'].append([name, 'file', hashlib.sha256(data).hexdigest()])
+                (package / 'manifest.json').write_text(json.dumps(manifest))
+                with self.assertRaisesRegex(ValueError, 'only executable'):
+                    tool.inspect(package)
+                with self.assertRaisesRegex(ValueError, 'only executable'):
+                    tool.pack(package, self.tmp / f'second-{kind}.tar.xz')
+
+    def test_a_text_file_that_starts_with_mz_is_not_an_image(self):
+        self.assertIsNone(tool.native_image_kind(self.package / 'LICENSE.md'))
+        (self.package / 'LICENSE.md').write_bytes(b'MZ is just text here' + bytes(80))
+        self.assertIsNone(tool.native_image_kind(self.package / 'LICENSE.md'))
 
     def test_hostile_archive_members_are_refused(self):
         evil = self.tmp / 'evil.tar.xz'

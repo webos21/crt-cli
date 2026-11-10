@@ -276,3 +276,41 @@ build without configure through `--sdk`, test, run, zero-command warm reuse, unc
 As on Linux and macOS, the current CLI follows no HTTPS redirects and each GitHub asset URL redirects to GitHub storage, so **direct GitHub `sdk acquire --source` remains unsupported**; the accepted
 path is manual download plus pinned local installation. No root `crt.lock`, default SDK selection or CLI release is changed; the committed Windows binary stays a local, unpromoted test aid.
 A packaged Windows CLI archive with pinned notices, Authenticode signing, Windows/arm64, Full and D4 remain in their own queues.
+
+## Windows final CLI package (2026-11-10)
+
+Scope: the local Preview archive of the committed Windows/x86_64 executable with its pinned notices, provenance records and an immutable format-1 inventory. This is the Windows
+counterpart of the Linux and macOS package qualification; it publishes nothing and creates no release, tag or default lock.
+
+**Inputs.** Executable `bin/win-x64/crt-cli.exe` (`3e8c0491d2e385bbaba5c0e8bd63eeac3896f498fed762ecab4370ecf277bd90`), assembled by `tools/create_bootstrap_resources.py` against the
+**actual public SDK bytes** of `v0.0.1-preview.20261110.windows.1`: the ZIP was downloaded without authentication, verified against the manifest pin and installed by this CLI (`sdk install`), and the
+notices were copied from that installed SDK (content `5bb55372ec10e3cfa24c84de981a7130f56aeb57ef0d43d5da22a65036dec7ef`). The assembler fails closed on a missing component record.
+
+**Package.** One executable (`crt-cli.exe`) and 28 regular files plus `manifest.json`, 30 in all: `LICENSE.md`, the CLI's Apache-2.0 license, 19 component license files (`crt-libc` 5, `llvm-runtimes` 8, `mbedtls` 2,
+`curl`, `zlib`, `xz`, `nlohmann-json` 1 each), the 7 matching dependency provenance records, and `manifest.json` (`crt-cli.bootstrap-resources` format 1, target Windows/x86_64, 29 inventory entries with SHA-256,
+trust mode `explicit-at-fetch` and no CA file, the external prerequisite `windows-system-runtime`: `KERNEL32.dll` and `api-ms-win-core-synch-l1-2-0.dll`, not bundled). Manifest SHA-256
+`a99fee801a30c14884d108f4675a76c1643e3adaf83d83965e05a25f9344ab85`. No SDK library or header, compiler, interpreter, launcher, CA certificate, test key or second PE image is included.
+
+**Archive.** `tools/package_cli_archive.py pack` writes `crt-cli-0.1.0-dev-windows-x86_64-local-preview.20261110.tar.xz` (5360820 bytes), SHA-256
+`5c9ef4042bb15c999a44c6ae745bf3f6efa25093b509bbba7c4c3164a18b4edf`, with one top-level directory, sorted members, owner 0, mtime 0 and modes 0755 for directories and the executable, 0644 for the rest.
+Packing the same package twice gives the same bytes. The archive is a `.tar.xz` like the Linux and macOS ones (Windows 10 and later extract it with the bundled `tar.exe`); no ZIP variant is made. The
+tool first inspects the package against its own manifest and refuses extra, missing or changed files, a second executable, links, special files and a missing mandatory notice or component license.
+
+**Tool change for Windows.** The earlier tool decided "the only executable" and the archive modes from the host's execute bits, which do not exist on Windows (every file reports executable). It now also
+classifies files by content (PE with a valid signature at `e_lfanew`, ELF, Mach-O) and refuses any native image other than the declared executable on every host, sets the archive modes from the manifest's
+executable name, and keeps the POSIX execute-bit check on POSIX hosts. Six unit tests pass on Windows, including a second PE/ELF/Mach-O image hidden in a notice with mode 0644 and a text file that merely starts with
+`MZ`; the same tests were not run on Linux or macOS, where the unchanged POSIX branch is reasoned to behave as before and the earlier archives are not re-made.
+
+**Extraction and verification.** `package_cli_archive.py verify` extracts into a new directory with the stdlib `data` filter and re-checks the manifest: **30 files**, every digest equal to the inventory, the
+only native image is `crt-cli.exe`, no link or special file, the same manifest digest. The extracted executable is byte-identical to `bin/win-x64/crt-cli.exe`; its imports are only `KERNEL32.dll` and
+`api-ms-win-core-synch-l1-2-0.dll`, and its certificate table is empty (not Authenticode-signed).
+
+**Run from the extracted package, SDK- and source-free (restricted token, 12/12).** `tools/replay_cli_package_windows.py` copies the package to a fresh private directory. Each call runs under CRT's
+`crt_windows_trace`: a per-run SID, an empty `PATH`, redirected stdio and job-object process accounting; a native probe proves the producer, CRT, CLI and installed-SDK trees unreadable, and no call starts any image other
+than the package executable and the console host. `--version` (`0.1.0-dev`), `--help`, bare `doctor --scope self` and `doctor --scope self --resources <package> --resources-sha256 <pin>` pass; the last reports
+`publisher_authentication: not_verified`, trust `explicit-at-fetch` and the compiled-in SDK input (`v0.0.1-preview.20261110.windows.1`). Negative controls fail for their own reasons: a wrong pin ("manifest SHA-256 mismatch"),
+one appended byte in a notice and an undeclared extra file (both "inventory mismatch"); the restored package passes again and is byte-for-byte unchanged. Result SHA-256
+`69362643032433af4963426f2833d2142e4b609b666bb04c11899870d703e733`. Unlike the macOS Seatbelt run, Windows records process images but cannot deny a foreign program or the network; that is a stated limit, not a pass.
+
+Receipts are in the local evidence directory (`pack.json`, `verify.json`, `package-run/`). Not covered: publishing this archive or any CLI release, Authenticode signing, an official publisher key (the manifest is a local
+inventory, not publisher authentication), port/provider replays against this exact SDK, Windows/arm64 and other hosts.

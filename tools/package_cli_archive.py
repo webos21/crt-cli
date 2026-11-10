@@ -24,6 +24,21 @@ def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def native_image_kind(path):
+    """'pe', 'elf', 'macho' or None from the leading bytes, independent of any execute bit (Windows has none)."""
+    with Path(path).open('rb') as stream:
+        head = stream.read(0x1000)
+    if head[:4] == b'\x7fELF':
+        return 'elf'
+    if head[:4] in (b'\xfe\xed\xfa\xce', b'\xfe\xed\xfa\xcf', b'\xce\xfa\xed\xfe', b'\xcf\xfa\xed\xfe', b'\xca\xfe\xba\xbe'):
+        return 'macho'
+    if head[:2] == b'MZ' and len(head) >= 0x40:
+        offset = int.from_bytes(head[0x3c:0x40], 'little')
+        if offset + 4 <= len(head) and head[offset:offset + 4] == b'PE\x00\x00':
+            return 'pe'
+    return None
+
+
 def inspect(root):
     """Verify an extracted or assembled package directory against its manifest; return the manifest."""
     root = Path(root)
@@ -47,9 +62,15 @@ def inspect(root):
         changed = sorted(name for name in set(actual) & set(recorded) if actual[name] != recorded[name])
         raise ValueError(f'package differs from its inventory: missing={missing} extra={extra} changed={changed}')
     executable = manifest['executable']
-    executables = sorted(name for name in actual if os.access(root / name, os.X_OK))
-    if executables != [executable]:
-        raise ValueError('the only executable must be ' + executable + ', found ' + str(executables))
+    # An execute bit means nothing on Windows (every file is "executable"), so the single-executable rule also looks at content:
+    # no file but the declared executable may be a PE, ELF or Mach-O image, on any host.
+    images = sorted(name for name in actual if native_image_kind(root / name))
+    if images != [executable]:
+        raise ValueError('the only executable must be ' + executable + ', found ' + str(images))
+    if os.name != 'nt':
+        executables = sorted(name for name in actual if os.access(root / name, os.X_OK))
+        if executables != [executable]:
+            raise ValueError('the only executable must be ' + executable + ', found ' + str(executables))
     for notice in REQUIRED_NOTICES:
         if notice not in actual:
             raise ValueError('missing mandatory notice: ' + notice)
@@ -72,7 +93,7 @@ def pack(package, output):
             info.uid = info.gid = 0
             info.uname = info.gname = ''
             info.mtime = 0
-            info.mode = 0o755 if path.is_dir() or os.access(path, os.X_OK) else 0o644
+            info.mode = 0o755 if path.is_dir() or path.relative_to(package).as_posix() == manifest['executable'] else 0o644
             if path.is_file():
                 with path.open('rb') as stream:
                     archive.addfile(info, stream)

@@ -11,6 +11,12 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-10
 
+### Qualify the Windows final CLI package
+
+Assembled the committed Windows executable (`3e8c0491...`) with its pinned notices from the actual public SDK bytes of `v0.0.1-preview.20261110.windows.1` and packed them into a deterministic 30-file
+`.tar.xz` (5360820 bytes, `5c9ef404...`); `package_cli_archive.py` now identifies native images by content instead of the missing Windows execute bit. The new restricted-token
+`replay_cli_package_windows.py` runs the extracted package SDK- and source-free (12/12, negative controls included). Nothing is published. [Acceptance](docs/acceptance/preview_acceptance.md#windows-final-cli-package-2026-11-10).
+
 ### Qualify and adopt the published Windows Development SDK Preview
 
 Built the CLI from `9a5272d` by the clean Release Dev SDK `v0.0.1-preview.20261110.windows.1` alone (21 sources cold 21/0, warm 0/21; native 972, archive 214, SDK-store 113, recipe 141), committed it as
