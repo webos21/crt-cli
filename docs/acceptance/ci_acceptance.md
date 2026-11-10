@@ -301,7 +301,7 @@ root. No test tier is removed or deferred and no nightly workflow is added.
 
 ## Linux loader-repair SDK adoption (2026-11-10)
 
-**Producer promoted; required hosted replay pending.** The producer published
+**Linux hosted qualification passes on both required Ubuntu versions.** The producer published
 Linux Dev SDK `.4` at clean CRT `448fa32349ae697f589f0ad8fc60cfdf7a7e195a`,
 then unauthenticated public re-download matched all six frozen assets.
 [Producer evidence](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#linux-loader-compatibility-repair-2026-11-10)
@@ -330,3 +330,30 @@ The noble LLVM signing-key fingerprint and provisioning come from the earlier
 working 24.04 baseline; 26.04 retains its Ubuntu archive. Existing macOS/Windows
 pins are unchanged. Completed hosted results follow below; no production/default
 lock change or native aarch64/Full/Web replay is implied.
+
+### Completed Linux hosted qualification
+
+Run [`42805951580`](https://github.com/webos21/crt-cli/actions/runs/42805951580),
+CLI source `5d148bacb1ee52436b2080475f04d51a035e2a38`, has successful required
+Linux jobs on the same promoted SDK `.4` (content `22107183...2ca81`).
+Both uploaded binaries/receipts were downloaded and independently verified.
+
+| Required host | Exact host runtime/compiler | Suites native/archive/store/recipe | Stage-2 executable SHA-256 |
+| --- | --- | --- | --- |
+| Ubuntu 24.04 | glibc `2.39-0ubuntu8.9`; LLVM/Clang 21.1.8 from apt.llvm.org | 913 / 221 / 114 / 142, none skipped | `d13999591696a81feffaf3874d0d84d4ae0c7039c1011b2b306b3de36986517f` |
+| Ubuntu 26.04 | glibc `2.43-2ubuntu2.4`; Ubuntu LLVM/Clang 21.1.8 (`6ubuntu1`) | 913 / 221 / 114 / 142, none skipped | `25f3f3a75986e0e89aa85dea46b87697d8b236f012a5902a22ab6bbaa68718ed` |
+
+For each host, public GitHub SDK acquisition, both cold self-builds (21/0),
+unchanged rebuild (0/21), byte equality of stages 1/2, empty ELF dependency/
+rpath audit and both SDK-free executables' version/help/bootstrap-doctor checks
+pass. Interpreter is `/lib64/ld-linux-x86-64.so.2`; no host libc/C++ imports
+are added. The previously failing `variant-cxx-shared-library` runs inside the
+unmodified native suite on actual Ubuntu 24.04, not a substituted-loader test.
+This closes the old `.3` producer gap for these exact `.4` combinations.
+
+Evidence is retained in `/home/syszone/GitLocal/crt-preview-20261110-tlsdesc/`:
+`hosted-linux-artifacts/` and `hosted-linux-verification.json`. Source/SDK pins,
+summary result/test counts/cold caches, stage equality and binary SHA-256 agree.
+The original `.3` failure remains above. Additional host/loader versions and
+Linux/aarch64 remain unqualified; fallback lifecycle and pure-C shared SDK
+limits are unchanged. No replacement CLI package or existing-project migration.

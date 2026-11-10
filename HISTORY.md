@@ -11,6 +11,20 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-10
 
+### Adopt the repaired Linux Dev SDK and restore old-LTS CI coverage
+
+Adopted producer-promoted `v0.0.1-preview.20261110.4` after local SDK-only and
+public-byte consumer qualification. Required Ubuntu 24.04 and 26.04 jobs now
+consume the same immutable SDK pin; both pass the complete bootstrap/self-build,
+913/221/114/142 suites, stage-2/warm/import/SDK-free gates in run `42805951580`.
+Stage 1/2 bytes match within each host. The original `.3` calloc/loader failure
+is retained, rather than treated as solved by switching runners. Driver units
+pass 7/7. Product/test sources, other-host SDK/bootstrap pins and existing
+project locks are unchanged; no replacement CLI executable is published.
+[CI acceptance](docs/acceptance/ci_acceptance.md#linux-loader-repair-sdk-adoption-2026-11-10)
+and [adoption](docs/compatibility.md#linux-loader-repair-sdk-adoption-2026-11-10)
+own exact artifacts, loader/compiler versions, migration limits and receipts.
+
 ### Reduce CI latency with isolated native case processes
 
 The native harness runs independent project/variant cases in two owned CRT

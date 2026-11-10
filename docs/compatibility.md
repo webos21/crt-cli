@@ -24,7 +24,7 @@ Local CLI `65b20c4` self-build and 913/221/114/142 checks pass on the immutable
 candidate. The unchanged published Linux CLI consumes the actual public `.4`
 bytes: 14/14 isolated install/verify/C/C++ first-build checks, including a
 shared-library project's same test executable on glibc 2.43 and pinned 2.39.
-No replacement CLI executable is published. Both Ubuntu 24.04 and 26.04 are now
+No replacement CLI executable is published. Both Ubuntu 24.04 and 26.04 now pass as
 required CI configurations with this same SDK pin; their completed hosted
 qualification is recorded in [CI acceptance](acceptance/ci_acceptance.md#linux-loader-repair-sdk-adoption-2026-11-10),
 not inferred from configuration. macOS/Windows SDK pins and the original `.3`

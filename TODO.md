@@ -54,12 +54,10 @@ retain their later queues. Execution policy remains in
 `ci.yml` (PR and main) bootstraps from the pinned published Preview and is described in the
 [development guide](docs/guides/development.md#continuous-integration); completed steps live in HISTORY.
 Linux/x86_64 (`ubuntu-24.04` and `ubuntu-26.04`), macOS/arm64 (`macos-15`) and Windows/x64
-(`windows-2022`) are required legs and pass at the
-[recorded hosted combination](docs/acceptance/ci_acceptance.md#hosted-process-worker-qualification).
+(`windows-2022`) are required legs.
+[CI acceptance](docs/acceptance/ci_acceptance.md#linux-loader-repair-sdk-adoption-2026-11-10)
+owns the completed combinations, including both repaired Linux paths.
 
-- [ ] Complete required Ubuntu 24.04/26.04 replay on the producer-promoted Linux
-  Dev SDK `.4`; [adoption evidence](docs/acceptance/ci_acceptance.md#linux-loader-repair-sdk-adoption-2026-11-10)
-  retains the `.3` failure and exact new qualification scope.
 - [ ] `integration.yml`: the five input-gated port suites (`port-build|store|oracle|command|project-test`) with the
   pinned independent host tools, zlib source archive and oracle, plus redirect/transport replays. Daily and manual.
 - [ ] `release.yml`: protected, manually approved packaging from a tested CI artifact, independent extraction and
