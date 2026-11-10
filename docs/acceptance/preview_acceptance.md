@@ -199,3 +199,22 @@ As on Linux, the current CLI follows no HTTPS redirects and each GitHub asset UR
 accepted path is manual download plus pinned local installation. No root `crt.lock`, default SDK selection or CLI release is changed; the committed macOS binary stays a
 local, unpromoted test aid. Other-host final packages, a packaged macOS CLI archive, Developer ID signing, Full and D4 remain in their own queues.
 
+## Windows local candidate (2026-11-10)
+
+Scope: native Windows/x86_64 Dev `02-cxx` Preview candidate `v0.0.1-preview.20261110.windows.1` from clean CRT `b31276a6acccf0a89731f7bb0aecbdcdc9b45cda` (Release;
+producer [candidate record](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#windows-dev-preview-candidate-2026-11-10) owns the SDK/manifest/policy
+hashes). The CLI is built from `9a5272d12d80a74389edbc724fd4bd602d618064` unchanged; it already contains the Windows D3 adapter and the Win64 vector-register unwind fix lives in the SDK. The Linux and
+macOS records stay at their own sources.
+
+| Gate | Result |
+| --- | --- |
+| Self-build from the Preview SDK alone (restricted-token contract replay, private SID, empty PATH, job-object accounting) | 21 sources: cold 21 executed / 0 reused, warm 0 / 21 |
+| Native / archive / SDK-store / recipe regression | **972** / **214** / **113** / **141** checks |
+| Imports | only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`; SDK-hidden help/version/doctor pass |
+| Executable | `3e8c0491d2e385bbaba5c0e8bd63eeac3896f498fed762ecab4370ecf277bd90`, 44920832 bytes (committed as `bin/win-x64/crt-cli.exe`) |
+| Consumer of the local handoff, `tools/replay_preview_public_windows.py` (restricted token) | **31/31**: pin and asset digests, pinned install/verify/idempotence, wrong-pin refusal, C and C++ first build without configure, test, run, zero-command warm build, unchanged locks and inputs |
+
+The consumer driver is a Windows adaptation of the macOS one: each call runs under CRT's `crt_windows_trace` (per-run SID, empty PATH, job-object process accounting; no network or
+executable denial is claimed), a native probe proves the producer and CLI trees unreadable, and the Windows SDK import-library directory is passed through `CRT_WINDOWS_SDK_LIBPATH`.
+The guide's literal commands (`--os-sdk`, spaced tool paths) were also run once as a user would and pass. Not covered at this checkpoint: a packaged CLI archive with pinned notices
+for Windows, Authenticode signing, Windows/arm64, port/provider replays against this exact SDK, other hosts. The executable is a local, unpromoted test aid, not a published release.
