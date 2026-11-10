@@ -156,3 +156,26 @@ source/assets, reviewed trust commit, CLI and consumer receipts. No root/default
 SDK lock is migrated and no CLI executable release is published by this SDK
 promotion. CLI delivery, other-host final packages, Linux C shared SDK mode,
 Full/D4, updates and Studio remain in their owning queues.
+
+
+## Restricted HTTPS redirects and GitHub acquisition (2026-11-10)
+
+Scope: native Linux/x86_64 only. Not yet replayed on macOS/arm64 or Windows/x64, and no
+CLI executable release is published by this increment. Design and option contract:
+[restricted HTTPS redirects](../reference/bootstrap_contract.md#restricted-https-redirects-experimental-cli-owned).
+Default `fetch`/`sdk acquire` behavior is unchanged: redirects are refused.
+
+| Gate | Result |
+| --- | --- |
+| `tools/replay_redirect_linux.py`: two loopback TLS origins serve the real promoted `.3` bytes behind redirects (allow-list, relative, 301/303/307/308, 300/304 refused, wrong authority/port, suffix look-alike, IPv6 literal, downgrade, credentials, fragment, missing/duplicate Location, loop, hop limits 3 and 5, wrong-certificate target, 404, oversize, interrupted body, digest/size mismatch, second hop leaving the list, argument and source-field refusals, full `sdk acquire` + `sdk verify` + idempotent re-acquire) | **54/54** |
+| No `Authorization`/`Cookie`/`Referer` at either origin; the signed query reaches the storage origin only and appears in no CLI output | Pass |
+| Native project regression with 10 added redirect-argument refusals (`native` 901, `archive` 221, `sdk-store` 114, `port-recipe` 141) | Pass |
+| Real GitHub: `sdk acquire` from `webos21/crt` release `v0.0.1-preview.20261110.3` with `redirect_policy: github-release`, the host's system CA bundle (SHA-256 `a9bdea6e...5fdd`) and the pinned source; the three downloads (manifest 1683 B, policy 402958 B, archive 7697544 B) each followed one redirect to `release-assets.githubusercontent.com` and matched the pinned SHA-256/size | Pass; installed identity `36623957...2b3f` equals the promoted SDK |
+
+The real-network run is a single observation of GitHub's current delivery host, not a promise of
+its stability: a changed host fails closed as `redirect` until the reviewed list is updated. The
+replay's CA is a private test CA; the system CA bundle is the caller's explicit trust input and
+publisher authentication remains `not_verified`. The exercised CLI binary is a development build of
+the working tree (not the earlier qualified `6ba046e5...1dab2`), so that candidate's evidence is not
+carried over and no combination is labeled compatible beyond the cases above. Evidence:
+`/home/syszone/redirect-replay-1/redirect-replay.json` (per-case commands and replies).

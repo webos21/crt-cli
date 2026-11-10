@@ -62,7 +62,7 @@ Json asset(const Json& manifest, const std::string& name, uint64_t maximum) {
 Json acquire_sdk(const fs::path& source, const fs::path& root, const std::string& version) {
     require(fs::is_regular_file(source) && fs::file_size(source) <= 65536, "SDK source must be a regular file of at most 64 KiB");
     const auto input = read_json(source);
-    keys(input, {"schema", "format", "ca_file", "ca_sha256", "manifest", "archive", "contract_url", "sdk", "timeout_seconds"});
+    keys(input, {"schema", "format", "ca_file", "ca_sha256", "manifest", "archive", "contract_url", "sdk", "timeout_seconds", "redirect_policy", "redirect_hosts", "max_redirects"});
     require(input.at("schema") == "crt-cli.sdk-source" && input.at("format") == 0, "unsupported SDK source schema/format");
     const auto& meta = input.at("manifest"); keys(meta, {"url", "sha256", "size"});
     const auto& archive = input.at("archive"); keys(archive, {"name", "url"});
@@ -83,6 +83,26 @@ Json acquire_sdk(const fs::path& source, const fs::path& root, const std::string
                 "SDK source CA must be an absolute regular file matching ca_sha256 (at most 1 MiB)");
     };
     check_ca();
+    // Optional, explicit redirect allow-list for hosting that serves assets through a redirect (GitHub releases). Absent: none.
+    require(!(input.contains("redirect_policy") && input.contains("redirect_hosts")), "SDK source redirect_policy and redirect_hosts are mutually exclusive");
+    std::vector<std::string> redirect_options;
+    if (input.contains("redirect_policy")) {
+        require(input.at("redirect_policy").is_string() && input.at("redirect_policy") == "github-release", "SDK source redirect_policy must be github-release");
+        redirect_options = {"--redirect-policy", "github-release"};
+    }
+    if (input.contains("redirect_hosts")) {
+        require(input.at("redirect_hosts").is_array() && !input.at("redirect_hosts").empty() && input.at("redirect_hosts").size() <= 8, "SDK source redirect_hosts must list 1 to 8 authorities");
+        std::string joined;
+        for (const auto& host : input.at("redirect_hosts")) {
+            require(host.is_string() && host.get<std::string>().find(',') == std::string::npos, "SDK source redirect_hosts entries must be strings");
+            joined += (joined.empty() ? "" : ",") + host.get<std::string>();
+        }
+        redirect_options = {"--redirect-hosts", joined};
+    }
+    if (input.contains("max_redirects")) {
+        require(!redirect_options.empty(), "SDK source max_redirects needs redirect_policy or redirect_hosts");
+        redirect_options.insert(redirect_options.end(), {"--max-redirects", std::to_string(size(input, "max_redirects", 5))});
+    }
     const auto timeout = input.contains("timeout_seconds") ? size(input, "timeout_seconds", 3600) : 60;
     require(root.is_absolute() && !fs::is_symlink(root) && !fs::is_symlink(root / ".staging"), "SDK acquisition store/staging must be absolute, non-symlink directories");
     const auto directory = sdk_version + "-" + content_pin.substr(0, 12);
@@ -109,10 +129,16 @@ Json acquire_sdk(const fs::path& source, const fs::path& root, const std::string
     write_text(pending / "txn.json", Json{{"pid", getpid()}, {"state", "fetching"}, {"source_sha256", provenance.at("source_sha256")}}.dump() + "\n");
     auto download = [&](const std::string& address, const std::string& name, const std::string& digest, uint64_t bytes) {
         check_ca();
-        auto result = fetch({"fetch", "--url", address, "--ca-file", ca.string(), "--output", (pending / name).string(),
-                             "--sha256", digest, "--size", std::to_string(bytes), "--timeout", std::to_string(timeout)});
+        std::vector<std::string> command{"fetch", "--url", address, "--ca-file", ca.string(), "--output", (pending / name).string(),
+                                         "--sha256", digest, "--size", std::to_string(bytes), "--timeout", std::to_string(timeout)};
+        command.insert(command.end(), redirect_options.begin(), redirect_options.end());
+        auto result = fetch(command);
         require(result.code == 0, "SDK acquisition fetch failed (" + result.data.value("code", "failure") + "): " + result.data.value("message", "transfer failed"));
-        provenance["downloads"].push_back({{"url", address}, {"sha256", digest}, {"size", bytes}});
+        Json record{{"url", address}, {"sha256", digest}, {"size", bytes}};
+        if (result.data.contains("trust") && result.data.at("trust").contains("redirects")) {
+            record["redirect_chain"] = result.data.at("trust").at("redirects").at("chain");
+        }
+        provenance["downloads"].push_back(record);
     };
     download(manifest_url, "release-manifest.json", manifest_pin, manifest_size);
     auto manifest = read_json(pending / "release-manifest.json");

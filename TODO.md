@@ -36,9 +36,10 @@ separately requested dated snapshot.
   Linux C shared SDK mode remains excluded under CRT 6.4.
 - [x] Publish the selected producer source and approve scoped manual-pin trust;
   [promote and exercise actual public SDK bytes](docs/acceptance/preview_acceptance.md#public-sdk-promotion-and-consumer-adoption-2026-11-10).
-- [ ] Review a bounded GitHub asset-redirect strategy before advertising public
-  `sdk acquire`/automatic first-build download; current CLI deliberately refuses
-  redirects. The promoted SDK's manual download/install flow is qualified.
+- [x] Restricted HTTPS redirect policy implemented and Linux-replayed, including real
+  GitHub `sdk acquire` ([record](docs/acceptance/preview_acceptance.md#restricted-https-redirects-and-github-acquisition-2026-11-10)).
+- [ ] Replay the redirect policy on macOS/arm64 and Windows/x64 (`tools/replay_redirect_linux.py`
+  needs a macOS/Windows driver) before advertising automatic download there.
 - [ ] Complete CLI Preview delivery and any explicit default/project pin adoption
   against the promoted SDK; final-package replay applies to each advertised host.
 - [ ] Keep Full SDK packaging/security/source/license review on its own path;

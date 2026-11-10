@@ -623,7 +623,8 @@ promotion remain separate from the successful local first-user rehearsal.
 
 The SDK is now [published and exercised from public bytes](../acceptance/preview_acceptance.md#public-sdk-promotion-and-consumer-adoption-2026-11-10).
 Use its manual download/pinned `sdk install` path with `--sdk` to select the
-installed portable policy. GitHub asset redirects remain unsupported by current
-`fetch`/`sdk acquire`; controlled direct-HTTPS test results do not qualify that
-public endpoint. Keep a restricted redirect change separate from immutable SDK
-promotion, and preserve current default redirect refusal until reviewed/tested.
+installed portable policy. GitHub asset redirects are followed only with the explicit
+`--redirect-policy github-release` / source `redirect_policy` opt-in
+([contract](../reference/bootstrap_contract.md#restricted-https-redirects-experimental-cli-owned));
+the default stays refusal. Replay with `tools/replay_redirect_linux.py --cli <crt-cli> --release-dir <public-download> --output <new-dir>`
+(Python 3, OpenSSL, loopback only) after any change to `src/main/http.cpp`, `fetch.cpp` or `sdk_acquire.cpp`.

@@ -11,6 +11,17 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-10
 
+### Restricted HTTPS redirects for GitHub release assets (Linux/x86_64)
+
+`fetch` and source-driven `sdk acquire` can opt into a bounded redirect policy
+(`--redirect-policy github-release` or an explicit authority list). Default remains
+refusal; libcurl never follows, so the CLI re-checks every hop (HTTPS only, no
+credentials/fragment/downgrade, allow-listed authority, at most 5 hops, no loops) and
+reports only authorities, never a signed URL. 54/54 loopback replay cases over the real
+promoted `.3` bytes, the 901-check native regression and a real GitHub `sdk acquire`
+pass; see [the record](docs/acceptance/preview_acceptance.md#restricted-https-redirects-and-github-acquisition-2026-11-10).
+macOS/Windows replay and the CLI executable release are not done.
+
 ### Adopt the published Linux SDK for native manual-install consumers
 
 After producer publication, downloaded public assets match the qualified `.3`

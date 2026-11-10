@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
             "  env --profile control|app-build|app-run [--project <dir>]\n"
             "  env --profile port-build --host-tools <dir> --host-tools-sha256 <hex> --work-root <new-dir> [--project <dir>]\n"
             "  shell --host-tools <dir> --host-tools-sha256 <hex> --work-root <new-dir> --script <file> [--directory <dir>] [--timeout <seconds>] [--project <dir>]\n"
-            "  fetch --url <https-url> --ca-file <pem> --output <file> --sha256 <hex> --size <bytes> [--publisher-key <pem> --signature <file>]\n"
+            "  fetch --url <https-url> --ca-file <pem> --output <file> --sha256 <hex> --size <bytes> [--redirect-policy github-release|--redirect-hosts <list>] [--max-redirects <1-5>] [--publisher-key <pem> --signature <file>]\n"
             "  sdk install --archive <file> --archive-sha256 <hex> [--content-sha256 <hex>] [--store <dir>] [--lock-wait <seconds>]\n"
             "  sdk install --archive <file> --release-manifest <file> --release-manifest-sha256 <hex> [--store <dir>] [--lock-wait <seconds>]\n"
             "  sdk repair <sdk-directory> --archive <file> --release-manifest <file> --release-manifest-sha256 <hex> [--store <dir>]\n"

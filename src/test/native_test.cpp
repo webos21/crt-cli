@@ -93,6 +93,17 @@ int main(int argc, char** argv) {
                                  with("--url", "https:///m.json"), with("--sha256", std::string(64, 'A')), with("--sha256", "abc"), with("--size", "0"),
                                  with("--size", "-1"), with("--ca-file", cli + ".missing"), with("--output", cli)})
             invoke(cli, args, false);
+        // Redirect options are validated before any connection too: both lists, an unknown policy, non-canonical authorities,
+        // the default port spelled out, wildcards, empty entries and hop counts outside 1..5 or without an allow-list.
+        for (const auto& extra : std::vector<std::vector<std::string>>{
+                 {"--redirect-policy", "github-release", "--redirect-hosts", "a.example"}, {"--redirect-policy", "other"},
+                 {"--redirect-hosts", "Upper.example"}, {"--redirect-hosts", "a.example:443"}, {"--redirect-hosts", "*.example"},
+                 {"--redirect-hosts", "a.example,,b.example"}, {"--redirect-hosts", "a.example:0"}, {"--max-redirects", "2"},
+                 {"--redirect-hosts", "a.example", "--max-redirects", "0"}, {"--redirect-hosts", "a.example", "--max-redirects", "6"}}) {
+            auto args = fetch_base;
+            args.insert(args.end(), extra.begin(), extra.end());
+            invoke(cli, args, false);
+        }
         check(!fs::exists(cli + ".fetched"), "a rejected fetch publishes nothing");
         for (const auto& option : {"--publisher-key", "--signature"}) {
             auto args = fetch_base;

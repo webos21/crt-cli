@@ -21,9 +21,9 @@ void discard(const fs::path& path) { std::error_code ignored; fs::remove(path, i
 }
 
 Reply fetch(const std::vector<std::string>& args) {
-    const char* usage = "usage: fetch --url <https-url> --ca-file <pem> --output <file> --sha256 <hex> --size <bytes> [--timeout <seconds>] [--publisher-key <public.pem> --signature <signature.bin>]";
+    const char* usage = "usage: fetch --url <https-url> --ca-file <pem> --output <file> --sha256 <hex> --size <bytes> [--timeout <seconds>] [--redirect-policy github-release | --redirect-hosts <authority[,authority...]>] [--max-redirects <1-5>] [--publisher-key <public.pem> --signature <signature.bin>]";
     std::map<std::string, std::string> options;
-    const std::set<std::string> known{"--url", "--ca-file", "--output", "--sha256", "--size", "--timeout", "--publisher-key", "--signature"};
+    const std::set<std::string> known{"--url", "--ca-file", "--output", "--sha256", "--size", "--timeout", "--publisher-key", "--signature", "--redirect-policy", "--redirect-hosts", "--max-redirects"};
     for (size_t i = 1; i < args.size(); i += 2) {
         if (i + 1 >= args.size() || !known.count(args[i])) throw Error(usage, 2);
         if (!options.emplace(args[i], args[i + 1]).second) throw Error("duplicate fetch option", 2);
@@ -38,6 +38,34 @@ Reply fetch(const std::vector<std::string>& args) {
     if (!decimal(options.at("--size"), 1ull << 31, size)) throw Error("--size must be between 1 and 2147483648 bytes", 2);
     if (options.count("--timeout") && !decimal(options.at("--timeout"), 3600, timeout)) throw Error("--timeout must be between 1 and 3600 seconds", 2);
     if (options.count("--publisher-key") != options.count("--signature")) throw Error("--publisher-key and --signature must be supplied together", 2);
+    // Redirects stay refused unless one of these two explicit allow-lists is named; the request's own URL is never widened.
+    if (options.count("--redirect-policy") + options.count("--redirect-hosts") > 1) throw Error("--redirect-policy and --redirect-hosts are mutually exclusive", 2);
+    std::vector<std::string> redirect_authorities;
+    unsigned long long max_redirects = 0;
+    if (options.count("--redirect-policy")) {
+        if (options.at("--redirect-policy") != "github-release") throw Error("unknown --redirect-policy (supported: github-release)", 2);
+        redirect_authorities = github_release_redirect_authorities();
+    }
+    if (options.count("--redirect-hosts")) {
+        const auto& list = options.at("--redirect-hosts");
+        size_t begin = 0;
+        while (begin <= list.size()) {
+            auto end = list.find(',', begin); if (end == std::string::npos) end = list.size();
+            auto item = list.substr(begin, end - begin);
+            auto colon = item.find(':');
+            auto host = item.substr(0, colon);
+            bool good = !host.empty() && host.size() <= 253 && host.find("..") == std::string::npos && host[0] != '.' && host[0] != '-';
+            for (unsigned char c : host) good = good && ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '.');
+            if (colon != std::string::npos) { unsigned long long port = 0; good = good && decimal(item.substr(colon + 1), 65535, port) && port != 443; }
+            if (!good) throw Error("--redirect-hosts takes lower-case host or host:port names (the default port 443 is written without it)", 2);
+            redirect_authorities.push_back(item);
+            begin = end + 1;
+        }
+    }
+    if (!redirect_authorities.empty()) {
+        max_redirects = 3;
+        if (options.count("--max-redirects") && !decimal(options.at("--max-redirects"), 5, max_redirects)) throw Error("--max-redirects must be between 1 and 5", 2);
+    } else if (options.count("--max-redirects")) throw Error("--max-redirects needs --redirect-policy or --redirect-hosts", 2);
     std::unique_ptr<PublisherSignature> publisher;
     if (options.count("--publisher-key")) publisher.reset(new PublisherSignature(options.at("--publisher-key"), options.at("--signature")));
 
@@ -53,8 +81,14 @@ Reply fetch(const std::vector<std::string>& args) {
     HttpsDownload request;
     request.url = url; request.ca_file = ca.string(); request.output_path = staging.string();
     request.max_bytes = size; request.timeout_seconds = static_cast<unsigned>(timeout);
+    request.max_redirects = static_cast<unsigned>(max_redirects); request.redirect_authorities = redirect_authorities;
     auto outcome = https_download(request);
     Json trust{{"verify_peer", true}, {"verify_host", true}, {"ca_file", ca.string()}, {"minimum_tls", "1.2"}, {"backend", outcome.backend}};
+    if (!redirect_authorities.empty()) {
+        trust["redirects"] = {{"policy", options.count("--redirect-policy") ? options.at("--redirect-policy") : "explicit-hosts"},
+                              {"allowed_authorities", redirect_authorities}, {"max", max_redirects}, {"followed", outcome.redirects},
+                              {"chain", outcome.redirect_chain}};
+    }
     auto failure = [&](const std::string& kind, const std::string& stage, const std::string& detail, Json extra) {
         discard(staging);
         Json data{{"code", kind}, {"stage", stage}, {"message", detail}, {"url", url}, {"output", output.string()},

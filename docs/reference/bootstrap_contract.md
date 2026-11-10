@@ -236,11 +236,14 @@ in this input template with independently trusted values:
 
 Unknown input fields are rejected. Source files are bounded to 64 KiB; CA files
 must be absolute regular files of at most 1 MiB matching their pin. URLs require
-HTTPS without credentials, query or fragment. Redirects are not followed, peer/
-host verification is always enabled, minimum TLS is 1.2 and the supplied PEM is
-the trust input. Metadata is bounded to 1 MiB, contracts to 16 MiB and compressed
+HTTPS without credentials, query or fragment. Redirects are not followed unless the
+source names an explicit allow-list (below); peer/host verification is always enabled
+at every hop, minimum TLS is 1.2 and the supplied PEM is the trust input. Metadata is bounded to 1 MiB, contracts to 16 MiB and compressed
 archives to 2 GiB. Timeout defaults to 60 seconds and accepts integer 1–3600.
-Producer install metadata separately bounds extraction. Archive/contract names
+Optional `redirect_policy: "github-release"` or `redirect_hosts: [<authority>...]` (mutually
+exclusive, at most 8 entries) and `max_redirects` (1-5, default 3) enable the restricted
+redirect policy of `fetch`; see "Restricted HTTPS redirects". Producer install metadata
+separately bounds extraction. Archive/contract names
 must be distinct plain file names; internal acquisition names are reserved.
 
 `crt-cli sdk acquire --source <file> [--store <absolute-dir>]` validates the
@@ -377,7 +380,7 @@ file is the **only** trust input (no system store, environment variable or defau
 bundle is consulted); the SHA-256 is 64 lowercase hex digits and the size, in
 1..2 GiB, is both the cap and the expectation. libcurl with Mbed TLS runs with peer and
 host verification always on (there is no option to disable them), TLS 1.2 or newer, no
-proxy, no redirects and HTTP 200 only. The body is written to a staging file beside the
+proxy, no redirects unless an explicit allow-list is named (see "Restricted HTTPS redirects") and HTTP 200 only. The body is written to a staging file beside the
 output, checked for size and digest, then renamed. Failure removes the staging file and
 publishes nothing; an existing output is never replaced (exit 2, content untouched). Exit
 2 is an invalid request (no network was used), exit 1 a transfer or verification failure
@@ -409,7 +412,31 @@ in-memory executable attestation are not implemented. The local resource pin
 check below compares executable file bytes. No production trust policy or
 new SDK schema is assigned by this experimental primitive.
 
-### Child environment diagnostics (experimental format 0)
+### Restricted HTTPS redirects (experimental, CLI-owned)
+
+`fetch` and source-driven `sdk acquire` refuse redirects by default (`http_status` 301/302/...).
+Public GitHub release assets answer with a redirect to GitHub's storage delivery host, so a
+caller may opt in with exactly one of `--redirect-policy github-release` (fixed, reviewed
+authorities `release-assets.githubusercontent.com`, `objects.githubusercontent.com`,
+`github-releases.githubusercontent.com`) or `--redirect-hosts <authority[,authority...]>`
+(lower-case `host` or `host:port`; the default port 443 is not written; no wildcard, IP literal
+or empty entry), plus optional `--max-redirects 1..5` (default 3). The same options exist in the
+SDK source as `redirect_policy`, `redirect_hosts` and `max_redirects`.
+
+libcurl never follows. The CLI re-checks every hop: status 301/302/303/307/308 with exactly one
+`Location`; the resolved target is HTTPS, has no credentials or fragment, no HTTP downgrade, and
+its authority is allow-listed or equals the requesting URL's authority; no URL is revisited and at
+most `max-redirects` hops are taken. Peer/host verification, TLS 1.2 minimum, the explicit CA, the
+size cap and an overall timeout (shared by all hops) apply to every hop. Each hop restarts an empty
+staging file, and the final bytes still need the pinned size and SHA-256 before publication. No
+`Authorization`, `Cookie` or `Referer` header is ever sent. A signed storage URL's path and query
+are never logged or reported: `data.trust.redirects` and acquisition provenance record only the
+policy, allow-list, limit, hop count and the authorities visited. A refused hop is `data.code`
+`redirect`; failures after a redirect keep their ordinary code (`tls`, `http_status`,
+`too_large`, `interrupted`, `timeout`, digest/size mismatch). The allow-list is part of the
+caller-trusted input; it is not publisher authentication.
+
+## Child environment diagnostics (experimental format 0)
 
 `env --profile control|app-build|app-run [--project <directory>]` reports the
 same environment construction used by `execute`, without launching a shell,

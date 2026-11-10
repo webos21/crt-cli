@@ -21,9 +21,12 @@ All SDK/profile/policy/recipe/project-lock formats and ABI remain unchanged.
 passes 12/12 checks on the same qualified CLI `6ba046e5...1dab2`: native pinned
 install/verify and C/C++ installed-SDK first build/test/run/cache with exact
 project pins. Producer public downloads match the original six collected files.
-Root/default locks and committed binaries remain unchanged. Current CLI's
-redirect denial means GitHub automatic acquisition is not adopted; the accepted
-path is manual verified download and native local install. General default trust,
+Root/default locks and committed binaries remain unchanged. The 2026-11-10 CLI
+increment adds an opt-in restricted redirect policy (default remains refusal) and
+[reproduces GitHub acquisition](acceptance/preview_acceptance.md#restricted-https-redirects-and-github-acquisition-2026-11-10)
+on Linux/x86_64 only; macOS/Windows are untested and the exercised CLI executable
+differs from the `6ba046e5...1dab2` candidate. Manual verified download plus
+native local install remains qualified. General default trust,
 CLI binary release, wider hosts and the unqualified C shared SDK mode remain separate.
 
 ## Linux Preview Input Rehearsal (2026-11-10)
