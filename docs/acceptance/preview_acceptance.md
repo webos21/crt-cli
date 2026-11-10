@@ -257,3 +257,22 @@ The consumer driver is a Windows adaptation of the macOS one: each call runs und
 executable denial is claimed), a native probe proves the producer and CLI trees unreadable, and the Windows SDK import-library directory is passed through `CRT_WINDOWS_SDK_LIBPATH`.
 The guide's literal commands (`--os-sdk`, spaced tool paths) were also run once as a user would and pass. Not covered at this checkpoint: a packaged CLI archive with pinned notices
 for Windows, Authenticode signing, Windows/arm64, port/provider replays against this exact SDK, other hosts. The executable is a local, unpromoted test aid, not a published release.
+
+## Windows Public SDK promotion and consumer adoption (2026-11-10)
+
+The producer has [published the qualified SDK](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.windows.1) as a native Windows/x86_64 Dev prerelease with source tag at
+`b31276a6acccf0a89731f7bb0aecbdcdc9b45cda`; the manifest pin `b0fca4c81d29b8eee28e0d9fb7d6e26950b094a8be4f2c091e43922366a46976`, SDK content `5bb55372ec10e3cfa24c84de981a7130f56aeb57ef0d43d5da22a65036dec7ef` and
+portable-policy digest `7762f572...b726` are unchanged from the local candidate above. The
+[trust review](https://github.com/webos21/crt/blob/main/docs/design/dev_preview_trust.md#windowsx86_64-bounded-policy-adopted-2026-11-10) reuses the caller-trusted manual pin model; no publisher
+signature, default channel or server-enforced immutability is claimed. Producer
+[promotion acceptance](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#windows-dev-sdk-public-promotion-2026-11-10) owns the six public downloads.
+
+Using the committed `bin/win-x64/crt-cli.exe` (`3e8c0491...bd90`), `tools/replay_preview_public_windows.py` consumes the actual unauthenticated public download directory under a restricted
+token (per-run SID, producer and repositories unreadable by a native probe, private HOME and temporary directory, empty `PATH`, job-object process accounting, LLVM 22.1.8 and the Windows SDK
+import libraries). **31/31 checks pass**: pin and asset digests, pinned install/verify and idempotent reinstall, refusal of a wrong pin with nothing published, C and C++ source-only `new`, first
+build without configure through `--sdk`, test, run, zero-command warm reuse, unchanged project locks, installed SDK and downloads. Result SHA-256
+`5784f28a815be4edb4a881fdabfff63d37885441ba802487d7398f47c6acfd20`.
+
+As on Linux and macOS, the current CLI follows no HTTPS redirects and each GitHub asset URL redirects to GitHub storage, so **direct GitHub `sdk acquire --source` remains unsupported**; the accepted
+path is manual download plus pinned local installation. No root `crt.lock`, default SDK selection or CLI release is changed; the committed Windows binary stays a local, unpromoted test aid.
+A packaged Windows CLI archive with pinned notices, Authenticode signing, Windows/arm64, Full and D4 remain in their own queues.

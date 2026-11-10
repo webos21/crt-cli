@@ -11,6 +11,12 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-10
 
+### Qualify and adopt the published Windows Development SDK Preview
+
+Built the CLI from `9a5272d` by the clean Release Dev SDK `v0.0.1-preview.20261110.windows.1` alone (21 sources cold 21/0, warm 0/21; native 972, archive 214, SDK-store 113, recipe 141), committed it as
+`bin/win-x64/crt-cli.exe` (`3e8c0491...`) and added `tools/replay_preview_public_windows.py`, a restricted-token adaptation of the macOS consumer driver. It passes 31/31 over the local handoff and,
+after the producer published the prerelease, over the actual unauthenticated public bytes. [Acceptance](docs/acceptance/preview_acceptance.md#windows-public-sdk-promotion-and-consumer-adoption-2026-11-10).
+
 ### Qualify the macOS final CLI package
 
 Assembled the committed macOS executable with its pinned notices from the actual public SDK bytes, packed them into a deterministic 30-file archive

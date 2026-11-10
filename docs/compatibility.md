@@ -6,6 +6,15 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## Published Windows Dev SDK Adoption (2026-11-10)
+
+The producer's public prerelease [v0.0.1-preview.20261110.windows.1](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.windows.1) (source
+`b31276a6acccf0a89731f7bb0aecbdcdc9b45cda`, manifest pin `b0fca4c81d29b8eee28e0d9fb7d6e26950b094a8be4f2c091e43922366a46976`, SDK content `5bb55372ec10e3cfa24c84de981a7130f56aeb57ef0d43d5da22a65036dec7ef`) is
+consumed by the committed `bin/win-x64/crt-cli.exe` (`3e8c0491d2e385bbaba5c0e8bd63eeac3896f498fed762ecab4370ecf277bd90`, built from `9a5272d`) in the
+[Windows record](acceptance/preview_acceptance.md#windows-public-sdk-promotion-and-consumer-adoption-2026-11-10): 31/31 over the actual public bytes. Native policy 1, install metadata 1,
+project lock 1 and recipe schema 1 are unchanged. Automatic GitHub acquisition (redirect policy), a packaged CLI archive, Authenticode signing, Windows/arm64 and production/default-lock
+adoption remain separate; the Linux and macOS records keep their own exact tested inputs.
+
 ## Published Linux Dev SDK Adoption (2026-11-10)
 
 **Promoted producer; adopted for scoped manual-install consumers.** Public
