@@ -160,7 +160,7 @@ Full/D4, updates and Studio remain in their owning queues.
 
 ## Restricted HTTPS redirects and GitHub acquisition (2026-11-10)
 
-Scope: native Linux/x86_64 only. Not yet replayed on macOS/arm64 or Windows/x64, and no
+Scope: native Linux/x86_64 only (macOS/arm64 is replayed in the macOS CLI Preview release section below; Windows/x64 is not), and no
 CLI executable release is published by this increment. Design and option contract:
 [restricted HTTPS redirects](../reference/bootstrap_contract.md#restricted-https-redirects-experimental-cli-owned).
 Default `fetch`/`sdk acquire` behavior is unchanged: redirects are refused.
@@ -358,3 +358,49 @@ binary: the full native suite (901 checks were run on the equivalent development
 and a source-port build. Work and receipts: `/home/syszone/GitLocal/crt-cli-preview-linux-20261110/`.
 
 Not claimed: publisher authentication (digests only), macOS/Windows/aarch64 packages and redirect replays, Linux C shared-SDK mode, updates/self-upgrade.
+
+## macOS CLI Preview release (2026-11-10)
+
+Prerelease [`v0.1.0-preview.20261110.macos-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.macos-arm64.1) of `webos21/crt-cli` (tags carry the
+OS-architecture, as for Linux), staged as a draft, verified, then published as a non-latest prerelease. Tag target: `541b2afd53980654591a1c6e0a49ceca4057f9b7`, the clean commit the
+executable was built from (it adds only the generalized redirect-replay manifest glob to the Linux Preview source `dc796f7`). Assets: `crt-cli-0.1.0-dev-macos-aarch64-preview.20261110.1.tar.xz`
+(1229408 bytes, SHA-256 `2767f18da7e7d51e3e3fc1172da99581bf0508c1f6b6794817488c0c58950011`) and `SHA256SUMS-macos-aarch64`. The notes were frozen from the files named here before publication.
+
+**Inputs.** A fresh Seatbelt contract replay builds `541b2af` from its sources with the public SDK `v0.0.1-preview.20261110.macos.1` alone (content
+`e3dc7fb1810a3f78ab8ef33882225ccb562d21f6f5977a2037ab92819326bac8`, installed from the downloaded public bytes), the previously committed macOS executable being the bootstrap seed:
+21 sources, cold 21 executed / 0 reused, warm 0 / 21, code and data identical between the two bootstrap stages, native **942**, archive **221**, SDK-store **114** and recipe **141**
+checks, only `libSystem` imported. Executable `42727ccaef0e46551bcb9578d5eee771166e8211b8434f8121b589ab57eddfa6` (4389112 bytes). `create_bootstrap_resources.py` assembles the notices from that SDK
+(manifest SHA-256 `6c7f553f512dbf170936638746d515bfd7ddb006229244b924f4786593c01e63`, 30 files, no CA file) and `package_cli_archive.py` packs them deterministically (packing twice is
+byte-identical; `verify` extraction passes; the extracted executable is byte-identical to the built one; no `LC_RPATH`; ad-hoc linker signature only).
+
+**Restricted redirects on macOS.** `tools/replay_redirect_linux.py` (now taking any host's Dev release manifest; two loopback TLS origins serve the real macOS SDK bytes behind redirects, with
+OpenSSL 4.1 from Homebrew as the test PKI) passes **54/54**, the same cases as Linux: allow-list, relative and 301/303/307/308 redirects, 300/304 refused, wrong authority or port, suffix look-alike,
+IPv6 literal, downgrade, credentials, fragment, missing or duplicate `Location`, loops and hop limits, wrong certificate, 404, oversize, interrupted body, digest and size mismatch, argument and
+source-field refusals, and full `sdk acquire` + `sdk verify` + idempotent re-acquire. No `Authorization`, `Cookie` or `Referer` reaches either origin and the signed query appears in no output.
+
+**Real GitHub, from the packaged executable.** The extracted archive runs under Seatbelt (the producer and CLI checkouts unreadable, empty `PATH`, fresh HOME, real network; only the package
+executable, `xcrun` and Xcode may run): `--version`, self `doctor --resources` with the manifest pin, refusal of a wrong pin, then `sdk acquire` with this source file, whose values are the
+promoted SDK's pins (`ca_file` is a PEM bundle of the caller's choice; here the system roots exported with `security find-certificate -a -p /System/Library/Keychains/SystemRootCertificates.keychain`,
+221 KB, SHA-256 `367b835d35bc36183ddc5d1e4e85170c8a0da0b2abcb50498df791fa1f614750` on this machine; compute your own):
+
+```json
+{"schema": "crt-cli.sdk-source", "format": 0, "ca_file": "/absolute/roots.pem", "ca_sha256": "<sha256 of that file>",
+ "manifest": {"url": "https://github.com/webos21/crt/releases/download/v0.0.1-preview.20261110.macos.1/release-manifest-dev-macos-aarch64.json",
+              "sha256": "0981110c84e5d24a903dbd3965dbe92eb2fe405edfa89804e3086dfeb75983de", "size": 1728},
+ "archive": {"name": "crt-v0.0.1-preview.20261110.macos.1-macos-aarch64-dev.tar.xz",
+             "url": "https://github.com/webos21/crt/releases/download/v0.0.1-preview.20261110.macos.1/crt-v0.0.1-preview.20261110.macos.1-macos-aarch64-dev.tar.xz"},
+ "contract_url": "https://github.com/webos21/crt/releases/download/v0.0.1-preview.20261110.macos.1/crt-v0.0.1-preview.20261110.macos.1-macos-aarch64-dev-toolchain.json",
+ "sdk": {"version": "v0.0.1-preview.20261110.macos.1", "content_sha256": "e3dc7fb1810a3f78ab8ef33882225ccb562d21f6f5977a2037ab92819326bac8",
+         "contract_sha256": "d5a100fdd0d38f940fe1c398996f013d57ccc7c4743af2b9ab4988c42b8de464"},
+ "redirect_policy": "github-release", "timeout_seconds": 300}
+```
+
+All three downloads (manifest 1728 B, policy 402864 B, archive 6136776 B) each followed one redirect to `release-assets.githubusercontent.com` and matched the pinned SHA-256 and size; the installed
+identity equals the promoted SDK. Then C and C++ `new`, first `build --sdk <identity>` without configure, `test`, `run` and a zero-command warm rebuild all pass: **18/18** checks in the run
+(an earlier attempt of the same run, retained as `package-run-r1-xcrun-denied`, failed its eight build steps because the test profile itself denied `xcrun`; it is not counted). This is one observation of GitHub's
+current delivery host, not a promise of its stability: a changed host fails closed as `redirect` until the reviewed list is updated. Publisher authentication stays `not_verified`.
+
+Receipts are under the CRT checkout's ignored `out/cli-preview-macos/` (`replay-cli/`, `redirect-replay/`, `acquire.json`, `package/`, `package-run/`, `release/`). Not claimed: publisher authentication (digests
+only), Developer ID signing or notarization, a quarantined (browser) download, Intel macOS, a source-port build from this package, updates or self-upgrade. The post-publication public-download check
+is recorded below once performed.
+
