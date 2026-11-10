@@ -259,8 +259,10 @@ not wanted, `--os-sdk`. `--tests` restricts the suites for a quick local pass; C
 The Python driver is a build-host orchestrator like the other `tools/*.py` replays, not a CLI prerequisite.
 
 Pins change only in a reviewed commit that cites the release record and re-checks the asset digests against the
-published `SHA256SUMS`; never use a moving tag or `latest`. Only the macOS/arm64 leg is a required check, because it is the
-only one that has passed on a GitHub-hosted image. The Linux and Windows legs run with `continue-on-error`; a suite failure
+published `SHA256SUMS`; never use a moving tag or `latest`. Linux/x86_64 uses explicit `ubuntu-26.04` and LLVM 21 from
+the Ubuntu archive, matching the local rehearsal's host generation. Linux and macOS/arm64 are required checks;
+Windows remains experimental with `continue-on-error`. The Ubuntu 24.04 shared-runtime loader failure remains a
+producer compatibility limit, not a qualified platform. A suite failure
 no longer stops the later stages, so one run reports everything that is broken. The [TODO](../../TODO.md#github-ci) owns the
 open legs and the integration/release workflows. [CI acceptance](../acceptance/ci_acceptance.md) records what has actually
 been run, including the first hosted run and the Linux loader gap it found.

@@ -23,17 +23,16 @@ jobs:
     name: native (${{ matrix.host }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
-    # Only macOS/arm64 is a required leg so far (first hosted run: all stages pass). Linux/x86_64 builds and audits but its
-    # native suite fails on Ubuntu 24.04's glibc 2.39 loader, a CRT shared-runtime gap (docs/acceptance/ci_acceptance.md);
-    # Windows/x64 awaits a rerun. Experimental legs report their failures without failing the workflow.
+    # Linux uses Ubuntu 26.04, matching the local rehearsal's loader; the Ubuntu 24.04 shared-runtime gap remains
+    # recorded in docs/acceptance/ci_acceptance.md. Linux and macOS failures fail CI; Windows remains experimental.
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - host: linux-x64
-            runner: ubuntu-24.04
-            experimental: true
+            runner: ubuntu-26.04
+            experimental: false
           - host: macos-arm64
             runner: macos-15
             experimental: false
@@ -56,19 +55,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Trust exactly one key: the fingerprint that signs apt.llvm.org's llvm-toolchain-noble-21 InRelease.
-          fingerprint=6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
-          export GNUPGHOME="$(mktemp -d)"
-          curl --proto '=https' --tlsv1.2 -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key -o "$GNUPGHOME/llvm.asc"
-          gpg --batch --quiet --import "$GNUPGHOME/llvm.asc"
-          sudo install -d -m 0755 /etc/apt/keyrings
-          gpg --batch --export "$fingerprint" | sudo tee /etc/apt/keyrings/apt.llvm.org.gpg > /dev/null
-          test -s /etc/apt/keyrings/apt.llvm.org.gpg
-          gpg --batch --show-keys --with-colons /etc/apt/keyrings/apt.llvm.org.gpg | awk -F: '$1 == "fpr" { print $10 }' | grep -qx "$fingerprint"
-          echo "deb [signed-by=/etc/apt/keyrings/apt.llvm.org.gpg] https://apt.llvm.org/noble/ llvm-toolchain-noble-21 main" | sudo tee /etc/apt/sources.list.d/llvm21.list
+          # Ubuntu 26.04 provides LLVM 21 directly; do not mix in the older noble apt.llvm.org packages.
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends clang-21 lld-21 llvm-21 binutils
           /usr/lib/llvm-21/bin/clang --version
+          /usr/lib/llvm-21/bin/ld.lld --version
+          /usr/lib/llvm-21/bin/llvm-ar --version
+          ldd --version
 
       - name: Install LLVM 22.1.8 (Windows)
         if: matrix.host == 'win-x64'
