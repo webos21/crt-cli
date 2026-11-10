@@ -53,15 +53,13 @@ retain their later queues. Execution policy remains in
 
 `ci.yml` (PR and main) bootstraps from the pinned published Preview and is described in the
 [development guide](docs/guides/development.md#continuous-integration); completed steps live in HISTORY.
-Linux/x86_64 (`ubuntu-26.04`), macOS/arm64 (`macos-15`) and Windows/x64
+Linux/x86_64 (`ubuntu-24.04` and `ubuntu-26.04`), macOS/arm64 (`macos-15`) and Windows/x64
 (`windows-2022`) are required legs and pass at the
 [recorded hosted combination](docs/acceptance/ci_acceptance.md#hosted-process-worker-qualification).
 
-- [ ] Resolve or explicitly bound Ubuntu 24.04/glibc 2.39 shared-runtime support
-  in CRT before claiming that compatibility; retain its
-  [producer-side reproducer](docs/acceptance/ci_acceptance.md#first-github-hosted-run-2026-11-10)
-  as an unresolved limit. The required Linux/x86_64 `ubuntu-26.04` leg now passes
-  [every stage](docs/acceptance/ci_acceptance.md#ubuntu-2604-hosted-linux-qualification-2026-11-10).
+- [ ] Complete required Ubuntu 24.04/26.04 replay on the producer-promoted Linux
+  Dev SDK `.4`; [adoption evidence](docs/acceptance/ci_acceptance.md#linux-loader-repair-sdk-adoption-2026-11-10)
+  retains the `.3` failure and exact new qualification scope.
 - [ ] `integration.yml`: the five input-gated port suites (`port-build|store|oracle|command|project-test`) with the
   pinned independent host tools, zlib source archive and oracle, plus redirect/transport replays. Daily and manual.
 - [ ] `release.yml`: protected, manually approved packaging from a tested CI artifact, independent extraction and

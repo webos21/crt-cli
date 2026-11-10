@@ -282,16 +282,17 @@ not wanted, `--os-sdk`. `--tests` restricts the suites for a quick local pass; C
 The Python driver is a build-host orchestrator like the other `tools/*.py` replays, not a CLI prerequisite.
 
 Pins change only in a reviewed commit that cites the release record and re-checks the asset digests against the
-published `SHA256SUMS`; never use a moving tag or `latest`. Linux/x86_64 uses explicit `ubuntu-26.04` and LLVM 21 from
-the Ubuntu archive, matching the local rehearsal's host generation. Linux, macOS/arm64 and Windows/x64
-are required checks. The Ubuntu 24.04 shared-runtime loader failure remains a
-producer compatibility limit, not a qualified platform. A suite failure
-no longer stops the later stages, so one run reports everything that is broken. The [TODO](../../TODO.md#github-ci) owns the
-open legs and the integration/release workflows. [CI acceptance](../acceptance/ci_acceptance.md) records what has actually
-been run, including the first hosted run and the Linux loader gap it found.
-The [Ubuntu 26.04 hosted qualification](../acceptance/ci_acceptance.md#ubuntu-2604-hosted-linux-qualification-2026-11-10)
-passes all Linux stages; its runner setting is retained. This does not qualify
-the older Ubuntu 24.04 shared-runtime path.
+published `SHA256SUMS`; never use a moving tag or `latest`. Linux/x86_64 has two required
+legs, `ubuntu-24.04` and `ubuntu-26.04`, consuming the same repaired Dev SDK pin.
+Both use LLVM 21: noble provisions the explicitly keyed apt.llvm.org repository;
+26.04 uses Ubuntu's archive. Existing macOS/arm64 and Windows/x64 checks remain
+required. Linux artifacts use distinct job labels. A suite failure does not
+stop later stages, so one run reports everything that is broken.
+[The loader-repair record](../acceptance/ci_acceptance.md#linux-loader-repair-sdk-adoption-2026-11-10)
+distinguishes producer/local/public-byte evidence from completed hosted replay.
+The original `.3` failure remains historical evidence; the producer's TLSDESC
+fix is shipped in `.4`, rather than hidden by a runner upgrade. [TODO](../../TODO.md#github-ci)
+owns integration/release work and any still-pending hosted qualification.
 
 The reviewed `src/test/data/zlib.recipe.json` fixture is checked out with LF
 through `.gitattributes` on every host. Recipe verification hashes exact bytes;

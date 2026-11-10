@@ -6,6 +6,30 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## Linux loader-repair SDK adoption (2026-11-10)
+
+Producer promotion precedes this CI pin change. Public Linux/x86_64 Dev SDK
+[`v0.0.1-preview.20261110.4`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.4),
+clean CRT `448fa32349ae697f589f0ad8fc60cfdf7a7e195a`, replaces the `.3` CI input:
+manifest `983dbcf143b1fe227bf519f07ec153ce5baf50e190382222995770affe43b2c3`,
+SDK content `22107183e5127d44e979f328fa78aaf2a436db802aa9f8821a864a39d492ca81`,
+portable policy `369dae4fbe6c220a5f451431b2bbc76de947a7d618184abe0520424c4db84cfb`.
+[CRT acceptance](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#linux-loader-compatibility-repair-2026-11-10)
+owns the TLSDESC/loader and CRT-thread destructor fixes; manifest, native policy,
+recipe and lock formats are unchanged. Older GD-TLS objects must be rebuilt;
+GNU aliases and undefined-import suppression are not adopted. External LLVM 21
+is the exercised compiler. No default/project lock is migrated.
+
+Local CLI `65b20c4` self-build and 913/221/114/142 checks pass on the immutable
+candidate. The unchanged published Linux CLI consumes the actual public `.4`
+bytes: 14/14 isolated install/verify/C/C++ first-build checks, including a
+shared-library project's same test executable on glibc 2.43 and pinned 2.39.
+No replacement CLI executable is published. Both Ubuntu 24.04 and 26.04 are now
+required CI configurations with this same SDK pin; their completed hosted
+qualification is recorded in [CI acceptance](acceptance/ci_acceptance.md#linux-loader-repair-sdk-adoption-2026-11-10),
+not inferred from configuration. macOS/Windows SDK pins and the original `.3`
+record remain unchanged; Linux/aarch64 and universal glibc support are not claimed.
+
 ## Published Windows/x64 CLI Preview (2026-11-10)
 
 CLI product/test source `a55c0d0`, producer review `8e89ee1`, and the unchanged public

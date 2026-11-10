@@ -298,3 +298,35 @@ root. No test tier is removed or deferred and no nightly workflow is added.
   their pinned commits, the LLVM 21 apt install and artifact upload worked on Linux.
 - Input-gated port suites, redirect/transport replays, Linux/aarch64 and Windows/arm64 are not covered.
 - Publisher authentication stays `not_verified`: pins authenticate the bytes, the runner's system roots only protect transport.
+
+## Linux loader-repair SDK adoption (2026-11-10)
+
+**Producer promoted; required hosted replay pending.** The producer published
+Linux Dev SDK `.4` at clean CRT `448fa32349ae697f589f0ad8fc60cfdf7a7e195a`,
+then unauthenticated public re-download matched all six frozen assets.
+[Producer evidence](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#linux-loader-compatibility-repair-2026-11-10)
+owns exact payload hashes, TLS descriptor/CRT destructor policy and old/new
+loader tests. [Adoption](../compatibility.md#linux-loader-repair-sdk-adoption-2026-11-10)
+owns the new CI pins and rebuild/migration limits. Product/test sources at CLI
+`65b20c4` are unchanged by this consumer CI/pin/document change.
+
+Local SDK-only CLI self-build is 21/0; native 913, archive 221, SDK-store 114,
+port-recipe 142 checks pass, none skipped. Warm 0/21 and SDK-free import/run
+checks pass. The local wrapper's incorrect return-value unpacking failed only
+after all four suite exits were zero; its separate corrected postcheck retains
+that evidence and does not count a product failure as passing.
+
+The existing published Linux CLI (SHA-256 `a8fb76a4` prefix, exact full pin in
+producer public-consumer receipt) passes 14/14 isolated checks on public `.4`
+files: native install/verify, C/C++ new/first build/test/run/warm reuse, immutable
+SDK/download inventories, and C++ shared-library tests. The same generated
+`greeting-test` passes the pinned Ubuntu glibc 2.39 interpreter and the host
+2.43 interpreter. Public consumer has producer/local SDK/source trees hidden,
+empty PATH, private HOME/tmp, and no network. This qualifies that generated
+consumer, not a whole Ubuntu 24.04 hosted suite.
+
+Required CI now includes both Ubuntu versions, LLVM 21 and the same `.4` SDK.
+The noble LLVM signing-key fingerprint and provisioning come from the earlier
+working 24.04 baseline; 26.04 retains its Ubuntu archive. Existing macOS/Windows
+pins are unchanged. Completed hosted results follow below; no production/default
+lock change or native aarch64/Full/Web replay is implied.

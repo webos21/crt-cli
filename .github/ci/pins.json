@@ -20,13 +20,13 @@
         "version": "0.1.0-dev"
       },
       "sdk": {
-        "release_base": "https://github.com/webos21/crt/releases/download/v0.0.1-preview.20261110.3/",
-        "version": "v0.0.1-preview.20261110.3",
-        "manifest": {"name": "release-manifest-dev-linux-x86_64.json", "sha256": "d4211d3298a764ff22f6e262073f834bbb36cb5d07c22e1ecb10f7f83f8fca60", "size": 1683},
-        "archive": "crt-v0.0.1-preview.20261110.3-linux-x86_64-dev.tar.xz",
-        "contract": "crt-v0.0.1-preview.20261110.3-linux-x86_64-dev-toolchain.json",
-        "content_sha256": "36623957fbdd5a384cc173991e20253ff83148028ab8072298dcd434a55a2b3f",
-        "contract_sha256": "90b3bb59aaac7df481becbad4e2b87473e2fefcb803123332689d7f1135e4e30"
+        "release_base": "https://github.com/webos21/crt/releases/download/v0.0.1-preview.20261110.4/",
+        "version": "v0.0.1-preview.20261110.4",
+        "manifest": {"name": "release-manifest-dev-linux-x86_64.json", "sha256": "983dbcf143b1fe227bf519f07ec153ce5baf50e190382222995770affe43b2c3", "size": 1683},
+        "archive": "crt-v0.0.1-preview.20261110.4-linux-x86_64-dev.tar.xz",
+        "contract": "crt-v0.0.1-preview.20261110.4-linux-x86_64-dev-toolchain.json",
+        "content_sha256": "22107183e5127d44e979f328fa78aaf2a436db802aa9f8821a864a39d492ca81",
+        "contract_sha256": "369dae4fbe6c220a5f451431b2bbc76de947a7d618184abe0520424c4db84cfb"
       },
       "allowed_imports": []
     },

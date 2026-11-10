@@ -20,11 +20,11 @@ concurrency:
 
 jobs:
   native:
-    name: native (${{ matrix.host }})
+    name: native (${{ matrix.label || matrix.host }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
-    # Linux uses Ubuntu 26.04, matching the local rehearsal's loader; the Ubuntu 24.04 shared-runtime gap remains
-    # recorded in docs/acceptance/ci_acceptance.md. Failures on any of the three hosts fail CI.
+    # Keep both old-LTS and new Linux loader coverage required after the producer's TLSDESC repair.
+    # The two Linux legs consume the same SDK pin; their artifacts have distinct names.
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
@@ -32,6 +32,10 @@ jobs:
         include:
           - host: linux-x64
             runner: ubuntu-26.04
+            experimental: false
+          - host: linux-x64
+            label: linux-x64-ubuntu2404
+            runner: ubuntu-24.04
             experimental: false
           - host: macos-arm64
             runner: macos-15
@@ -55,7 +59,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Ubuntu 26.04 provides LLVM 21 directly; do not mix in the older noble apt.llvm.org packages.
+          # Ubuntu 26.04 has LLVM 21 in its archive; noble needs the explicit signed LLVM repository.
+          if [ "${{ matrix.runner }}" = ubuntu-24.04 ]; then
+            fingerprint=6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
+            export GNUPGHOME="$(mktemp -d)"
+            curl --proto '=https' --tlsv1.2 -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key -o "$GNUPGHOME/llvm.asc"
+            gpg --batch --quiet --import "$GNUPGHOME/llvm.asc"
+            sudo install -d -m 0755 /etc/apt/keyrings
+            gpg --batch --export "$fingerprint" | sudo tee /etc/apt/keyrings/apt.llvm.org.gpg > /dev/null
+            test -s /etc/apt/keyrings/apt.llvm.org.gpg
+            gpg --batch --show-keys --with-colons /etc/apt/keyrings/apt.llvm.org.gpg | awk -F: '$1 == "fpr" { print $10 }' | grep -qx "$fingerprint"
+            echo "deb [signed-by=/etc/apt/keyrings/apt.llvm.org.gpg] https://apt.llvm.org/noble/ llvm-toolchain-noble-21 main" | sudo tee /etc/apt/sources.list.d/llvm21.list
+          fi
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends clang-21 lld-21 llvm-21 binutils
           /usr/lib/llvm-21/bin/clang --version
@@ -90,7 +105,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: crt-cli-${{ matrix.host }}-${{ github.sha }}
+          name: crt-cli-${{ matrix.label || matrix.host }}-${{ github.sha }}
           path: |
             ${{ runner.temp }}/crt-cli-ci/artifact/
             ${{ runner.temp }}/crt-cli-ci/logs/

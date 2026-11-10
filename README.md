@@ -59,7 +59,7 @@ tools and a CA bundle you choose, and installs the Dev SDK separately. Release t
 
 | Host | Release | SDK it acquires |
 | --- | --- | --- |
-| Linux/x86_64 | [`v0.1.0-preview.20261110.linux-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.linux-x86_64.1) ([record](docs/acceptance/preview_acceptance.md#linuxx86_64-cli-preview-release-2026-11-10)) | [`v0.0.1-preview.20261110.3`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.3); needs LLVM 21 |
+| Linux/x86_64 | [`v0.1.0-preview.20261110.linux-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.linux-x86_64.1) ([record](docs/acceptance/preview_acceptance.md#linuxx86_64-cli-preview-release-2026-11-10)) | [`v0.0.1-preview.20261110.4`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.4); needs LLVM 21 |
 | macOS/arm64 | [`v0.1.0-preview.20261110.macos-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.macos-arm64.1) ([record](docs/acceptance/preview_acceptance.md#macos-cli-preview-release-2026-11-10)) | [`v0.0.1-preview.20261110.macos.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.macos.1); needs Xcode's command-line tools |
 | Windows/x64 | [`v0.1.0-preview.20261110.windows-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.windows-x86_64.1) ([guide](docs/guides/windows_preview.md), [record](docs/acceptance/preview_acceptance.md#windowsx64-cli-preview-release-2026-11-10)) | [`v0.0.1-preview.20261110.windows.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.windows.1); needs LLVM and Windows SDK |
 
