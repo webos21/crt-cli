@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Native Linux replay of the restricted HTTPS redirect policy (fetch and sdk acquire).
+"""Native replay (Linux and macOS) of the restricted HTTPS redirect policy (fetch and sdk acquire).
 
 Two loopback TLS origins stand in for github.com (the named origin) and release storage (the redirect target); the
 real promoted SDK bytes from --release-dir are served behind redirects. No product code is stubbed.
@@ -31,7 +31,7 @@ def main():
         run_ssl('x509', '-req', '-in', leaf + '.csr', '-CA', 'ca.pem', '-CAkey', 'ca.key', '-CAcreateserial', '-out', leaf + '.pem', '-days', '2', '-extfile', leaf + '.ext')
     ca = work / 'ca.pem'; shutil.copy2(pki / 'ca.pem', ca)
 
-    manifest_path = next(args.release_dir.glob('release-manifest-dev-linux-*.json'))
+    manifest_path = next(args.release_dir.glob('release-manifest-dev-*.json'))
     manifest_bytes = manifest_path.read_bytes(); manifest = json.loads(manifest_bytes)
     archive = next(a for a in manifest['assets'] if 'install' in a)
     policy = next(a for a in manifest['assets'] if a['name'] == archive['contract'])
