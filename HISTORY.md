@@ -11,6 +11,24 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-10
 
+### Reduce CI latency with isolated native case processes
+
+The native harness runs independent project/variant cases in two owned CRT
+processes, while environment/store mutation stays serial. Eleven timed sections
+must preserve the native check total; host-side report negatives and native
+child failure/deadline controls guard against partial passes and leaked jobs.
+Product code, release pins, hashing and cold/warm/import gates are unchanged.
+
+Hosted `f49c279` run `42794932909` passes all three required legs with the
+original counts (Linux 901/221/114/142, macOS 941/221/114/142, Windows
+991/214/113/142). The longest job falls from 1049 to 885 seconds; Windows and
+macOS driver times fall 49.2% and 13.5% in this comparison. Linux's hosted trial
+is slower, so no across-host or repeat-run speed guarantee is claimed. A
+same-binary local comparison preserves 901 checks and reduces 163.98 to
+114.98 seconds (29.9%). Failed Windows threaded prototypes remain recorded;
+the retained runner uses process isolation. Detailed scope and observations:
+[CI performance acceptance](docs/acceptance/ci_acceptance.md#hosted-process-worker-qualification).
+
 ### Fix Windows CI fixtures and qualify all three required hosted legs
 
 Passed the selected vendor OS SDK explicitly through native fixture configure,

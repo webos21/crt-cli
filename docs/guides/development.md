@@ -262,6 +262,8 @@ For a serial comparison, pass `--native-test-jobs 1`; the driver accepts 1-4.
 It writes test-only local `.crt/native-test-settings.json` with `format: 0` and
 `jobs`. A normal native-test invocation without this file uses one worker.
 This is test-harness state, not a product manifest, SDK schema or public command.
+The [process-worker qualification](../acceptance/ci_acceptance.md#hosted-process-worker-qualification)
+records the complete counts, failed thread prototypes and measured timing limits.
 
 The five `port-*` suites (except `port-recipe-test`) print `skipped` and exit 0 without the machine-local
 `CRT_CLI_TEST_PORT_*` inputs, so they are **not** in the PR set: the driver fails if a suite prints `skipped`, and also

@@ -632,8 +632,9 @@ affected pairs; an unchanged unrelated Web/GFX stack is not an automatic gate.
 Do not repeat a passed gate without changed inputs, failure or an unresolved
 concern. State the affected scope and evidence in each handoff.
 
-Periodic/nightly automation is a future implementation task: this repository
-has no CI workflow and CRT's current workflow is push/PR/manual, not nightly.
+Periodic/nightly automation is a future implementation task. The CLI's current
+CI runs on pull requests, main pushes and manual dispatch, with its measured
+scope in [CI acceptance](../acceptance/ci_acceptance.md); it is not nightly.
 Until separately implemented, use explicit feature-bundle/native release gates.
 A first Linux-only preview requires its declared native scope, not new support
 claims on all five pairs. A broader release must qualify each advertised pair.

@@ -187,6 +187,109 @@ byte-reproducible; their cause is not investigated in this fix. This is the
 deterministic PR suite, not the five input-gated port integrations, transport
 replays, ARM matrix or release qualification. No artifact is published.
 
+## CI Latency Investigation (2026-11-10)
+
+The owner requested lower CI latency with the existing checks retained. The
+comparison baseline is passing run `42782205090` (`7c9f228`); its driver times
+exclude runner/tool setup:
+
+| Host | Native suite | Whole driver |
+| --- | --- | --- |
+| Linux/x86_64 | 123.7 s | 272.9 s |
+| macOS/arm64 | 804.0 s | 1000.2 s |
+| Windows/x64 | 658.3 s | 927.9 s |
+
+### Retained Failed Thread Experiment
+
+`0fd003a` adds eleven timed native sections, strict coverage/count checks and
+bounded parallel project/variant cases. Linux and macOS pass at run
+[`42789198623`](https://github.com/webos21/crt-cli/actions/runs/42789198623).
+The macOS native suite takes 525.0 s and its whole driver 746.0 s, but Windows
+fails the C++ fixture's read-only binding/output assertion during concurrent
+threaded execution. Diagnostic revision `6f54282`, run
+[`42791013803`](https://github.com/webos21/crt-cli/actions/runs/42791013803),
+also passes Linux/macOS but Windows instead receives empty JSON input from
+both concurrent configure cases. These Windows failures remain unresolved as
+threaded-runtime observations; their precise producer/consumer root cause is
+not assigned, and no producer fix is claimed.
+
+The retained implementation (`f49c279`) uses independent CRT case processes
+instead. The parent launches serially and manages at most two cases at once,
+each with its own fixture root, result/error files and owned process group.
+Environment/store mutation stays serial. Workers have a 600-second deadline;
+the manager bounds logs/results, validates each case's identity/count/phase,
+waits for its other children after a failure and stops timed-out owned jobs.
+Native negative controls exercise a failed child alongside a completing child
+and a timed-out delayed-marker writer. Seven host-side tests reject missing,
+duplicate, incomplete and malformed section reports and mismatched counts,
+including CRLF report input. Normal native execution defaults to one worker;
+the CI driver writes test-only format-0 local settings for two workers.
+
+All original cases, SDK/tool/inventory hashing, both cold builds, warm reuse,
+import and standalone gates remain enabled. No product code, SDK/bootstrap
+pin, validation cadence, registry schema or release policy changes. A passing
+process-isolated run does not qualify Windows threaded spawning/file I/O.
+
+Evidence, local comparisons and failed Windows artifacts remain under
+`out/ci-speed-20261110/`. Original serial baseline artifacts remain under
+`out/ci-windows-20261110/`. Hosted final outcomes are recorded below after
+qualification; the failed experiments are not acceptance.
+
+### Same-binary Local Comparison
+
+The final native test executable, SHA-256
+`9186751247ef8a16365996d0a70aa31cdb0c15289f6e3296a35d664828de4b84`,
+is compiled with the installed public SDK's recorded compiler/link vectors
+from the fresh Linux rehearsal, substituting the current native-test source.
+It runs sequentially on the same local host with
+jobs 1 and 2, using private scratch/home state and the same explicit binding:
+**163.98 s / 114.98 s**, a **29.9%** reduction. Both report **901 checks**,
+eleven complete phases and identical phase check counts. Both also execute
+the pool failure/deadline controls. The focused result excludes test compilation
+and the two application self-builds; it is not a hosted-run duration.
+
+`compare-final.py`, the exact executable, stdout/stderr and
+`final-local-comparison.json` remain under the evidence root. The earlier
+threaded and initial process prototypes retain separate identities/results.
+
+### Hosted Process-worker Qualification
+
+**Pass on all three required hosts.** Run
+[`42794932909`](https://github.com/webos21/crt-cli/actions/runs/42794932909)
+tests `f49c279a010fba94e5a50ea86a5b254843447a96`. All seven report-gate tests,
+eleven native sections, native pool failure/deadline controls, original suites,
+both cold builds (21/0 each), warm reuse (0/21), imports and standalone checks
+pass. Native counts stay **901 / 941 / 991** on Linux/macOS/Windows; their other
+suite counts match the serial baseline exactly.
+
+| Host | Native seconds before -> after | Driver seconds before -> after | Observed driver change |
+| --- | --- | --- | --- |
+| Linux/x86_64 | 123.7 -> 143.3 | 272.9 -> 399.7 | 46.5% longer |
+| macOS/arm64 | 804.0 -> 614.0 | 1000.2 -> 865.6 | 13.5% shorter |
+| Windows/x64 | 658.3 -> 300.5 | 927.9 -> 471.2 | 49.2% shorter |
+
+The longest hosted job, including setup, drops **1049 -> 885 seconds**
+(17m29s -> 14m45s, 15.6%). These are one-run observations on separate hosted
+VMs, not a guaranteed average. Linux's unchanged application cold builds also
+grow from 48.9/48.0 to 84.7/86.0 seconds, so this trial does not establish a
+hosted Linux latency improvement. The same-host, same-test-binary comparison
+above separately measures the retained case parallelism.
+
+Downloaded final executable SHA-256 values:
+
+- Linux: `e58e9c0487b20b169c7cf19b863a9cb06b6116bcf3634faa68d8d399417d5785`.
+- macOS: `d052facef0f86ec37f892b79a5a1a97c7f5b636e86da5a98c028123036b5ec92`.
+- Windows: `78ee3a178490bbf108e7620c9cca0d4090908140f398ccb36a60f6c5f2ba6341`.
+
+`verified-final-result.json` independently checks each artifact's SHA256SUMS
+and stage-2 receipt, all step exits, exact counts, eleven completed sections,
+phase totals and cold/warm results. Local ELF and PE readers confirm no Linux
+DT_NEEDED/RPATH/RUNPATH and only the two allowed Windows OS DLLs. Native macOS
+audit still permits libSystem only. Linux stage bytes remain identical;
+Windows/macOS differences remain reported and unqualified for byte identity.
+Run/job metadata, full artifacts and comparisons are retained in the evidence
+root. No test tier is removed or deferred and no nightly workflow is added.
+
 ## Not run
 
 - Ubuntu 24.04's full native suite remains blocked by the producer-side loader
