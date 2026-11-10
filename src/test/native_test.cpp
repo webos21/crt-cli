@@ -286,7 +286,13 @@ int main(int argc, char** argv) {
                 check(report.at("selection") == configured.at("selection") && report.at("build_host") == native_target(), "exact SDK and separate host identity");
                 check(report.contains("executables") == (std::string(profile) == "app-build"), "compiler roles limited to build profile");
             }
-            check(read_text(root / "crt.lock") == before_lock && read_text(root / ".crt/local.json") == before_local && !fs::exists(root / "out"), "environment diagnostics preserve binding and create no build output");
+            const auto after_lock = read_text(root / "crt.lock"), after_local = read_text(root / ".crt/local.json");
+            const bool output_exists = fs::exists(root / "out");
+            check(after_lock == before_lock && after_local == before_local && !output_exists,
+                  "environment diagnostics preserve binding and create no build output: " + root.string() +
+                  " lock_changed=" + std::to_string(after_lock != before_lock) + " local_changed=" + std::to_string(after_local != before_local) +
+                  " output_exists=" + std::to_string(output_exists) + " lock_bytes=" + std::to_string(before_lock.size()) + "/" + std::to_string(after_lock.size()) +
+                  " local_bytes=" + std::to_string(before_local.size()) + "/" + std::to_string(after_local.size()));
             if (std::string(language) == "cxx") {
                 auto provider = read_json(fs::path(local.at("sdk_contract").get<std::string>()));
                 for (const auto& change : {"format", "target", "producer"}) {
