@@ -11,6 +11,13 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-10
 
+### Publish the macOS/arm64 CLI Preview with restricted GitHub redirects
+
+Replayed the restricted HTTPS redirect policy on macOS (54/54 cases over the real SDK bytes, native 942 checks) and published `v0.1.0-preview.20261110.macos-arm64.1`: a 30-file, deterministic
+archive of the SDK-built executable with notices and a pinned inventory. The packaged executable acquires the macOS Dev SDK Preview directly from GitHub (three redirects, pins matched)
+and builds C and C++ projects under Seatbelt; unauthenticated public bytes match. Unsigned, not notarized, no publisher authentication.
+[Acceptance](docs/acceptance/preview_acceptance.md#macos-cli-preview-release-2026-11-10).
+
 ### Publish the Linux/x86_64 CLI Preview
 
 Prerelease `v0.1.0-preview.20261110.linux-x86_64.1` from `dc796f7`, built against the public SDK `.3` acquired over the new GitHub redirect policy; the packaged executable passes acquire and C/C++ first build/test/run with an empty `PATH`. Unsigned; [record](docs/acceptance/preview_acceptance.md#linuxx86_64-cli-preview-release-2026-11-10).
