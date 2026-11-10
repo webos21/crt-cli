@@ -8,57 +8,137 @@
 #include <spawn.h>
 #include <cstdlib>
 #include <map>
-#include <atomic>
+#include <cerrno>
+#include <fcntl.h>
+#include <signal.h>
+#include <time.h>
 #include <chrono>
 #include <exception>
-#include <thread>
-#include <mutex>
 using namespace crtcli;
 namespace {
-std::atomic<size_t> checks{0};
-thread_local size_t worker_checks = 0;
-std::mutex phase_mutex;
+size_t checks = 0;
 std::vector<Json> phases;
-void check(bool condition, const std::string& message) { require(condition, "test failed: " + message); ++checks; ++worker_checks; }
+std::string selected_case, native_self, native_cli, native_project;
+fs::path case_logs;
+bool case_ran = false;
+void check(bool condition, const std::string& message) { require(condition, "test failed: " + message); ++checks; }
 struct NativePhase {
     std::string name;
-    size_t before = worker_checks;
+    size_t before = checks;
     int exceptions = std::uncaught_exceptions();
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
     explicit NativePhase(std::string value) : name(std::move(value)) {}
     ~NativePhase() {
-        Json data{{"name", name}, {"checks", worker_checks - before},
-                  {"seconds", std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count()},
-                  {"completed", std::uncaught_exceptions() == exceptions}};
-        std::lock_guard<std::mutex> guard(phase_mutex);
-        phases.push_back(std::move(data));
+        phases.push_back({{"name", name}, {"checks", checks - before},
+            {"seconds", std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count()},
+            {"completed", std::uncaught_exceptions() == exceptions}});
     }
 };
 void report_phases() {
     for (const auto& phase : phases) std::fprintf(stderr, "native-phase: %s\n", phase.dump().c_str());
 }
-// Only independent roots run here. Environment and store mutation stay on the joining thread outside this function.
-template<class Work> void parallel_cases(const std::string& group, const std::vector<std::string>& cases, unsigned jobs, Work work) {
-    std::atomic<size_t> next{0};
-    std::vector<std::exception_ptr> errors(cases.size());
-    auto worker = [&]() {
-        for (;;) {
-            size_t index = next++;
-            if (index >= cases.size()) return;
-            try { NativePhase phase(group + "/" + cases[index]); work(cases[index]); }
-            catch (...) { errors[index] = std::current_exception(); }
+// The parent launches serially, then waits for independent CRT processes. No worker shares its mutable CRT state.
+template<class Work> void parallel_cases(const std::string& group, const std::vector<std::string>& cases, unsigned jobs, Work work, unsigned deadline = 600) {
+    if (!selected_case.empty() || jobs == 1) {
+        for (const auto& name : cases) {
+            const auto label = group + "/" + name;
+            if (!selected_case.empty() && selected_case != label) continue;
+            NativePhase phase(label); work(name); case_ran = true;
         }
+        return;
+    }
+    struct Job {
+        pid_t pid;
+        std::string label;
+        fs::path output, error;
+        std::chrono::steady_clock::time_point start;
     };
-    std::vector<std::thread> threads;
+    std::vector<Job> active;
+    active.reserve(jobs);
+    std::vector<std::string> errors;
+    size_t next = 0;
+    fs::create_directories(case_logs);
+    auto environment = child_environment();
+    std::vector<char*> env;
+    for (auto& value : environment.values) env.push_back(value.data());
+    env.push_back(nullptr);
+    auto stop = [](const Job& job) { kill(-job.pid, SIGKILL); kill(job.pid, SIGKILL); };
     try {
-        for (unsigned i = 1; i < std::min<size_t>(jobs, cases.size()); ++i) threads.emplace_back(worker);
+        while (next < cases.size() || !active.empty()) {
+            while (next < cases.size() && active.size() < jobs) {
+                const auto label = group + "/" + cases[next];
+                const auto stem = group + "-" + std::to_string(next++);
+                Job job{-1, label, case_logs / (stem + ".json"), case_logs / (stem + ".stderr"), std::chrono::steady_clock::now()};
+                std::vector<std::string> values{native_self, native_cli, native_project, "--native-case", label};
+                std::vector<char*> argv;
+                for (auto& value : values) argv.push_back(value.data());
+                argv.push_back(nullptr);
+                posix_spawn_file_actions_t actions;
+                posix_spawnattr_t attr;
+                require(posix_spawn_file_actions_init(&actions) == 0, "cannot initialize native case actions");
+                if (posix_spawnattr_init(&attr) != 0) {
+                    posix_spawn_file_actions_destroy(&actions); throw Error("cannot initialize native case attributes");
+                }
+                bool prepared = posix_spawn_file_actions_addopen(&actions, STDOUT_FILENO, job.output.string().c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0600) == 0 &&
+                    posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, job.error.string().c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0600) == 0 &&
+                    posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETPGROUP) == 0 && posix_spawnattr_setpgroup(&attr, 0) == 0;
+                int result = prepared ? posix_spawn(&job.pid, native_self.c_str(), &actions, &attr, argv.data(), env.data()) : EINVAL;
+                posix_spawn_file_actions_destroy(&actions); posix_spawnattr_destroy(&attr);
+                require(result == 0, "cannot start native case " + label + ": " + std::to_string(result));
+                active.push_back(std::move(job));
+            }
+            for (size_t i = 0; i < active.size();) {
+                auto& job = active[i]; int status = 0;
+                pid_t state = waitpid(job.pid, &status, WNOHANG);
+                bool expired = std::chrono::steady_clock::now() - job.start > std::chrono::seconds(deadline);
+                if ((state == 0 && !expired) || (state < 0 && errno == EINTR)) { ++i; continue; }
+                require(state >= 0, "cannot wait for native case " + job.label);
+                if (state == 0) {
+                    stop(job);
+                    while (waitpid(job.pid, &status, 0) < 0 && errno == EINTR) {}
+                } else kill(-job.pid, SIGKILL);
+                try {
+                    require(fs::file_size(job.error) <= 8 * 1024 * 1024, "native case stderr exceeds 8 MiB");
+                    const auto human = read_text(job.error);
+                    std::fwrite(human.data(), 1, human.size(), stderr);
+                    require(!expired && WIFEXITED(status) && WEXITSTATUS(status) == 0, "native case failed or timed out: " + job.label);
+                    require(fs::file_size(job.output) <= 65536, "native case result exceeds 64 KiB");
+                    Json data = read_json(job.output);
+                    require(data.at("format") == 0 && data.at("case") == job.label && data.at("checks").is_number_unsigned() &&
+                            data.at("phases").size() == 1 && data.at("phases").at(0).at("name") == job.label &&
+                            data.at("phases").at(0).at("completed") == true && data.at("phases").at(0).at("checks") == data.at("checks"),
+                            "native case result differs from its requested coverage");
+                    checks += data.at("checks").get<size_t>();
+                    phases.push_back(data.at("phases").at(0));
+                } catch (const std::exception& error) { errors.push_back(job.label + ": " + error.what()); }
+                active.erase(active.begin() + i);
+            }
+            if (!active.empty()) { timespec pause{0, 10000000}; nanosleep(&pause, nullptr); }
+        }
     } catch (...) {
-        for (auto& thread : threads) thread.join();
+        for (const auto& job : active) stop(job);
+        for (const auto& job : active) { int status; while (waitpid(job.pid, &status, 0) < 0 && errno == EINTR) {} }
         throw;
     }
-    worker();
-    for (auto& thread : threads) thread.join();
-    for (const auto& error : errors) if (error) std::rethrow_exception(error);
+    require(errors.empty(), errors.empty() ? "" : errors.front());
+}
+void pool_failure_controls(const fs::path& project) {
+    const auto completed = project / ".crt/native-pool-completed", late = project / ".crt/native-pool-late";
+    fs::remove(completed); fs::remove(late);
+    const auto before = phases.size();
+    bool refused = false;
+    try { parallel_cases("pool", {"failure", "complete"}, 2, [](const std::string&) {}, 10); }
+    catch (const Error&) { refused = true; }
+    require(refused && fs::exists(completed), "pool must fail a child exit and still wait for its other owned children");
+    phases.resize(before);
+    refused = false;
+    const auto start = std::chrono::steady_clock::now();
+    try { parallel_cases("pool", {"timeout"}, 2, [](const std::string&) {}, 1); }
+    catch (const Error&) { refused = true; }
+    require(refused && std::chrono::steady_clock::now() - start < std::chrono::seconds(3), "pool must enforce its child deadline");
+    sleep(3);
+    require(!fs::exists(late), "timed-out native case survived to write its marker");
+    fs::remove(completed);
 }
 void portable_vendor_paths(Json& value, const std::string& location) {
     if (value.is_array() || value.is_object()) {
@@ -83,6 +163,17 @@ Json invoke(const std::string& cli, std::vector<std::string> args, bool success 
 }
 }
 int main(int argc, char** argv) {
+    if (argc == 5 && std::string(argv[3]) == "--native-case") {
+        const std::string mode = argv[4];
+        if (mode == "pool/failure") return 17;
+        if (mode == "pool/timeout") { sleep(3); write_text(fs::path(argv[2]) / ".crt/native-pool-late", "late"); return 0; }
+        if (mode == "pool/complete") {
+            sleep(1); write_text(fs::path(argv[2]) / ".crt/native-pool-completed", "done");
+            std::printf("%s\n", Json{{"format", 0}, {"case", mode}, {"checks", size_t(0)},
+                {"phases", Json::array({Json{{"name", mode}, {"checks", size_t(0)}, {"seconds", 1.0}, {"completed", true}}})}}.dump().c_str());
+            return 0;
+        }
+    }
     if (argc == 2 && std::string(argv[1]) == "--environment-probe") {
         Json values = Json::object();
         for (char** entry = environ; *entry; ++entry) {
@@ -110,9 +201,16 @@ int main(int argc, char** argv) {
     }
     fs::path fixture;
     try {
-        require(argc == 3, "test needs CLI executable and source project");
+        require(argc == 3 || (argc == 5 && std::string(argv[3]) == "--native-case"), "test needs CLI executable and source project");
+        if (argc == 5) selected_case = argv[4];
         std::string cli = fs::canonical(argv[1]).string();
         fs::path project_root = fs::canonical(argv[2]);
+        native_self = fs::canonical(argv[0]).string(); native_cli = cli; native_project = project_root.string();
+        if (selected_case == "pool/self-check") {
+            selected_case.clear(); case_logs = project_root / ".crt/native-pool-controls";
+            pool_failure_controls(project_root); fs::remove_all(case_logs);
+            std::puts("native pool failure/timeout controls passed"); return 0;
+        }
         unsigned jobs = 1;
         const auto settings_path = project_root / ".crt/native-test-settings.json";
         if (fs::exists(settings_path)) {
@@ -122,7 +220,7 @@ int main(int argc, char** argv) {
                     "native test settings require format 0 and jobs between 1 and 4");
             jobs = settings.at("jobs").get<unsigned>();
         }
-        {
+        if (selected_case.empty()) {
         NativePhase phase("startup");
         check(sha256("abc") == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", "SHA256 vector");
         auto raw = [](std::initializer_list<int> values) { std::string bytes; for (int value : values) bytes += static_cast<char>(value); return bytes; };
@@ -186,7 +284,8 @@ int main(int argc, char** argv) {
         const bool windows_host = std::string(crt_get_platform_info()->os) == "windows";
         auto hostile = fixture / (windows_host ? "space 한글 é @ $(touch never-execute)" : "space 한글 @ ; $(touch never-execute)");
         fs::create_directories(hostile);
-        {
+        case_logs = fixture / "case-logs";
+        if (selected_case.empty()) {
         NativePhase phase("process");
         // Compare the actual spawned environment with the shared builder while the parent carries hostile inputs.
         std::map<std::string, Json> saved;
@@ -255,6 +354,7 @@ int main(int argc, char** argv) {
               "child cwd handles spaced Unicode paths without changing parent cwd");
         auto flood = execute({fs::canonical(argv[0]).string(), "--flood"}, 30, false);
         check(flood.exit_code == 0 && flood.output_truncated && flood.output.size() == 8 * 1024 * 1024, "bounded stdout capture without pipe deadlock");
+        pool_failure_controls(project_root);
         }
         const auto local = read_json(project_root / ".crt/local.json");
         const auto lock = read_json(project_root / "crt.lock");
@@ -395,7 +495,7 @@ int main(int argc, char** argv) {
                 }
                 write_text(root / "crt.json", manifest.dump());
         });
-        {
+        if (selected_case.empty()) {
         NativePhase phase("selection");
         // The local, uncommitted .sdk.json supplies configure defaults; explicit flags override it per key.
         Json sdk_config{{"format", 0}, {"origin", "native test"}, {"seed", "/not/used/by/configure"}, {"sdk_root", local.at("sdk_root")}, {"sdk_contract", local.at("sdk_contract")},
@@ -621,8 +721,14 @@ int main(int argc, char** argv) {
         check(!fs::exists(hostile / "never-execute"), "shell metacharacters stay literal");
         fs::remove_all(fixture);
         }
+        if (!selected_case.empty()) {
+            require(case_ran && !fs::exists(hostile / "never-execute"), "native case missing or shell metacharacters escaped");
+            fs::remove_all(fixture);
+            std::printf("%s\n", Json{{"format", 0}, {"case", selected_case}, {"checks", checks}, {"phases", phases}}.dump().c_str());
+            return 0;
+        }
         report_phases();
-        std::printf("native tests: %zu checks passed\n", checks.load());
+        std::printf("native tests: %zu checks passed\n", checks);
         return 0;
     } catch (const std::exception& error) {
         report_phases();

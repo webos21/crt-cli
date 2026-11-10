@@ -245,9 +245,15 @@ The repository carries no executables (`bin/` was removed); CI bootstraps from a
 The stage-2 executable, `SHA256SUMS`, `ci-summary.json`, logs and the generated source file are uploaded as an artifact.
 
 CI uses `--native-test-jobs 2` for independent C/C++ project and variant cases.
-The native C++ test joins its bounded workers before changing HOME, environment
+The native C++ test collects its bounded case processes before changing HOME, environment
 variables or SDK-store fixtures; every concurrent case has its own project root.
 All existing cases, SDK/tool hashes and both cold self-builds remain required.
+Each process has a private fixture root and an owned process group, a 600-second
+case deadline, bounded result/log sizes and explicit exit/count validation.
+Failure/deadline controls verify that other children are waited and a timed-out
+case cannot write its delayed marker. The one-worker comparison runs cases in
+the parent; environment/store mutation always stays serial. Thread-based
+workers failed the Windows experiment and are not used by the retained runner.
 The driver records eleven `native_phases` with check counts and durations and
 rejects missing/duplicate/incomplete sections or a sum different from the final
 native count. `tools/test_ci_bootstrap.py` exercises those report failure gates.
