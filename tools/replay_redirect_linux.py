@@ -18,11 +18,12 @@ def main():
     args = parser.parse_args()
     out = args.output.resolve(); out.mkdir(parents=True, exist_ok=False)
     work = Path(tempfile.mkdtemp(prefix='redirect replay 한글 ', dir=out))
-    cli = work / 'crt-cli'; shutil.copy2(args.cli, cli)
+    cli = work / ('crt-cli.exe' if os.name == 'nt' else 'crt-cli'); shutil.copy2(args.cli, cli)
     pki = work / 'pki'; pki.mkdir()
     openssl = shutil.which('openssl'); assert openssl
     def run_ssl(*argv):
-        subprocess.run([openssl, *argv], cwd=pki, check=True, capture_output=True)
+        subprocess.run([openssl, *argv], cwd=pki, check=True, capture_output=True,
+                       creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
     run_ssl('req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', 'ca.key', '-out', 'ca.pem', '-days', '2',
             '-subj', '/CN=CRT redirect test', '-addext', 'basicConstraints=critical,CA:TRUE', '-addext', 'keyUsage=keyCertSign,cRLSign')
     for leaf, host in (('good', 'localhost'), ('wrong', 'other.example')):
@@ -114,11 +115,16 @@ def main():
     ports['W'] = serve('C', 'wrong'); ports['P'] = serve('C', 'good', tls=False)
     A = 'https://localhost:%d' % ports['A']
     home = work / 'home'; home.mkdir()
-    env = {'HOME': str(home), 'PATH': '/nonexistent', 'TMPDIR': str(work)}
+    env = {'HOME': str(home), 'PATH': '', 'TMPDIR': str(work)}
+    if os.name == 'nt':
+        env.update({'USERPROFILE': str(home), 'SystemRoot': os.environ['SystemRoot'],
+                    'TEMP': str(work), 'TMP': str(work)})
     results = []; commands = []
 
     def call(argv):
-        p = subprocess.run([str(cli), '--json', *map(str, argv)], capture_output=True, text=True, env=env, stdin=subprocess.DEVNULL, timeout=600)
+        p = subprocess.run([str(cli), '--json', *map(str, argv)], capture_output=True, text=True, encoding='utf-8', errors='replace', env=env,
+                           stdin=subprocess.DEVNULL, timeout=600,
+                           creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
         commands.append({'argv': [str(a) for a in argv], 'exit': p.returncode, 'stdout': p.stdout, 'stderr': p.stderr})
         try: reply = json.loads(p.stdout)
         except ValueError: reply = {}
@@ -229,7 +235,7 @@ def main():
     passed = all(r['passed'] for r in results)
     record_path = out / 'redirect-replay.json'
     record_path.write_text(json.dumps({'passed': passed, 'cli_sha256': sha(cli.read_bytes()), 'cases': results, 'commands': commands,
-                                       'origin_hits': {k: len(v) for k, v in hits.items()}}, indent=2, ensure_ascii=False) + '\n')
+                                       'origin_hits': {k: len(v) for k, v in hits.items()}}, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
     print('%d/%d redirect cases passed' % (sum(r['passed'] for r in results), len(results)))
     for s in servers: s.shutdown()
     return 0 if passed else 1
