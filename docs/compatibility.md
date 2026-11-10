@@ -6,6 +6,18 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## Published Windows/x64 CLI Preview (2026-11-10)
+
+CLI product/test source `a55c0d0`, producer review `8e89ee1`, and the unchanged public
+Windows Dev SDK from CRT `b31276a` are exercised by [the release record](acceptance/preview_acceptance.md#windowsx64-cli-preview-release-2026-11-10).
+The existing SDK/manifest/policy pins below are preserved. Restricted redirect policy and
+real GitHub SDK acquisition now have native Windows/x64 evidence; the published
+[`v0.1.0-preview.20261110.windows-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.windows-x86_64.1) package carries executable `8a2e854ec33d9e78c4f8c72ed64e928f036a34af62bf31a66016c6ab982cd39b`.
+No SDK/API/ABI, recipe, host-tools, source-format or lock version changes. No default/root
+lock migration. Explicit caller CA/digest trust remains unauthenticated at publisher level.
+This host record supersedes the earlier missing redirect/package gate for its exact inputs;
+Windows/arm64 and wider profile/update workflows remain separate.
+
 ## Published Windows Dev SDK Adoption (2026-11-10)
 
 The producer's public prerelease [v0.0.1-preview.20261110.windows.1](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.windows.1) (source

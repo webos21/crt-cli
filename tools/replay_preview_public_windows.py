@@ -2,7 +2,8 @@
 """Consume the actual public download of a Development SDK Preview natively on Windows. Python is a test-host tool.
 
 Every CLI call runs under CRT's `crt_windows_trace`: a restricted token naming a per-run SID, an empty PATH, redirected stdio and a
-job object that records every process the call starts (accounting, not denial; no network denial is claimed). The inputs are the
+job object that records every process the call starts (accounting, not denial; no network denial is claimed). With --sdk-source/--package it instead exercises the pinned HTTPS acquisition and package inventory;
+--acquire-only explicitly omits app builds for byte-identical public package smoke. Local inputs are the
 downloaded files exactly as served: the SDK archive, the release manifest and the portable compiler policy. The SDK is installed from
 the independently pinned manifest digest, then C and C++ projects are built *without configure* through the installed SDK
 (`build --sdk`), tested, run and rebuilt warm. The producer and CLI checkouts are proven unreadable under the run SID by a native probe.
@@ -38,6 +39,10 @@ def main():
     parser.add_argument('--hide', type=Path, action='append', default=[])
     for name in ('cc', 'cxx', 'linker', 'ar'):
         parser.add_argument('--' + name, type=Path, required=True)
+    parser.add_argument('--acquire-only', action='store_true', help='public-byte smoke: omit the already-qualified app builds')
+    parser.add_argument('--sdk-source', type=Path, help='optional pinned HTTPS source; acquire it instead of local install')
+    parser.add_argument('--package', type=Path, help='optional extracted package containing the same --cli image')
+    parser.add_argument('--package-manifest-sha256', help='independent package inventory pin')
     args = parser.parse_args()
     if os.name != 'nt':
         parser.error('requires native Windows')
@@ -53,11 +58,25 @@ def main():
     for sub in ('tmp', 'scratch', 'inputs'):
         (work / sub).mkdir()
     cli, probe = work / 'crt-cli.exe', work / 'probe.exe'
-    shutil.copy2(args.cli, cli); shutil.copy2(args.probe, probe)
+    if args.package:
+        assert args.package_manifest_sha256, 'a package needs its independent manifest pin'
+        package = work / 'package'; shutil.copytree(args.package, package)
+        assert digest(package / 'manifest.json') == args.package_manifest_sha256
+        cli = package / 'crt-cli.exe'
+        assert digest(cli) == digest(args.cli), 'the package must hold the selected CLI'
+    else:
+        shutil.copy2(args.cli, cli)
+    shutil.copy2(args.probe, probe)
     inputs, scratch = work / 'inputs', work / 'scratch'
     for source in sorted(args.download_dir.iterdir()):
         if source.is_file():
             shutil.copy2(source, inputs / source.name)
+    if args.sdk_source:
+        source = json.loads(args.sdk_source.read_bytes())
+        ca = Path(source['ca_file']); assert digest(ca) == source['ca_sha256']
+        shutil.copy2(ca, inputs / 'caller-ca.pem')
+        source['ca_file'] = str(inputs / 'caller-ca.pem')
+        (inputs / 'sdk-source.json').write_text(json.dumps(source, indent=2) + '\n', encoding='utf-8')
     before_inputs = {p.name: digest(p) for p in sorted(inputs.iterdir())}
     home = scratch / 'home'; home.mkdir()
     tools = {name: getattr(args, name).absolute() for name in ('cc', 'cxx', 'linker', 'ar')}
@@ -108,6 +127,13 @@ def main():
     archive = next(a for a in manifest['assets'] if 'install' in a)
     contract = next(a for a in manifest['assets'] if a['name'] == archive['contract'])
 
+    if args.package:
+        call('packaged version', ['--version'])
+        call('packaged self doctor', ['doctor', '--scope', 'self', '--resources', str(package),
+                                   '--resources-sha256', args.package_manifest_sha256])
+        call('wrong package pin is refused', ['doctor', '--scope', 'self', '--resources', str(package),
+                                           '--resources-sha256', '0' * 64], expect_ok=False, expect_text='manifest SHA-256 mismatch')
+
     # 1. The downloaded files are exactly what the pin and the manifest promise.
     record('the manifest equals the independently obtained pin', digest(manifest_path) == args.manifest_sha256, digest(manifest_path))
     for asset in manifest['assets']:
@@ -119,8 +145,18 @@ def main():
     store = home / '.crt' / 'sdks'
     install = ['sdk', 'install', '--archive', str(inputs / archive['name']), '--release-manifest', str(manifest_path),
                '--release-manifest-sha256', args.manifest_sha256, '--store', str(store)]
-    call('install from the pinned manifest', install,
-         check=lambda r: r['data']['identity']['content_sha256'] == args.content_sha256 and not r['data']['already_installed'])
+    if args.sdk_source:
+        acquire = ['sdk', 'acquire', '--source', str(inputs / 'sdk-source.json'), '--store', str(store)]
+        reply = call('acquire public SDK over restricted HTTPS redirects', acquire,
+                     check=lambda r: r['data']['identity']['content_sha256'] == args.content_sha256 and not r['data']['already_installed'])
+        downloads = reply.get('data', {}).get('acquisition', {}).get('downloads', [])
+        record('three pinned GitHub downloads each followed one allowed redirect', len(downloads) == 3 and
+               all(d.get('redirect_chain') == ['release-assets.githubusercontent.com'] for d in downloads))
+        reply = call('acquire again reuses the installed identity', acquire, check=lambda r: r['data']['already_installed'])
+        record('re-acquire downloads nothing', not reply.get('data', {}).get('acquisition', {}).get('downloads'))
+    else:
+        call('install from the pinned manifest', install,
+             check=lambda r: r['data']['identity']['content_sha256'] == args.content_sha256 and not r['data']['already_installed'])
     directory = sorted(p.name for p in store.iterdir() if not p.name.startswith('.'))
     record('exactly one installed SDK and empty bookkeeping', len(directory) == 1 and not list((store / '.staging').glob('*')) and not list((store / '.locks').glob('*')), directory)
     sdk_dir = directory[0] if directory else ''
@@ -128,10 +164,18 @@ def main():
     call('reinstall is idempotent', install, check=lambda r: r['data']['already_installed'])
     wrong = list(install); wrong[wrong.index('--release-manifest-sha256') + 1] = '0' * 64; wrong[wrong.index('--store') + 1] = str(scratch / 'wrong-pin-store')
     call('a wrong manifest pin is refused', wrong, expect_ok=False)
+    if args.sdk_source:
+        wrong_source = dict(source); wrong_source['manifest'] = dict(source['manifest'], sha256='0' * 64)
+        (inputs / 'wrong-source.json').write_text(json.dumps(wrong_source) + '\n', encoding='utf-8')
+        call('wrong HTTPS source manifest pin is refused', ['sdk', 'acquire', '--source', str(inputs / 'wrong-source.json'),
+                                                        '--store', str(scratch / 'wrong-source-store')], expect_ok=False, expect_text='digest_mismatch')
+        (inputs / 'wrong-source.json').unlink()
+        record('wrong HTTPS pin published nothing', not (scratch / 'wrong-source-store').exists() or
+               not [p for p in (scratch / 'wrong-source-store').iterdir() if not p.name.startswith('.')])
     record('the refused install published nothing', not (scratch / 'wrong-pin-store').exists() or not [p for p in (scratch / 'wrong-pin-store').iterdir() if not p.name.startswith('.')])
 
     # 3. C and C++ first build through the installed SDK, no configure.
-    for language in ('c', 'cxx'):
+    for language in (() if args.acquire_only else ('c', 'cxx')):
         project = scratch / f'hello-{language}'
         call(f'{language}: new is source-only', ['new', str(project), '--language', language])
         record(f'{language}: new wrote no binding', not (project / '.crt').exists())
@@ -153,7 +197,7 @@ def main():
     # 4. Nothing it consumed changed.
     call('sdk verify after the builds', ['sdk', 'verify', sdk_dir, '--store', str(store)], check=lambda r: r['data']['verified'])
     record('every downloaded input is unchanged', {p.name: digest(p) for p in sorted(inputs.iterdir())} == before_inputs)
-    summary = {'passed': all(r['passed'] for r in results), 'cases': results, 'cli_sha256': digest(cli), 'sdk_directory': sdk_dir, 'work': str(work),
+    summary = {'passed': all(r['passed'] for r in results), 'app_workflows_run': not args.acquire_only, 'cases': results, 'cli_sha256': digest(cli), 'sdk_directory': sdk_dir, 'work': str(work),
                'manifest_sha256': args.manifest_sha256, 'content_sha256': args.content_sha256,
                'isolation': 'Windows restricted token (per-run SID, empty PATH), private work directory, job-object process accounting; '
                             'no network denial and no read-only root are claimed'}

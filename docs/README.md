@@ -29,12 +29,13 @@ from the SDK build baseline:
 
 ## Development and Usage Guides
 
+- [Windows/x64 CLI Preview](guides/windows_preview.md): package integrity, caller CA, GitHub SDK acquisition and C/C++ first build.
+
 - [Development and Bootstrap Guide](guides/development.md): how to approach the
   initial implementation, [test local unreleased Dev SDK candidates](guides/development.md#local-dev-sdk-candidate-loop),
   record SDK/tool inputs, and document real commands.
   [Linux bootstrap build/test entry points](guides/development.md#build-and-test-the-bootstrap)
-  and local install/selection now exist; first-build automatic binding and
-  remote acquisition remain planned.
+  and native local install/selection, first-build binding and pinned HTTPS acquisition have per-host evidence.
 
 ## Acceptance Contracts and Evidence
 

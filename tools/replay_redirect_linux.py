@@ -20,9 +20,12 @@ def main():
     work = Path(tempfile.mkdtemp(prefix='redirect replay 한글 ', dir=out))
     cli = work / ('crt-cli.exe' if os.name == 'nt' else 'crt-cli'); shutil.copy2(args.cli, cli)
     pki = work / 'pki'; pki.mkdir()
+    # Test PKI must not depend on a vendor's compiled-in openssl.cnf installation path.
+    (pki / 'openssl.cnf').write_text('[req]\ndistinguished_name=dn\n[dn]\n', encoding='ascii')
     openssl = shutil.which('openssl'); assert openssl
     def run_ssl(*argv):
         subprocess.run([openssl, *argv], cwd=pki, check=True, capture_output=True,
+                       env=dict(os.environ, OPENSSL_CONF='openssl.cnf'),
                        creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
     run_ssl('req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', 'ca.key', '-out', 'ca.pem', '-days', '2',
             '-subj', '/CN=CRT redirect test', '-addext', 'basicConstraints=critical,CA:TRUE', '-addext', 'keyUsage=keyCertSign,cRLSign')

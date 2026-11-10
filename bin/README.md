@@ -1,10 +1,10 @@
 # Prebuilt `crt-cli` (temporary)
 
 For hands-on testing and to steer the contract, the final executable of each host is
-committed here until a release process exists. These are **local, unpromoted**
-builds, not releases: they are built by the CLI itself (`crt-cli build`) from
+committed here as dated snapshots. The table distinguishes local builds from
+executables matching published Previews: they are built by the CLI itself (`crt-cli build`) from
 identified `src/` and `include/` snapshots (including explicitly recorded local
-working-tree candidates) against a locally produced Development SDK whose
+working-tree candidates) against an identified local or published Development SDK whose
 provenance is recorded per host below (some require `--allow-dirty-sdk`). Do not treat them as signed or reproducible
 release artifacts.
 
@@ -13,11 +13,17 @@ release artifacts.
 | macOS/arm64 | `bin/macos/crt-cli` | present; SHA-256 `42727ccaef0e46551bcb9578d5eee771166e8211b8434f8121b589ab57eddfa6` (4,389,112 bytes; 2026-11-10 self-build of `541b2af` with restricted redirects, the executable of the published macOS Preview) |
 | Linux/x86_64 | `bin/linux-x64/crt-cli` | present; SHA-256 `9b82bd300379b45be4cb36becfbef56bf41b1ff5cc3d2cb510b9e60447b10284` (13,889,400 bytes; 2026-11-02 D1 working-tree candidate based on `adc03b0`, clean local CRT `49879bf`) |
 | Linux/aarch64 | `bin/linux-arm64/crt-cli` | present; SHA-256 `69118ac17f998ea0cc42ff7fcf422155ee3fefd016a617374a5701dd439bbfef` (16,352,720 bytes; 2026-11-05 Stage 2 replay of `9d711d2`, clean local CRT `78ed80f`) |
-| Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `3e8c0491d2e385bbaba5c0e8bd63eeac3896f498fed762ecab4370ecf277bd90` (44,920,832 bytes, built `-O1 -g`; 2026-11-10 Windows Preview candidate of `9a5272d`, SDK from clean CRT `b31276a` Release `v0.0.1-preview.20261110.windows.1`) |
+| Windows/x64 | `bin/win-x64/crt-cli.exe` | present; SHA-256 `8a2e854ec33d9e78c4f8c72ed64e928f036a34af62bf31a66016c6ab982cd39b` (45,508,096 bytes, built `-O1 -g`; 2026-11-10 self-build of `a55c0d0`, public SDK from CRT `b31276a`, executable of the published Windows/x64 Preview) |
 | Windows/arm64 | `bin/win-arm64/crt-cli.exe` | present; SHA-256 `d855f092e27bfab01047902ec14ae9747447e82d866702ea71d580d59ef80582` (32,403,968 bytes, built `-O1 -g`; 2026-11-06 replay of `160a4a6` against the clean local CRT `0631131` SDK) |
 
 macOS ships only arm64, so it keeps the single `bin/macos/` directory. Linux and
 Windows are split by architecture: `linux-x64`, `linux-arm64`, `win-x64`, `win-arm64`.
+
+The Windows/x64 published snapshot has [release evidence](../docs/acceptance/preview_acceptance.md#windowsx64-cli-preview-release-2026-11-10) and a [user guide](../docs/guides/windows_preview.md). Its source/SDK-free package, restricted redirects and GitHub C/C++ workflow are qualified there.
+
+## Earlier executable records
+
+The paragraphs below retain their original dated snapshots; the table above identifies current bytes.
 
 The macOS binary imports only `/usr/lib/libSystem.B.dylib` and has no RPATH.
 The current-source native suite passes 869 checks plus the archive and SDK-store suites; cold/warm self-build,

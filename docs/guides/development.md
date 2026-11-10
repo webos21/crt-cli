@@ -628,3 +628,18 @@ installed portable policy. GitHub asset redirects are followed only with the exp
 ([contract](../reference/bootstrap_contract.md#restricted-https-redirects-experimental-cli-owned));
 the default stays refusal. Replay with `tools/replay_redirect_linux.py --cli <crt-cli> --release-dir <public-download> --output <new-dir>`
 (Python 3, OpenSSL, loopback only) after any change to `src/main/http.cpp`, `fetch.cpp` or `sdk_acquire.cpp`.
+
+## Windows Preview transport and package replay
+
+`tools/replay_redirect_linux.py` also runs natively on Windows: supply the `.exe`,
+the downloaded Windows release files and a fresh output. Its explicit local PKI config
+avoids a vendor OpenSSL default-path dependency. Python/OpenSSL are test-host tools.
+
+`tools/replay_preview_public_windows.py` keeps its pinned local-install mode. Add
+`--sdk-source <pinned-json> --package <extracted-package> --package-manifest-sha256 <pin>`
+to exercise the packaged executable's real HTTPS acquisition before the existing C/C++
+workflow. It copies the caller CA into the restricted workspace; no global trust changes.
+For byte-identical public archive smoke use `--acquire-only`; the result explicitly records
+that app workflows were omitted. Retain the complete earlier app receipt and exact binary hash.
+Set the explicit `CRT_WINDOWS_SDK_LIBPATH`; pass a fresh workspace/output, a native visibility
+probe, hidden source/SDK roots and declared LLVM paths as in the existing Windows procedure.

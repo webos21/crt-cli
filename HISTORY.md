@@ -11,6 +11,15 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-10
 
+### Publish the Windows/x64 CLI Preview with GitHub SDK acquisition
+
+Qualified the common restricted redirect implementation on Windows (54/54), built the
+CLI against the public Dev SDK alone, and published the deterministic 30-file Windows
+archive. SDK-free package checks pass 12/12 and real packaged GitHub acquisition plus
+C/C++ first-build/test/run/cache/lock checks pass 39/39. Public bytes match the pins;
+refreshed the Windows binary and owner-requested README/STATUS snapshots in both repositories.
+[Exact inputs, native results, retained driver failures and limits](docs/acceptance/preview_acceptance.md#windowsx64-cli-preview-release-2026-11-10).
+
 ### Publish the macOS/arm64 CLI Preview with restricted GitHub redirects
 
 Replayed the restricted HTTPS redirect policy on macOS (54/54 cases over the real SDK bytes, native 942 checks) and published `v0.1.0-preview.20261110.macos-arm64.1`: a 30-file, deterministic

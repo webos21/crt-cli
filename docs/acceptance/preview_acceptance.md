@@ -410,3 +410,124 @@ and the local archive byte for byte. The archive extracted from those public byt
 `doctor --resources` against the pin (`publisher_authentication: not_verified`) and a real GitHub `sdk acquire` (three redirects, installed identity `e3dc7fb1...bac8`). The committed
 `bin/macos/crt-cli` is now this executable (`42727cca...a6`). Executable publication does not change root locks, defaults or STATUS.
 
+## Windows/x64 CLI Preview release (2026-11-10)
+
+Published prerelease [`v0.1.0-preview.20261110.windows-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.windows-x86_64.1), not latest, at `2026-11-10T05:12:57Z`.
+Tag target and clean product/test source: `a55c0d0ea0801f0e6e8d235f20ca780f876bf970`.
+It contains the common restricted redirect implementation already exercised on Linux/macOS;
+no Windows product-code or producer-runtime change was required. The test-host driver adds
+`.exe`, Windows HOME/SystemRoot/temp handling, hidden subprocesses, UTF-8 output and an
+explicit test OpenSSL config. The earlier Windows manual-install/local-package records retain
+their own binaries and limits; this section supersedes their not-yet-replayed/not-published boundary.
+Product/test/manifest inputs are unchanged from Linux release `dc796f7` and macOS release
+`541b2af`; `source-equivalence.json` binds those comparisons. Their native records are retained.
+
+### Inputs, build and package
+
+Reviewed producer `8e89ee1` and reused the public clean Release Dev SDK
+`v0.0.1-preview.20261110.windows.1` from CRT `b31276a6acccf0a89731f7bb0aecbdcdc9b45cda`.
+SDK content `5bb55372ec10e3cfa24c84de981a7130f56aeb57ef0d43d5da22a65036dec7ef`,
+policy `7762f572b4614b3068e1ea99694ce19360e213d31c5bd01019e4ad6ce005b726`,
+manifest pin `b0fca4c81d29b8eee28e0d9fb7d6e26950b094a8be4f2c091e43922366a46976` (1800 B)
+and archive `c71bb91e9f2c623d44e8154c7798a446b850781bdc1cf515eb9675dc04137be1` (73323880 B)
+are unchanged. LLVM 22.1.8 and Windows SDK `10.0.28000.0/um/x64` are explicit host inputs.
+Native host: Windows 11 Pro x64, build 26100.
+The contract replay exports a fresh bootstrap compiler policy from the public SDK
+(SHA-256 `8b9eaf7efc6d8b9154400bd46911e0eb7ad2563e947190576d488c00c4b42250`);
+its full copied-tree inventory is `a756b5203dc74447a3496ea0b65e036d6e235afe27963adca5fd67de64266d3e`.
+These bind the replay workspace separately from the published portable policy above,
+which the actual installed-SDK app consumers use. Both policies name the same `5bb55372...c7ef` SDK content.
+
+Fresh restricted-token contract replay exports into `C:/Users/Lee/s11/w2`, builds the
+21-source CLI against that SDK, forces a complete self-build and checks a zero-command warm
+rebuild. All 46 product/test/manifest files are byte-equal to the clean tag source; the exported
+test-host consumer driver also contains its recorded uncommitted replay-only extension.
+The final executable is 45,508,096 bytes, SHA-256 `8a2e854ec33d9e78c4f8c72ed64e928f036a34af62bf31a66016c6ab982cd39b`.
+Only `KERNEL32.dll` and `api-ms-win-core-synch-l1-2-0.dll` are direct imports;
+the PE certificate table is empty (no Authenticode signature).
+
+`create_bootstrap_resources.py` takes notices from the installed public SDK; the package holds
+one executable, licenses/provenance and format-1 inventory: 30 files. No SDK/compiler/interpreter,
+launcher, CA or key is bundled. `manifest.json` SHA-256: `7381cd58919be1f1d007cf0091c17e33236797860a8a2087b1139a7e80e6676c`.
+`package_cli_archive.py` packs `crt-cli-0.1.0-dev-windows-x86_64-preview.20261110.1.tar.xz` (5,430,536 bytes), SHA-256
+`4bafc8464b729049840f1f21807f505bbcc09e7d5f7bc260e63d8f971ade75c0`. Repacking is byte-identical and safe extraction verifies all 30 files.
+`SHA256SUMS-windows-x86_64` is the second public asset (ASCII/LF). The committed
+`bin/win-x64/crt-cli.exe` is this exact packaged executable; its predecessor is retained in ignored output.
+
+### Results and actual GitHub download
+
+| Gate | Result |
+| --- | --- |
+| Fresh native / archive / SDK-store / recipe | 992 / 214 / 113 / 141 checks passed |
+| Cold / warm self-build | 21 executed, 0 reused / 0 executed, 21 reused |
+| Restricted redirect replay over actual Windows SDK bytes | 54/54 |
+| SDK- and source-free extracted package, negative inventory/pin controls | 12/12 |
+| Packaged GitHub acquisition + C/C++ first build/test/run/cache/lock workflow | 39/39 |
+| Public-byte package acquisition smoke (apps reused by exact archive/binary identity) | 23/23 |
+| Bootstrap notice assembler / archive tool unit tests | 4 / 6 passed |
+
+The aggregate's five input-gated D3 suites compile and print `skipped` without port inputs;
+those exits are not source-port acceptance. Source-port execution from this exact package
+is outside this transport/Preview increment.
+
+The same 54 TLS/redirect cases as Linux/macOS include authority/port/suffix/IPv6 refusal,
+HTTPS downgrade/credentials/fragment, duplicate/missing Location, loops/hop limits, wrong
+certificates, HTTP status, oversize/interruption, digest/size failures, source-field refusals,
+full acquisition/verify/reuse, header non-forwarding and signed-query non-disclosure.
+The loopback test is a normal test-host process with an empty child PATH, not an OS sandbox.
+
+`replay_preview_public_windows.py --sdk-source ... --package ...` runs every CLI invocation
+under a per-workspace restricted token: empty PATH, private HOME/temp, native visibility
+probe and job-object process accounting. Repositories, producer, prior SDK and build source
+are unreadable; the package and explicitly declared LLVM/OS SDK remain available. The caller
+CA is a read-only Windows ROOT export (57 certificates, 86146 B, SHA-256 `323781b9b7dba15d5772a72a8c75f5a87d73fce866c151add449762150086899`), copied
+to the private workspace. It is neither an SDK default nor a bundled release trust anchor.
+Each real GitHub download (manifest 1800 B, policy 440297 B, archive 73323880 B) follows one
+redirect to `release-assets.githubusercontent.com`, passes its pin and installs the promised
+SDK identity. Re-acquire downloads nothing; wrong HTTPS/local/package pins fail without
+publication. C/C++ first build, test, run and warm builds retain exact SDK/project locks.
+Source JSON, optional ROOT export and explicit LLVM/OS SDK commands are in
+[the Windows user guide](../guides/windows_preview.md).
+Its native Windows `tar` extraction and PowerShell ROOT-to-PEM example were also run:
+30 files and matching executable/inventory pins, followed by a pinned GitHub manifest
+fetch using that exported PEM (one allowed redirect).
+
+### Publication, receipts and limits
+
+The two assets were staged as a draft, checked against GitHub's asset sizes/digests and
+authenticated re-downloads, then published as a non-latest prerelease. Final notes were
+frozen before publication; the public notes match the frozen file. Unauthenticated HTTPS
+downloads (Windows system trust, TLS >= 1.2, proxies disabled, one allowed GitHub-storage
+redirect per asset) match both local bytes and checksum pins. Public archive extraction and
+the restricted-token acquisition smoke pass on those bytes. No root/default SDK or port lock
+is migrated; producer SDK bytes, API/ABI and all shared formats are unchanged.
+
+The first contract attempt omitted `CRT_WINDOWS_SDK_LIBPATH` and stopped at provider export;
+it is retained as `s11/contract`, while `contract-r2` uses the explicit directory and a new
+workspace. Initial loopback PKI generation used Strawberry OpenSSL's nonexistent compiled-in
+`Z:/.../openssl.cnf`; `redirect-replay` is retained and `redirect-replay-r2` uses a minimal
+per-test config. No global OpenSSL setting, account ACL or system trust was changed.
+The final receipts live under `C:/Users/Lee/s11`; a qualification/bound receipt copy and the
+old binary are in ignored `out/windows-cli-preview-20261110/`:
+
+- `contract-r2/inputs.json`: `63e8228c577192a4323e50e8f5b8f0db402323b731bc188874bc2a0574477ad3`.
+- `contract-r2/commands.json`: `941eae5c98c728f4dd8fdde89c7c38dfdb4ee3418584dc4a3b953049368f2fa3`.
+- `contract-r2/result.json`: `e2e27a0681c1df549616fd23ae3946775ca84d59e33e6a960d89f892bf65d8c5`.
+- `package-result.json`: `8c517c98dfedc21ec900eddd21ccdc10f3f8754a5cf0d4a3aa2d9b1b48458eb1`.
+- `redirect-replay-r2/redirect-replay.json`: `cdf345f1f3048bed4831391e58644f8d679a1604c8ff00b1ce43b0df594f85ab`.
+- `package-self/result.json`: `bbea6e0619b508afc316ce1591b44e365d98164ebd90ee4ba91aae6d0441d33c`.
+- `github-consumer/result.json`: `33a308f58ebd52c6af1b9baeae9ad906f9a4a5ba1e52f5a7e46791fe9061a398`.
+- `public-consumer/result.json`: `a9fdef217b9ae25d8d6da549a7d9f04f88f3c64e029ade7cb4ddec7f8a34ce35`.
+- `public-download.json`: `0983bac1cca1149fcbffce46fec1f60a6d6d7d822de96bc0293ab73dba29755b`.
+- `publication.json`: `3e53fe1b3553a75cb2d05bbba0c534e425a870eae08475e43053bb2211cfc344`.
+- `source-equivalence.json`: `84b64e44be778be9dcde22ddcb6253eed39ba4a8fb8de868f4e5b31ee96ab18b`.
+- `pe-audit.json`: `6f57168d4b8082ad7cb46f5372ca6c9b7f1c8d39769b4e647d4ad2632b05afc5`.
+- `user-guide-smoke.json`: `b9ab1478bb624c0488180df3574cf45c04f47ffd2d7e629561e5ec8773661c7b`.
+- `release-notes.md`: `ae1ffcd5fd756dd3a7e3923f590bc42ca008ff8440efe41d696bc0bc8c186e47`.
+
+Limits: unsigned and no publisher authentication (`not_verified`); SmartScreen/browser
+reputation was not tested. Windows accounting is not network or executable denial and does
+not exclude OS-internal runtime mappings. Windows/arm64, source-port builds from this exact
+package, Full profiles, updates/self-upgrade and official default trust remain separate.
+Linux/macOS records retain their exact sources and bytes. STATUS is refreshed here only
+because the owner explicitly requested both repositories' current snapshots.

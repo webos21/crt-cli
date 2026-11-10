@@ -39,9 +39,8 @@ separately requested dated snapshot.
 - [x] Restricted HTTPS redirect policy implemented and Linux-replayed, including real
   GitHub `sdk acquire` ([record](docs/acceptance/preview_acceptance.md#restricted-https-redirects-and-github-acquisition-2026-11-10)).
 - [x] Redirect policy replayed on macOS/arm64: 54/54 cases and real GitHub `sdk acquire` ([record](docs/acceptance/preview_acceptance.md#macos-cli-preview-release-2026-11-10)).
-- [ ] Replay the redirect policy on Windows/x64 before advertising automatic download there (`tools/replay_redirect_linux.py` takes any host's release manifest; it needs a Windows run).
-- [ ] Complete CLI Preview delivery: Linux/x86_64 is [published](docs/acceptance/preview_acceptance.md#linuxx86_64-cli-preview-release-2026-11-10) and so is [macOS/arm64](docs/acceptance/preview_acceptance.md#macos-cli-preview-release-2026-11-10); the Windows package (tag with OS-arch) and any explicit default/project pin adoption
-  against the promoted SDK; final-package replay applies to each advertised host.
+- [ ] Review explicit default/project pin adoption against the promoted three-host SDK/CLI Previews;
+  retain the [Windows publication baseline](docs/acceptance/preview_acceptance.md#windowsx64-cli-preview-release-2026-11-10) and the existing Linux/macOS records.
 - [ ] Keep Full SDK packaging/security/source/license review on its own path;
   Full installation/profile support is not a prerequisite for the first CLI preview.
 
