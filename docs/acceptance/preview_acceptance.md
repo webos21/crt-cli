@@ -8,7 +8,8 @@ requirements; [compatibility](../compatibility.md) owns contract adoption.
 
 Scope: native Linux/x86_64 Dev `02-cxx`, one CLI executable with pinned notice
 resources, caller-supplied CA data, external LLVM and optional independent CRT
-host tools. This is an unpublished local rehearsal. The selected SDK version is
+host tools. This section records the original local rehearsal; the public SDK promotion
+is recorded below. The selected SDK version is
 `v0.0.1-preview.20261110.3`; CLI product version remains `0.1.0-dev` with independent
 source/binary identities. No Git release tag is created by the SDK parameter.
 
@@ -27,8 +28,8 @@ source/binary identities. No Git release tag is created by the SDK parameter.
 
 Producer [SDK/source-asset acceptance](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#linux-dev-preview-candidate-rehearsal-2026-11-10)
 owns build, clean compile provenance, archive/contract/source checks and the
-retained failed inputs. Both producer fixes are local commits until source
-publication; their clean status is not a claim of remote availability.
+retained failed inputs. At this local checkpoint the producer fixes were local commits. The later
+public promotion below records their published source and source tag.
 
 ### Public handoff and actual package
 
@@ -101,7 +102,7 @@ The final `.3` source archive contains the corrected files and the exact nested
 03 recipe. No previous archive, SDK, provider, store item or project pin is rewritten.
 Equal build keys do not establish byte reproducibility.
 
-### Remaining publication gates
+### Publication boundary at local qualification
 
 Publish the selected producer source offer and approve publisher/trust/release
 metadata before public delivery. Promote SDK assets first, verify their actual
@@ -111,3 +112,47 @@ No public URL/channel, official signer or self-upgrade contract is introduced.
 Every advertised host needs its final-package replay. macOS/Windows final Preview
 packages, Windows/arm64 D3, Linux C shared SDK mode, Full installation, general
 updates/offline resolution, D4 dependency ports and Studio remain separate.
+
+
+## Public SDK promotion and consumer adoption (2026-11-10)
+
+The producer has [published the qualified SDK](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.3)
+as a native Linux/x86_64 Dev prerelease, with source tag at
+`0ab8f8cfbbde19e14dd5861ba176fb8881e06182`. The original `.3` manifest,
+archive/content and portable-policy pins above are unchanged. The
+[trust review](https://github.com/webos21/crt/blob/64dd3e6/docs/design/dev_preview_trust.md)
+selects the existing caller-trusted manual pin model, explicit verified TLS/CA
+and immutable-by-procedure artifacts. Publisher signatures/default channels and
+server-enforced immutability are not claimed. Producer
+[publication acceptance](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#linux-dev-sdk-public-promotion-2026-11-10)
+owns all six public downloads, source/tag and CA evidence.
+
+Using exact qualified CLI `6ba046e5...1dab2`, consume the actual unauthenticated
+public download directory, with local SDK/build/repository copies hidden, private
+HOME/tmp, empty PATH and consumer network disabled. **12/12 checks pass**: pinned
+SDK install/verify, clean producer provenance, source-only C/C++ new, first build
+without configure, test/run, zero-command warm reuse, unchanged project pins,
+installed SDK and all original downloads. Both generated locks select SDK
+`36623957fbdd5a384cc173991e20253ff83148028ab8072298dcd434a55a2b3f`
+and stored policy `90b3bb59aaac7df481becbad4e2b87473e2fefcb803123332689d7f1135e4e30`.
+The correct installed-policy selector is `--sdk`; an earlier guide dry-run used
+legacy `--sdk-id` and was refused for missing an explicit contract before binding.
+The corrected public guide and a fresh consumer workspace pass; no product or
+published artifact bytes change.
+
+Current CLI deliberately follows no HTTPS redirects, while each public GitHub
+asset uses a GitHub-storage redirect. **Direct GitHub `sdk acquire --source`
+remains unsupported.** This adoption qualifies manual HTTPS download followed
+by pinned local installation/installed-SDK first build. The earlier 73-case
+controlled direct-HTTPS source replay is not relabeled as GitHub acquisition.
+A restricted redirect strategy requires a separate CLI transport/contract review
+and failure/native gates before advertising automatic public acquisition.
+
+Raw commands/stdout/stderr and project locks are retained under
+`/home/syszone/GitLocal/crt-preview-20261110/promotion-20261110/` in
+`native-public-consumer-r2.json` and its private workspace. `promotion.json`
+SHA-256 is `dd2ed35ce279a1d7b9117890dc1a8ab8095c2e7b425633d0b4ad35127aee055f`; it binds the public
+source/assets, reviewed trust commit, CLI and consumer receipts. No root/default
+SDK lock is migrated and no CLI executable release is published by this SDK
+promotion. CLI delivery, other-host final packages, Linux C shared SDK mode,
+Full/D4, updates and Studio remain in their owning queues.

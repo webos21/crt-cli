@@ -6,6 +6,26 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## Published Linux Dev SDK Adoption (2026-11-10)
+
+**Promoted producer; adopted for scoped manual-install consumers.** Public
+[SDK `v0.0.1-preview.20261110.3`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.3)
+retains clean CRT `0ab8f8cfbbde19e14dd5861ba176fb8881e06182`, manifest
+`d4211d3298a764ff22f6e262073f834bbb36cb5d07c22e1ecb10f7f83f8fca60`,
+SDK content `36623957...5a2b3f` and policy `90b3bb59...5e4e30`. Source/qualification
+and notice-assembly checkpoints are public at CRT `1326902` / CLI `3b9a8ed`;
+trust review is CRT `64dd3e6`, with publisher authentication `not_verified`.
+All SDK/profile/policy/recipe/project-lock formats and ABI remain unchanged.
+
+[Public-byte consumer evidence](acceptance/preview_acceptance.md#public-sdk-promotion-and-consumer-adoption-2026-11-10)
+passes 12/12 checks on the same qualified CLI `6ba046e5...1dab2`: native pinned
+install/verify and C/C++ installed-SDK first build/test/run/cache with exact
+project pins. Producer public downloads match the original six collected files.
+Root/default locks and committed binaries remain unchanged. Current CLI's
+redirect denial means GitHub automatic acquisition is not adopted; the accepted
+path is manual verified download and native local install. General default trust,
+CLI binary release, wider hosts and the unqualified C shared SDK mode remain separate.
+
 ## Linux Preview Input Rehearsal (2026-11-10)
 
 **Local technical combination selected; unpromoted.** CRT

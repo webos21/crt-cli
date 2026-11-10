@@ -619,3 +619,11 @@ now records a clean SDK/archive/policy and exact CLI/resource/archive combinatio
 Resume from those preserved inputs and receipts; never overwrite a failed or
 accepted candidate. Producer source publication, official trust and actual asset
 promotion remain separate from the successful local first-user rehearsal.
+
+
+The SDK is now [published and exercised from public bytes](../acceptance/preview_acceptance.md#public-sdk-promotion-and-consumer-adoption-2026-11-10).
+Use its manual download/pinned `sdk install` path with `--sdk` to select the
+installed portable policy. GitHub asset redirects remain unsupported by current
+`fetch`/`sdk acquire`; controlled direct-HTTPS test results do not qualify that
+public endpoint. Keep a restricted redirect change separate from immutable SDK
+promotion, and preserve current default redirect refusal until reviewed/tested.

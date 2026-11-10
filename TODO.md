@@ -34,9 +34,13 @@ separately requested dated snapshot.
 - [x] Freeze the [bounded clean Linux Dev SDK + CLI local candidate](docs/acceptance/preview_acceptance.md#linux-local-candidate-2026-11-10),
   LLVM inputs, complete notices, explicit-at-fetch trust and source-hidden workflow.
   Linux C shared SDK mode remains excluded under CRT 6.4.
-- [ ] Publish the selected producer source offer and approve publisher/trust
-  metadata; verify/promote the SDK before adopting its actual published pin in the CLI. Apply final-package replay to each advertised host. Publisher trust and
-  publication remain separate from rehearsal or a developer test CA.
+- [x] Publish the selected producer source and approve scoped manual-pin trust;
+  [promote and exercise actual public SDK bytes](docs/acceptance/preview_acceptance.md#public-sdk-promotion-and-consumer-adoption-2026-11-10).
+- [ ] Review a bounded GitHub asset-redirect strategy before advertising public
+  `sdk acquire`/automatic first-build download; current CLI deliberately refuses
+  redirects. The promoted SDK's manual download/install flow is qualified.
+- [ ] Complete CLI Preview delivery and any explicit default/project pin adoption
+  against the promoted SDK; final-package replay applies to each advertised host.
 - [ ] Keep Full SDK packaging/security/source/license review on its own path;
   Full installation/profile support is not a prerequisite for the first CLI preview.
 

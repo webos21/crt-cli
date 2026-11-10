@@ -11,6 +11,18 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-10
 
+### Adopt the published Linux SDK for native manual-install consumers
+
+After producer publication, downloaded public assets match the qualified `.3`
+SDK/policy. The exact existing CLI passes pinned install/verify and C/C++ first
+build/test/run/cache from those bytes in source/SDK-hidden private state.
+[Public adoption evidence](docs/acceptance/preview_acceptance.md#public-sdk-promotion-and-consumer-adoption-2026-11-10)
+owns the pins and receipts. The reviewed trust boundary is manual repository
+pins and explicit verified HTTPS/CA; publisher authentication stays not verified.
+Current redirect denial leaves GitHub automatic acquisition as a separate CLI
+increment. No root/default SDK migration, executable publication or routine
+STATUS update accompanies this scoped producer promotion/adoption.
+
 ### Qualify the clean Linux Dev SDK / CLI Preview inputs
 
 Selected the clean producer `0ab8f8c` SDK `.3` after retaining and fixing the
