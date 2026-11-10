@@ -531,3 +531,17 @@ not exclude OS-internal runtime mappings. Windows/arm64, source-port builds from
 package, Full profiles, updates/self-upgrade and official default trust remain separate.
 Linux/macOS records retain their exact sources and bytes. STATUS is refreshed here only
 because the owner explicitly requested both repositories' current snapshots.
+
+## Linux/aarch64 public SDK promotion and consumer adoption (2026-11-10)
+
+The producer [published](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#linuxaarch64-dev-sdk-public-promotion-2026-11-10)
+`v0.0.1-preview.20261110.linux.arm64.2` (clean CRT `e6a94ab`, manifest `ba77b26e...67be3`). `tools/replay_preview_public_linux.py` is the bubblewrap counterpart of the macOS and Windows public-byte drivers
+(no network, read-only root, producer and CLI source trees hidden, cleared environment, empty `PATH`, host LLVM 21.1.8 as the only toolchain). The CLI is the executable
+`ae5f2b212be4351dcb8fc699785cf5c6822aa0b0dcd5183a23e94e56529ec543` (23,162,944 bytes), produced by the producer's contract replay from `5d148ba` and the SDK under test:
+21 sources, cold 21 executed / 0 reused, warm 0 / 21, native 913, archive 221, SDK-store 114 and port-recipe 142 checks, 32 distinct executed paths, no `DT_NEEDED`.
+
+It passed **30/30** twice with identical cases: on the pre-publication handoff and on the unauthenticated public download (six files, one verified redirect each, byte-identical): pinned install and verify, idempotent
+reinstall, wrong-pin refusal with nothing published, C and C++ source-only `new`, first build without configure through the installed SDK, test, run, zero-command warm build, unchanged project locks, unchanged installed SDK and downloads.
+Public result SHA-256 `2c2495bba6002d7e5669de6974b2a73babe9ecd7fe1428b6d625f2213ae01974`. Receipts are under the ignored `out/linux-arm64-preview-20261110/`.
+
+Limits: glibc 2.43 only; the executable is neither committed nor published; GitHub `sdk acquire` on this host, the older loader, Full SDKs and default/production locks are not covered.

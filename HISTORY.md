@@ -11,6 +11,13 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-10
 
+### Consume the Linux/aarch64 Dev SDK Preview
+
+A CLI built from `5d148ba` by the new Linux/aarch64 SDK alone (cold 21/0, warm 0/21; native 913, archive 221, SDK-store 114, port-recipe 142) passes the new bubblewrap
+`tools/replay_preview_public_linux.py` 30/30 on both the pre-publication handoff and the actual public bytes of `v0.0.1-preview.20261110.linux.arm64.2` (pinned install, C/C++ first build without configure, test, run, warm build,
+unchanged locks). Glibc 2.43 only; the executable is not committed and no Linux/aarch64 CLI Preview is published.
+[Record](docs/acceptance/preview_acceptance.md#linuxaarch64-public-sdk-promotion-and-consumer-adoption-2026-11-10) · [ledger](docs/compatibility.md#published-linuxaarch64-dev-sdk-adoption-2026-11-10).
+
 ### Adopt the repaired Linux Dev SDK and restore old-LTS CI coverage
 
 Adopted producer-promoted `v0.0.1-preview.20261110.4` after local SDK-only and
