@@ -179,3 +179,23 @@ failed attempts are recorded in the producer candidate section. Not covered at t
 (the Linux package assembly is not replayed), Developer ID signing or notarization, port/provider replays against this exact SDK, other hosts. The
 executable is a local, unpromoted test aid, not a published release.
 
+## macOS Public SDK promotion and consumer adoption (2026-11-10)
+
+The producer has [published the qualified SDK](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.macos.1) as a native macOS/arm64 Dev
+prerelease with source tag at `445f127dc2e1ef4ab538166aa2e374f25773a803`; the manifest pin
+`0981110c84e5d24a903dbd3965dbe92eb2fe405edfa89804e3086dfeb75983de`, SDK content `e3dc7fb1810a3f78ab8ef33882225ccb562d21f6f5977a2037ab92819326bac8`
+and portable-policy digest `d5a100fd...e464` are unchanged from the local candidate above. The
+[trust review](https://github.com/webos21/crt/blob/main/docs/design/dev_preview_trust.md#macosarm64-bounded-policy-adopted-2026-11-10) reuses the caller-trusted manual
+pin model; no publisher signature, default channel or server-enforced immutability is claimed. Producer
+[promotion acceptance](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#macos-dev-sdk-public-promotion-2026-11-10) owns the six public downloads.
+
+Using the committed `bin/macos/crt-cli` (`558c13c1...e53`), `tools/replay_preview_public_macos.py` consumes the actual unauthenticated public download directory under
+Seatbelt (no network, scratch HOME and private temporary directory the only writable places, repositories and worktree unreadable, empty `PATH`, Xcode's clang/clang++/ld/ar).
+**30/30 checks pass**: pin and asset digests, pinned install/verify and idempotent reinstall, refusal of a wrong pin with nothing published, C and C++ source-only `new`, first
+build without configure through `--sdk`, test, run, zero-command warm reuse, unchanged project locks, installed SDK and downloads. Result SHA-256
+`8eaee9b5b76659ff0f6fd208d2effa600856cd2c256d1e8b2f327746e7c40f13`.
+
+As on Linux, the current CLI follows no HTTPS redirects and each GitHub asset URL redirects to GitHub storage, so **direct GitHub `sdk acquire --source` remains unsupported**; the
+accepted path is manual download plus pinned local installation. No root `crt.lock`, default SDK selection or CLI release is changed; the committed macOS binary stays a
+local, unpromoted test aid. Other-host final packages, a packaged macOS CLI archive, Developer ID signing, Full and D4 remain in their own queues.
+

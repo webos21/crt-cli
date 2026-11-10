@@ -11,6 +11,12 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-10
 
+### Consume the published macOS Dev SDK Preview
+
+The committed macOS executable installs the actual public bytes of `v0.0.1-preview.20261110.macos.1` from the pinned manifest and builds C and C++ projects without configure under Seatbelt
+(30/30). The relocation of the private lock helper into `include/crtcli/` that the self-build needed is part of the same checkpoint. See
+[acceptance](docs/acceptance/preview_acceptance.md#macos-public-sdk-promotion-and-consumer-adoption-2026-11-10).
+
 ### Adopt the published Linux SDK for native manual-install consumers
 
 After producer publication, downloaded public assets match the qualified `.3`
