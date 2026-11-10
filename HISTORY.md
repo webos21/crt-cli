@@ -11,6 +11,10 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-10
 
+### Publish the Linux/x86_64 CLI Preview
+
+Prerelease `v0.1.0-preview.20261110.linux-x86_64.1` from `dc796f7`, built against the public SDK `.3` acquired over the new GitHub redirect policy; the packaged executable passes acquire and C/C++ first build/test/run with an empty `PATH`. Unsigned; [record](docs/acceptance/preview_acceptance.md#linuxx86_64-cli-preview-release-2026-11-10).
+
 ### Restricted HTTPS redirects for GitHub release assets (Linux/x86_64)
 
 `fetch` and source-driven `sdk acquire` can opt into a bounded redirect policy

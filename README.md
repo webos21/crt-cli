@@ -22,7 +22,7 @@ store, and configure can select an installed SDK with its stored portable
 compiler contract. Local installation and Stage 2 project selection have native
 records on Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64/arm64 at
 identified snapshots. They are local technical results, not a current-source
-support matrix or a public release. See [STATUS](STATUS.md) for scope and
+support matrix; the only published CLI is the [Linux/x86_64 Preview](#download-the-linuxx86_64-preview). See [STATUS](STATUS.md) for scope and
 [SDK installation acceptance](docs/acceptance/sdk_install_acceptance.md) for evidence.
 
 The current installer/project selection supports the native `dev` profile.
@@ -37,7 +37,9 @@ selection, multi-port dependency management and self-upgrade remain planned.
 [Explicit pinned HTTPS SDK acquisition](docs/reference/bootstrap_contract.md#explicit-pinned-https-sdk-source-experimental-format-0)
 is implemented with Linux, macOS and Windows replay evidence: `sdk acquire --source <file>` or first
 `build --sdk-source <file>` verifies a caller-pinned source and reuses an exact
-installed identity. `fetch` also supports explicit-key RSA-PSS verification.
+installed identity. Public GitHub release assets need the opt-in
+[restricted redirect policy](docs/reference/bootstrap_contract.md#restricted-https-redirects-experimental-cli-owned)
+(`"redirect_policy": "github-release"`; default is refusal), exercised on Linux/x86_64 only. `fetch` also supports explicit-key RSA-PSS verification.
 Official default-download trust, channels and publisher promotion remain pending.
 
 The experimental D3 source-port path implements `port build|list|verify|recover|lock` for the pinned zlib recipe on Linux,
@@ -48,6 +50,16 @@ See the [adapter policy](docs/design/source_port_adapter.md) and
 [Windows/x64 implementation evidence](docs/acceptance/sdk_install_acceptance.md#source-port-d3-windowsx64-implementation-and-replay-2026-11-09).
 The bounded adapter contract is [approved and adopted](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09).
 Other recipes, general dependency resolution and Windows/arm64 replay remain separate work.
+
+## Download the Linux/x86_64 Preview
+
+The [`v0.1.0-preview.20261110.linux-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.linux-x86_64.1)
+prerelease carries one static `crt-cli` with its notices and a pinned inventory. It is
+unsigned: verify the archive against a digest you trust independently. It still needs LLVM 21
+tools and a CA bundle you choose, and installs the Dev SDK separately (the public
+[CRT Dev SDK](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.3)). Release tags carry the
+OS and architecture; macOS and Windows packages are not published yet. See the
+[release record](docs/acceptance/preview_acceptance.md#linuxx86_64-cli-preview-release-2026-11-10).
 
 ## Try the Local Workflow
 
@@ -96,10 +108,9 @@ also exercise this workflow at their recorded baselines.
 
 ## Next User Workflow
 
-[The active plan](TODO.md) finishes D3 producer review/adoption, then prepares a Dev SDK + CLI preview.
-The common delta has [Linux proof](docs/acceptance/sdk_install_acceptance.md#linux-d3-common-change-replay-and-macos-handoff-2026-11-09)
-and [macOS replay](docs/acceptance/sdk_install_acceptance.md#macos-d3-common-change-closure-replay-2026-11-09);
-Windows/x64 retains its identified qualification. These technical records do not grant final CRT approval.
+[The active plan](TODO.md) continues the Dev SDK + CLI preview: the Linux/x86_64 package is out; macOS/arm64 and
+Windows/x64 packages, redirect replays on those hosts and default/project pin adoption are next. The D3 zlib contract is
+[approved and adopted](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09) for the three exercised host pairs;
 Windows/arm64 D3 remains a separate qualification target.
 
 Preview qualification covers the actual packaged CLI, promoted SDK pin, trust,
@@ -115,8 +126,8 @@ first preview. General updates, self-upgrade and Studio remain later work.
 External Clang/LLD/LLVM ar and required vendor OS SDKs are prerequisites; neither
 CRT nor this CLI bundles LLVM. The CLI ships toward one executable per host
 with declared OS dependencies, resources/notices/certificate data and no
-permanent launcher. Current committed binaries are local test snapshots with
-per-host provenance in [bin/README](bin/README.md).
+permanent launcher. Committed binaries under `bin/` are local test snapshots with
+per-host provenance in [bin/README](bin/README.md); the release archive is the only packaged build.
 
 The independent CRT host-tools profile supplies mksh, toybox, awk and make for
 explicit shell/port workflows. It is separate from native app builds and target

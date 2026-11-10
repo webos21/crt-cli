@@ -337,3 +337,24 @@ one appended byte in a notice and an undeclared extra file (both "inventory mism
 
 Receipts are in the local evidence directory (`pack.json`, `verify.json`, `package-run/`). Not covered: publishing this archive or any CLI release, Authenticode signing, an official publisher key (the manifest is a local
 inventory, not publisher authentication), port/provider replays against this exact SDK, Windows/arm64 and other hosts.
+
+
+## Linux/x86_64 CLI Preview release (2026-11-10)
+
+Published prerelease [`v0.1.0-preview.20261110.linux-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.linux-x86_64.1)
+(tag target `dc796f738e96f2b75d2d9b204751742d7647be0b`; tags carry the OS-architecture). Assets: `crt-cli-0.1.0-dev-linux-x86_64-preview.20261110.1.tar.xz`
+(5232844 bytes, SHA-256 `ad43afbf7e810bb7b1a587c47568ba6d17bc404e5ee05069a83d9ef56edc1383`) and `SHA256SUMS-linux-x86_64`. Public download re-verified
+against the sums; the executable still reports `0.1.0-dev`.
+
+**Inputs.** Fresh `git archive` of `dc796f7` (root `crt.lock` restored to the committed unresolved state), built by this CLI against the public SDK
+`v0.0.1-preview.20261110.3` (content `36623957...2b3f`) that was itself acquired from GitHub through the new redirect policy, LLVM 21 `/usr/bin` tools.
+Executable SHA-256 `a8fb76a4b257c52345d79560312e0a94f52aaa9251f67524823a0fab8476a43a` (23795192 bytes, statically linked). Assembled by
+`create_bootstrap_resources.py` (manifest SHA-256 `a5c658d3...c7a`, 30 files, no CA file) and packed by `package_cli_archive.py` (deterministic: packing twice is
+byte-identical; `verify` extraction passes).
+
+**Packaged-executable run** (extracted archive, empty `PATH`, fresh HOME, real network): `--version`, self `doctor` with the manifest pin, `sdk acquire` from GitHub with
+`redirect_policy: github-release` (three redirects, installed identity equals the promoted SDK), then C and C++ `new`/`build`/`test`/`run`. Not run for this exact
+binary: the full native suite (901 checks were run on the equivalent development-tree build `dc796f7` source before packaging), an SDK-hidden/sandboxed receipt
+and a source-port build. Work and receipts: `/home/syszone/GitLocal/crt-cli-preview-linux-20261110/`.
+
+Not claimed: publisher authentication (digests only), macOS/Windows/aarch64 packages and redirect replays, Linux C shared-SDK mode, updates/self-upgrade.

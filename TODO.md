@@ -40,7 +40,7 @@ separately requested dated snapshot.
   GitHub `sdk acquire` ([record](docs/acceptance/preview_acceptance.md#restricted-https-redirects-and-github-acquisition-2026-11-10)).
 - [ ] Replay the redirect policy on macOS/arm64 and Windows/x64 (`tools/replay_redirect_linux.py`
   needs a macOS/Windows driver) before advertising automatic download there.
-- [ ] Complete CLI Preview delivery and any explicit default/project pin adoption
+- [ ] Complete CLI Preview delivery: Linux/x86_64 is [published](docs/acceptance/preview_acceptance.md#linuxx86_64-cli-preview-release-2026-11-10); macOS/Windows packages (tag with OS-arch) and any explicit default/project pin adoption
   against the promoted SDK; final-package replay applies to each advertised host.
 - [ ] Keep Full SDK packaging/security/source/license review on its own path;
   Full installation/profile support is not a prerequisite for the first CLI preview.
