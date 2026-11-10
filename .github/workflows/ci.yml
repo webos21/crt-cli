@@ -24,7 +24,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     # Linux uses Ubuntu 26.04, matching the local rehearsal's loader; the Ubuntu 24.04 shared-runtime gap remains
-    # recorded in docs/acceptance/ci_acceptance.md. Linux and macOS failures fail CI; Windows remains experimental.
+    # recorded in docs/acceptance/ci_acceptance.md. Failures on any of the three hosts fail CI.
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
@@ -38,7 +38,7 @@ jobs:
             experimental: false
           - host: win-x64
             runner: windows-2022
-            experimental: true
+            experimental: false
     steps:
       - name: Check out the sources under test
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

@@ -98,6 +98,11 @@ int main() {
         refused = false;
         try { parse_port_recipe(whitespace, "linux"); } catch (const Error&) { refused = true; }
         check(refused, "even a whitespace change is a different, unreviewed file");
+        std::string crlf;
+        for (char c : bytes) { if (c == '\n') crlf += '\r'; crlf += c; }
+        refused = false;
+        try { parse_port_recipe(crlf, "windows"); } catch (const Error&) { refused = true; }
+        check(refused, "CRLF conversion does not authenticate as the reviewed LF recipe");
         refused = false;
         try { parse_port_recipe(bytes, "plan9"); } catch (const Error&) { refused = true; }
         check(refused, "unknown target OS refused");

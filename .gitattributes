@@ -1,0 +1,2 @@
+# Preserve the producer-reviewed recipe bytes used by the digest-gated test.
+src/test/data/zlib.recipe.json text eol=lf

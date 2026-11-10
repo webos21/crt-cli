@@ -56,8 +56,9 @@ retain their later queues. Execution policy remains in
 
 - [x] macOS/arm64 (`macos-15`) passes every stage on a hosted image and is the required leg
   ([record](docs/acceptance/ci_acceptance.md#first-github-hosted-run-2026-11-10)).
-- [ ] Windows/x64 (`windows-2022`): the first run failed at `mkdtemp` (driver, fixed); re-run, then qualify the
-  remaining stages and make the leg required.
+- [ ] Fix Windows/x64 (`windows-2022`) native fixtures to pass the selected OS
+  SDK explicitly and preserve the reviewed recipe's LF bytes on checkout;
+  replay all stages on the hosted runner, then make the leg required.
 - [ ] Resolve or explicitly bound Ubuntu 24.04/glibc 2.39 shared-runtime support
   in CRT before claiming that compatibility; retain its
   [producer-side reproducer](docs/acceptance/ci_acceptance.md#first-github-hosted-run-2026-11-10)

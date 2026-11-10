@@ -28,7 +28,8 @@ Json invoke(const std::string& cli, std::vector<std::string> args, bool success 
     args.insert(args.begin(), "--json"); args.insert(args.begin(), cli);
     auto child = execute(args, 120, false);
     auto reply = Json::parse(child.output);
-    check((child.exit_code == 0) == success, "expected command exit: " + args.at(2));
+    check((child.exit_code == 0) == success, "expected command exit: " + args.at(2) + " (exit " + std::to_string(child.exit_code) +
+          ", " + reply.at("data").value("message", std::string("no failure diagnostic")) + ")");
     check(reply.at("ok").get<bool>() == success && reply.at("schema") == "crt-cli.bootstrap-result", "JSON outcome");
     return reply.at("data");
 }
@@ -206,6 +207,7 @@ int main(int argc, char** argv) {
             invoke(cli, {"env", "--profile", "app-run", "--project", root.string()}, false);
             std::vector<std::string> configure{"configure", "--project", root.string(), "--sdk-root", local.at("sdk_root"), "--sdk-contract", local.at("sdk_contract"), "--contract-sha256", lock.at("selection").at("contract_sha256"), "--cc", local.at("cc"), "--cxx", local.at("cxx"), "--linker", local.at("linker")};
             configure.insert(configure.end(), {"--ar", local.at("ar")});
+            if (local.contains("os_sdk")) configure.insert(configure.end(), {"--os-sdk", local.at("os_sdk")});
             if (lock.at("selection").value("allow_dirty_sdk", false)) configure.insert(configure.end(), {"--allow-dirty-sdk", "true"});
             auto wrong = configure; wrong[8] = std::string(64, '0');
             invoke(cli, wrong, false);
@@ -327,6 +329,7 @@ int main(int argc, char** argv) {
         Json sdk_config{{"format", 0}, {"origin", "native test"}, {"seed", "/not/used/by/configure"}, {"sdk_root", local.at("sdk_root")}, {"sdk_contract", local.at("sdk_contract")},
             {"contract_sha256", lock.at("selection").at("contract_sha256")}, {"cc", local.at("cc")}, {"cxx", local.at("cxx")}, {"linker", local.at("linker")}, {"ar", local.at("ar")},
             {"allow_dirty_sdk", lock.at("selection").value("allow_dirty_sdk", false)}};
+        if (local.contains("os_sdk")) sdk_config["os_sdk"] = local.at("os_sdk");
         auto config_root = hostile / "config-project";
         invoke(cli, {"new", config_root.string()});
         write_text(config_root / ".sdk.json", sdk_config.dump(2));
@@ -367,6 +370,7 @@ int main(int argc, char** argv) {
         auto root = hostile / "store-project";
         invoke(cli, {"new", root.string()});
         std::vector<std::string> configure{"configure", "--project", root.string(), "--sdk-id", "local-candidate", "--sdk-contract", local.at("sdk_contract"), "--contract-sha256", lock.at("selection").at("contract_sha256"), "--cc", local.at("cc"), "--cxx", local.at("cxx"), "--linker", local.at("linker"), "--ar", local.at("ar")};
+        if (local.contains("os_sdk")) configure.insert(configure.end(), {"--os-sdk", local.at("os_sdk")});
         if (lock.at("selection").value("allow_dirty_sdk", false)) configure.insert(configure.end(), {"--allow-dirty-sdk", "true"});
         invoke(cli, configure); invoke(cli, {"test", "--project", root.string()});
         check(fs::path(read_json(root / ".crt/local.json").at("sdk_root").get<std::string>()) == fs::canonical(installed), "SDK selected under common store");
