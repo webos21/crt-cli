@@ -11,6 +11,18 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-10
 
+### Qualify Linux CI on Ubuntu 26.04 and keep it required
+
+Moved Linux/x86_64 to explicit `ubuntu-26.04` and Ubuntu's LLVM 21 packages,
+removing the noble-specific apt.llvm.org setup. Hosted run `42779857557` at
+`f3d8a58` passes all four suites (901/221/114/141), both bootstrap stages,
+cache reuse, import audits and standalone execution. Stage 1 and stage 2 are
+byte-identical. Linux failures now fail CI; the passing runner setting is kept.
+Product code, SDK/bootstrap pins and Windows/macOS configuration are unchanged.
+Ubuntu 24.04's producer-side loader compatibility gap remains open. Exact
+runner/tool identities, receipts and limits belong to
+[CI acceptance](docs/acceptance/ci_acceptance.md#ubuntu-2604-hosted-linux-qualification-2026-11-10).
+
 ### Add GitHub CI bootstrapped from the published Preview and remove `bin/`
 
 The repository no longer commits executables. `.github/workflows/ci.yml` (PR, `main`, manual) runs

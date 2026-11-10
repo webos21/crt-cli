@@ -73,10 +73,50 @@ bwrap --unshare-all --bind root / --proc /proc --dev /dev --ro-bind <work> <work
 The reproducer project is `crt-cli new variant --language cxx --kind shared-library`; its `greeting-test` is the failing executable. The same
 executable runs on glibc 2.43.
 
+## Ubuntu 26.04 Hosted Linux Qualification (2026-11-10)
+
+**Pass, native Linux/x86_64.** The owner selected migration to Ubuntu 26.04,
+keeping it if the hosted run passed. Run
+[`42779857557`](https://github.com/webos21/crt-cli/actions/runs/42779857557),
+Linux job [`129707007529`](https://github.com/webos21/crt-cli/actions/runs/42779857557/job/129707007529),
+tests commit `f3d8a58ddf59225826bcf41dd1c99687d7f11747` and concludes success.
+
+| Item | Measured identity/result |
+| --- | --- |
+| Runner | `ubuntu-26.04`, OS 26.04.1, image `20261101.186.1` |
+| Host runtime/tools | glibc `2.43-2ubuntu2.4`; Ubuntu Clang 21.1.8 (`6ubuntu1`); LLD 21.1.8; LLVM ar 21 |
+| Bootstrap / SDK | Same published Preview and SDK `.3` pins as the preceding Linux run; SDK content `36623957fbdd5a384cc173991e20253ff83148028ab8072298dcd434a55a2b3f` |
+| Suites | Native **901**, archive **221**, sdk-store **114**, port-recipe **141** checks pass; none skipped |
+| Stage 1 / stage 2 | Each cold build **21 executed / 0 reused**; warm rebuild **0 / 21** |
+| Stage equality | Byte-identical, SHA-256 `e58e9c0487b20b169c7cf19b863a9cb06b6116bcf3634faa68d8d399417d5785` |
+| Import audit | No `DT_NEEDED`, `RPATH` or `RUNPATH`; interpreter `/lib64/ld-linux-x86-64.so.2` |
+| Standalone execution | Both stages pass version/help/bootstrap doctor with fresh home, no SDK store and empty PATH |
+
+The failing C++ shared-library case from Ubuntu 24.04 now passes within the
+unmodified native suite. Product/test/manifest sources, the CI driver and
+bootstrap/SDK pins are identical to run `42777416265` (`4897690`). Only Linux's
+runner, LLVM provisioning, failure gating and documentation change. LLVM comes
+from the Ubuntu archive; the Ubuntu 24.04/noble apt.llvm.org repository is no
+longer added. Linux is a required leg (`experimental: false`), so failures
+cannot be masked by `continue-on-error`. The owner-selected passing setup stays.
+
+Downloaded job metadata/logs, artifact listings, complete Linux artifacts and
+the prior 24.04 failure remain in `out/ci-ubuntu2604-20261110/`. Independent local
+checks verify the downloaded executable against SHA256SUMS and both stage
+receipts, all recorded step exits, test counts, warm reuse and ELF dynamic tags
+(`verified-result.json`). The hosted native suite takes 200.9 seconds.
+
+This qualifies the pinned combination on this Ubuntu 26.04 image. Ubuntu 24.04
+and other loader versions remain unqualified for this shared-runtime path;
+no CRT fix or broader glibc support range is claimed. Input-gated port suites,
+transport replays and release publication remain separate. Windows/macOS keep
+their existing workflow settings; this Linux result does not qualify Windows.
+
 ## Not run
 
-- On GitHub-hosted images the Linux and Windows legs have not passed. Linux is blocked by the producer-side loader gap above;
-  Windows needs a re-run with the `TMPDIR` fix, and its later stages (import audit, SDK-free run) have not executed there.
+- Ubuntu 24.04's full native suite remains blocked by the producer-side loader
+  gap above; Ubuntu 26.04 passes at the recorded combination. Windows/x64's
+  required-leg qualification remains separate from this Linux migration.
 - The Linux, macOS and Windows driver paths ran on hosted images up to the points recorded above; Python 3.12, `actions/*` at
   their pinned commits, the LLVM 21 apt install and artifact upload worked on Linux.
 - Input-gated port suites, redirect/transport replays, Linux/aarch64 and Windows/arm64 are not covered.

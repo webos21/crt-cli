@@ -266,6 +266,9 @@ producer compatibility limit, not a qualified platform. A suite failure
 no longer stops the later stages, so one run reports everything that is broken. The [TODO](../../TODO.md#github-ci) owns the
 open legs and the integration/release workflows. [CI acceptance](../acceptance/ci_acceptance.md) records what has actually
 been run, including the first hosted run and the Linux loader gap it found.
+The [Ubuntu 26.04 hosted qualification](../acceptance/ci_acceptance.md#ubuntu-2604-hosted-linux-qualification-2026-11-10)
+passes all Linux stages; its runner setting is retained. This does not qualify
+the older Ubuntu 24.04 shared-runtime path.
 
 ## Replay the Local SDK Installer (D2)
 
