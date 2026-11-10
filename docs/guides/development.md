@@ -612,3 +612,10 @@ The retained Linux D3 SDK has dirty development provenance and the host-tools
 bundle is local-only; preserve both for reproducible technical regression. They
 are not the first preview release candidate. Full delivery, D4 dependency ports,
 general updates/self-upgrade and Studio do not block this bounded preparation.
+
+
+The [Linux local input rehearsal](../acceptance/preview_acceptance.md#linux-local-candidate-2026-11-10)
+now records a clean SDK/archive/policy and exact CLI/resource/archive combination.
+Resume from those preserved inputs and receipts; never overwrite a failed or
+accepted candidate. Producer source publication, official trust and actual asset
+promotion remain separate from the successful local first-user rehearsal.

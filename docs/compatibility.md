@@ -6,6 +6,25 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## Linux Preview Input Rehearsal (2026-11-10)
+
+**Local technical combination selected; unpromoted.** CRT
+`0ab8f8cfbbde19e14dd5861ba176fb8881e06182` produces the clean Release Dev SDK
+`v0.0.1-preview.20261110.3` and independent host tools. CLI product source remains
+`024de89d2a3e6dfbfe8b01db77262d091e2c13a7` (normalized snapshot `dcc24945...50d4e5`).
+[Preview acceptance](acceptance/preview_acceptance.md#linux-local-candidate-2026-11-10)
+owns exact SDK/archive/policy/bundle/CLI/resource hashes and final native evidence.
+The source-asset fixtures now match the producer fixes; SDK/native-policy/recipe/
+project-lock formats and public ABI are unchanged. The CLI resource assembler's
+identified working-tree delta includes xz/liblzma notices and its own license in
+existing bootstrap-resources 1, with four focused packaging fixtures.
+
+This selects an exercised local combination, without updating root/default or
+production locks. The publisher/trust/promotion decision and source publication
+remain open. Linux C shared SDK-provider mode stays unqualified under CRT 6.4;
+other hosts need their own final-package replay. Earlier D2/D3 combinations keep
+their original identities and scope; Full/D4/self-upgrade are not implied.
+
 ## D3 Bounded Adapter Adoption (2026-11-09)
 
 **Adopted technical contract, unpromoted artifacts.** Reviewed producer CRT

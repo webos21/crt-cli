@@ -31,13 +31,11 @@ D3 remains separate. D2's recorded installation/selection/first-build/pinned
 HTTPS baselines are retained. Completed work belongs to HISTORY; STATUS is the
 separately requested dated snapshot.
 
-- [ ] Freeze a clean bounded Linux/x86_64 Dev SDK + CLI candidate, LLVM prerequisites,
-  resources/notices/trust inputs and a source-hidden first-user workflow. Follow
-  [input qualification](docs/guides/development.md#first-preview-input-qualification).
-  Preserve dirty developer fixtures; exclude unqualified Linux C shared SDK mode
-  until the producer policy in CRT 6.4 is resolved and replayed.
-- [ ] Verify/promote the SDK before adopting its actual published pin in the
-  CLI. Apply final-package replay to each advertised host. Publisher trust and
+- [x] Freeze the [bounded clean Linux Dev SDK + CLI local candidate](docs/acceptance/preview_acceptance.md#linux-local-candidate-2026-11-10),
+  LLVM inputs, complete notices, explicit-at-fetch trust and source-hidden workflow.
+  Linux C shared SDK mode remains excluded under CRT 6.4.
+- [ ] Publish the selected producer source offer and approve publisher/trust
+  metadata; verify/promote the SDK before adopting its actual published pin in the CLI. Apply final-package replay to each advertised host. Publisher trust and
   publication remain separate from rehearsal or a developer test CA.
 - [ ] Keep Full SDK packaging/security/source/license review on its own path;
   Full installation/profile support is not a prerequisite for the first CLI preview.

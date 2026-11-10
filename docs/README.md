@@ -38,6 +38,8 @@ from the SDK build baseline:
 
 ## Acceptance Contracts and Evidence
 
+- [Dev SDK / CLI Preview](acceptance/preview_acceptance.md): bounded local candidate,
+  actual SDK/CLI/resource identities, first-user rehearsal and publication limits.
 - [D0/D1 Bootstrap Acceptance](acceptance/bootstrap_acceptance.md): SDK-only
   CLI consumption, initial layout/decisions, single-executable feasibility,
   SDK-free self-doctor/HTTPS and Windows host-environment gates, and

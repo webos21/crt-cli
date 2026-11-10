@@ -11,7 +11,8 @@ import shutil
 import tempfile
 from pathlib import Path
 
-COMPONENTS = ('crt-libc', 'llvm-runtimes', 'curl', 'mbedtls', 'zlib', 'nlohmann-json')
+COMPONENTS = ('crt-libc', 'llvm-runtimes', 'curl', 'mbedtls', 'zlib', 'nlohmann-json', 'xz')
+CLI_LICENSE = Path(__file__).resolve().parents[1] / 'LICENSE'
 
 
 def digest(path):
@@ -35,6 +36,9 @@ def assemble(binary, sdk, output, ca_file=None):
         for component in COMPONENTS:
             for prefix in ('share/licenses', 'share/crt/dependencies'):
                 shutil.copytree(sdk / prefix / component, staging / prefix / component, symlinks=True)
+        cli_notice = staging / 'share/licenses/crt-cli'
+        cli_notice.mkdir()
+        shutil.copy2(CLI_LICENSE, cli_notice / 'LICENSE')
         shutil.copy2(sdk / 'LICENSE.md', staging / 'LICENSE.md')
         trust = {'mode': 'explicit-at-fetch', 'ca_file': None}
         if ca_file:

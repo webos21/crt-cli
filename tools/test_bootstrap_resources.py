@@ -34,6 +34,9 @@ class Resources(unittest.TestCase):
         self.assertEqual(manifest['trust']['ca_file'], 'share/trust/ca.pem')
         self.assertEqual(manifest['executable'], self.executable)
         self.assertEqual((self.output / self.executable).read_bytes(), self.binary.read_bytes())
+        self.assertEqual((self.output / 'share/licenses/crt-cli/LICENSE').read_bytes(), resources.CLI_LICENSE.read_bytes())
+        self.assertEqual((self.output / 'share/licenses/xz/NOTICE').read_text(), 'xz')
+        self.assertEqual((self.output / 'share/crt/dependencies/xz/NOTICE').read_text(), 'xz')
         self.assertEqual([p.name for p in self.output.rglob('*') if p.is_file() and p.stat().st_mode & 0o111], [self.executable])
         self.assertIn(['share/trust/ca.pem', 'file', resources.digest(ca)], manifest['inventory'])
         before = (self.output / 'manifest.json').read_bytes()
@@ -57,6 +60,15 @@ class Resources(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'disjoint'):
             resources.assemble(self.binary, self.sdk, alias / 'candidate')
         self.assertFalse((self.sdk / 'candidate').exists())
+
+    def test_missing_liblzma_notice_refuses_publication(self):
+        notice = self.sdk / 'share/licenses/xz/NOTICE'
+        notice.unlink()
+        notice.parent.rmdir()
+        with self.assertRaises(FileNotFoundError):
+            resources.assemble(self.binary, self.sdk, self.output)
+        self.assertFalse(self.output.exists())
+        self.assertEqual([], list(self.root.glob('.bootstrap-*')))
 
 
 if __name__ == '__main__':

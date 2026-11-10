@@ -9,6 +9,30 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-10
+
+### Qualify the clean Linux Dev SDK / CLI Preview inputs
+
+Selected the clean producer `0ab8f8c` SDK `.3` after retaining and fixing the
+Release/context and C++ source-fixture failures. Rebuilt committed CLI product
+`024de89` from a fresh public-SDK-only export, assembled a complete one-executable
+resource package and actual archive, then replayed native projects/ports,
+SDK-free control, HTTPS acquisition/first build and transport/authentication
+failures on that exact executable. [Preview acceptance](docs/acceptance/preview_acceptance.md#linux-local-candidate-2026-11-10)
+owns the final pins, gate counts, raw receipts and limitations. No default/project
+lock or committed binary changes. Source publication, official trust and producer
+promotion remain the next gate; other hosts, Full/D4 and self-upgrade are separate.
+
+### Complete the bootstrap notice closure for current CLI inputs
+
+The Preview rehearsal found that `create_bootstrap_resources.py` predated
+liblzma linkage and omitted xz's notices/recipe and the CLI's own license.
+Include both in the existing format-1 complete inventory, retaining one
+executable and explicit-at-fetch or optional explicit-CA data policy. Missing
+xz notices refuse publication; four producer-only packaging regressions pass.
+This changes data assembly, not product code, SDK compiler policy or resource
+format. [Preview acceptance](docs/acceptance/preview_acceptance.md#linux-local-candidate-2026-11-10) owns final artifact evidence.
+
 ## 2026-11-09
 
 ### Adopt the bounded D3 zlib adapter contract

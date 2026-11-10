@@ -531,7 +531,11 @@ integrity `not_verified` and HTTPS `not_run`. Additional scopes are read-only:
 The producer-only `tools/create_bootstrap_resources.py` assembles one executable,
 dependency notices/provenance and optional `share/trust/ca.pem`, refusing named
 output replacement, symlinks or overlap with immutable inputs. It is not executed
-by the product. External pins/public keys/signatures remain separate from the
+by the product. Current packages include the CLI's own Apache-2.0 license and
+the linked liblzma dependency's xz notices/recipe as well as CRT/LLVM/curl/
+Mbed TLS/zlib/nlohmann-json records; missing required records prevent publication.
+This corrects package contents without changing bootstrap-resources format 1.
+External pins/public keys/signatures remain separate from the
 inventory. `fetch` still requires an explicit `--ca-file`; it never implicitly
 adopts a package CA. No helper/launcher is needed by this package. Installation,
 self-upgrade, official release metadata/expiry/key policy and native release
