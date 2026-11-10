@@ -199,3 +199,42 @@ As on Linux, the current CLI follows no HTTPS redirects and each GitHub asset UR
 accepted path is manual download plus pinned local installation. No root `crt.lock`, default SDK selection or CLI release is changed; the committed macOS binary stays a
 local, unpromoted test aid. Other-host final packages, a packaged macOS CLI archive, Developer ID signing, Full and D4 remain in their own queues.
 
+## macOS final CLI package (2026-11-10)
+
+Scope: the local Preview archive of the committed macOS/arm64 executable with its pinned notices, provenance records and an immutable format-1
+inventory. This is the macOS counterpart of the Linux package qualification; it publishes nothing and creates no release, tag or default lock.
+
+**Inputs.** Executable `bin/macos/crt-cli` (`558c13c15ffdf0394fb66e85d3a11c4f9c21c6606aae0e3f39aade353e3c7e53`), assembled by
+`tools/create_bootstrap_resources.py` against the **actual public SDK bytes** of `v0.0.1-preview.20261110.macos.1`: the archive was downloaded without
+authentication, verified against the manifest pin and installed by this CLI (`sdk install`), and the notices were copied from that installed SDK
+(content `e3dc7fb1810a3f78ab8ef33882225ccb562d21f6f5977a2037ab92819326bac8`). The assembler fails closed on a missing component record.
+
+**Package.** One executable and 29 regular files, 30 in all: `LICENSE.md`, the CLI's Apache-2.0 license, 18 component license files
+(`crt-libc` 5, `llvm-runtimes` 8, `mbedtls` 2, `curl`, `zlib`, `xz`, `nlohmann-json` 1 each), the 7 matching dependency provenance records, and `manifest.json`
+(`crt-cli.bootstrap-resources` format 1, target macOS/aarch64, 29 inventory entries with SHA-256, trust mode `explicit-at-fetch` and no CA file, the external prerequisite
+`libSystem.B.dylib`). Manifest SHA-256 `9449325ea9ef5dfcd454cf705878759dfe405b71a7641baa9b66d999c198e0be`. No SDK library or header, compiler,
+interpreter, launcher, CA certificate or test key is included.
+
+**Archive.** `tools/package_cli_archive.py pack` writes `crt-cli-0.1.0-dev-macos-aarch64-local-preview.20261110.tar.xz` (1222100 bytes), SHA-256
+`f1a20b50210ee4b58fd5365bdb5d003167d6e232ad341ff4dc5f75aba1aaa876`, with one top-level directory, sorted members, owner 0, mtime 0 and modes 0755 for
+directories and the executable, 0644 for the rest. Packing the same package twice gives the same bytes. The tool first inspects the package against its own manifest
+and refuses extra, missing or changed files, a second executable, links, special files and a missing mandatory notice or component license (4 unit tests, including
+hostile archive members).
+
+**Extraction and verification.** `package_cli_archive.py verify` extracts into a new directory with the stdlib `data` filter and re-checks the manifest: **30 files**, every
+digest equal to the inventory, the only executable is `crt-cli`, no link or special file, the same manifest digest. The extracted executable is byte-identical to
+`bin/macos/crt-cli`; `otool -L` lists only `/usr/lib/libSystem.B.dylib`, there is no `LC_RPATH`, and the signature is the linker's ad-hoc one
+(`Identifier=crt-cli`, `Signature=adhoc`, no team identifier).
+
+**Run from the extracted package, SDK- and source-free (Seatbelt, 9/9).** The package is copied to a fresh directory; the producer, CLI and worktree checkouts, Xcode and
+`/Library/Developer` are unreadable, the network is denied, `PATH` is empty, and only the package executable may run. `--version` (`0.1.0-dev`), `--help`, bare
+`doctor --scope self` and `doctor --scope self --resources <package> --resources-sha256 <pin>` pass; the last reports `publisher_authentication: not_verified`, trust
+`explicit-at-fetch` and the compiled-in SDK input (`v0.0.1-preview.20261110.macos.1`, content `e3dc7fb1...bac8`, source `445f127`). Negative controls fail for their own
+reasons: a wrong pin ("manifest SHA-256 mismatch"), one appended byte in a notice and an undeclared extra file (both "resource/executable inventory mismatch"); the restored
+package passes again, and a foreign program and the producer tree are denied. An earlier attempt of this run used an unresolved `/tmp` path in the profile, so the executable
+itself was blocked and three negative controls "passed" for the wrong reason; it is discarded and the run above is the one recorded.
+
+Receipts are under the CRT checkout's ignored `out/preview-macos/cli-package/` (`pack.json`, `verify.json`, `self-doctor/` with `summary.json`). Not covered: publishing this
+archive or any CLI release, Developer ID signing or notarization, an official publisher key (the manifest is a local inventory, not publisher authentication), port/provider
+replays against this exact SDK, and other hosts.
+
