@@ -22,6 +22,32 @@ promoted `.3` bytes, the 901-check native regression and a real GitHub `sdk acqu
 pass; see [the record](docs/acceptance/preview_acceptance.md#restricted-https-redirects-and-github-acquisition-2026-11-10).
 macOS/Windows replay and the CLI executable release are not done.
 
+### Qualify the Windows final CLI package
+
+Assembled the committed Windows executable (`3e8c0491...`) with its pinned notices from the actual public SDK bytes of `v0.0.1-preview.20261110.windows.1` and packed them into a deterministic 30-file
+`.tar.xz` (5360820 bytes, `5c9ef404...`); `package_cli_archive.py` now identifies native images by content instead of the missing Windows execute bit. The new restricted-token
+`replay_cli_package_windows.py` runs the extracted package SDK- and source-free (12/12, negative controls included). Nothing is published. [Acceptance](docs/acceptance/preview_acceptance.md#windows-final-cli-package-2026-11-10).
+
+### Qualify and adopt the published Windows Development SDK Preview
+
+Built the CLI from `9a5272d` by the clean Release Dev SDK `v0.0.1-preview.20261110.windows.1` alone (21 sources cold 21/0, warm 0/21; native 972, archive 214, SDK-store 113, recipe 141), committed it as
+`bin/win-x64/crt-cli.exe` (`3e8c0491...`) and added `tools/replay_preview_public_windows.py`, a restricted-token adaptation of the macOS consumer driver. It passes 31/31 over the local handoff and,
+after the producer published the prerelease, over the actual unauthenticated public bytes. [Acceptance](docs/acceptance/preview_acceptance.md#windows-public-sdk-promotion-and-consumer-adoption-2026-11-10).
+
+### Qualify the macOS final CLI package
+
+Assembled the committed macOS executable with its pinned notices from the actual public SDK bytes, packed them into a deterministic 30-file archive
+(1222100 bytes, `f1a20b50...a876`) and verified a safe extraction against the manifest. The extracted package runs `--version`, `--help` and `doctor --scope self`
+with resources under Seatbelt with the SDK, sources and compilers hidden; wrong pins, a changed notice and an extra file are refused. The new
+`tools/package_cli_archive.py` has four unit tests. Nothing is published and the archive is a local, unsigned test aid.
+[Acceptance](docs/acceptance/preview_acceptance.md#macos-final-cli-package-2026-11-10).
+
+### Consume the published macOS Dev SDK Preview
+
+The committed macOS executable installs the actual public bytes of `v0.0.1-preview.20261110.macos.1` from the pinned manifest and builds C and C++ projects without configure under Seatbelt
+(30/30). The relocation of the private lock helper into `include/crtcli/` that the self-build needed is part of the same checkpoint. See
+[acceptance](docs/acceptance/preview_acceptance.md#macos-public-sdk-promotion-and-consumer-adoption-2026-11-10).
+
 ### Adopt the published Linux SDK for native manual-install consumers
 
 After producer publication, downloaded public assets match the qualified `.3`

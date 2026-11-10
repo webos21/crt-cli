@@ -179,3 +179,161 @@ publisher authentication remains `not_verified`. The exercised CLI binary is a d
 the working tree (not the earlier qualified `6ba046e5...1dab2`), so that candidate's evidence is not
 carried over and no combination is labeled compatible beyond the cases above. Evidence:
 `/home/syszone/redirect-replay-1/redirect-replay.json` (per-case commands and replies).
+
+## macOS local candidate (2026-11-10)
+
+Scope: native macOS/arm64 Dev `02-cxx` Preview candidate `v0.0.1-preview.20261110.macos.1` from clean CRT
+`445f127dc2e1ef4ab538166aa2e374f25773a803` (Release; producer
+[candidate record](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#macos-dev-preview-candidate-2026-11-10)
+owns the SDK/manifest/policy hashes). The CLI is built from `1e821d1b8665eb44f4d34b9582049c09a59fd3a6` plus one relocation: the private
+`src/main/store_lock.h` (introduced by D3) moves to `include/crtcli/store_lock.h`, because the repository rule is that headers live under
+`include/`. No behavior change; the Linux and Windows records stay at their own sources.
+
+| Gate | Result |
+| --- | --- |
+| Self-build from the Preview SDK alone (Seatbelt contract replay, previous binary as bootstrap seed) | 21 sources: cold 21 executed / 0 reused, warm 0 / 21; bootstrap loop code and data identical |
+| Native / archive / SDK-store / recipe regression | **922** / **221** / **114** / **141** checks |
+| Imports | only `libSystem` |
+| Executable | `558c13c15ffdf0394fb66e85d3a11c4f9c21c6606aae0e3f39aade353e3c7e53`, 4368360 bytes (committed as `bin/macos/crt-cli`) |
+| Consumer of the local handoff, `tools/replay_preview_public_macos.py` (Seatbelt) | **30/30**: pin and asset digests, pinned install/verify/idempotence, wrong-pin refusal, C and C++ first build without configure, test, run, zero-command warm build, unchanged locks and inputs |
+
+The producer replay driver's two guard corrections (documented `_WIN32` in a JSON fixture; the private header location) and the retained
+failed attempts are recorded in the producer candidate section. Not covered at this checkpoint: a packaged CLI archive with pinned notices for macOS
+(the Linux package assembly is not replayed), Developer ID signing or notarization, port/provider replays against this exact SDK, other hosts. The
+executable is a local, unpromoted test aid, not a published release.
+
+## macOS Public SDK promotion and consumer adoption (2026-11-10)
+
+The producer has [published the qualified SDK](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.macos.1) as a native macOS/arm64 Dev
+prerelease with source tag at `445f127dc2e1ef4ab538166aa2e374f25773a803`; the manifest pin
+`0981110c84e5d24a903dbd3965dbe92eb2fe405edfa89804e3086dfeb75983de`, SDK content `e3dc7fb1810a3f78ab8ef33882225ccb562d21f6f5977a2037ab92819326bac8`
+and portable-policy digest `d5a100fd...e464` are unchanged from the local candidate above. The
+[trust review](https://github.com/webos21/crt/blob/main/docs/design/dev_preview_trust.md#macosarm64-bounded-policy-adopted-2026-11-10) reuses the caller-trusted manual
+pin model; no publisher signature, default channel or server-enforced immutability is claimed. Producer
+[promotion acceptance](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#macos-dev-sdk-public-promotion-2026-11-10) owns the six public downloads.
+
+Using the committed `bin/macos/crt-cli` (`558c13c1...e53`), `tools/replay_preview_public_macos.py` consumes the actual unauthenticated public download directory under
+Seatbelt (no network, scratch HOME and private temporary directory the only writable places, repositories and worktree unreadable, empty `PATH`, Xcode's clang/clang++/ld/ar).
+**30/30 checks pass**: pin and asset digests, pinned install/verify and idempotent reinstall, refusal of a wrong pin with nothing published, C and C++ source-only `new`, first
+build without configure through `--sdk`, test, run, zero-command warm reuse, unchanged project locks, installed SDK and downloads. Result SHA-256
+`8eaee9b5b76659ff0f6fd208d2effa600856cd2c256d1e8b2f327746e7c40f13`.
+
+As on Linux, the current CLI follows no HTTPS redirects and each GitHub asset URL redirects to GitHub storage, so **direct GitHub `sdk acquire --source` remains unsupported**; the
+accepted path is manual download plus pinned local installation. No root `crt.lock`, default SDK selection or CLI release is changed; the committed macOS binary stays a
+local, unpromoted test aid. Other-host final packages, a packaged macOS CLI archive, Developer ID signing, Full and D4 remain in their own queues.
+
+## macOS final CLI package (2026-11-10)
+
+Scope: the local Preview archive of the committed macOS/arm64 executable with its pinned notices, provenance records and an immutable format-1
+inventory. This is the macOS counterpart of the Linux package qualification; it publishes nothing and creates no release, tag or default lock.
+
+**Inputs.** Executable `bin/macos/crt-cli` (`558c13c15ffdf0394fb66e85d3a11c4f9c21c6606aae0e3f39aade353e3c7e53`), assembled by
+`tools/create_bootstrap_resources.py` against the **actual public SDK bytes** of `v0.0.1-preview.20261110.macos.1`: the archive was downloaded without
+authentication, verified against the manifest pin and installed by this CLI (`sdk install`), and the notices were copied from that installed SDK
+(content `e3dc7fb1810a3f78ab8ef33882225ccb562d21f6f5977a2037ab92819326bac8`). The assembler fails closed on a missing component record.
+
+**Package.** One executable and 29 regular files, 30 in all: `LICENSE.md`, the CLI's Apache-2.0 license, 18 component license files
+(`crt-libc` 5, `llvm-runtimes` 8, `mbedtls` 2, `curl`, `zlib`, `xz`, `nlohmann-json` 1 each), the 7 matching dependency provenance records, and `manifest.json`
+(`crt-cli.bootstrap-resources` format 1, target macOS/aarch64, 29 inventory entries with SHA-256, trust mode `explicit-at-fetch` and no CA file, the external prerequisite
+`libSystem.B.dylib`). Manifest SHA-256 `9449325ea9ef5dfcd454cf705878759dfe405b71a7641baa9b66d999c198e0be`. No SDK library or header, compiler,
+interpreter, launcher, CA certificate or test key is included.
+
+**Archive.** `tools/package_cli_archive.py pack` writes `crt-cli-0.1.0-dev-macos-aarch64-local-preview.20261110.tar.xz` (1222100 bytes), SHA-256
+`f1a20b50210ee4b58fd5365bdb5d003167d6e232ad341ff4dc5f75aba1aaa876`, with one top-level directory, sorted members, owner 0, mtime 0 and modes 0755 for
+directories and the executable, 0644 for the rest. Packing the same package twice gives the same bytes. The tool first inspects the package against its own manifest
+and refuses extra, missing or changed files, a second executable, links, special files and a missing mandatory notice or component license (4 unit tests, including
+hostile archive members).
+
+**Extraction and verification.** `package_cli_archive.py verify` extracts into a new directory with the stdlib `data` filter and re-checks the manifest: **30 files**, every
+digest equal to the inventory, the only executable is `crt-cli`, no link or special file, the same manifest digest. The extracted executable is byte-identical to
+`bin/macos/crt-cli`; `otool -L` lists only `/usr/lib/libSystem.B.dylib`, there is no `LC_RPATH`, and the signature is the linker's ad-hoc one
+(`Identifier=crt-cli`, `Signature=adhoc`, no team identifier).
+
+**Run from the extracted package, SDK- and source-free (Seatbelt, 9/9).** The package is copied to a fresh directory; the producer, CLI and worktree checkouts, Xcode and
+`/Library/Developer` are unreadable, the network is denied, `PATH` is empty, and only the package executable may run. `--version` (`0.1.0-dev`), `--help`, bare
+`doctor --scope self` and `doctor --scope self --resources <package> --resources-sha256 <pin>` pass; the last reports `publisher_authentication: not_verified`, trust
+`explicit-at-fetch` and the compiled-in SDK input (`v0.0.1-preview.20261110.macos.1`, content `e3dc7fb1...bac8`, source `445f127`). Negative controls fail for their own
+reasons: a wrong pin ("manifest SHA-256 mismatch"), one appended byte in a notice and an undeclared extra file (both "resource/executable inventory mismatch"); the restored
+package passes again, and a foreign program and the producer tree are denied. An earlier attempt of this run used an unresolved `/tmp` path in the profile, so the executable
+itself was blocked and three negative controls "passed" for the wrong reason; it is discarded and the run above is the one recorded.
+
+Receipts are under the CRT checkout's ignored `out/preview-macos/cli-package/` (`pack.json`, `verify.json`, `self-doctor/` with `summary.json`). Not covered: publishing this
+archive or any CLI release, Developer ID signing or notarization, an official publisher key (the manifest is a local inventory, not publisher authentication), port/provider
+replays against this exact SDK, and other hosts.
+
+## Windows local candidate (2026-11-10)
+
+Scope: native Windows/x86_64 Dev `02-cxx` Preview candidate `v0.0.1-preview.20261110.windows.1` from clean CRT `b31276a6acccf0a89731f7bb0aecbdcdc9b45cda` (Release;
+producer [candidate record](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#windows-dev-preview-candidate-2026-11-10) owns the SDK/manifest/policy
+hashes). The CLI is built from `9a5272d12d80a74389edbc724fd4bd602d618064` unchanged; it already contains the Windows D3 adapter and the Win64 vector-register unwind fix lives in the SDK. The Linux and
+macOS records stay at their own sources.
+
+| Gate | Result |
+| --- | --- |
+| Self-build from the Preview SDK alone (restricted-token contract replay, private SID, empty PATH, job-object accounting) | 21 sources: cold 21 executed / 0 reused, warm 0 / 21 |
+| Native / archive / SDK-store / recipe regression | **972** / **214** / **113** / **141** checks |
+| Imports | only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`; SDK-hidden help/version/doctor pass |
+| Executable | `3e8c0491d2e385bbaba5c0e8bd63eeac3896f498fed762ecab4370ecf277bd90`, 44920832 bytes (committed as `bin/win-x64/crt-cli.exe`) |
+| Consumer of the local handoff, `tools/replay_preview_public_windows.py` (restricted token) | **31/31**: pin and asset digests, pinned install/verify/idempotence, wrong-pin refusal, C and C++ first build without configure, test, run, zero-command warm build, unchanged locks and inputs |
+
+The consumer driver is a Windows adaptation of the macOS one: each call runs under CRT's `crt_windows_trace` (per-run SID, empty PATH, job-object process accounting; no network or
+executable denial is claimed), a native probe proves the producer and CLI trees unreadable, and the Windows SDK import-library directory is passed through `CRT_WINDOWS_SDK_LIBPATH`.
+The guide's literal commands (`--os-sdk`, spaced tool paths) were also run once as a user would and pass. Not covered at this checkpoint: a packaged CLI archive with pinned notices
+for Windows, Authenticode signing, Windows/arm64, port/provider replays against this exact SDK, other hosts. The executable is a local, unpromoted test aid, not a published release.
+
+## Windows Public SDK promotion and consumer adoption (2026-11-10)
+
+The producer has [published the qualified SDK](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.windows.1) as a native Windows/x86_64 Dev prerelease with source tag at
+`b31276a6acccf0a89731f7bb0aecbdcdc9b45cda`; the manifest pin `b0fca4c81d29b8eee28e0d9fb7d6e26950b094a8be4f2c091e43922366a46976`, SDK content `5bb55372ec10e3cfa24c84de981a7130f56aeb57ef0d43d5da22a65036dec7ef` and
+portable-policy digest `7762f572...b726` are unchanged from the local candidate above. The
+[trust review](https://github.com/webos21/crt/blob/main/docs/design/dev_preview_trust.md#windowsx86_64-bounded-policy-adopted-2026-11-10) reuses the caller-trusted manual pin model; no publisher
+signature, default channel or server-enforced immutability is claimed. Producer
+[promotion acceptance](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#windows-dev-sdk-public-promotion-2026-11-10) owns the six public downloads.
+
+Using the committed `bin/win-x64/crt-cli.exe` (`3e8c0491...bd90`), `tools/replay_preview_public_windows.py` consumes the actual unauthenticated public download directory under a restricted
+token (per-run SID, producer and repositories unreadable by a native probe, private HOME and temporary directory, empty `PATH`, job-object process accounting, LLVM 22.1.8 and the Windows SDK
+import libraries). **31/31 checks pass**: pin and asset digests, pinned install/verify and idempotent reinstall, refusal of a wrong pin with nothing published, C and C++ source-only `new`, first
+build without configure through `--sdk`, test, run, zero-command warm reuse, unchanged project locks, installed SDK and downloads. Result SHA-256
+`5784f28a815be4edb4a881fdabfff63d37885441ba802487d7398f47c6acfd20`.
+
+As on Linux and macOS, the current CLI follows no HTTPS redirects and each GitHub asset URL redirects to GitHub storage, so **direct GitHub `sdk acquire --source` remains unsupported**; the accepted
+path is manual download plus pinned local installation. No root `crt.lock`, default SDK selection or CLI release is changed; the committed Windows binary stays a local, unpromoted test aid.
+A packaged Windows CLI archive with pinned notices, Authenticode signing, Windows/arm64, Full and D4 remain in their own queues.
+
+## Windows final CLI package (2026-11-10)
+
+Scope: the local Preview archive of the committed Windows/x86_64 executable with its pinned notices, provenance records and an immutable format-1 inventory. This is the Windows
+counterpart of the Linux and macOS package qualification; it publishes nothing and creates no release, tag or default lock.
+
+**Inputs.** Executable `bin/win-x64/crt-cli.exe` (`3e8c0491d2e385bbaba5c0e8bd63eeac3896f498fed762ecab4370ecf277bd90`), assembled by `tools/create_bootstrap_resources.py` against the
+**actual public SDK bytes** of `v0.0.1-preview.20261110.windows.1`: the ZIP was downloaded without authentication, verified against the manifest pin and installed by this CLI (`sdk install`), and the
+notices were copied from that installed SDK (content `5bb55372ec10e3cfa24c84de981a7130f56aeb57ef0d43d5da22a65036dec7ef`). The assembler fails closed on a missing component record.
+
+**Package.** One executable (`crt-cli.exe`) and 28 regular files plus `manifest.json`, 30 in all: `LICENSE.md`, the CLI's Apache-2.0 license, 19 component license files (`crt-libc` 5, `llvm-runtimes` 8, `mbedtls` 2,
+`curl`, `zlib`, `xz`, `nlohmann-json` 1 each), the 7 matching dependency provenance records, and `manifest.json` (`crt-cli.bootstrap-resources` format 1, target Windows/x86_64, 29 inventory entries with SHA-256,
+trust mode `explicit-at-fetch` and no CA file, the external prerequisite `windows-system-runtime`: `KERNEL32.dll` and `api-ms-win-core-synch-l1-2-0.dll`, not bundled). Manifest SHA-256
+`a99fee801a30c14884d108f4675a76c1643e3adaf83d83965e05a25f9344ab85`. No SDK library or header, compiler, interpreter, launcher, CA certificate, test key or second PE image is included.
+
+**Archive.** `tools/package_cli_archive.py pack` writes `crt-cli-0.1.0-dev-windows-x86_64-local-preview.20261110.tar.xz` (5360820 bytes), SHA-256
+`5c9ef4042bb15c999a44c6ae745bf3f6efa25093b509bbba7c4c3164a18b4edf`, with one top-level directory, sorted members, owner 0, mtime 0 and modes 0755 for directories and the executable, 0644 for the rest.
+Packing the same package twice gives the same bytes. The archive is a `.tar.xz` like the Linux and macOS ones (Windows 10 and later extract it with the bundled `tar.exe`); no ZIP variant is made. The
+tool first inspects the package against its own manifest and refuses extra, missing or changed files, a second executable, links, special files and a missing mandatory notice or component license.
+
+**Tool change for Windows.** The earlier tool decided "the only executable" and the archive modes from the host's execute bits, which do not exist on Windows (every file reports executable). It now also
+classifies files by content (PE with a valid signature at `e_lfanew`, ELF, Mach-O) and refuses any native image other than the declared executable on every host, sets the archive modes from the manifest's
+executable name, and keeps the POSIX execute-bit check on POSIX hosts. Six unit tests pass on Windows, including a second PE/ELF/Mach-O image hidden in a notice with mode 0644 and a text file that merely starts with
+`MZ`; the same tests were not run on Linux or macOS, where the unchanged POSIX branch is reasoned to behave as before and the earlier archives are not re-made.
+
+**Extraction and verification.** `package_cli_archive.py verify` extracts into a new directory with the stdlib `data` filter and re-checks the manifest: **30 files**, every digest equal to the inventory, the
+only native image is `crt-cli.exe`, no link or special file, the same manifest digest. The extracted executable is byte-identical to `bin/win-x64/crt-cli.exe`; its imports are only `KERNEL32.dll` and
+`api-ms-win-core-synch-l1-2-0.dll`, and its certificate table is empty (not Authenticode-signed).
+
+**Run from the extracted package, SDK- and source-free (restricted token, 12/12).** `tools/replay_cli_package_windows.py` copies the package to a fresh private directory. Each call runs under CRT's
+`crt_windows_trace`: a per-run SID, an empty `PATH`, redirected stdio and job-object process accounting; a native probe proves the producer, CRT, CLI and installed-SDK trees unreadable, and no call starts any image other
+than the package executable and the console host. `--version` (`0.1.0-dev`), `--help`, bare `doctor --scope self` and `doctor --scope self --resources <package> --resources-sha256 <pin>` pass; the last reports
+`publisher_authentication: not_verified`, trust `explicit-at-fetch` and the compiled-in SDK input (`v0.0.1-preview.20261110.windows.1`). Negative controls fail for their own reasons: a wrong pin ("manifest SHA-256 mismatch"),
+one appended byte in a notice and an undeclared extra file (both "inventory mismatch"); the restored package passes again and is byte-for-byte unchanged. Result SHA-256
+`69362643032433af4963426f2833d2142e4b609b666bb04c11899870d703e733`. Unlike the macOS Seatbelt run, Windows records process images but cannot deny a foreign program or the network; that is a stated limit, not a pass.
+
+Receipts are in the local evidence directory (`pack.json`, `verify.json`, `package-run/`). Not covered: publishing this archive or any CLI release, Authenticode signing, an official publisher key (the manifest is a local
+inventory, not publisher authentication), port/provider replays against this exact SDK, Windows/arm64 and other hosts.

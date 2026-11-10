@@ -4,7 +4,7 @@
 #include <crtcli/host_tools.h>
 #include <crtcli/port_store.h>
 #include <crtcli/toolchain.h>
-#include "store_lock.h"
+#include <crtcli/store_lock.h>
 #include <algorithm>
 #include <cctype>
 #include <chrono>
