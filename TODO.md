@@ -54,10 +54,14 @@ retain their later queues. Execution policy remains in
 `ci.yml` (PR and main) bootstraps from the pinned published Preview and is described in the
 [development guide](docs/guides/development.md#continuous-integration); completed steps live in HISTORY.
 
-- [ ] Qualify the macOS/arm64 (`macos-15`) and Windows/x64 (`windows-2022`) legs on GitHub-hosted images, then
-  make them required (they run with `continue-on-error` until their first green run). Confirm LLVM,
-  Xcode and Windows SDK versions against the SDK contracts.
-- [ ] Qualify the Linux leg's first GitHub run (the LLVM 21 apt install and runner image are not exercised locally).
+- [x] macOS/arm64 (`macos-15`) passes every stage on a hosted image and is the required leg
+  ([record](docs/acceptance/ci_acceptance.md#first-github-hosted-run-2026-11-10)).
+- [ ] Windows/x64 (`windows-2022`): the first run failed at `mkdtemp` (driver, fixed); re-run, then qualify the
+  remaining stages and make the leg required.
+- [ ] Linux/x86_64: the native suite fails on Ubuntu 24.04 (glibc 2.39) in `variant-cxx-shared-library`. CRT's
+  `libc.so` lacks the `GLIBC_2.2.5` malloc-family versions the host loader looks up. Hand the
+  [reproducer](docs/acceptance/ci_acceptance.md#first-github-hosted-run-2026-11-10) to CRT for a producer-side fix, or
+  decide the supported glibc range, then make the leg required. Do not work around it in the CLI.
 - [ ] `integration.yml`: the five input-gated port suites (`port-build|store|oracle|command|project-test`) with the
   pinned independent host tools, zlib source archive and oracle, plus redirect/transport replays. Daily and manual.
 - [ ] `release.yml`: protected, manually approved packaging from a tested CI artifact, independent extraction and

@@ -18,9 +18,17 @@ The repository no longer commits executables. `.github/workflows/ci.yml` (PR, `m
 builds the checked-out sources (stage 1), the four deterministic suites run on that executable, stage 1 rebuilds
 them (stage 2) and the imports and an SDK-free run are audited. The five input-gated port suites stay out because they
 print `skipped` and exit 0 without their inputs. A local Linux/x86_64 rehearsal against the real downloads passes
-(901/221/114/141 checks, stage 1 equals stage 2 byte for byte, no `DT_NEEDED`). The workflow itself has not run on GitHub,
-and its macOS/arm64 and Windows/x64 legs are unqualified (`continue-on-error`).
+(901/221/114/141 checks, stage 1 equals stage 2 byte for byte, no `DT_NEEDED`).
 [Inputs, results, fixed driver faults and what is not run](docs/acceptance/ci_acceptance.md).
+
+### Diagnose the first GitHub-hosted CI run
+
+Run `42773306405`: macOS/arm64 passes every stage (941/221/114/141 checks) and becomes the required leg. Windows/x64 failed
+in the driver (`TMPDIR` was not set, so the suite's scratch root fell back to the missing `/tmp`), fixed. Linux/x86_64 fails
+the native suite on Ubuntu 24.04: the host glibc 2.39 loader needs `GLIBC_2.2.5` malloc-family symbols that CRT's `libc.so`
+does not version, reproduced without Docker from the official ubuntu-base image. That is a producer-side gap, recorded with its
+reproducer and not worked around here. The driver now continues past a failed suite and records host tool and glibc versions.
+[Run record, causes and reproducer](docs/acceptance/ci_acceptance.md#first-github-hosted-run-2026-11-10).
 
 ### Publish the Windows/x64 CLI Preview with GitHub SDK acquisition
 

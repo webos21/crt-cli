@@ -70,8 +70,9 @@ class Ci:
             (self.work / name).mkdir(parents=True, exist_ok=True)
         # A private home keeps the SDK store (home/.crt/sdks) inside this run.
         self.env = dict(os.environ, HOME=str(self.work / 'home'), USERPROFILE=str(self.work / 'home'))
-        if os.name != 'nt':
-            self.env['TMPDIR'] = str(self.work / 'tmp')
+        # The native suite takes its scratch root from TMPDIR, then TEMP, then /tmp, and the CLI forwards only TMPDIR to
+        # children; Windows has no /tmp, so every host sets it (forward slashes keep the Windows spelling the suite uses).
+        self.env['TMPDIR'] = (self.work / 'tmp').as_posix()
         self.summary = {'host': self.host, 'steps': [], 'source_commit': self.commit()}
 
     def commit(self):
@@ -93,6 +94,7 @@ class Ci:
         out, err = out.decode('utf-8', 'replace'), err.decode('utf-8', 'replace')
         if code != expect:
             log('\n'.join(err.splitlines()[-40:]))
+            log('stdout tail: ' + out[-1500:])
             raise CiError('%s exited %d (expected %d); full logs: %s' % (label, code, expect, self.work / 'logs'))
         return out, err
 
@@ -186,10 +188,12 @@ class Ci:
             base = Path(self.args.llvm_bin)
             tools = {'--cc': base / ('clang' + EXE), '--cxx': base / ('clang++' + EXE), '--linker': base / ('ld.lld' + EXE), '--ar': base / ('llvm-ar' + EXE)}
         flags = []
+        self.tool_paths = {}
         for flag, path in tools.items():
             if not Path(path).is_file():
                 raise CiError('missing host tool: %s' % path)
             flags += [flag, str(path)]
+            self.tool_paths[flag] = str(path)
         if self.host == 'win-x64':
             flags += ['--os-sdk', self.windows_sdk()]
         return flags
@@ -247,20 +251,44 @@ class Ci:
             raise CiError('crt.json tests and pins.json classification differ: only in crt.json %s, only in pins %s'
                           % (sorted(declared - known), sorted(known - declared)))
 
+    def record_versions(self):
+        """Evidence for failures that depend on the host (compiler, linker, C library)."""
+        found = {}
+        probes = {'clang': [self.tool_flag('--cc'), '--version'], 'linker': [self.tool_flag('--linker'), '--version']}
+        if self.host == 'linux-x64':
+            probes['glibc'] = ['ldd', '--version']
+        for name, argv in probes.items():
+            try:
+                done = subprocess.run([str(a) for a in argv], capture_output=True, text=True, timeout=30)
+                found[name] = (done.stdout or done.stderr).splitlines()[0].strip()
+            except (OSError, subprocess.SubprocessError, IndexError):
+                found[name] = 'unavailable'
+        self.summary['host_versions'] = found
+
+    def tool_flag(self, flag):
+        return self.tool_paths[flag]
+
     def run_tests(self, exe, project):
-        results = {}
+        results, failures = {}, {}
         for name in self.args.tests or self.pins['pr_tests']:
-            data, err = self.cli('test-' + name, exe, 'test', project, ['--target', name], timeout=3700)
-            outcome = data['outcomes']
-            if len(outcome) != 1 or outcome[0]['exit_code'] != 0 or outcome[0]['timed_out']:
-                raise CiError('%s failed: %s' % (name, outcome))
-            if 'skipped' in err:
-                raise CiError('%s skipped work; a skipped suite is not a pass' % name)
-            counted = re.findall(r'(\d+) checks passed', err)
-            if not counted:
-                raise CiError('%s did not report a passed-check count' % name)
-            results[name] = int(counted[-1])
+            try:
+                data, err = self.cli('test-' + name, exe, 'test', project, ['--target', name], timeout=3700)
+                outcome = data['outcomes']
+                if len(outcome) != 1 or outcome[0]['exit_code'] != 0 or outcome[0]['timed_out']:
+                    raise CiError('%s failed: %s' % (name, outcome))
+                if 'skipped' in err:
+                    raise CiError('%s skipped work; a skipped suite is not a pass' % name)
+                counted = re.findall(r'(\d+) checks passed', err)
+                if not counted:
+                    raise CiError('%s did not report a passed-check count' % name)
+                results[name] = int(counted[-1])
+            except CiError as error:
+                # Later suites and stages still run, so one CI pass reports everything that is broken.
+                failures[name] = str(error)
         self.summary['tests'] = results
+        if failures:
+            self.summary['test_failures'] = failures
+        return failures
 
     def audit_imports(self, exe):
         allowed = {item.lower() for item in self.host_pins['allowed_imports']}
@@ -318,7 +346,8 @@ class Ci:
         store = Path(self.env['HOME']) / '.crt' / 'sdks'
         project1, stage1 = self.build_stage('stage1', boot, tools,
                                             explicit_sdk=(store / identity['directory'], store / '.contracts' / (identity['directory'] + '.json')))
-        self.run_tests(stage1, project1)
+        self.record_versions()
+        test_failures = self.run_tests(stage1, project1)
         # Stage 2 is rebuilt at stage 1's absolute path (the export is wiped) by a kept copy of the stage-1 executable.
         kept = self.work / 'stage1-kept' / stage1.name
         kept.parent.mkdir()
@@ -340,6 +369,8 @@ class Ci:
         final = self.work / 'artifact' / ('crt-cli-%s%s' % (self.host, EXE))
         shutil.copy2(stage2, final)
         (self.work / 'artifact' / ('SHA256SUMS-%s' % self.host)).write_text('%s  %s\n' % (sha256_file(final), final.name), encoding='ascii')
+        if test_failures:
+            raise CiError('suites failed (the remaining stages passed): %s' % '; '.join('%s: %s' % item for item in sorted(test_failures.items())))
         self.summary['result'] = 'pass'
 
     def report(self):
@@ -348,7 +379,7 @@ class Ci:
         if target:
             rows = ['### crt-cli CI: %s (%s)' % (self.host, self.summary.get('result', 'fail')), '', '| Item | Value |', '| --- | --- |',
                     '| source | `%s` |' % self.summary['source_commit']]
-            for key in ('bootstrap', 'sdk', 'stage1', 'stage2', 'tests', 'stage_bytes_identical', 'audit', 'ca_sha256'):
+            for key in ('bootstrap', 'sdk', 'host_versions', 'stage1', 'stage2', 'tests', 'test_failures', 'stage_bytes_identical', 'audit', 'ca_sha256'):
                 if key in self.summary:
                     rows.append('| %s | `%s` |' % (key, json.dumps(self.summary[key], sort_keys=True)))
             with open(target, 'a', encoding='utf-8') as stream:
