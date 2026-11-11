@@ -3,7 +3,7 @@
 This file owns the concise, ordered implementation queue. Design and dependency
 order belong to [the CLI design](docs/design/crt_cli.md); measured evidence
 belongs to [acceptance](docs/acceptance/bootstrap_acceptance.md). Completed
-work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
+work is checked off here and recorded in [HISTORY](HISTORY.md).
 
 ## Notice
 
@@ -13,8 +13,10 @@ work moves to [HISTORY](HISTORY.md), not into an expanding Done list here.
   already being implemented. Update it before changing focus.
 - Keep commands, measurements, failures, and per-host outcomes in their owning
   guide/acceptance/history document rather than duplicating them here.
-- Move completed work to HISTORY after validation. Checked prerequisite items
-  may remain briefly only when needed to explain an active sequence.
+- Check an item (`[x]`) when its work is done and validated, and record the
+  outcome in HISTORY and the owning acceptance document. Checked items stay
+  until every item of their section is complete; the section is then deleted
+  only when the user asks. Never delete checked or unchecked items on your own.
 - Do not update or create STATUS as a routine documentation step; do so only
   when explicitly requested. Keep the root README user-facing.
 - Do not claim that a design, fixture, compile-only result, skipped test, or
@@ -55,23 +57,33 @@ retain their later queues. Execution policy remains in
 `ci.yml` (PR and main; a documentation-only change skips the matrix inside the workflow, and
 `CI gate` is the one required check of the `main` ruleset) bootstraps from
 the pinned published Preview and is described in the
-[development guide](docs/guides/development.md#continuous-integration); completed steps live in HISTORY.
+[development guide](docs/guides/development.md#continuous-integration); finished steps are checked below
+and recorded in HISTORY.
 Linux/x86_64 (`ubuntu-24.04` and `ubuntu-26.04`), Linux/arm64 (`ubuntu-26.04-arm`), macOS/arm64 (`macos-15`) and Windows/x64
 (`windows-2022`) are required legs.
 [CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)
 owns the completed combinations, event scope and ruleset, including both repaired Linux
 paths and the Linux/arm64 dispatch, push and pull-request runs.
 
-- [ ] `integration.yml` (manual; the 54-case redirect replay passes on Linux x64 and arm64 in hosted run `42957820373`): the five
-  port suites still need CRT to publish and pin a per-host independent host-tools bundle ([request](docs/crt_host_tools_publication_request.md)) and a hosted-runner adaptation of
-  `tools/replay_port_linux.py`; until then `pins` and `ports` fail on purpose. Add `schedule:` with the pin; macOS/Windows jobs follow.
-- [ ] `release.yml` (manual; `package` → `verify` → approval-gated `publish`): the dry run stops at a verified draft and the entry
-  gates reject an unchecked commit ([record](docs/acceptance/ci_acceptance.md#release-workflow-2026-11-11)). Not yet exercised: the
-  real publish step (`dry_run: false`), whose first use should be the next genuine Preview; it needs the reviewer's approval on the
-  `release` environment, and the approval's author is to be recorded with a comment. Linux x64 and arm64 only; macOS and Windows
-  jobs follow the same host-key pattern.
-- [ ] Add a Windows/arm64 leg under the [pin promotion policy](docs/guides/development.md#ci-pin-promotion) once its public SDK, its
-  CLI Preview and a hosted runner exist. The policy and `tools/check_ci_pins.py` are in place (2026-11-11).
+- [x] Linux/arm64 leg (`ubuntu-26.04-arm`) is a required leg and has passed on manual dispatch, `push` to `main` and a pull request
+  ([record](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)).
+- [x] `CI gate` is the single required check of the `main` ruleset (`27002916`): a documentation-only pull request is `CLEAN`
+  with the matrix skipped, and a failing change is `BLOCKED` ([record](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)).
+- [ ] Observe the ruleset rejecting a non-administrator's direct push or failing-check merge: administrator bypass is `always`, so a
+  rejection was not seen. This needs a second account; tighten the bypass when a second maintainer exists.
+- [x] `integration.yml` (manual) enforces its pins and passes the 54-case restricted-redirect replay on Linux x64 and arm64
+  ([record](docs/acceptance/ci_acceptance.md#integration-workflow-2026-11-11)); its `pins` and `ports` jobs fail on purpose while
+  the host-tools bundle is unpublished.
+- [ ] Run the five port suites in `integration.yml`: CRT publishes and pins a per-host independent host-tools bundle
+  ([crt#2](https://github.com/webos21/crt/issues/2), [request](docs/crt_host_tools_publication_request.md)), then adapt
+  `tools/replay_port_linux.py` to a hosted runner and add `schedule:` in the same commit; macOS/Windows jobs follow.
+- [x] `release.yml` (manual; `package` → `verify` → approval-gated `publish`): the dry run produced a verified draft and an unchecked
+  commit was rejected ([record](docs/acceptance/ci_acceptance.md#release-workflow-2026-11-11)).
+- [ ] Exercise the real publish step (`dry_run: false`) on the next genuine Preview, with the reviewer's approval comment on the
+  `release` environment; Linux x64 and arm64 only, macOS and Windows hosts follow the same host-key pattern.
+- [x] CI pin promotion policy and `tools/check_ci_pins.py` ([guide](docs/guides/development.md#ci-pin-promotion)); every current pin
+  matches the published bytes.
+- [ ] Add a Windows/arm64 leg under that policy once its public SDK, its CLI Preview and a hosted runner exist.
 
 ## Planned
 
