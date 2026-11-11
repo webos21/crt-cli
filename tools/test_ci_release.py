@@ -4,8 +4,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from ci_release import (ReleaseError, locate_executable, locate_sdk, names, parse_sums, require_artifact_match, require_commit,
-                        sums_line)
+from ci_release import (ReleaseError, locate_executable, locate_sdk, names, parse_sums, render_notes, require_artifact_match,
+                        require_commit, sums_line)
 
 
 class NamesTest(unittest.TestCase):
@@ -103,6 +103,26 @@ class LocateTest(unittest.TestCase):
         self.assertEqual(locate_sdk(self.dir, sdk).name, 'v0.0.1-x-cd2ab657615c')
         with self.assertRaisesRegex(ReleaseError, 'not where'):
             locate_sdk(self.dir, dict(sdk, content_sha256='f' * 64))
+
+
+class NotesTest(unittest.TestCase):
+    ARGS = dict(digest='a' * 64, size=5036544, commit='6a008856d4a92fafbea1221b0f6c88a4559ccc29', tag='v0.1.0-preview.20261111.linux-arm64.1')
+
+    def test_tokens_are_filled_and_other_text_is_untouched(self):
+        text = render_notes('Built from `{{COMMIT}}`, tag {{TAG}}.\nSHA {{ARCHIVE_SHA256}} ({{ARCHIVE_BYTES}} bytes). {braces} stay.\n', **self.ARGS)
+        self.assertEqual(text, 'Built from `6a00885`, tag v0.1.0-preview.20261111.linux-arm64.1.\nSHA ' + 'a' * 64 + ' (5,036,544 bytes). {braces} stay.\n')
+
+    def test_a_template_without_the_digest_token_is_refused(self):
+        with self.assertRaisesRegex(ReleaseError, 'must contain'):
+            render_notes('no digest token here', **self.ARGS)
+
+    def test_an_unknown_token_is_refused_not_published(self):
+        with self.assertRaisesRegex(ReleaseError, 'unknown notes token'):
+            render_notes('{{ARCHIVE_SHA256}} and {{TYPO_TOKEN}}', **self.ARGS)
+
+    def test_a_digest_typed_by_hand_does_not_substitute_for_the_token(self):
+        with self.assertRaisesRegex(ReleaseError, 'must contain'):
+            render_notes('SHA ' + 'a' * 64, **self.ARGS)
 
 
 if __name__ == '__main__':
