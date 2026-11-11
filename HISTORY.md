@@ -41,6 +41,13 @@ pass. No native tests, CI jobs or release artifacts were rebuilt or rerun;
 product sources, workflows, pins and project locks are unchanged. Current scope:
 [CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11).
 
+### Add the protected release workflow and the CI pin promotion policy
+
+`release.yml` packages a commit that is on `main` with a passing `CI gate`, verifies the archive on a separate runner (including a real GitHub SDK acquisition and the C and C++ workflows) and publishes only through the `release` environment, which needs a reviewer.
+A design flaw was fixed before the first run (the notes needed a digest that exists only after the build; they are now a token template). A hosted dry run produced a verified draft whose archive, sums file and notes agreed; the draft was deleted, and an unchecked commit
+was rejected at the first job. The real publish step has not been run. The pin promotion policy and `tools/check_ci_pins.py` are in the development guide; every current pin matches the published bytes. The dry run carried an approval record the assistant did not create.
+[CI acceptance](docs/acceptance/ci_acceptance.md#release-workflow-2026-11-11).
+
 ### Add the manual integration workflow
 
 `integration.yml` runs a pin gate, the 54-case restricted-redirect replay and the port suites on Linux x64 and arm64, with every input pinned and size/SHA-256 checked by a unit-tested driver. The redirect replay passes

@@ -65,10 +65,13 @@ paths and the Linux/arm64 dispatch, push and pull-request runs.
 - [ ] `integration.yml` (manual; the 54-case redirect replay passes on Linux x64 and arm64 in hosted run `42957820373`): the five
   port suites still need CRT to publish and pin a per-host independent host-tools bundle and a hosted-runner adaptation of
   `tools/replay_port_linux.py`; until then `pins` and `ports` fail on purpose. Add `schedule:` with the pin; macOS/Windows jobs follow.
-- [ ] `release.yml`: protected, manually approved packaging from a tested CI artifact, independent extraction and
-  GitHub SDK acquisition before publication. CI success is not publication authority.
-- [ ] Define how CI pins are promoted (new Preview release, digest review) and add a Windows/arm64 leg
-  once its public SDK and CLI package exist (the Linux/arm64 leg was added 2026-11-11).
+- [ ] `release.yml` (manual; `package` → `verify` → approval-gated `publish`): the dry run stops at a verified draft and the entry
+  gates reject an unchecked commit ([record](docs/acceptance/ci_acceptance.md#release-workflow-2026-11-11)). Not yet exercised: the
+  real publish step (`dry_run: false`), whose first use should be the next genuine Preview; it needs the reviewer's approval on the
+  `release` environment, and the approval's author is to be recorded with a comment. Linux x64 and arm64 only; macOS and Windows
+  jobs follow the same host-key pattern.
+- [ ] Add a Windows/arm64 leg under the [pin promotion policy](docs/guides/development.md#ci-pin-promotion) once its public SDK, its
+  CLI Preview and a hosted runner exist. The policy and `tools/check_ci_pins.py` are in place (2026-11-11).
 
 ## Planned
 
