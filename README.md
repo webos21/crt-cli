@@ -39,7 +39,7 @@ is implemented with Linux, macOS and Windows replay evidence: `sdk acquire --sou
 `build --sdk-source <file>` verifies a caller-pinned source and reuses an exact
 installed identity. Public GitHub release assets need the opt-in
 [restricted redirect policy](docs/reference/bootstrap_contract.md#restricted-https-redirects-experimental-cli-owned)
-(`"redirect_policy": "github-release"`; default is refusal), exercised on Linux/x86_64, macOS/arm64 and Windows/x64 ([Windows record](docs/acceptance/preview_acceptance.md#windowsx64-cli-preview-release-2026-11-10)). `fetch` also supports explicit-key RSA-PSS verification.
+(`"redirect_policy": "github-release"`; default is refusal), exercised on Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64 ([Windows record](docs/acceptance/preview_acceptance.md#windowsx64-cli-preview-release-2026-11-10)). `fetch` also supports explicit-key RSA-PSS verification.
 Official default-download trust, channels and publisher signatures remain pending.
 
 The experimental D3 source-port path implements `port build|list|verify|recover|lock` for the pinned zlib recipe on Linux,
@@ -110,8 +110,8 @@ also exercise this workflow at their recorded baselines.
 
 ## Next User Workflow
 
-[The active plan](TODO.md) continues the Dev SDK + CLI preview: the Linux/x86_64 and macOS/arm64 packages are out; the
-Windows/x64 package, its redirect replay and default/project pin adoption are next. The D3 zlib contract is
+[The active plan](TODO.md) continues the Dev SDK + CLI preview: the Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64
+packages are out; default/project pin adoption and a Linux/arm64 CI leg are next. The D3 zlib contract is
 [approved and adopted](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09) for the three exercised host pairs;
 Windows/arm64 D3 remains a separate qualification target.
 
