@@ -487,3 +487,38 @@ source is pinned (`zlib-1.3.1.tar.gz`, 1,512,791 bytes, SHA-256 equal to the rec
 
 Not covered: macOS and Windows integration jobs, the oracle's pinned Python, the port suites themselves, and any repository secret (none is used).
 
+## Release workflow (2026-11-11)
+
+`release.yml` is started by hand (`workflow_dispatch`: host, a full commit SHA, date, serial, a notes template path, `dry_run` defaulting to true). Three jobs, driven by `tools/ci_release.py` (14 unit tests):
+
+| Job | Permission | Does |
+| --- | --- | --- |
+| `package` | read | refuses a commit that is not on `main` or has no successful `CI gate`; builds exactly that commit with the pinned published CLI and public SDK through `ci_bootstrap.py`; assembles the notices; packs twice and requires identical bytes |
+| `verify` | read | on a separate runner: archive digest against its sums file, `package_cli_archive.py verify`, `--version`, self `doctor` with the manifest pin, a wrong pin refused, a real GitHub `sdk acquire`, then C and C++ `new`/`build`/`test`/`run`/warm build |
+| `publish` | `contents: write` | waits for the `release` environment; re-checks the digest, renders the notes template, stages a draft, downloads it and compares byte for byte, then publishes a non-latest prerelease (or stops at the draft) |
+
+The `release` environment requires reviewer `webos21` and deploys from `main` only. `prevent_self_review` is off because a one-person repository could not publish otherwise; the approval is therefore a deliberate pause, not independent review.
+
+**A design flaw found before the first run.** `publish` required the notes to contain the archive SHA-256, which only exists after the build, so a note committed in advance could never pass. The notes are now a reviewed template with explicit tokens
+(`{{ARCHIVE_SHA256}}`, `{{ARCHIVE_BYTES}}`, `{{COMMIT}}`, `{{TAG}}`); a template without the digest token or with an unknown token is refused, and a digest typed by hand does not stand in for the token.
+
+**Local run first.** `ci_release.py package` on the native aarch64 machine produced the archive, with a first attempt (`release-ci-check-r1-failed`) stopping on a bare `StopIteration` because the artifact is named `crt-cli-<host>`; the executable is now located by
+its verified digest and the SDK by the identity the summary records. `verify` passed all steps against that archive.
+
+**Hosted dry run.** Run `42963992535` (`main`, `8063bbf`, `linux-arm64`, serial 9, `dry_run: true`): `package`, `verify` and `publish` succeeded. The draft `v0.1.0-preview.20261111.linux-arm64.9` targeted `8063bbf`, held the 5,036,724-byte archive and the sums file,
+and its notes carried the real digest (`67d2074d...d703`) with no leftover token; the archive, the sums file and the notes agreed after an independent download. The draft was then deleted; no tag was created and no release other than the four published ones remains.
+**An approval record exists for that run** (`approved`, `webos21`) that the assistant did not create; who pressed it and how is not known from the record. Future runs should add an approval comment.
+
+**Rejections.** Run `42965008964` with `6a00885`, which has no `CI gate` check, stopped in `package` ("CI gate on ...: none"); `verify` and `publish` were skipped and nothing was created. Locally, the publish driver also refused a branch name instead of a SHA, notes without the digest,
+a tampered archive and an already-published tag (checked against the real serial-1 release, read only).
+
+Not covered: an actual publication (`dry_run: false`), the other two hosts, the environment's behaviour for a second reviewer, and workflow-level tests for `actions/download-artifact` across a failed upload.
+
+## CI pin promotion (2026-11-11)
+
+[The policy](../guides/development.md#ci-pin-promotion) fixes when a pin may move, what moves with it, the evidence a pull request must quote, what must pass and how a new host is added. `tools/check_ci_pins.py` re-downloads each host's published CLI archive and SDK manifest, archive and
+contract and compares size, SHA-256 and the manifest's listing; it reported `OK` for `linux-x64`, `linux-arm64`, `macos-arm64` and `win-x64` against `.github/ci/pins.json`. Six unit tests make it report a changed bootstrap archive, a size-only change, a changed SDK archive or contract,
+an archive missing from the manifest and a contract digest the manifest disagrees with, so that `OK` is not the only output ever seen.
+
+Not covered: automatic detection that a newer Preview exists, a scheduled run of the checker, and any second reviewer.
+

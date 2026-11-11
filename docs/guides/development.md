@@ -291,8 +291,8 @@ On macOS the Xcode tools come from `xcrun -f`; on Windows pass `--llvm-bin` and,
 not wanted, `--os-sdk`. `--tests` restricts the suites for a quick local pass; CI always runs the pinned set.
 The Python driver is a build-host orchestrator like the other `tools/*.py` replays, not a CLI prerequisite.
 
-Pins change only in a reviewed commit that cites the release record and re-checks the asset digests against the
-published `SHA256SUMS`; never use a moving tag or `latest`. Linux/x86_64 has two required
+Pins change only through a reviewed pull request that follows the [pin promotion policy](#ci-pin-promotion); never use a moving tag
+or `latest`. Linux/x86_64 has two required
 legs, `ubuntu-24.04` and `ubuntu-26.04`, consuming the same repaired Dev SDK pin. A separate required `linux-arm64` leg (`ubuntu-26.04-arm`) consumes the Linux/aarch64 Dev SDK and CLI Preview pins ([CI acceptance](../acceptance/ci_acceptance.md#linuxarm64-leg-2026-11-11)).
 All Linux legs use LLVM 21: noble provisions the explicitly keyed apt.llvm.org repository;
 26.04 uses Ubuntu's archive. Existing macOS/arm64 and Windows/x64 checks remain
@@ -303,6 +303,35 @@ distinguishes producer/local/public-byte evidence from completed hosted replay.
 The original `.3` failure remains historical evidence; the producer's TLSDESC
 fix is shipped in `.4`, rather than hidden by a runner upgrade. [TODO](../../TODO.md#github-ci)
 owns integration/release work and any still-pending hosted qualification.
+
+### CI Pin Promotion
+
+`.github/ci/pins.json` (bootstrap CLI and SDK per host) and `.github/ci/integration-pins.json` (integration inputs) are the only
+inputs `ci.yml` and `integration.yml` trust. A pin moves in a pull request, never automatically and never from a branch, tag or `latest`.
+
+1. **When.** Only after the new input is published and its release record exists in [preview acceptance](../acceptance/preview_acceptance.md)
+   or the producer's acceptance. A pin is not raised to a release that is only a draft, a rehearsal or a local candidate.
+2. **What changes.** The release tag, asset name, size and SHA-256 of the bootstrap CLI, and the SDK manifest, archive, contract and
+   content identity together; never one without the others. Do not touch product source in the same pull request.
+3. **Evidence in the pull request.** Run `python tools/check_ci_pins.py` and quote its output: it re-downloads each host's published
+   bytes and fails on a size, digest, manifest or contract mismatch. `OK` for every host is required; a host you did not change must
+   still be `OK`, because a published asset can be withdrawn or replaced. Cite the release record that justifies the move.
+4. **What must pass.** `CI gate` on the pull request (every required leg builds the checked-out sources with the new pins) and, for
+   an SDK change, the integration workflow's redirect replay for the affected hosts. A pin change that only some legs exercise is split
+   by host.
+5. **After merge.** The `push` run on `main` must be green. If the bootstrap CLI changed, record in acceptance that stage 1 and stage 2
+   still match or why they differ; if the SDK changed, record the new suite counts. A failed promotion is reverted, not patched with a
+   retry, and the previous known-good pin stays in history.
+6. **Who approves.** The `main` ruleset requires `CI gate`; the repository administrator can merge. That is a deliberate-pause control for
+   a one-person repository, not independent review. A second reviewer, when one exists, should approve pin changes.
+7. **Adding a host.** A new leg (for example Windows/arm64) needs, in order: a public SDK release for that host with its record, a
+   published CLI Preview for that host built by that SDK alone, a hosted runner label that exists for the repository, and a local
+   `tools/ci_bootstrap.py --host <key>` pass. Only then add the matrix row, the `pins.json` host and the driver's host key in one pull
+   request, and run it through a manual dispatch before treating it as required. A host with no hosted runner is recorded as unsupported,
+   not simulated.
+8. **Release pins are separate.** Publishing a Preview does not move `ci.yml` pins. After publication, raise the pin in its own pull
+   request under this policy, because the published bytes are what the pin must match.
+
 
 The reviewed `src/test/data/zlib.recipe.json` fixture is checked out with LF
 through `.gitattributes` on every host. Recipe verification hashes exact bytes;
