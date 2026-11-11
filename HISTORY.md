@@ -11,12 +11,20 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-11
 
+### Replay the Linux/aarch64 redirect policy and run the package sandboxed
+
+The packaged executable of the published Linux/aarch64 Preview passes the 54-case restricted-redirect replay against the real public SDK bytes and a 27-check Bubblewrap run of the extracted package
+(producer and CLI checkouts and SDK/source trees hidden, empty `PATH`, interpreters masked, strace `execve` audit: 8 distinct executed paths, none unexpected): offline doctor/pin/tamper refusals, real GitHub
+`sdk acquire`, and C/C++ `new`/first `build`/`test`/`run`/warm build. A first sandbox attempt never started (`strace` not found under the empty `PATH`) and its expected-failure cases passed for the wrong reason; it is discarded and the
+orchestrator now asserts failure messages. No product change; the published release notes are unchanged.
+[Record](docs/acceptance/preview_acceptance.md#linuxaarch64-redirect-replay-and-sandboxed-package-run-2026-11-11).
+
 ### Publish the Linux/aarch64 CLI Preview
 
 Published prerelease `v0.1.0-preview.20261111.linux-arm64.1` (tag target `6a00885`, not marked latest): a static `crt-cli` built from the clean commit by the public
 Linux/aarch64 Dev SDK `v0.0.1-preview.20261110.linux.arm64.2` alone (cold 21/0, warm 0/21, native 913, 32 distinct executed paths, no `DT_NEEDED`), packed deterministically with notices and a pinned
 30-file inventory. The extracted package acquires the SDK from GitHub through the `github-release` redirect policy and passes C/C++ `new`/first `build`/`test`/`run`/warm build (12/12); the unauthenticated public
-download matches the sums byte for byte. Not claimed: publisher authentication, the 54-case redirect replay and a sandboxed SDK/source-hidden run on this host, other glibc versions.
+download matches the sums byte for byte. Not claimed at publication: publisher authentication, the 54-case redirect replay and a sandboxed SDK/source-hidden run on this host (both added below), other glibc versions.
 [Record](docs/acceptance/preview_acceptance.md#linuxaarch64-cli-preview-release-2026-11-11).
 
 ## 2026-11-10

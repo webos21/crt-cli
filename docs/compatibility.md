@@ -56,7 +56,7 @@ other glibc versions, Full SDKs and production/default-lock adoption remain sepa
 [`v0.1.0-preview.20261111.linux-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261111.linux-arm64.1) (tag target `6a008856d4a92fafbea1221b0f6c88a4559ccc29`, executable `9fbef825...e1db`)
 was built by the producer's Linux contract replay with the published SDK `v0.0.1-preview.20261110.linux.arm64.2` alone (manifest pin `ba77b26e...67be3`, content `cd2ab657...0cc6`) and run as the extracted package against the real
 GitHub delivery host. The exercised combination is this CLI, that SDK, Ubuntu 26.04 glibc 2.43 and LLVM 21.1.8. Native policy 1, install metadata 1, project lock 1 and recipe schema 1 are unchanged; no default/root lock migration;
-publisher authentication stays `not_verified`. Record: [Linux/aarch64 CLI Preview](acceptance/preview_acceptance.md#linuxaarch64-cli-preview-release-2026-11-11).
+publisher authentication stays `not_verified`. The restricted-redirect replay (54/54) and a sandboxed package run (27/27) were added the same day. Record: [Linux/aarch64 CLI Preview](acceptance/preview_acceptance.md#linuxaarch64-cli-preview-release-2026-11-11).
 
 ## Published Windows Dev SDK Adoption (2026-11-10)
 

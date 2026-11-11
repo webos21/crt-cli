@@ -570,6 +570,25 @@ followed one redirect per file and matched `SHA256SUMS-linux-aarch64` and the lo
 The repository still carries no executable.
 
 Receipts are in the local evidence directory `/home/cmjo/GitLocal/crt-cli-preview-linux-arm64-20261111/` (`replay/`, `assemble.out`, `pack.out`, `acquire.json`, `public-dl/`). Not claimed: publisher authentication (digests only),
-the restricted-redirect replay cases (54/54 on the other hosts) on aarch64, a sandboxed SDK- and source-hidden run of this exact package, other glibc versions or distributions, Linux C shared-SDK mode, source-port builds from this
+other glibc versions or distributions, (the redirect replay and the sandboxed run were added the same day, see the next subsection) Linux C shared-SDK mode, source-port builds from this
 package, updates or self-upgrade, and default/project lock adoption.
+
+### Linux/aarch64 redirect replay and sandboxed package run (2026-11-11)
+
+Follow-up gates for the published Linux/aarch64 Preview above, both run on the same host against the executable extracted from the **public** archive (`9fbef825...e1db`).
+
+**Redirect replay, 54/54.** `tools/replay_redirect_linux.py` serves the real public SDK bytes (`v0.0.1-preview.20261110.linux.arm64.2`, manifest, contract and archive) behind two loopback TLS origins and passes the same
+cases as Linux/x86_64 and macOS: allow-list, relative and 301/303/307/308 redirects, 300/304 refused, wrong authority or port, look-alike suffix, IPv6 literal, downgrade, credentials, fragment, missing or duplicate `Location`, loops and
+hop limits, wrong certificate, 404, oversize, interrupted body, digest and size mismatch, argument and source-field refusals, and full `sdk acquire` plus idempotent re-acquire. Origin hits A 41 / B 15 / C 0.
+Result file SHA-256 `df43e1ee79e9a1ea547af87e994bba39409dc109314ca2e87e0710f5b7238749`.
+
+**Sandboxed package run, 27/27.** A producer-side orchestrator (`sandbox_run.py` in the evidence directory; it hard-codes that directory and is not a product tool) runs the extracted package under Bubblewrap with a read-only root, the producer and CLI
+checkouts and every SDK, source and work tree of the evidence directory replaced by empty directories (probes prove the SDK manifest, `crt/include/fcntl.h` and `crt-cli/src` unreachable), a cleared environment, an empty `PATH`, interpreters and
+build drivers masked, and strace logging every `execve`. Phase A has no network: `--version`, `--help`, self `doctor`, `doctor` with the manifest pin, a wrong pin ("manifest SHA-256 mismatch"), a changed notice and an undeclared extra file
+(both "inventory mismatch", asserted by message) and the restored package. Phase B shares the network: real GitHub `sdk acquire`, idempotent re-acquire, `sdk list`, then C and C++ `new`, first `build --sdk` without configure, `test`, `run`,
+warm build and project `doctor` under a parent path with spaces and Korean characters, with host LLVM 21 passed by flag. Executed images: **8 distinct paths / 56 successful calls**, namely the package executable (23), `clang` (22), `lld` (4), the four
+project outputs and the probe helper; none unexpected, no shell, Python, CMake or make. `llvm-ar` never ran. Summary SHA-256 `a05fc2265bd61a2175ef541152bacb186ed3c52e63ba20eb2d6f197ad027a0a5`.
+An earlier attempt of this run is discarded: `strace` was looked up by name under the empty `PATH`, the sandbox never started, and the expected-failure cases "passed" without checking why; the orchestrator now uses an absolute path and asserts the failure message.
+
+Still not covered on this host: other glibc versions or distributions, Linux C shared-SDK mode, source-port builds from the package, updates or self-upgrade, publisher authentication, default/project lock adoption.
 
