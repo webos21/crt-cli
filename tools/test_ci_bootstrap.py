@@ -2,7 +2,7 @@
 import json
 import unittest
 
-from ci_bootstrap import CiError, native_phase_report
+from ci_bootstrap import CiError, host_key, native_phase_report
 
 
 class NativePhaseReportTest(unittest.TestCase):
@@ -53,3 +53,15 @@ class NativePhaseReportTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class HostKeyTest(unittest.TestCase):
+    def test_supported_hosts(self):
+        for system, machine, key in [('linux', 'x86_64', 'linux-x64'), ('linux', 'aarch64', 'linux-arm64'), ('linux', 'arm64', 'linux-arm64'),
+                                     ('darwin', 'arm64', 'macos-arm64'), ('win32', 'AMD64', 'win-x64')]:
+            self.assertEqual(host_key(system, machine), key)
+
+    def test_unsupported_hosts_are_refused(self):
+        for system, machine in [('linux', 'riscv64'), ('darwin', 'x86_64'), ('win32', 'ARM64')]:
+            with self.assertRaisesRegex(CiError, 'unsupported CI host'):
+                host_key(system, machine)

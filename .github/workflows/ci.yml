@@ -24,7 +24,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     # Keep both old-LTS and new Linux loader coverage required after the producer's TLSDESC repair.
-    # The two Linux legs consume the same SDK pin; their artifacts have distinct names.
+    # The two Linux/x86_64 legs consume the same SDK pin; their artifacts have distinct names.
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
@@ -36,6 +36,10 @@ jobs:
           - host: linux-x64
             label: linux-x64-ubuntu2404
             runner: ubuntu-24.04
+            experimental: false
+          # The Linux/aarch64 SDK was exercised only on glibc 2.43 (Ubuntu 26.04), so only that runner is required.
+          - host: linux-arm64
+            runner: ubuntu-26.04-arm
             experimental: false
           - host: macos-arm64
             runner: macos-15
@@ -55,7 +59,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install LLVM 21 (Linux)
-        if: matrix.host == 'linux-x64'
+        if: startsWith(matrix.host, 'linux-')
         shell: bash
         run: |
           set -euo pipefail
@@ -93,7 +97,7 @@ jobs:
         run: |
           set -euo pipefail
           case "${{ matrix.host }}" in
-            linux-x64) llvm_bin=/usr/lib/llvm-21/bin ;;
+            linux-x64|linux-arm64) llvm_bin=/usr/lib/llvm-21/bin ;;
             win-x64)   llvm_bin='C:/Program Files/LLVM/bin' ;;
             *)         llvm_bin= ;;
           esac

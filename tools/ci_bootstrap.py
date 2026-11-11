@@ -68,15 +68,18 @@ def sha256_file(path):
     return digest.hexdigest()
 
 
-def host_key():
-    machine = platform.machine().lower()
-    if sys.platform.startswith('linux') and machine in ('x86_64', 'amd64'):
+def host_key(system=None, machine=None):
+    system = system if system is not None else sys.platform
+    machine = (machine if machine is not None else platform.machine()).lower()
+    if system.startswith('linux') and machine in ('x86_64', 'amd64'):
         return 'linux-x64'
-    if sys.platform == 'darwin' and machine in ('arm64', 'aarch64'):
+    if system.startswith('linux') and machine in ('aarch64', 'arm64'):
+        return 'linux-arm64'
+    if system == 'darwin' and machine in ('arm64', 'aarch64'):
         return 'macos-arm64'
-    if sys.platform == 'win32' and machine in ('amd64', 'x86_64'):
+    if system == 'win32' and machine in ('amd64', 'x86_64'):
         return 'win-x64'
-    raise CiError('unsupported CI host: %s/%s' % (sys.platform, machine))
+    raise CiError('unsupported CI host: %s/%s' % (system, machine))
 
 
 class Ci:
@@ -279,7 +282,7 @@ class Ci:
         """Evidence for failures that depend on the host (compiler, linker, C library)."""
         found = {}
         probes = {'clang': [self.tool_flag('--cc'), '--version'], 'linker': [self.tool_flag('--linker'), '--version']}
-        if self.host == 'linux-x64':
+        if self.host.startswith('linux-'):
             probes['glibc'] = ['ldd', '--version']
         for name, argv in probes.items():
             try:
@@ -324,7 +327,7 @@ class Ci:
 
     def audit_imports(self, exe):
         allowed = {item.lower() for item in self.host_pins['allowed_imports']}
-        if self.host == 'linux-x64':
+        if self.host.startswith('linux-'):
             dynamic, _ = self.run('audit-dynamic', ['readelf', '-d', exe])
             if re.search(r'\((NEEDED|RPATH|RUNPATH)\)', dynamic):
                 raise CiError('unexpected DT_NEEDED/RPATH/RUNPATH:\n' + dynamic)
@@ -422,7 +425,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--work', required=True, help='new or empty directory for downloads, stages, logs and artifacts')
     parser.add_argument('--pins', default=str(ROOT / '.github/ci/pins.json'))
-    parser.add_argument('--host', choices=['linux-x64', 'macos-arm64', 'win-x64'], help='default: detect')
+    parser.add_argument('--host', choices=['linux-x64', 'linux-arm64', 'macos-arm64', 'win-x64'], help='default: detect')
     parser.add_argument('--llvm-bin', help='directory with clang, clang++, ld.lld and llvm-ar (not used on macOS)')
     parser.add_argument('--os-sdk', help='Windows um/x64 import-library directory (default: newest installed)')
     parser.add_argument('--tests', nargs='+', help='run only these declared tests (default: the pinned PR set)')
