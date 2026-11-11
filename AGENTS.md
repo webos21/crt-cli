@@ -21,8 +21,8 @@ CRT Studio is a later, separate GUI consumer of the CLI's public contract.
 Start with [README](README.md), the [documentation index](docs/README.md),
 [local CLI design](docs/design/crt_cli.md), [development guide](docs/guides/development.md),
 and [bootstrap acceptance](docs/acceptance/bootstrap_acceptance.md).
-[TODO](TODO.md) owns In Progress/Planned work; [HISTORY](HISTORY.md) owns
-dated completed work. This repository owns ongoing CLI design; the pinned CRT
+[TODO](TODO.md) owns In Progress/Planned work and its checked-off items;
+[HISTORY](HISTORY.md) owns dated completed work. This repository owns ongoing CLI design; the pinned CRT
 references below record the integration baseline and producer-owned boundaries,
 not a second independently maintained CLI design mirror.
 
@@ -310,7 +310,9 @@ Write new code comments and documentation in English. Use [docs/README.md](docs/
 for the documentation ownership rules and index. Keep design/rationale in
 `docs/design/`, procedures in guides, contracts/evidence in acceptance, and
 current ordered work in TODO. Once initialized, HISTORY records completed work
-and TODO retains only concise active/planned steps. Update STATUS only when
+and TODO keeps concise active/planned steps: check an item (`[x]`) when its work is
+done and validated, keep checked items until every item of their section is
+complete, and delete a section only when the user asks. Update STATUS only when
 explicitly requested. Do not invent missing files or completed implementation
 to make the initial repository look populated.
 
