@@ -94,6 +94,24 @@ def require_artifact_match(archive_path, sums_text, archive_name):
     return actual
 
 
+def locate_executable(artifact_dir, expected_sha256):
+    """The artifact file whose bytes are the verified stage-2 executable; names are never guessed."""
+    matches = [p for p in Path(artifact_dir).iterdir()
+               if p.is_file() and not p.name.startswith('SHA256SUMS') and p.suffix != '.json'
+               and hashlib.sha256(p.read_bytes()).hexdigest() == expected_sha256]
+    if len(matches) != 1:
+        raise ReleaseError('expected exactly one artifact with the verified executable digest, found %d' % len(matches))
+    return matches[0]
+
+
+def locate_sdk(store, sdk):
+    """The installed SDK directory named by the summary's version and content identity."""
+    directory = Path(store) / ('%s-%s' % (sdk['version'], sdk['content_sha256'][:12]))
+    if not (directory / 'manifest.json').is_file() or not (directory / 'share/licenses').is_dir():
+        raise ReleaseError('the installed SDK %s is not where the summary says' % directory.name)
+    return directory
+
+
 def log(message):
     print(message, file=sys.stderr, flush=True)
 
@@ -129,8 +147,8 @@ def command_package(args):
     summary = json.loads((ci_work / 'artifact/ci-summary.json').read_text(encoding='utf-8'))
     if summary.get('result') != 'pass' or summary.get('source_commit') != commit:
         raise ReleaseError('the CI driver did not pass for the requested commit')
-    exe = next(p for p in (ci_work / 'artifact').rglob('crt-cli') if p.is_file())
-    sdk_root = next(p.parent for p in (ci_work).rglob('manifest.json') if p.parent.name != 'crt-cli' and (p.parent / 'share/licenses').is_dir())
+    exe = locate_executable(ci_work / 'artifact', summary['stage2']['sha256'])
+    sdk_root = locate_sdk(ci_work / 'home' / '.crt' / 'sdks', summary['sdk'])
     package = work / 'package' / 'crt-cli'
     run('assemble', [sys.executable, ROOT / 'tools/create_bootstrap_resources.py', '--binary', exe, '--sdk-root', sdk_root, '--output', package])
     out = work / 'release'
