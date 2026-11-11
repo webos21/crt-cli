@@ -26,8 +26,9 @@ process-worker change `f49c279` is test infrastructure, not a product-source rev
 The five required GitHub CI jobs cover Ubuntu 24.04/26.04 x86_64, Ubuntu 26.04
 arm64, macOS/arm64 and Windows/x64. Manual run `42931003805` at `f6a41a8`
 succeeds on all five; its Linux/arm64 artifact is independently checked, while
-the other four retain their earlier artifact qualification. ARM64 push/PR
-events remain unobserved. [CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)
+the other four retain their earlier artifact qualification. Its push to `main` and
+pull-request events have since passed, and `main` is protected by a ruleset that
+requires the `CI gate` check. [CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)
 owns the current combinations and limits.
 
 Windows/x64's earlier concurrent-install crash was root-caused/fixed in the

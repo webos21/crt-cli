@@ -41,6 +41,13 @@ pass. No native tests, CI jobs or release artifacts were rebuilt or rerun;
 product sources, workflows, pins and project locks are unchanged. Current scope:
 [CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11).
 
+### Gate `main` on a single CI check and verify it
+
+`paths-ignore` is replaced by an in-workflow change classification and an always-running `CI gate`, because a workflow that never starts would leave a required check pending on documentation-only pull
+requests. The Linux/arm64 leg passed on a real pull request and on `push` to `main`. Ruleset `27002916` requires `CI gate` on `main` (no deletion or force push; administrators bypass so direct documentation commits keep
+working). Two draft verification pull requests, closed unmerged: a documentation-only change leaves the matrix skipped, the gate green and the pull request `CLEAN`; a deliberately failing test fails all five legs and the gate and the pull
+request is `BLOCKED`. The administrator bypass means a rejected push or merge was not observed. [CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11).
+
 ### Add the Linux/arm64 CI leg
 
 `ci.yml` has a required `linux-arm64` leg on `ubuntu-26.04-arm`: the pinned published Linux/aarch64 CLI Preview acquires the public Linux/aarch64 Dev SDK, builds the checked-out sources and the four
