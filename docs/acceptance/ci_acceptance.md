@@ -24,11 +24,28 @@ tests were not rerun by that review.
 The ARM64 addition independently verifies that run's ARM64 artifact. The other
 four job conclusions pass; their earlier independent artifact checks retain
 their recorded source revisions rather than being relabeled as fresh audits.
-The workflow enables PR and main-push triggers, but those events have not yet
-been observed for the ARM64 leg. Ubuntu 24.04 arm64, other ARM64 glibc versions,
+The workflow enables PR and main-push triggers for non-documentation changes,
+but those events have not yet been observed for the ARM64 leg. Ubuntu 24.04
+arm64, other ARM64 glibc versions,
 Windows/arm64, input-gated port/redirect integration and release automation
 remain outside this CI qualification. The `.3` Ubuntu 24.04 failure below is
 historical; the later `.4` record closes it for the named x86_64 combinations.
+
+## Documentation-only Trigger Exclusions (2026-11-11)
+
+Pushes to `main` and PR updates now share CRT's documentation exclusions:
+`**/*.md` and `docs/**`. Automatic CI is skipped only when every changed file
+matches an excluded path; mixed source/documentation changes still run.
+`workflow_dispatch`, the main-branch push restriction, required matrix and all
+job steps are unchanged. Code, manifests, tools, tests, CI pins and workflow
+configuration remain eligible for automatic CI.
+
+Local validation parses the workflow YAML, compares all non-trigger settings
+with the committed workflow, and checks documentation-only, mixed and
+code/configuration path cases for both events. This is configuration validation,
+not a new hosted event or native replay. The retained hosted records above and
+below keep their exact source revisions; the new path-filter behavior still
+needs observation after publication.
 
 ## Linux/x86_64 local rehearsal of the driver (2026-11-10)
 

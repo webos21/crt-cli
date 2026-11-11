@@ -11,6 +11,19 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-11
 
+### Skip automatic CI for documentation-only changes
+
+Added the CRT workflow's Markdown and `docs/` exclusions to both push and PR
+triggers. Mixed documentation/code changes, tests, tools, manifests, CI pins
+and workflow configuration still trigger CI; manual dispatch and the required
+five-job matrix are preserved. Unlike CRT's porting exclusion, no recipe or
+test input outside documentation is excluded here.
+
+Local YAML parsing and 28 push/PR path cases pass; parsed settings confirm
+that job steps, matrix, permissions, branch scope and manual dispatch are
+unchanged. No native build or hosted run is repeated for this trigger-only
+change. [Configuration evidence](docs/acceptance/ci_acceptance.md#documentation-only-trigger-exclusions-2026-11-11).
+
 ### Reconcile Preview, STATUS and CI documentation
 
 Reviewed checkpoint `6201aa6` against the Preview/redirect/CI acceptance records,

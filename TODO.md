@@ -52,7 +52,8 @@ retain their later queues. Execution policy remains in
 
 ### GitHub CI
 
-`ci.yml` (PR and main) bootstraps from the pinned published Preview and is described in the
+`ci.yml` (PR and main, excluding documentation-only changes) bootstraps from
+the pinned published Preview and is described in the
 [development guide](docs/guides/development.md#continuous-integration); completed steps live in HISTORY.
 Linux/x86_64 (`ubuntu-24.04` and `ubuntu-26.04`), Linux/arm64 (`ubuntu-26.04-arm`), macOS/arm64 (`macos-15`) and Windows/x64
 (`windows-2022`) are required legs.

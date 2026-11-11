@@ -225,6 +225,12 @@ unsupported for programs that import a DLL beside them.
 repository permissions and no secrets. It builds nothing from CRT: it consumes published artifacts.
 The repository carries no executables (`bin/` was removed); CI bootstraps from a release.
 
+Push and PR events use `paths-ignore: ["**/*.md", "docs/**"]`, following the
+CRT workflow's documentation exclusions. A change consisting only of Markdown
+or files under `docs/` skips automatic CI; a mixed documentation/code change
+still runs. Sources, headers, tests, tools, manifests, CI pins and workflow
+configuration remain covered. Manual dispatch is available regardless of paths.
+
 1. **Bootstrap.** `tools/ci_bootstrap.py` downloads the host's published CRT-CLI Preview and checks its size and
    SHA-256 against `.github/ci/pins.json`. The pin verifies byte identity;
    TLS protects transport, and neither establishes publisher authentication here.
