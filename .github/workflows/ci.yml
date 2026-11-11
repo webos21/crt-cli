@@ -5,16 +5,13 @@ name: CI
 # stage-1 executable, and stage 1 rebuilds a clean export (stage 2). Bootstrap test results never count for the
 # sources under test. See docs/guides/development.md#continuous-integration.
 
+# Documentation-only changes (Markdown or docs/) skip the build matrix inside the workflow instead of through
+# `paths-ignore`: a workflow that never starts leaves a required check pending forever and would block every
+# documentation-only pull request. `CI gate` always runs and is the single required status check.
 on:
   pull_request:
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
   push:
     branches: [main]
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
   workflow_dispatch:
 
 permissions:
@@ -25,8 +22,48 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  changes:
+    name: changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.classify.outputs.code }}
+    steps:
+      - name: Check out the history needed to classify the change
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Classify the change
+        id: classify
+        shell: bash
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_HEAD: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          # Anything that cannot be classified runs the full matrix: skipping is only for a proven documentation-only change.
+          code=true
+          case "$EVENT" in
+            pull_request) range="$PR_BASE...$PR_HEAD" ;;
+            push)         range="$PUSH_BEFORE..$PUSH_HEAD" ;;
+            *)            range= ;;
+          esac
+          if [ -n "$range" ] && files="$(git diff --name-only "$range" 2>/dev/null)" && [ -n "$files" ]; then
+            if printf '%s\n' "$files" | grep -qvE '(\.md$|^docs/)'; then code=true; else code=false; fi
+          fi
+          echo "event=$EVENT range=${range:-none} code=$code"
+          printf '%s\n' "${files:-}" | sed 's/^/changed: /'
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
   native:
     name: native (${{ matrix.label || matrix.host }})
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     # Keep both old-LTS and new Linux loader coverage required after the producer's TLSDESC repair.
@@ -122,3 +159,28 @@ jobs:
             ${{ runner.temp }}/crt-cli-ci/sdk-source.json
           if-no-files-found: warn
           retention-days: 14
+
+  # The only required status check. It always runs: a documentation-only change legitimately skips the matrix, but a
+  # code change whose matrix failed, was cancelled or never ran must not pass.
+  gate:
+    name: CI gate
+    needs: [changes, native]
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Decide
+        shell: bash
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          NATIVE: ${{ needs.native.result }}
+          CODE: ${{ needs.changes.outputs.code }}
+        run: |
+          set -euo pipefail
+          echo "changes=$CHANGES native=$NATIVE code=$CODE"
+          [ "$CHANGES" = success ] || { echo "change classification did not succeed"; exit 1; }
+          if [ "$CODE" = true ]; then
+            [ "$NATIVE" = success ] || { echo "code changed but the native matrix result is '$NATIVE'"; exit 1; }
+          else
+            [ "$NATIVE" = skipped ] || { echo "documentation-only change but the native matrix result is '$NATIVE'"; exit 1; }
+          fi
