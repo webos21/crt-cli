@@ -52,17 +52,16 @@ retain their later queues. Execution policy remains in
 
 ### GitHub CI
 
-`ci.yml` (PR and main, excluding documentation-only changes) bootstraps from
+`ci.yml` (PR and main; a documentation-only change skips the matrix inside the workflow, and
+`CI gate` is the one required check of the `main` ruleset) bootstraps from
 the pinned published Preview and is described in the
 [development guide](docs/guides/development.md#continuous-integration); completed steps live in HISTORY.
 Linux/x86_64 (`ubuntu-24.04` and `ubuntu-26.04`), Linux/arm64 (`ubuntu-26.04-arm`), macOS/arm64 (`macos-15`) and Windows/x64
 (`windows-2022`) are required legs.
 [CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)
-owns the completed combinations and event scope, including both repaired Linux
-paths and the Linux/arm64 manual dispatch.
+owns the completed combinations, event scope and ruleset, including both repaired Linux
+paths and the Linux/arm64 dispatch, push and pull-request runs.
 
-- [ ] Observe the new Linux/arm64 leg on push to `main` and on a pull request;
-  its passing branch dispatch does not establish those event paths.
 - [ ] `integration.yml`: the five input-gated port suites (`port-build|store|oracle|command|project-test`) with the
   pinned independent host tools, zlib source archive and oracle, plus redirect/transport replays. Daily and manual.
 - [ ] `release.yml`: protected, manually approved packaging from a tested CI artifact, independent extraction and

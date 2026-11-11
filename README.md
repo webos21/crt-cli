@@ -123,8 +123,8 @@ packages are out; default/project pin adoption is next; CI covers Linux/x86_64, 
 Windows/arm64 D3 remains a separate qualification target.
 
 CI's five required jobs have a passing manual run, with Linux/x86_64 on two
-Ubuntu versions. The newly added Linux/arm64 leg still needs observed push/PR
-events; [CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)
+Ubuntu versions. The Linux/arm64 leg has also passed on push and pull-request events, and `main`
+requires the `CI gate` check; [CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)
 distinguishes workflow configuration, hosted results and deferred integration/release jobs.
 
 Preview qualification covers the actual packaged CLI, promoted SDK pin, trust,

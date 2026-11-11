@@ -433,4 +433,33 @@ required: that SDK was exercised on glibc 2.43 only, so no `ubuntu-24.04-arm` le
 The `linux-arm64` artifact summary was downloaded and checked: result `pass`, glibc 2.43, LLVM/LLD 21.1.8, the same four suite counts, stage 1 and stage 2 byte-identical, bootstrap executable `9fbef825...`, SDK pin as above. The other four legs
 are unchanged inputs and were not re-verified artifact by artifact here.
 
-Not covered: pull-request and `push` events on `main` for this leg (the first run was a manual dispatch from the branch; a runner or image change fails closed), Ubuntu 24.04 arm64, other glibc versions, and the `integration.yml` and `release.yml` queues.
+Not covered by this dispatch run: pull-request and `push` events for the leg (observed afterwards, see [Current hosted coverage](#current-hosted-coverage-2026-11-11)), Ubuntu 24.04 arm64, other glibc versions, and the `integration.yml` and `release.yml` queues.
+
+## Current hosted coverage (2026-11-11)
+
+**Events.** The `linux-arm64` leg (`ubuntu-26.04-arm`) has now passed on every event path that triggers `ci.yml`, each time with all other legs green:
+
+| Event | Run | Source | Result |
+| --- | --- | --- | --- |
+| `workflow_dispatch` (branch) | `42931003805` | `f6a41a8` | success, 5 jobs |
+| `push` to `main` | `42932786276` | `6201aa6` | success, 5 jobs |
+| `pull_request` | `42946566272` | `47c3a03` (PR 1) | success, `changes`, 5 native jobs and `CI gate` |
+| `push` to `main` (merge of PR 1) | `42948410361` | `0cf5a77` | success, `CI gate` reported by `github-actions` |
+
+**Change classification.** `paths-ignore` is replaced by a `changes` job and an always-running `CI gate` (see the [development guide](../guides/development.md#continuous-integration)):
+a workflow that never starts leaves a required status check pending, which would block every documentation-only pull request. The classifier was exercised locally on a documentation-only range
+(`code=false`), a code range, a mixed range, an unreachable `before` and a manual dispatch (all `code=true`, i.e. the full matrix). Unclassifiable input runs the matrix; skipping requires a proven documentation-only change.
+
+**Ruleset.** Repository ruleset `27002916` "main requires CI gate" (`active`) targets `refs/heads/main`: required status check `CI gate` from the GitHub Actions app (`integration_id` 15368, not strict), no deletion, no non-fast-forward.
+Repository administrators bypass `always` (chosen so that the maintainer's direct documentation commits keep working); pull requests from anyone else cannot merge unless `CI gate` passes.
+Two verification pull requests were opened as drafts and closed without merging, with their branches deleted:
+
+| Pull request | Change | `CI gate` | Merge state |
+| --- | --- | --- | --- |
+| 2 | one HTML comment in `docs/README.md` | success; `changes` success, the matrix `SKIPPED` | `CLEAN` / `MERGEABLE` |
+| 3 | a deliberately failing test in `tools/test_ci_bootstrap.py` | failure; all five native jobs failed | `BLOCKED` |
+
+**Limits.** The rule's effect on a non-administrator cannot be observed from the administrator account used here: the administrator bypass means a direct push to `main` or a merge of a failing pull request would still be accepted,
+so the `BLOCKED` state is evidence of the rule, not of a rejected push. No second account tried to push. Bypass is `always`, not `pull_request`; tightening it later removes direct pushes for the maintainer too.
+A pull request needs no review (no approval rule is configured). Required checks apply to `main` only; tags and other branches are unprotected. A runner label or image change fails the leg closed rather than skipping it.
+
