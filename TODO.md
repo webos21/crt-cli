@@ -63,7 +63,7 @@ owns the completed combinations, event scope and ruleset, including both repaire
 paths and the Linux/arm64 dispatch, push and pull-request runs.
 
 - [ ] `integration.yml` (manual; the 54-case redirect replay passes on Linux x64 and arm64 in hosted run `42957820373`): the five
-  port suites still need CRT to publish and pin a per-host independent host-tools bundle and a hosted-runner adaptation of
+  port suites still need CRT to publish and pin a per-host independent host-tools bundle ([request](docs/crt_host_tools_publication_request.md)) and a hosted-runner adaptation of
   `tools/replay_port_linux.py`; until then `pins` and `ports` fail on purpose. Add `schedule:` with the pin; macOS/Windows jobs follow.
 - [ ] `release.yml` (manual; `package` → `verify` → approval-gated `publish`): the dry run stops at a verified draft and the entry
   gates reject an unchecked commit ([record](docs/acceptance/ci_acceptance.md#release-workflow-2026-11-11)). Not yet exercised: the
