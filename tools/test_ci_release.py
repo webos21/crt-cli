@@ -4,7 +4,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from ci_release import ReleaseError, names, parse_sums, require_artifact_match, require_commit, sums_line
+from ci_release import (ReleaseError, locate_executable, locate_sdk, names, parse_sums, require_artifact_match, require_commit,
+                        sums_line)
 
 
 class NamesTest(unittest.TestCase):
@@ -70,6 +71,38 @@ class ChecksumTest(unittest.TestCase):
             parse_sums(sums_line('a.tar.xz', self.digest) * 2)
         with self.assertRaisesRegex(ReleaseError, 'lowercase'):
             sums_line('a.tar.xz', self.digest.upper())
+
+
+class LocateTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self.tmp.name)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_executable_is_found_by_digest_not_by_name(self):
+        (self.dir / 'crt-cli-host').write_bytes(b'binary')
+        (self.dir / 'other').write_bytes(b'something else')
+        (self.dir / 'SHA256SUMS-host').write_text('x')
+        (self.dir / 'ci-summary.json').write_text('{}')
+        self.assertEqual(locate_executable(self.dir, hashlib.sha256(b'binary').hexdigest()).name, 'crt-cli-host')
+
+    def test_zero_or_two_matching_executables_are_refused(self):
+        (self.dir / 'a').write_bytes(b'same')
+        with self.assertRaisesRegex(ReleaseError, 'found 0'):
+            locate_executable(self.dir, '0' * 64)
+        (self.dir / 'b').write_bytes(b'same')
+        with self.assertRaisesRegex(ReleaseError, 'found 2'):
+            locate_executable(self.dir, hashlib.sha256(b'same').hexdigest())
+
+    def test_sdk_is_the_directory_the_summary_names(self):
+        sdk = {'version': 'v0.0.1-x', 'content_sha256': 'cd2ab657615c0fa52a1804f301a57dfa21b1067e3e5ed5a9f9a07d86ae050cc6'}
+        (self.dir / 'v0.0.1-x-cd2ab657615c/share/licenses').mkdir(parents=True)
+        (self.dir / 'v0.0.1-x-cd2ab657615c/manifest.json').write_text('{}')
+        self.assertEqual(locate_sdk(self.dir, sdk).name, 'v0.0.1-x-cd2ab657615c')
+        with self.assertRaisesRegex(ReleaseError, 'not where'):
+            locate_sdk(self.dir, dict(sdk, content_sha256='f' * 64))
 
 
 if __name__ == '__main__':
