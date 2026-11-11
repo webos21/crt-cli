@@ -1,0 +1,19 @@
+{
+  "schema": "crt-cli.ci-integration-pins",
+  "format": 0,
+  "note": "Exact inputs of the daily/manual integration workflow. An empty (null) pin is a failure, never a skip: a skipped suite looks like a pass. Fill a pin only in a reviewed commit that cites the release or source record and re-checks the digests against the published bytes.",
+  "zlib_source": {
+    "url": "https://zlib.net/fossils/zlib-1.3.1.tar.gz",
+    "name": "zlib-1.3.1.tar.gz",
+    "sha256": "9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23",
+    "size": 1512791
+  },
+  "hosts": {
+    "linux-x64": {
+      "host_tools": {"url": null, "name": null, "sha256": null, "size": null, "manifest_sha256": null, "version": null}
+    },
+    "linux-arm64": {
+      "host_tools": {"url": null, "name": null, "sha256": null, "size": null, "manifest_sha256": null, "version": null}
+    }
+  }
+}

@@ -1,0 +1,110 @@
+name: Integration
+
+# Input-gated integration checks that are too slow or too external for the required pull-request gate in ci.yml.
+# Every input is pinned in .github/ci/integration-pins.json; an unpinned input fails the job instead of skipping it,
+# because a skipped suite looks like a pass. This workflow is not a required check and never publishes anything.
+# The scheduled trigger is intentionally absent until the host-tools pin exists: a daily run that is red for a known,
+# unfixable-from-here reason teaches people to ignore red. Add `schedule:` in the commit that fills the pin.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  pins:
+    name: pins (${{ matrix.host }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - host: linux-x64
+            runner: ubuntu-26.04
+          - host: linux-arm64
+            runner: ubuntu-26.04-arm
+    steps:
+      - name: Check out the sources under test
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python for the driver
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+
+      - name: Check the driver's pin gates
+        run: python -m unittest discover -s tools -p test_ci_integration.py
+
+      - name: Require every integration input to be pinned
+        run: python tools/ci_integration.py pins --host "${{ matrix.host }}"
+
+  redirect:
+    name: redirect (${{ matrix.host }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - host: linux-x64
+            runner: ubuntu-26.04
+          - host: linux-arm64
+            runner: ubuntu-26.04-arm
+    steps:
+      - name: Check out the sources under test
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python for the driver
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+
+      - name: Restricted-redirect replay over the pinned public SDK bytes
+        run: python tools/ci_integration.py redirect --host "${{ matrix.host }}" --work "$RUNNER_TEMP/redirect"
+
+      - name: Upload the replay result
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: redirect-${{ matrix.host }}-${{ github.sha }}
+          path: ${{ runner.temp }}/redirect/redirect-replay/redirect-replay.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  ports:
+    name: ports (${{ matrix.host }})
+    needs: pins
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - host: linux-x64
+            runner: ubuntu-26.04
+          - host: linux-arm64
+            runner: ubuntu-26.04-arm
+    steps:
+      - name: Check out the sources under test
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python for the driver
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+
+      # Not wired yet: fails explicitly rather than reporting a pass for work that did not run.
+      - name: Port suites
+        run: python tools/ci_integration.py ports --host "${{ matrix.host }}"
