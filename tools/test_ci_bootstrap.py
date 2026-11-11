@@ -65,3 +65,8 @@ class HostKeyTest(unittest.TestCase):
         for system, machine in [('linux', 'riscv64'), ('darwin', 'x86_64'), ('win32', 'ARM64')]:
             with self.assertRaisesRegex(CiError, 'unsupported CI host'):
                 host_key(system, machine)
+
+
+class DeliberateFailure(unittest.TestCase):
+    def test_ruleset_verification_fails_on_purpose(self):
+        self.fail('deliberate failure for the ruleset verification PR; never merge')
