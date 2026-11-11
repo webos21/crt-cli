@@ -463,3 +463,27 @@ Two verification pull requests were opened as drafts and closed without merging,
 so the `BLOCKED` state is evidence of the rule, not of a rejected push. No second account tried to push. Bypass is `always`, not `pull_request`; tightening it later removes direct pushes for the maintainer too.
 A pull request needs no review (no approval rule is configured). Required checks apply to `main` only; tags and other branches are unprotected. A runner label or image change fails the leg closed rather than skipping it.
 
+## Integration workflow (2026-11-11)
+
+`integration.yml` (manual `workflow_dispatch`; not a required check, no write permission, actions pinned by SHA like `ci.yml`) runs three jobs on `ubuntu-26.04` and `ubuntu-26.04-arm`. Inputs are pinned in
+`.github/ci/integration-pins.json`; `tools/ci_integration.py` checks size and SHA-256 of every download and treats an unpinned input as a failure, because a skipped suite looks like a pass (7 unit tests, including each
+empty field, a non-https URL, a malformed digest, a wrong size and the committed pin file).
+
+| Job | What it proves | State |
+| --- | --- | --- |
+| `redirect` | The pinned published Preview (`.github/ci/pins.json`) against the pinned public SDK bytes behind two loopback TLS origins: the 54-case restricted-redirect replay | passes on both hosts |
+| `pins` | Every integration input is pinned | fails on both hosts: the independent host-tools bundle is not pinned |
+| `ports` | The five input-gated port suites (`port-build\|store\|oracle\|command\|project-test`) | not run (`needs: pins`); the driver step fails explicitly and is not wired to a replay yet |
+
+**First run.** `workflow_dispatch` run `42957820373` on `main` (`da487ec`): `redirect (linux-x64)` and `redirect (linux-arm64)` succeed with **54/54** cases each; both `pins` jobs fail with
+"unpinned url, name, sha256, size, manifest_sha256, version"; `ports` is skipped. The workflow conclusion is therefore `failure`, and that is the intended state.
+
+**What blocks the port suites.** (1) The CRT independent host tools (mksh, make, toybox applets) have no public release: the retained records call them local-only, and CRT's release list has only Dev SDK Previews.
+Pinning a URL, size, archive digest and manifest digest requires CRT to publish a per-host bundle first; this repository neither builds it nor references a producer tree. (2) `tools/replay_port_linux.py` is a one-off
+driver that takes the source tree, SDK, contract, host tools, archive and a seed CLI as arguments and uses Bubblewrap and strace; it has to be adapted for a hosted runner and cannot be exercised until (1) exists. The zlib
+source is pinned (`zlib-1.3.1.tar.gz`, 1,512,791 bytes, SHA-256 equal to the recipe pin and measured against the public bytes).
+
+**Schedule.** There is no `schedule:` trigger yet. A daily run that is red for a known reason that cannot be fixed here would teach readers to ignore red. The commit that fills the host-tools pin adds the trigger.
+
+Not covered: macOS and Windows integration jobs, the oracle's pinned Python, the port suites themselves, and any repository secret (none is used).
+

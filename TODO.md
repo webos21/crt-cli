@@ -62,8 +62,9 @@ Linux/x86_64 (`ubuntu-24.04` and `ubuntu-26.04`), Linux/arm64 (`ubuntu-26.04-arm
 owns the completed combinations, event scope and ruleset, including both repaired Linux
 paths and the Linux/arm64 dispatch, push and pull-request runs.
 
-- [ ] `integration.yml`: the five input-gated port suites (`port-build|store|oracle|command|project-test`) with the
-  pinned independent host tools, zlib source archive and oracle, plus redirect/transport replays. Daily and manual.
+- [ ] `integration.yml` (manual; the 54-case redirect replay passes on Linux x64 and arm64 in hosted run `42957820373`): the five
+  port suites still need CRT to publish and pin a per-host independent host-tools bundle and a hosted-runner adaptation of
+  `tools/replay_port_linux.py`; until then `pins` and `ports` fail on purpose. Add `schedule:` with the pin; macOS/Windows jobs follow.
 - [ ] `release.yml`: protected, manually approved packaging from a tested CI artifact, independent extraction and
   GitHub SDK acquisition before publication. CI success is not publication authority.
 - [ ] Define how CI pins are promoted (new Preview release, digest review) and add a Windows/arm64 leg
