@@ -77,6 +77,27 @@ def parse_sums(text):
     return entries
 
 
+NOTE_TOKENS = ('{{ARCHIVE_SHA256}}', '{{ARCHIVE_BYTES}}', '{{COMMIT}}', '{{TAG}}')
+
+
+def render_notes(template, *, digest, size, commit, tag):
+    """Fill the reviewed template's explicit tokens; anything else in the text is left exactly as reviewed.
+
+    The digest only exists after the archive is built, so the committed notes carry tokens instead of numbers. A template
+    without the digest token cannot state what is being published and is refused, as is a stray unknown {{TOKEN}}.
+    """
+    if '{{ARCHIVE_SHA256}}' not in template:
+        raise ReleaseError('the notes template must contain {{ARCHIVE_SHA256}}')
+    values = {'{{ARCHIVE_SHA256}}': digest, '{{ARCHIVE_BYTES}}': format(size, ','), '{{COMMIT}}': commit[:7], '{{TAG}}': tag}
+    text = template
+    for token, value in values.items():
+        text = text.replace(token, value)
+    leftover = re.findall(r'\{\{[A-Z0-9_]+\}\}', text)
+    if leftover:
+        raise ReleaseError('unknown notes token(s): %s' % ', '.join(sorted(set(leftover))))
+    return text
+
+
 def require_commit(sha):
     if not SHA40.match(sha or ''):
         raise ReleaseError('a release is built from a full lowercase 40-character commit SHA, never a branch or tag')
@@ -253,11 +274,12 @@ def command_publish(args):
     repo = args.repo
     if gh('release', 'view', n['tag'], '--repo', repo, check=False).returncode == 0:
         raise ReleaseError('a release for %s already exists; releases are never overwritten' % n['tag'])
-    notes = Path(args.notes_file).resolve()
-    if not notes.is_file() or not notes.read_text(encoding='utf-8').strip():
-        raise ReleaseError('the release notes file is missing or empty')
-    if digest not in notes.read_text(encoding='utf-8'):
-        raise ReleaseError('the release notes do not state the archive SHA-256 %s' % digest)
+    template_path = Path(args.notes_file).resolve()
+    if not template_path.is_file() or not template_path.read_text(encoding='utf-8').strip():
+        raise ReleaseError('the release notes template is missing or empty')
+    rendered = render_notes(template_path.read_text(encoding='utf-8'), digest=digest, size=archive.stat().st_size, commit=commit, tag=n['tag'])
+    notes = Path(args.work).resolve().parent / (Path(args.work).name + '-notes.md')
+    notes.write_text(rendered, encoding='utf-8')
     gh('release', 'create', n['tag'], '--repo', repo, '--draft', '--prerelease', '--latest=false', '--target', commit,
        '--title', n['title'], '--notes-file', notes, archive, sums)
     log('draft %s created' % n['tag'])
