@@ -225,11 +225,14 @@ unsupported for programs that import a DLL beside them.
 repository permissions and no secrets. It builds nothing from CRT: it consumes published artifacts.
 The repository carries no executables (`bin/` was removed); CI bootstraps from a release.
 
-Push and PR events use `paths-ignore: ["**/*.md", "docs/**"]`, following the
-CRT workflow's documentation exclusions. A change consisting only of Markdown
-or files under `docs/` skips automatic CI; a mixed documentation/code change
-still runs. Sources, headers, tests, tools, manifests, CI pins and workflow
-configuration remain covered. Manual dispatch is available regardless of paths.
+Push and PR events always start the workflow. A `changes` job diffs the pull request (merge base to head) or the push
+(`before..sha`) and sets `code=false` only when every changed file is Markdown or under `docs/`; anything it cannot classify
+(new branch, unreachable range, manual dispatch) runs the full matrix. The build matrix is skipped for `code=false`.
+`CI gate` always runs and is the one required status check: it passes when the matrix succeeded for a code change or was
+skipped for a documentation-only change, and fails when the matrix failed, was cancelled or never ran. The workflow does
+not use `paths-ignore`, because a workflow that never starts would leave a required check pending and block
+documentation-only pull requests. Sources, headers, tests, tools, manifests, CI pins and workflow configuration remain
+covered. Manual dispatch is available regardless of paths.
 
 1. **Bootstrap.** `tools/ci_bootstrap.py` downloads the host's published CRT-CLI Preview and checks its size and
    SHA-256 against `.github/ci/pins.json`. The pin verifies byte identity;
