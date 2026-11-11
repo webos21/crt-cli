@@ -83,9 +83,10 @@ from the SDK build baseline:
 
 Write documentation in English. Update the owning document and link to it
 rather than restating the same status in multiple places. Each completed
-increment moves its detailed outcome to HISTORY and applicable acceptance;
-remove it from TODO, except brief checked prerequisites needed for an active
-sequence. Keep unsuccessful attempts separate from accepted evidence.
+increment records its detailed outcome in HISTORY and applicable acceptance and
+is checked off in TODO. Checked items stay until every item of their section is
+complete and are then removed only when the user asks. Keep unsuccessful attempts
+separate from accepted evidence.
 
 Do not routinely create/update STATUS; it is an explicitly requested snapshot,
 not another work queue. Add reference, release, or monthly-history directories
