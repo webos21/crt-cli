@@ -111,7 +111,7 @@ also exercise this workflow at their recorded baselines.
 ## Next User Workflow
 
 [The active plan](TODO.md) continues the Dev SDK + CLI preview: the Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64
-packages are out; default/project pin adoption and a Linux/arm64 CI leg are next. The D3 zlib contract is
+packages are out; default/project pin adoption is next; CI covers Linux/x86_64, Linux/arm64, macOS/arm64 and Windows/x64. The D3 zlib contract is
 [approved and adopted](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09) for the three exercised host pairs;
 Windows/arm64 D3 remains a separate qualification target.
 

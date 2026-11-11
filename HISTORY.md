@@ -11,6 +11,13 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-11
 
+### Add the Linux/arm64 CI leg
+
+`ci.yml` has a required `linux-arm64` leg on `ubuntu-26.04-arm`: the pinned published Linux/aarch64 CLI Preview acquires the public Linux/aarch64 Dev SDK, builds the checked-out sources and the four
+suites (913/221/114/142) and a stage 2 that is byte-identical to stage 1 pass, locally and in hosted run `42931003805` (all five jobs succeeded). The driver learned Linux/aarch64 detection with a unit test; the
+pins were checked against the public bytes. No 24.04-arm leg (the SDK was exercised on glibc 2.43 only); push/pull-request events for the leg are not yet observed.
+[CI acceptance](docs/acceptance/ci_acceptance.md#linuxarm64-leg-2026-11-11).
+
 ### Replay the Linux/aarch64 redirect policy and run the package sandboxed
 
 The packaged executable of the published Linux/aarch64 Preview passes the 54-case restricted-redirect replay against the real public SDK bytes and a 27-check Bubblewrap run of the extracted package

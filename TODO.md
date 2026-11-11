@@ -53,7 +53,7 @@ retain their later queues. Execution policy remains in
 
 `ci.yml` (PR and main) bootstraps from the pinned published Preview and is described in the
 [development guide](docs/guides/development.md#continuous-integration); completed steps live in HISTORY.
-Linux/x86_64 (`ubuntu-24.04` and `ubuntu-26.04`), macOS/arm64 (`macos-15`) and Windows/x64
+Linux/x86_64 (`ubuntu-24.04` and `ubuntu-26.04`), Linux/arm64 (`ubuntu-26.04-arm`), macOS/arm64 (`macos-15`) and Windows/x64
 (`windows-2022`) are required legs.
 [CI acceptance](docs/acceptance/ci_acceptance.md#linux-loader-repair-sdk-adoption-2026-11-10)
 owns the completed combinations, including both repaired Linux paths.
@@ -62,8 +62,8 @@ owns the completed combinations, including both repaired Linux paths.
   pinned independent host tools, zlib source archive and oracle, plus redirect/transport replays. Daily and manual.
 - [ ] `release.yml`: protected, manually approved packaging from a tested CI artifact, independent extraction and
   GitHub SDK acquisition before publication. CI success is not publication authority.
-- [ ] Define how CI pins are promoted (new Preview release, digest review) and add a Linux/arm64 leg (its public SDK and [CLI Preview](docs/acceptance/preview_acceptance.md#linuxaarch64-cli-preview-release-2026-11-11) now exist, 2026-11-11) and a Windows/arm64 leg
-  once its public SDK and CLI package exist.
+- [ ] Define how CI pins are promoted (new Preview release, digest review) and add a Windows/arm64 leg
+  once its public SDK and CLI package exist (the Linux/arm64 leg was added 2026-11-11).
 
 ## Planned
 

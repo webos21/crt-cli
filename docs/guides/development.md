@@ -283,7 +283,7 @@ The Python driver is a build-host orchestrator like the other `tools/*.py` repla
 
 Pins change only in a reviewed commit that cites the release record and re-checks the asset digests against the
 published `SHA256SUMS`; never use a moving tag or `latest`. Linux/x86_64 has two required
-legs, `ubuntu-24.04` and `ubuntu-26.04`, consuming the same repaired Dev SDK pin.
+legs, `ubuntu-24.04` and `ubuntu-26.04`, consuming the same repaired Dev SDK pin. A separate required `linux-arm64` leg (`ubuntu-26.04-arm`) consumes the Linux/aarch64 Dev SDK and CLI Preview pins ([CI acceptance](../acceptance/ci_acceptance.md#linuxarm64-leg-2026-11-11)).
 Both use LLVM 21: noble provisions the explicitly keyed apt.llvm.org repository;
 26.04 uses Ubuntu's archive. Existing macOS/arm64 and Windows/x64 checks remain
 required. Linux artifacts use distinct job labels. A suite failure does not

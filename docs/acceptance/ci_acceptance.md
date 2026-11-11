@@ -367,3 +367,20 @@ checked against source `5d148ba`, result `pass`, cold-build receipts and suite
 results (`hosted-verification.json`, `hosted-artifacts/`). Both Linux stage
 pairs are byte-identical. macOS/Windows retain their own original SDK pins and
 reported byte-difference limitations; this adds no other-host `.4` SDK claim.
+
+## Linux/arm64 leg (2026-11-11)
+
+`ci.yml` gains a required `native (linux-arm64)` leg on the hosted `ubuntu-26.04-arm` runner. It bootstraps from the published Linux/aarch64 CLI Preview
+(`v0.1.0-preview.20261111.linux-arm64.1`, executable `9fbef825...e1db`), which acquires the public Linux/aarch64 Dev SDK `v0.0.1-preview.20261110.linux.arm64.2`
+(content `cd2ab657...0cc6`) with the `github-release` redirect policy; both pins in `.github/ci/pins.json` were checked against the public bytes before use. Only 26.04 is
+required: that SDK was exercised on glibc 2.43 only, so no `ubuntu-24.04-arm` leg is claimed. The driver now recognises Linux/aarch64 (`host_key`, unit-tested) and applies the glibc probe and the ELF
+`DT_NEEDED`/`RPATH`/`RUNPATH` and interpreter audit to every Linux host; no product or SDK change.
+
+**Local replay first.** `tools/ci_bootstrap.py --host linux-arm64` on the native aarch64 development machine passes: native 913, archive 221, SDK-store 114, port-recipe 142, stage 1 and stage 2 byte-identical
+(cold 21 executed / 0 reused each), no imports, interpreter `/lib/ld-linux-aarch64.so.1`.
+
+**Hosted run.** `workflow_dispatch` run `42931003805` on the branch `ci-linux-arm64` (source `f6a41a8`) concludes **success on all five jobs**: Ubuntu 24.04 and 26.04 x86_64, `linux-arm64`, macOS/arm64 and Windows/x64.
+The `linux-arm64` artifact summary was downloaded and checked: result `pass`, glibc 2.43, LLVM/LLD 21.1.8, the same four suite counts, stage 1 and stage 2 byte-identical, bootstrap executable `9fbef825...`, SDK pin as above. The other four legs
+are unchanged inputs and were not re-verified artifact by artifact here.
+
+Not covered: pull-request and `push` events on `main` for this leg (the first run was a manual dispatch from the branch; a runner or image change fails closed), Ubuntu 24.04 arm64, other glibc versions, and the `integration.yml` and `release.yml` queues.
