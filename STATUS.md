@@ -60,8 +60,10 @@ Apart from the Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64 Previews
   rehearsal assets and root unresolved locks are not promotion.
 - General updates/self-upgrade, GC, wider profiles/cross targets and Studio retain
   their later queues. No new runtime/SDK build or default pin is adopted here.
-- CI's input-gated port and redirect/transport jobs, release automation and
-  Windows/arm64 remain planned. Linux/arm64 CI covers Ubuntu 26.04 / glibc 2.43
+- Manual `integration.yml` and `release.yml` exist. The restricted-redirect replay passes 54/54 on Linux x64 and arm64 runners;
+  the port suites fail on purpose until CRT publishes a per-host host-tools bundle. The release workflow's dry run produced a verified
+  draft and rejected an unchecked commit, but its real publish step has not been run. Pins move under a written
+  [promotion policy](docs/guides/development.md#ci-pin-promotion). Windows/arm64 remains planned. Linux/arm64 CI covers Ubuntu 26.04 / glibc 2.43
   only; passing process workers do not resolve the retained Windows threaded
   spawn/file-I/O observations. See [CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11).
 
