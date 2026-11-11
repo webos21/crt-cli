@@ -125,7 +125,8 @@ Windows/arm64 D3 remains a separate qualification target.
 CI's five required jobs have a passing manual run, with Linux/x86_64 on two
 Ubuntu versions. The Linux/arm64 leg has also passed on push and pull-request events, and `main`
 requires the `CI gate` check; [CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)
-distinguishes workflow configuration, hosted results and deferred integration/release jobs.
+distinguishes workflow configuration, hosted results, the manual integration workflow (redirect replay passes; port suites wait for a
+published host-tools bundle) and the release workflow (dry run verified; real publication not yet exercised).
 
 Preview qualification covers the actual packaged CLI, promoted SDK pin, trust,
 notices/resources, external LLVM setup and a source-hidden user flow. Full SDK
