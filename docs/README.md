@@ -95,3 +95,5 @@ not a live mirror. Coordinate future shared SDK contract changes explicitly.
 Keep CRT ABI/runtime measurements in CRT acceptance and link their original
 evidence. Keep CLI installation/port/project results here; later Studio UX
 results belong to Studio.
+
+<!-- ruleset verification: documentation-only change; remove with the PR -->
