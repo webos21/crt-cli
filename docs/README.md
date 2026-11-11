@@ -14,6 +14,8 @@ evidence snapshot. [AGENTS.md](../AGENTS.md) defines development rules.
 - [CRT-CLI: Development Environment and Source-first Ports](design/crt_cli.md):
   product boundaries, installation layout, environment/recipe/project contracts,
   and D0-D7 dependency order. This repository owns subsequent CLI design.
+- [Request to CRT: publish the host-tools bundle](crt_host_tools_publication_request.md): the open producer-side
+  dependency that keeps the integration port suites red on purpose (2026-11-11).
 - [Contract Compatibility and Adoption](compatibility.md): independent existing
   formats vs proposed contracts, exact baseline/adoption records and shared
   review links. Local Linux bootstrap evidence exists; no promoted production
