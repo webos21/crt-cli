@@ -4,6 +4,13 @@ This record owns bounded local Preview input and final-artifact qualification.
 The [lifecycle contract](lifecycle_acceptance.md) keeps general shipping/update
 requirements; [compatibility](../compatibility.md) owns contract adoption.
 
+The dated sections preserve each candidate, publication and follow-up at its
+own exact inputs. Later host-specific entries close only the gaps they
+explicitly replay; an earlier "not covered" statement is not a current
+cross-host summary. The [README release table](../../README.md#download-the-previews)
+lists the four published CLI Previews, and [CI acceptance](ci_acceptance.md#current-hosted-coverage-2026-11-11)
+separates packaged-release qualification from hosted source self-build results.
+
 ## Linux local candidate (2026-11-10)
 
 Scope: native Linux/x86_64 Dev `02-cxx`, one CLI executable with pinned notice
@@ -544,7 +551,12 @@ It passed **30/30** twice with identical cases: on the pre-publication handoff a
 reinstall, wrong-pin refusal with nothing published, C and C++ source-only `new`, first build without configure through the installed SDK, test, run, zero-command warm build, unchanged project locks, unchanged installed SDK and downloads.
 Public result SHA-256 `2c2495bba6002d7e5669de6974b2a73babe9ecd7fe1428b6d625f2213ae01974`. Receipts are under the ignored `out/linux-arm64-preview-20261110/`.
 
-Limits: glibc 2.43 only; the executable is neither committed nor published; GitHub `sdk acquire` on this host, the older loader, Full SDKs and default/production locks are not covered.
+At this adoption checkpoint, glibc 2.43 is the only exercised loader and that
+consumer executable is neither committed nor published. The later
+[CLI Preview release](#linuxaarch64-cli-preview-release-2026-11-11) and
+[redirect/package follow-up](#linuxaarch64-redirect-replay-and-sandboxed-package-run-2026-11-11)
+record the published executable and its additional gates; older loaders, Full
+SDKs and default/production locks remain outside this host's evidence.
 
 ## Linux/aarch64 CLI Preview release (2026-11-11)
 
@@ -569,9 +581,12 @@ Project directory names must be package identifiers; a first attempt used a non-
 followed one redirect per file and matched `SHA256SUMS-linux-aarch64` and the local archive byte for byte; the archive from those public bytes passes `verify` (30 files, same manifest), `--version`, self `doctor --resources` and `sdk acquire`.
 The repository still carries no executable.
 
-Receipts are in the local evidence directory `/home/cmjo/GitLocal/crt-cli-preview-linux-arm64-20261111/` (`replay/`, `assemble.out`, `pack.out`, `acquire.json`, `public-dl/`). Not claimed: publisher authentication (digests only),
-other glibc versions or distributions, (the redirect replay and the sandboxed run were added the same day, see the next subsection) Linux C shared-SDK mode, source-port builds from this
-package, updates or self-upgrade, and default/project lock adoption.
+Receipts are in the local evidence directory `/home/cmjo/GitLocal/crt-cli-preview-linux-arm64-20261111/` (`replay/`, `assemble.out`, `pack.out`, `acquire.json`, `public-dl/`).
+The redirect replay and SDK/source-hidden package run were pending at publication;
+the same-day follow-up below records their completion. Remaining exclusions are
+publisher authentication (digests only), other glibc versions or distributions,
+Linux C shared-SDK mode, source-port builds from this package, updates or
+self-upgrade, and default/project lock adoption.
 
 ### Linux/aarch64 redirect replay and sandboxed package run (2026-11-11)
 

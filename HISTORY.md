@@ -11,6 +11,23 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-11
 
+### Reconcile Preview, STATUS and CI documentation
+
+Reviewed checkpoint `6201aa6` against the Preview/redirect/CI acceptance records,
+the checked-in workflow and its pins. STATUS was already dated 2026-11-11;
+corrected its stale HEAD/product-source description and added the five-job CI
+scope. README now distinguishes the Linux/x86_64 package's original `.3` build
+from the later qualified `.4` SDK input and retains Linux/aarch64's loader scope.
+CI acceptance and the index distinguish completed hosted runs from historical
+failures; ARM64 push/PR events and integration/release jobs remain open.
+
+GitHub API metadata confirms manual run `42931003805` succeeds on all five jobs
+and the public ARM64 Preview asset size/digest matches the CI pin. Relative
+links/anchors, Markdown fences, matrix/SDK references and whitespace checks
+pass. No native tests, CI jobs or release artifacts were rebuilt or rerun;
+product sources, workflows, pins and project locks are unchanged. Current scope:
+[CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11).
+
 ### Add the Linux/arm64 CI leg
 
 `ci.yml` has a required `linux-arm64` leg on `ubuntu-26.04-arm`: the pinned published Linux/aarch64 CLI Preview acquires the public Linux/aarch64 Dev SDK, builds the checked-out sources and the four
@@ -31,7 +48,7 @@ orchestrator now asserts failure messages. No product change; the published rele
 Published prerelease `v0.1.0-preview.20261111.linux-arm64.1` (tag target `6a00885`, not marked latest): a static `crt-cli` built from the clean commit by the public
 Linux/aarch64 Dev SDK `v0.0.1-preview.20261110.linux.arm64.2` alone (cold 21/0, warm 0/21, native 913, 32 distinct executed paths, no `DT_NEEDED`), packed deterministically with notices and a pinned
 30-file inventory. The extracted package acquires the SDK from GitHub through the `github-release` redirect policy and passes C/C++ `new`/first `build`/`test`/`run`/warm build (12/12); the unauthenticated public
-download matches the sums byte for byte. Not claimed at publication: publisher authentication, the 54-case redirect replay and a sandboxed SDK/source-hidden run on this host (both added below), other glibc versions.
+download matches the sums byte for byte. Not claimed at publication: publisher authentication, the 54-case redirect replay and a sandboxed SDK/source-hidden run on this host (both added in the follow-up entry above), other glibc versions.
 [Record](docs/acceptance/preview_acceptance.md#linuxaarch64-cli-preview-release-2026-11-11).
 
 ## 2026-11-10

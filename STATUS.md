@@ -1,9 +1,10 @@
 # Project Status
 
 Evidence-based SDK/CLI snapshot refreshed **2026-11-11** at the owner's explicit
-request. Reviewed CLI product source `f49c279` (last product-source change; HEAD `eaa0a37` is documentation) and CRT `bcce264`.
-Each Preview below retains its own exact source commit and public SDK pin: Windows `a55c0d0` against CRT `b31276a`,
-Linux/aarch64 `6a00885` against the CRT `e6a94ab` SDK. Linux/x86_64 and macOS records likewise.
+request, reviewing repository checkpoint `6201aa6`. This is a documentation
+review, not a new native build or replay. Each Preview and CI result below
+retains its own source revision, public SDK pin and host scope; the native
+process-worker change `f49c279` is test infrastructure, not a product-source revision.
 [TODO](TODO.md) owns current work, [HISTORY](HISTORY.md) completed work and
 [acceptance](docs/acceptance/sdk_install_acceptance.md) exact combinations.
 
@@ -22,6 +23,13 @@ Linux/aarch64 `6a00885` against the CRT `e6a94ab` SDK. Linux/x86_64 and macOS re
 | macOS/arm64 CLI Preview | [Published prerelease](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.macos-arm64.1) (unsigned, ad-hoc linker signature only, digests only, not notarized); built from its sources by the public macOS Dev SDK alone (native 942 checks); the packaged executable acquires that SDK from GitHub and builds/tests/runs C and C++ under Seatbelt with an empty `PATH`; [record](docs/acceptance/preview_acceptance.md#macos-cli-preview-release-2026-11-10) |
 | Windows/x64 CLI Preview | [Published prerelease](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.windows-x86_64.1) (unsigned, digests only); public Dev SDK-only self-build, 54/54 redirect cases, 12/12 SDK-free package and 39/39 packaged GitHub/C/C++ workflow; [record](docs/acceptance/preview_acceptance.md#windowsx64-cli-preview-release-2026-11-10) |
 
+The five required GitHub CI jobs cover Ubuntu 24.04/26.04 x86_64, Ubuntu 26.04
+arm64, macOS/arm64 and Windows/x64. Manual run `42931003805` at `f6a41a8`
+succeeds on all five; its Linux/arm64 artifact is independently checked, while
+the other four retain their earlier artifact qualification. ARM64 push/PR
+events remain unobserved. [CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)
+owns the current combinations and limits.
+
 Windows/x64's earlier concurrent-install crash was root-caused/fixed in the
 producer libunwind recipe and replayed with the fixed SDK; its retained failure
 is not a current unresolved gate. Windows/arm64 D2 is distinct from unqualified
@@ -37,6 +45,10 @@ Apart from the Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64 Previews
 - The retained Linux SDK's C shared SDK-provider control resolves host libz;
   this is [unendorsed diagnostic evidence](docs/acceptance/sdk_install_acceptance.md#linux-d3-common-change-replay-and-macos-handoff-2026-11-09),
   not SDK shared qualification. Producer 6.4 retains policy/runtime-search review.
+- The earlier Linux/x86_64 SDK `.3` C++ shared-runtime loader failure is closed
+  for the repaired SDK `.4` on the two recorded Ubuntu hosts
+  ([hosted qualification](docs/acceptance/ci_acceptance.md#completed-linux-hosted-qualification)).
+  This does not qualify the separate pure-C shared SDK mode or other loaders.
 - The preview targets Dev SDK + CLI. Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64 CLI Previews are published;
   Windows/arm64 has none. The Dev SDK Previews of Linux (x86_64 and aarch64), macOS and Windows/x64 are published by CRT. Existing Full
   assembly/approval records remain valid for their own inputs; Full does not block the CLI preview.
@@ -47,6 +59,10 @@ Apart from the Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64 Previews
   rehearsal assets and root unresolved locks are not promotion.
 - General updates/self-upgrade, GC, wider profiles/cross targets and Studio retain
   their later queues. No new runtime/SDK build or default pin is adopted here.
+- CI's input-gated port and redirect/transport jobs, release automation and
+  Windows/arm64 remain planned. Linux/arm64 CI covers Ubuntu 26.04 / glibc 2.43
+  only; passing process workers do not resolve the retained Windows threaded
+  spawn/file-I/O observations. See [CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11).
 
 Native evidence and limits belong to [compatibility](docs/compatibility.md) and
 acceptance. Future STATUS refreshes remain explicit owner requests.

@@ -226,7 +226,8 @@ repository permissions and no secrets. It builds nothing from CRT: it consumes p
 The repository carries no executables (`bin/` was removed); CI bootstraps from a release.
 
 1. **Bootstrap.** `tools/ci_bootstrap.py` downloads the host's published CRT-CLI Preview and checks its size and
-   SHA-256 against `.github/ci/pins.json`. TLS is transport only; the pin authenticates the bytes.
+   SHA-256 against `.github/ci/pins.json`. The pin verifies byte identity;
+   TLS protects transport, and neither establishes publisher authentication here.
 2. **SDK.** The bootstrap CLI runs `sdk acquire` with a generated `crt-cli.sdk-source` carrying the pinned public Dev SDK
    manifest, archive, contract and content digests, the `github-release` redirect policy and the runner's system roots as
    the caller-chosen CA (its hash is recorded). Publisher authentication stays `not_verified`.
@@ -284,7 +285,7 @@ The Python driver is a build-host orchestrator like the other `tools/*.py` repla
 Pins change only in a reviewed commit that cites the release record and re-checks the asset digests against the
 published `SHA256SUMS`; never use a moving tag or `latest`. Linux/x86_64 has two required
 legs, `ubuntu-24.04` and `ubuntu-26.04`, consuming the same repaired Dev SDK pin. A separate required `linux-arm64` leg (`ubuntu-26.04-arm`) consumes the Linux/aarch64 Dev SDK and CLI Preview pins ([CI acceptance](../acceptance/ci_acceptance.md#linuxarm64-leg-2026-11-11)).
-Both use LLVM 21: noble provisions the explicitly keyed apt.llvm.org repository;
+All Linux legs use LLVM 21: noble provisions the explicitly keyed apt.llvm.org repository;
 26.04 uses Ubuntu's archive. Existing macOS/arm64 and Windows/x64 checks remain
 required. Linux artifacts use distinct job labels. A suite failure does not
 stop later stages, so one run reports everything that is broken.

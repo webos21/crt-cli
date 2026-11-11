@@ -48,8 +48,10 @@ The producer's public prerelease [v0.0.1-preview.20261110.linux.arm64.2](https:/
 `e6a94ab9e69b05497b3804328971d24d6071a53d`, manifest pin `ba77b26edfa0413df5e8c17309506d7ae6ecf134ae7e9908e3742bc562067be3`, SDK content `cd2ab657615c0fa52a1804f301a57dfa21b1067e3e5ed5a9f9a07d86ae050cc6`)
 is consumed by a CLI (`ae5f2b21...c543`, 23,162,944 bytes) that this SDK built from `5d148ba` (cold 21/0, warm 0/21; native 913, archive 221, SDK-store 114, port-recipe 142) in the
 [Linux/aarch64 record](acceptance/preview_acceptance.md#linuxaarch64-public-sdk-promotion-and-consumer-adoption-2026-11-10): 30/30 over the actual public bytes. The release includes the Linux loader/TLS repair; glibc 2.43 is the
-only exercised loader here. Native policy 1, install metadata 1, project lock 1 and recipe schema 1 are unchanged. That executable is not committed. The Linux/aarch64 CLI Preview was published on 2026-11-11 (see below); the redirect-replay cases on this host,
-other glibc versions, Full SDKs and production/default-lock adoption remain separate.
+only exercised loader here. Native policy 1, install metadata 1, project lock 1 and recipe schema 1 are unchanged. That executable is not committed.
+The separately published Linux/aarch64 CLI Preview and its 54-case redirect and
+27-check sandboxed-package follow-up are recorded below. Other glibc versions,
+Full SDKs and production/default-lock adoption remain separate.
 
 ## Linux/aarch64 CLI Preview (2026-11-11)
 

@@ -39,10 +39,12 @@ from the SDK build baseline:
 
 ## Acceptance Contracts and Evidence
 
-- [GitHub CI](acceptance/ci_acceptance.md): what the CI driver has been run against
-  (Linux/x86_64 local rehearsal) and what is not yet run on GitHub-hosted images.
+- [GitHub CI](acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11):
+  five required hosted jobs across four host/architecture pairs, the retained
+  local and failed-run evidence, and outstanding event/integration/release gates.
 - [Dev SDK / CLI Preview](acceptance/preview_acceptance.md): bounded local candidate,
-  actual SDK/CLI/resource identities, first-user rehearsal and publication limits.
+  published Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64 packages,
+  actual SDK/CLI/resource identities, isolated workflows and publication limits.
 - [D0/D1 Bootstrap Acceptance](acceptance/bootstrap_acceptance.md): SDK-only
   CLI consumption, initial layout/decisions, single-executable feasibility,
   SDK-free self-doctor/HTTPS and Windows host-environment gates, and

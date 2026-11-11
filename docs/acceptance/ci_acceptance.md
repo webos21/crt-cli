@@ -4,6 +4,32 @@ This record owns what the CI driver and workflow have actually been run against.
 procedure are in the [development guide](../guides/development.md#continuous-integration); open work is in
 [TODO](../../TODO.md#github-ci). A passing local rehearsal is not a GitHub-hosted run.
 
+## Current Hosted Coverage (2026-11-11)
+
+The checked-in workflow has five required jobs across four host/architecture
+pairs. The latest documented run,
+[`42931003805`](https://github.com/webos21/crt-cli/actions/runs/42931003805),
+is a successful manual dispatch of branch `ci-linux-arm64` at `f6a41a8`.
+Its five job conclusions and event/source metadata were rechecked through the
+GitHub API during the 2026-11-11 documentation review; artifacts and native
+tests were not rerun by that review.
+
+| Host/architecture | Required runner(s) | Qualified SDK input | Evidence |
+| --- | --- | --- | --- |
+| Linux/x86_64 | `ubuntu-24.04`, `ubuntu-26.04` | `v0.0.1-preview.20261110.4` | [Repaired-loader qualification and four artifact audits](#whole-required-matrix-and-artifact-verification) |
+| Linux/arm64 | `ubuntu-26.04-arm` | `v0.0.1-preview.20261110.linux.arm64.2` | [Manual hosted run and ARM64 artifact verification](#linuxarm64-leg-2026-11-11) |
+| macOS/arm64 | `macos-15` | `v0.0.1-preview.20261110.macos.1` | [Four-job qualification with its original host-specific SDK pin](#whole-required-matrix-and-artifact-verification) |
+| Windows/x64 | `windows-2022` | `v0.0.1-preview.20261110.windows.1` | [Four-job qualification with its original host-specific SDK pin](#whole-required-matrix-and-artifact-verification) |
+
+The ARM64 addition independently verifies that run's ARM64 artifact. The other
+four job conclusions pass; their earlier independent artifact checks retain
+their recorded source revisions rather than being relabeled as fresh audits.
+The workflow enables PR and main-push triggers, but those events have not yet
+been observed for the ARM64 leg. Ubuntu 24.04 arm64, other ARM64 glibc versions,
+Windows/arm64, input-gated port/redirect integration and release automation
+remain outside this CI qualification. The `.3` Ubuntu 24.04 failure below is
+historical; the later `.4` record closes it for the named x86_64 combinations.
+
 ## Linux/x86_64 local rehearsal of the driver (2026-11-10)
 
 Scope: `tools/ci_bootstrap.py` on one native host with the real public downloads, no workflow engine.
@@ -290,14 +316,21 @@ Windows/macOS differences remain reported and unqualified for byte identity.
 Run/job metadata, full artifacts and comparisons are retained in the evidence
 root. No test tier is removed or deferred and no nightly workflow is added.
 
-## Not run
+## Limits at the Original Three-host Checkpoint
 
-- Ubuntu 24.04's full native suite remains blocked by the producer-side loader
-  gap above; Ubuntu 26.04 passes at the recorded combination.
+These limits describe the preceding process-worker run with Linux SDK `.3`.
+The later [loader-repair adoption](#linux-loader-repair-sdk-adoption-2026-11-10)
+and [ARM64 qualification](#linuxarm64-leg-2026-11-11) supersede the corresponding
+host gaps for their exact inputs. Current remaining scope is summarized above.
+
+- At that checkpoint, Ubuntu 24.04's full native suite was blocked by the
+  producer-side loader gap with SDK `.3`; Ubuntu 26.04 passed that combination.
 - The Linux, macOS and Windows driver paths ran on hosted images up to the points recorded above; Python 3.12, `actions/*` at
   their pinned commits, the LLVM 21 apt install and artifact upload worked on Linux.
-- Input-gated port suites, redirect/transport replays, Linux/aarch64 and Windows/arm64 are not covered.
-- Publisher authentication stays `not_verified`: pins authenticate the bytes, the runner's system roots only protect transport.
+- Input-gated port suites, redirect/transport replays, Linux/aarch64 and
+  Windows/arm64 were not covered by that three-host run.
+- Publisher authentication stays `not_verified`: pins verify byte identity;
+  the runner's system roots protect TLS transport.
 
 ## Linux loader-repair SDK adoption (2026-11-10)
 

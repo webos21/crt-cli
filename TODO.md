@@ -39,7 +39,8 @@ separately requested dated snapshot.
 - [x] Restricted HTTPS redirect policy implemented and Linux-replayed, including real
   GitHub `sdk acquire` ([record](docs/acceptance/preview_acceptance.md#restricted-https-redirects-and-github-acquisition-2026-11-10)).
 - [x] Redirect policy replayed on macOS/arm64: 54/54 cases and real GitHub `sdk acquire` ([record](docs/acceptance/preview_acceptance.md#macos-cli-preview-release-2026-11-10)).
-- [ ] Review explicit default/project pin adoption against the promoted three-host SDK/CLI Previews;
+- [ ] Review explicit default/project pin adoption against the published Linux/x86_64,
+  Linux/aarch64, macOS/arm64 and Windows/x64 SDK/CLI Previews;
   retain the [Windows publication baseline](docs/acceptance/preview_acceptance.md#windowsx64-cli-preview-release-2026-11-10) and the existing Linux/macOS records.
 - [ ] Keep Full SDK packaging/security/source/license review on its own path;
   Full installation/profile support is not a prerequisite for the first CLI preview.
@@ -55,9 +56,12 @@ retain their later queues. Execution policy remains in
 [development guide](docs/guides/development.md#continuous-integration); completed steps live in HISTORY.
 Linux/x86_64 (`ubuntu-24.04` and `ubuntu-26.04`), Linux/arm64 (`ubuntu-26.04-arm`), macOS/arm64 (`macos-15`) and Windows/x64
 (`windows-2022`) are required legs.
-[CI acceptance](docs/acceptance/ci_acceptance.md#linux-loader-repair-sdk-adoption-2026-11-10)
-owns the completed combinations, including both repaired Linux paths.
+[CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)
+owns the completed combinations and event scope, including both repaired Linux
+paths and the Linux/arm64 manual dispatch.
 
+- [ ] Observe the new Linux/arm64 leg on push to `main` and on a pull request;
+  its passing branch dispatch does not establish those event paths.
 - [ ] `integration.yml`: the five input-gated port suites (`port-build|store|oracle|command|project-test`) with the
   pinned independent host tools, zlib source archive and oracle, plus redirect/transport replays. Daily and manual.
 - [ ] `release.yml`: protected, manually approved packaging from a tested CI artifact, independent extraction and
