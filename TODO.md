@@ -41,11 +41,16 @@ separately requested dated snapshot.
 - [x] Restricted HTTPS redirect policy implemented and Linux-replayed, including real
   GitHub `sdk acquire` ([record](docs/acceptance/preview_acceptance.md#restricted-https-redirects-and-github-acquisition-2026-11-10)).
 - [x] Redirect policy replayed on macOS/arm64: 54/54 cases and real GitHub `sdk acquire` ([record](docs/acceptance/preview_acceptance.md#macos-cli-preview-release-2026-11-10)).
-- [ ] Review explicit default/project pin adoption against the published Linux/x86_64,
-  Linux/aarch64, macOS/arm64 and Windows/x64 SDK/CLI Previews;
-  retain the [Windows publication baseline](docs/acceptance/preview_acceptance.md#windowsx64-cli-preview-release-2026-11-10) and the existing Linux/macOS records.
-- [ ] Keep Full SDK packaging/security/source/license review on its own path;
-  Full installation/profile support is not a prerequisite for the first CLI preview.
+- [ ] Adopt the default/project pin policy against the published Linux/x86_64,
+  Linux/aarch64, macOS/arm64 and Windows/x64 SDK/CLI Previews, and close it by confirming the existing records
+  (retain the [Windows publication baseline](docs/acceptance/preview_acceptance.md#windowsx64-cli-preview-release-2026-11-10)
+  and the Linux/macOS records). The policy is two separate contracts, not a new lock format: the repository root
+  `crt.lock` stays `unresolved` (one source tree builds on every host, so it cannot pin one SDK); a user project's
+  `crt.lock` pins its own SDK and ports explicitly and an SDK change never migrates it silently; the CI bootstrap pins
+  live per host in `.github/ci/pins.json` under the checked [promotion policy](docs/guides/development.md#ci-pin-promotion).
+  Done when acceptance records show project-lock creation, reuse and tampered-lock refusal with the real public SDK on all
+  four hosts; add only the missing cases.
+- The Full SDK review item moved to Planned: [Full SDK Support](#full-sdk-support).
 
 D4 may proceed against the frozen D3 contracts; it does not enlarge D3 or
 become a first-preview release gate. General updates/self-upgrade and Studio
@@ -69,23 +74,53 @@ paths and the Linux/arm64 dispatch, push and pull-request runs.
   ([record](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)).
 - [x] `CI gate` is the single required check of the `main` ruleset (`27002916`): a documentation-only pull request is `CLEAN`
   with the matrix skipped, and a failing change is `BLOCKED` ([record](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)).
-- [ ] Observe the ruleset rejecting a non-administrator's direct push or failing-check merge: administrator bypass is `always`, so a
-  rejection was not seen. This needs a second account; tighten the bypass when a second maintainer exists.
+- The ruleset setting and pull-request states are accepted; the unverified non-administrator rejection moved to Planned:
+  [CI Operations](#ci-operations).
 - [x] `integration.yml` (manual) enforces its pins and passes the 54-case restricted-redirect replay on Linux x64 and arm64
   ([record](docs/acceptance/ci_acceptance.md#integration-workflow-2026-11-11)); its `pins` and `ports` jobs fail on purpose while
   the host-tools bundle is unpublished.
-- [ ] Run the five port suites in `integration.yml`: CRT publishes and pins a per-host independent host-tools bundle
-  ([crt#2](https://github.com/webos21/crt/issues/2), [request](docs/crt_host_tools_publication_request.md)), then adapt
-  `tools/replay_port_linux.py` to a hosted runner and add `schedule:` in the same commit; macOS/Windows jobs follow.
+- [ ] D1, Linux integration: run the five port suites in `integration.yml` on Linux x64 and arm64 with no skipped suite. CRT publishes
+  and pins a per-host independent host-tools bundle ([crt#2](https://github.com/webos21/crt/issues/2),
+  [request](docs/crt_host_tools_publication_request.md)), then the runner is adapted and `schedule:` is added in the same commit.
+  Keep input download, digest check, work-directory setup and result judging in one common driver, and leave Bubblewrap/strace
+  isolation in a Linux adapter rather than turning `tools/replay_port_linux.py` into a universal runner. Until the bundle exists the
+  CLI-side runner may be prepared (input interface, a local test bundle for the driver, fail-closed missing or tampered inputs), but that
+  does not replace this acceptance. This gate covers Linux only; hosted macOS/Windows integration is the separate D2 item under
+  [CI Platform Expansion](#ci-platform-expansion) and must not be reported as complete D3 integration here.
 - [x] `release.yml` (manual; `package` → `verify` → approval-gated `publish`): the dry run produced a verified draft and an unchecked
   commit was rejected ([record](docs/acceptance/ci_acceptance.md#release-workflow-2026-11-11)).
 - [ ] Exercise the real publish step (`dry_run: false`) on the next genuine Preview, with the reviewer's approval comment on the
-  `release` environment; Linux x64 and arm64 only, macOS and Windows hosts follow the same host-key pattern.
+  `release` environment; Linux x64 and arm64 only, macOS and Windows hosts follow the same host-key pattern. The approval comment
+  records the target commit, tag, artifact digest and reviewer; a single maintainer approving their own release is a deliberate pause,
+  not independent third-party review, and is not claimed as one. After publication, download the public assets in a fresh workspace
+  and verify digests and execution: that external-consumption evidence is separate from the draft-stage `verify` job. This item does not
+  wait for D1 and D1 does not wait for it; whichever Preview or bundle arrives first closes first.
 - [x] CI pin promotion policy and `tools/check_ci_pins.py` ([guide](docs/guides/development.md#ci-pin-promotion)); every current pin
   matches the published bytes.
-- [ ] Add a Windows/arm64 leg under that policy once its public SDK, its CLI Preview and a hosted runner exist.
+- The Windows/arm64 leg moved to Planned: [CI Platform Expansion](#ci-platform-expansion).
 
 ## Planned
+
+### Full SDK Support
+
+Producer readiness and CLI support have different owners and neither blocks the first Preview.
+
+- [ ] Keep Full SDK packaging/security/source/license review on its own path;
+  Full installation/profile support is not a prerequisite for the first CLI preview. Resume when CRT completes its Full SDK review;
+  CLI profile and installation support then joins the stage/profile item of D2 below and D5.
+
+### CI Platform Expansion
+
+- [ ] D2, cross-platform integration: add hosted macOS/arm64 and Windows/x64 jobs to `integration.yml` that run the native Port and
+  oracle suites with their own pinned host-tools bundles. Resume after D1 and the per-host bundles; each host needs its own acceptance record.
+- [ ] Add a Windows/arm64 leg under that policy once its public SDK, its CLI Preview and a hosted runner exist, and the leg has its own
+  native build and test qualification.
+
+### CI Operations
+
+- [ ] Observe the ruleset rejecting a non-administrator's direct push or failing-check merge: administrator bypass is `always`, so a
+  rejection was not seen. This needs a second account; tighten the bypass when a second maintainer exists. The ruleset setting and the
+  passing and `BLOCKED` pull-request states are accepted; this is a recorded verification limit, not a verified enforcement.
 
 ### D2 - Management beyond the first workflow
 
