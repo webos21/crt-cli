@@ -1,0 +1,188 @@
+name: Release
+
+# Manually started, protected packaging of a CLI Preview from a tested commit. CI success is not publication authority:
+#   package  builds exactly the requested commit with the pinned published CLI and the pinned public SDK, assembles the
+#            notices and packs a deterministic archive (no write permission);
+#   verify   extracts that archive on a separate fresh runner and runs the packaged executable, including a real GitHub
+#            SDK acquisition and the C and C++ workflows (no write permission);
+#   publish  waits for approval on the `release` environment, re-checks the artifact digest, stages a draft, compares the
+#            downloaded draft byte for byte and only then publishes a non-latest prerelease. It is the only job with
+#            `contents: write` and never rebuilds.
+# `dry_run: true` stops at the verified draft; delete that draft by hand. Release notes are supplied as a reviewed file.
+
+on:
+  workflow_dispatch:
+    inputs:
+      host:
+        description: Host to release
+        type: choice
+        options: [linux-x64, linux-arm64]
+        required: true
+      commit:
+        description: Full 40-character commit SHA on main to build (a branch or tag is refused)
+        type: string
+        required: true
+      date:
+        description: Preview date, for example 20261111
+        type: string
+        required: true
+      serial:
+        description: Serial within that date and host, starting at 1
+        type: string
+        required: true
+        default: '1'
+      notes_file:
+        description: Path of the reviewed release notes in the repository at that commit
+        type: string
+        required: true
+      dry_run:
+        description: Stop at the verified draft instead of publishing
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.host }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    name: package (${{ inputs.host }})
+    runs-on: ${{ inputs.host == 'linux-arm64' && 'ubuntu-26.04-arm' || 'ubuntu-26.04' }}
+    timeout-minutes: 120
+    steps:
+      - name: Check out exactly the requested commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.commit }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Require the commit to be on main and to have passed CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT: ${{ inputs.commit }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin main
+          git merge-base --is-ancestor "$COMMIT" origin/main || { echo "::error::$COMMIT is not on main"; exit 1; }
+          state="$(gh api "repos/$REPO/commits/$COMMIT/check-runs" --jq '[.check_runs[]|select(.name=="CI gate")|.conclusion]|first // "none"')"
+          echo "CI gate on $COMMIT: $state"
+          [ "$state" = success ] || { echo "::error::CI gate has not succeeded for $COMMIT"; exit 1; }
+
+      - name: Set up Python for the driver
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+
+      - name: Install LLVM 21
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang-21 lld-21 llvm-21 binutils
+
+      - name: Check the driver's rules
+        run: python -m unittest discover -s tools -p test_ci_release.py
+
+      - name: Build, assemble and pack
+        env:
+          HOST: ${{ inputs.host }}
+          COMMIT: ${{ inputs.commit }}
+          DATE: ${{ inputs.date }}
+          SERIAL: ${{ inputs.serial }}
+        run: |
+          python tools/ci_release.py package --host "$HOST" --commit "$COMMIT" --date "$DATE" --serial "$SERIAL" \
+            --work "$RUNNER_TEMP/release-work" --llvm-bin /usr/lib/llvm-21/bin
+
+      - name: Upload the release files
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-${{ inputs.host }}-${{ inputs.date }}-${{ inputs.serial }}
+          path: ${{ runner.temp }}/release-work/release/
+          if-no-files-found: error
+          retention-days: 14
+
+  verify:
+    name: verify (${{ inputs.host }})
+    needs: package
+    runs-on: ${{ inputs.host == 'linux-arm64' && 'ubuntu-26.04-arm' || 'ubuntu-26.04' }}
+    timeout-minutes: 60
+    steps:
+      - name: Check out the driver at the requested commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.commit }}
+          persist-credentials: false
+
+      - name: Set up Python for the driver
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+
+      - name: Install LLVM 21
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang-21 lld-21 llvm-21 binutils
+
+      - name: Download the release files from the package job
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-${{ inputs.host }}-${{ inputs.date }}-${{ inputs.serial }}
+          path: ${{ runner.temp }}/release-files
+
+      - name: Extract and run the packaged executable
+        env:
+          HOST: ${{ inputs.host }}
+          DATE: ${{ inputs.date }}
+          SERIAL: ${{ inputs.serial }}
+        run: |
+          python tools/ci_release.py verify --host "$HOST" --date "$DATE" --serial "$SERIAL" \
+            --release-dir "$RUNNER_TEMP/release-files" --work "$RUNNER_TEMP/verify-work" --llvm-bin /usr/lib/llvm-21/bin
+
+  publish:
+    name: publish (${{ inputs.host }})
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    # Required reviewers are configured on this environment; the job does not start until a reviewer approves.
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - name: Check out the driver and the reviewed release notes at the requested commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.commit }}
+          persist-credentials: false
+
+      - name: Set up Python for the driver
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+
+      - name: Download the verified release files
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-${{ inputs.host }}-${{ inputs.date }}-${{ inputs.serial }}
+          path: ${{ runner.temp }}/release-files
+
+      - name: Stage, compare and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HOST: ${{ inputs.host }}
+          COMMIT: ${{ inputs.commit }}
+          DATE: ${{ inputs.date }}
+          SERIAL: ${{ inputs.serial }}
+          NOTES: ${{ inputs.notes_file }}
+          REPO: ${{ github.repository }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          args=(--host "$HOST" --commit "$COMMIT" --date "$DATE" --serial "$SERIAL" --repo "$REPO"
+                --release-dir "$RUNNER_TEMP/release-files" --notes-file "$NOTES" --work "$RUNNER_TEMP/draft-check")
+          if [ "$DRY_RUN" = true ]; then args+=(--draft-only); fi
+          python tools/ci_release.py publish "${args[@]}"

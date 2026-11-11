@@ -168,21 +168,152 @@ def command_package(args):
     log('packaged %s (%d bytes) sha256=%s' % (n['archive'], archive.stat().st_size, digest))
 
 
+def command_verify(args):
+    """Independent check of the packed archive on a fresh runner: only the archive, its sums file and the pinned SDK source."""
+    n = names(args.host, args.date, args.serial)
+    release = Path(args.release_dir).resolve()
+    archive = release / n['archive']
+    digest = require_artifact_match(archive, (release / n['sums']).read_text(encoding='ascii'), n['archive'])
+    work = Path(args.work).resolve()
+    work.mkdir(parents=True, exist_ok=False)
+    extracted = work / 'extracted'
+    result = subprocess.run([sys.executable, ROOT / 'tools/package_cli_archive.py', 'verify', '--archive', archive, '--extract-to', extracted],
+                            capture_output=True, text=True)
+    if result.returncode != 0:
+        raise ReleaseError('archive verification failed: %s' % result.stderr.strip()[-400:])
+    info = json.loads(result.stdout)
+    root = Path(info['root'])
+    exe = root / 'crt-cli'
+    env = {'PATH': str(work / 'nowhere'), 'HOME': str(work / 'home'), 'LC_ALL': 'C'}
+    (work / 'home').mkdir()
+    def cli(label, *argv, expect=0):
+        done = subprocess.run([str(exe), *map(str, argv)], capture_output=True, text=True, env=env, timeout=1800)
+        log('[%s] exit=%d' % (label, done.returncode))
+        if (done.returncode == 0) != (expect == 0):
+            raise ReleaseError('%s: unexpected exit %d: %s' % (label, done.returncode, (done.stdout + done.stderr)[-300:]))
+        return done
+    version = cli('version', '--version').stdout
+    if PRODUCT_VERSION not in version:
+        raise ReleaseError('the packaged executable reports an unexpected version: %s' % version.strip())
+    pin = info['manifest_sha256']
+    doctor = json.loads(cli('self-doctor', '--json', 'doctor', '--scope', 'self', '--resources', root, '--resources-sha256', pin).stdout)
+    if doctor['data']['checks'].get('resources') != 'pass' or doctor['data'].get('publisher_authentication') not in (None, 'not_verified'):
+        raise ReleaseError('self doctor did not pass the resources check')
+    cli('wrong-pin', '--json', 'doctor', '--scope', 'self', '--resources', root, '--resources-sha256', '0' * 64, expect=1)
+    # Real network: the packaged executable acquires the pinned public SDK through the github-release redirect policy.
+    pins = json.loads((ROOT / '.github/ci/pins.json').read_text(encoding='utf-8'))['hosts'][args.host]['sdk']
+    roots = next((c for c in ('/etc/ssl/certs/ca-certificates.crt', '/etc/pki/tls/certs/ca-bundle.crt') if Path(c).is_file()), None)
+    if roots is None:
+        raise ReleaseError('no system CA bundle found for the SDK acquisition')
+    base = pins['release_base']
+    source = {'schema': 'crt-cli.sdk-source', 'format': 0, 'ca_file': roots, 'ca_sha256': hashlib.sha256(Path(roots).read_bytes()).hexdigest(),
+              'manifest': {'url': base + pins['manifest']['name'], 'sha256': pins['manifest']['sha256'], 'size': pins['manifest']['size']},
+              'archive': {'name': pins['archive'], 'url': base + pins['archive']}, 'contract_url': base + pins['contract'],
+              'sdk': {'version': pins['version'], 'content_sha256': pins['content_sha256'], 'contract_sha256': pins['contract_sha256']},
+              'redirect_policy': 'github-release', 'timeout_seconds': 300}
+    (work / 'sdk-source.json').write_text(json.dumps(source, indent=2) + '\n', encoding='utf-8')
+    acquired = json.loads(cli('sdk-acquire', '--json', 'sdk', 'acquire', '--source', work / 'sdk-source.json').stdout)
+    if acquired['data']['identity']['content_sha256'] != pins['content_sha256']:
+        raise ReleaseError('the acquired SDK identity differs from the pin')
+    llvm = Path(args.llvm_bin or '/usr/lib/llvm-21/bin')
+    flags = ['--cc', llvm / 'clang', '--cxx', llvm / 'clang++', '--linker', llvm / 'ld.lld', '--ar', llvm / 'llvm-ar']
+    for language in ('c', 'cxx'):
+        project = work / 'projects' / ('app_' + language)
+        project.parent.mkdir(exist_ok=True)
+        cli(language + '-new', 'new', project, '--language', language)
+        cli(language + '-build', 'build', '--project', project, '--sdk', pins['content_sha256'], *flags)
+        cli(language + '-test', 'test', '--project', project)
+        ran = cli(language + '-run', 'run', '--project', project)
+        if 'Hello from CRT' not in (ran.stdout + ran.stderr):
+            raise ReleaseError('%s: the built program did not print its greeting' % language)
+        cli(language + '-warm', 'build', '--project', project)
+    log('archive %s verified: sha256=%s manifest=%s' % (n['archive'], digest, pin))
+    (work / 'verify.json').write_text(json.dumps({'archive_sha256': digest, 'manifest_sha256': pin, 'files': info['files'],
+                                                  'executable_version': version.strip()}, indent=2) + '\n', encoding='utf-8')
+
+
+def gh(*argv, check=True):
+    done = subprocess.run(['gh', *map(str, argv)], capture_output=True, text=True)
+    if check and done.returncode != 0:
+        raise ReleaseError('gh %s failed: %s' % (' '.join(map(str, argv[:3])), (done.stderr or done.stdout).strip()[-300:]))
+    return done
+
+
+def command_publish(args):
+    """Stage a draft from the verified bytes, check it, and publish a non-latest prerelease (or stop at the draft).
+
+    The only step with write permission. It never rebuilds: it uploads the files the verify job saw, after re-checking
+    their digest, and it refuses a tag that already has a release.
+    """
+    commit = require_commit(args.commit)
+    n = names(args.host, args.date, args.serial)
+    release = Path(args.release_dir).resolve()
+    archive, sums = release / n['archive'], release / n['sums']
+    digest = require_artifact_match(archive, sums.read_text(encoding='ascii'), n['archive'])
+    repo = args.repo
+    if gh('release', 'view', n['tag'], '--repo', repo, check=False).returncode == 0:
+        raise ReleaseError('a release for %s already exists; releases are never overwritten' % n['tag'])
+    notes = Path(args.notes_file).resolve()
+    if not notes.is_file() or not notes.read_text(encoding='utf-8').strip():
+        raise ReleaseError('the release notes file is missing or empty')
+    if digest not in notes.read_text(encoding='utf-8'):
+        raise ReleaseError('the release notes do not state the archive SHA-256 %s' % digest)
+    gh('release', 'create', n['tag'], '--repo', repo, '--draft', '--prerelease', '--latest=false', '--target', commit,
+       '--title', n['title'], '--notes-file', notes, archive, sums)
+    log('draft %s created' % n['tag'])
+    check = Path(args.work).resolve()
+    check.mkdir(parents=True, exist_ok=False)
+    gh('release', 'download', n['tag'], '--repo', repo, '--dir', check)
+    require_artifact_match(check / n['archive'], (check / n['sums']).read_text(encoding='ascii'), n['archive'])
+    if (check / n['archive']).read_bytes() != archive.read_bytes() or (check / n['sums']).read_bytes() != sums.read_bytes():
+        raise ReleaseError('the draft assets differ from the verified files')
+    view = json.loads(gh('release', 'view', n['tag'], '--repo', repo, '--json', 'isDraft,isPrerelease,targetCommitish,assets').stdout)
+    if not view['isDraft'] or not view['isPrerelease'] or view['targetCommitish'] != commit or len(view['assets']) != 2:
+        raise ReleaseError('the staged draft does not match the request: %s' % json.dumps(view)[:300])
+    log('draft verified byte for byte')
+    if args.draft_only:
+        log('draft-only: stopping before publication')
+        return
+    gh('release', 'edit', n['tag'], '--repo', repo, '--draft=false', '--prerelease', '--latest=false')
+    final = json.loads(gh('release', 'view', n['tag'], '--repo', repo, '--json', 'isDraft,isPrerelease,tagName,url').stdout)
+    if final['isDraft'] or not final['isPrerelease']:
+        raise ReleaseError('the published release is not a non-draft prerelease: %s' % final)
+    log('published %s' % final['url'])
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest='command', required=True)
-    for name in ('package',):
+    for name in ('package', 'verify'):
         p = sub.add_parser(name)
         p.add_argument('--host', choices=sorted(HOSTS), required=True)
-        p.add_argument('--commit', required=True)
         p.add_argument('--date', required=True)
         p.add_argument('--serial', type=int, required=True)
         p.add_argument('--work', required=True)
-        p.add_argument('--llvm-bin')
+        if name == 'package':
+            p.add_argument('--commit', required=True)
+            p.add_argument('--llvm-bin')
+        else:
+            p.add_argument('--release-dir', required=True)
+            p.add_argument('--llvm-bin')
+    p = sub.add_parser('publish')
+    p.add_argument('--host', choices=sorted(HOSTS), required=True)
+    p.add_argument('--commit', required=True)
+    p.add_argument('--date', required=True)
+    p.add_argument('--serial', type=int, required=True)
+    p.add_argument('--release-dir', required=True)
+    p.add_argument('--notes-file', required=True)
+    p.add_argument('--repo', required=True)
+    p.add_argument('--work', required=True)
+    p.add_argument('--draft-only', action='store_true', help='stage and verify the draft but do not publish')
     args = parser.parse_args()
     try:
         if args.command == 'package':
             command_package(args)
+        elif args.command == 'verify':
+            command_verify(args)
+        elif args.command == 'publish':
+            command_publish(args)
     except ReleaseError as error:
         log('RELEASE FAIL: %s' % error)
         return 1
