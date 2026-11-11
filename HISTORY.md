@@ -41,6 +41,12 @@ pass. No native tests, CI jobs or release artifacts were rebuilt or rerun;
 product sources, workflows, pins and project locks are unchanged. Current scope:
 [CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11).
 
+### Add the manual integration workflow
+
+`integration.yml` runs a pin gate, the 54-case restricted-redirect replay and the port suites on Linux x64 and arm64, with every input pinned and size/SHA-256 checked by a unit-tested driver. The redirect replay passes
+54/54 on both hosted runners; the pin gate and the port suites fail on purpose because the independent host-tools bundle is not published (CRT owns that) and the Linux port replay is not yet adapted to a hosted runner. No
+schedule yet, so a known-red daily run is not created. [CI acceptance](docs/acceptance/ci_acceptance.md#integration-workflow-2026-11-11).
+
 ### Gate `main` on a single CI check and verify it
 
 `paths-ignore` is replaced by an in-workflow change classification and an always-running `CI gate`, because a workflow that never starts would leave a required check pending on documentation-only pull
