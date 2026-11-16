@@ -16,6 +16,8 @@ import subprocess
 import sys
 import tempfile
 
+from replay_project_pin_cases import project_pin_cases
+
 
 def digest(path):
     h = hashlib.sha256()
@@ -35,6 +37,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--work-parent', type=Path, required=True)
     parser.add_argument('--hide', type=Path, action='append', default=[])
+    parser.add_argument('--project-pin-cases', action='store_true', help='also reject tampered project locks and implicit SDK replacement')
     for name in ('cc', 'cxx', 'linker', 'ar'):
         parser.add_argument('--' + name, type=Path, required=True)
     args = parser.parse_args()
@@ -77,10 +80,10 @@ def main():
         proc = subprocess.run(command(tail), capture_output=True, text=True, timeout=1800, cwd=work)
         try:
             reply = json.loads(proc.stdout)
-        except Exception:
-            reply = {'ok': proc.returncode == 0, 'data': {'message': proc.stdout + proc.stderr}}
+        except ValueError:
+            reply = {}
         message = json.dumps(reply.get('data', {}))
-        passed = (proc.returncode == 0) == expect_ok and bool(reply.get('ok')) == expect_ok
+        passed = (proc.returncode == 0 if expect_ok else proc.returncode > 0) and reply.get('ok') is expect_ok
         if expect_text:
             passed = passed and expect_text in message
         if check:
@@ -138,6 +141,8 @@ def main():
         call(f'{language}: warm build executes nothing', ['build', '--project', str(project)],
              check=lambda r: r['data']['cache']['executed'] == 0 and not r['data']['commands'])
         record(f'{language}: the project lock is unchanged by later builds', (project / 'crt.lock').read_bytes() == locks[language])
+        if args.project_pin_cases:
+            project_pin_cases(call=call, record=record, project=project, language=language, content_sha256=args.content_sha256)
 
     # 4. Nothing it consumed changed.
     call('sdk verify after the builds', ['sdk', 'verify', sdk_dir, '--store', str(store)], check=lambda r: r['data']['verified'])

@@ -304,6 +304,29 @@ The original `.3` failure remains historical evidence; the producer's TLSDESC
 fix is shipped in `.4`, rather than hidden by a runner upgrade. [TODO](../../TODO.md#github-ci)
 owns integration/release work and any still-pending hosted qualification.
 
+### Repository, Project and CI Pins
+
+The repository root `crt.lock` stays `{"lock_format":1,"state":"unresolved"}`.
+It describes no machine's SDK selection: the same source checkout must build on
+all supported hosts. Local self-build bindings belong to disposable source
+exports; ignored `.sdk.json` supplies machine-local inputs, not a committed SDK
+default or a portable lock.
+
+Each generated application has its own `crt.lock`. A successful first build
+records the exact installed SDK content, stored compiler policy and declared
+LLVM identities. Later bound builds verify and reuse that selection. Changing
+`.sdk.json` defaults does not rebind an existing project; passing a replacement
+`--sdk` to a bound build fails and requires explicit `configure`. Explicit
+configure is the deliberate rebinding operation. Installation/acquisition of
+an SDK does not authorize rewriting another project's lock.
+
+These project pins are separate from the per-host bootstrap CLI/SDK pins in
+`.github/ci/pins.json`. Publishing an asset or moving a CI pin changes neither
+the unresolved source root nor an application's resolved lock. The
+[four-host evidence audit](../acceptance/preview_acceptance.md#project-pin-policy-evidence-audit-2026-11-16)
+distinguishes initial lock creation, exact reuse, project-lock tampering and
+download-pin failures. No new lock format or default/channel resolver is added.
+
 ### CI Pin Promotion
 
 `.github/ci/pins.json` (bootstrap CLI and SDK per host) and `.github/ci/integration-pins.json` (integration inputs) are the only

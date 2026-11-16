@@ -10,6 +10,8 @@ explicitly replay; an earlier "not covered" statement is not a current
 cross-host summary. The [README release table](../../README.md#download-the-previews)
 lists the four published CLI Previews, and [CI acceptance](ci_acceptance.md#current-hosted-coverage-2026-11-11)
 separates packaged-release qualification from hosted source self-build results.
+The [project-pin audit](#project-pin-policy-evidence-audit-2026-11-16) tracks
+the remaining per-host lock-policy evidence independently of publication.
 
 ## Linux local candidate (2026-11-10)
 
@@ -607,3 +609,116 @@ An earlier attempt of this run is discarded: `strace` was looked up by name unde
 
 Still not covered on this host: other glibc versions or distributions, Linux C shared-SDK mode, source-port builds from the package, updates or self-upgrade, publisher authentication, default/project lock adoption.
 
+## Project-pin policy evidence audit (2026-11-16)
+
+Scope: distinguish the repository's unresolved root, resolved application pins
+and host-specific CI bootstrap pins. The [policy](../guides/development.md#repository-project-and-ci-pins)
+uses existing lock format 1; this audit adds no product behavior or SDK/default
+selection format. Review baseline is CLI `77757f1ede3f649e44236f55f2df95d61a285f1d`.
+No producer changes or new release/pin promotion are involved.
+
+### Four-host evidence table
+
+The exact release asset names, sizes, manifest/content/policy digests are in
+[the unchanged per-host CI pins](../../.github/ci/pins.json). The table names
+those public combinations. **Recorded** means the cited existing native
+workflow; it is not a new run on this machine. **Not recorded** is an evidence
+gap, not a product failure or an inference from a download-pin negative.
+
+| Native host / pin key | Public CLI release / public SDK release | Initial project lock and subsequent reuse | Tampered project lock refused | Changed SDK selection preserves bound lock |
+| --- | --- | --- | --- | --- |
+| Linux/x86_64 / `linux-x64` | `v0.1.0-preview.20261110.linux-x86_64.1` / `v0.0.1-preview.20261110.4` | Recorded C/C++ first-build/warm reuse in [public .4 consumer evidence](ci_acceptance.md#linux-loader-repair-sdk-adoption-2026-11-10); byte-for-byte lock receipt should be confirmed on that host | Not recorded for this public combination | Not recorded for this public combination |
+| Linux/aarch64 / `linux-arm64` | `v0.1.0-preview.20261111.linux-arm64.1` / `v0.0.1-preview.20261110.linux.arm64.2` | **Pass**, C/C++ creation and byte-identical warm reuse, below | **Pass**, SDK content, compiler policy and LLVM digest, below | **Pass**, changed defaults ignored and explicit build replacement refused, below |
+| macOS/arm64 / `macos-arm64` | `v0.1.0-preview.20261110.macos-arm64.1` / `v0.0.1-preview.20261110.macos.1` | Recorded packaged C/C++ first-build/zero-command warm reuse in [release evidence](#macos-cli-preview-release-2026-11-10); byte-for-byte lock receipt should be confirmed on that host | Not recorded for this public combination | Not recorded for this public combination |
+| Windows/x64 / `win-x64` | `v0.1.0-preview.20261110.windows-x86_64.1` / `v0.0.1-preview.20261110.windows.1` | Recorded C/C++ first-build/warm reuse with unchanged project locks in [packaged/public-byte evidence](#windowsx64-cli-preview-release-2026-11-10) | Not recorded for this public combination | Not recorded for this public combination |
+
+The Linux/x86_64 CLI was originally built against `.3`; the linked `.4`
+consumer record qualifies that published executable against the repaired SDK
+without relabeling its compiled-in inputs. Earlier SDK-selection/first-build
+fixtures using local CLI/SDK candidates retain their own identities; they do
+not close the public-combination gaps above. Complete four-host adoption stays
+open until all three remaining native rows supply the missing cases. Linux/
+aarch64 execution does not qualify x86_64, macOS or Windows.
+
+### Linux/aarch64 public-byte replay
+
+**Pass, 54/54** on native Linux/aarch64 `u2604`, kernel `7.0.0-43-generic`,
+LLVM 21.1.8. The published CLI and every asset listed by the pinned SDK
+manifest were downloaded into a new directory. Size and SHA-256 match the
+existing pins/manifest. The copied executable was extracted from that public
+CLI archive; no source self-build or producer checkout is a consumer input.
+
+| Input | Exact identity |
+| --- | --- |
+| CLI archive, 5,039,156 bytes | `fa28ec8d6644da3dc32aaa8e9281c8b953b85d97498cc3cdc12f55b156014cff` |
+| Executable, 23,162,152 bytes | `9fbef82541e237eeba2b28729b60f55b2e301c0be1f0dd14c9b31e6eb00ae1db` |
+| SDK manifest, 1,772 bytes | `ba77b26edfa0413df5e8c17309506d7ae6ecf134ae7e9908e3742bc562067be3` |
+| SDK archive, 7,632,648 bytes | `5c99dc59b747cb31cb623fa057264c3a4e7d5715f960203073dc1b34f664a1c4` |
+| Stored compiler policy | `a3df2fbd6b4d14d316b691a1d2831d0692aaba133e3b168076ee0ec7cb6434d4` |
+| Installed SDK content | `cd2ab657615c0fa52a1804f301a57dfa21b1067e3e5ed5a9f9a07d86ae050cc6` |
+| C and C++ resolved lock bytes, independently generated | `f194a2d0d36471854513337e21656718338159749ce03515e03ddc3b4cb7ca66` |
+| Final `replay-r3/result.json` | `b68415bf2153eb4d4fccd9e233551fe2591b84db6309f2371aa662837e46d14c` |
+
+`tools/replay_preview_public_linux.py --project-pin-cases` adds 24 focused
+project-pin assertions to the existing 30 public-input/install/C/C++ checks.
+The reusable `replay_project_pin_cases.py` helper receives already built
+projects from the native adapter. Final JSON is required even for expected
+failures; a launch failure/non-JSON reply cannot count as a refused lock.
+
+- `new` is source-only; the first C and C++ build resolves a format-1 lock to
+  the promised SDK and stored policy. Test/run and a zero-command warm build
+  succeed, with byte-identical project locks.
+- For each language, change one valid-JSON lock field at a time: SDK content
+  digest, policy digest, or declared C compiler digest. Build fails with the
+  corresponding identity/policy/tool mismatch. Each refusal leaves the altered
+  lock itself, `.crt/local.json` and every existing output/cache file unchanged.
+  Restoring the original lock restores zero-command warm reuse.
+- Change `.sdk.json` to a different full SDK selector and an absent compiler:
+  the bound build still reuses its original lock, local binding and outputs.
+  Passing that different selector through `build --sdk` fails with
+  `use configure explicitly` and preserves those bytes. This uses a deliberately
+  nonmatching selector; no second release is installed or claimed as qualified.
+  A deliberate explicit `configure` migration is outside this no-implicit-change
+  check.
+- The separate wrong **release-manifest** pin case fails installation and
+  publishes nothing. It remains a transport/install-input negative, distinct
+  from the three changed **project-lock** identities above.
+- Bubblewrap supplies user/IPC/UTS/network namespaces, read-only root, private
+  HOME/SDK store, writable disposable scratch and private `/tmp`, cleared
+  environment and empty PATH. The producer checkout, CLI `src`/`include` and
+  earlier Preview workspace are hidden. Native compiler/linker/archiver paths
+  are explicit; Python/Bubblewrap orchestrate the test outside the product path.
+  This focused run adds no new execve/import, D1 port-suite or hosted-CI claim.
+
+Reproduce with fresh output/work directories and the corresponding verified
+public downloads:
+
+```sh
+python3 tools/replay_preview_public_linux.py \
+  --cli /absolute/extracted-package/crt-cli/crt-cli \
+  --download-dir /absolute/public-downloads \
+  --manifest-name release-manifest-dev-linux-aarch64.json \
+  --manifest-sha256 ba77b26edfa0413df5e8c17309506d7ae6ecf134ae7e9908e3742bc562067be3 \
+  --content-sha256 cd2ab657615c0fa52a1804f301a57dfa21b1067e3e5ed5a9f9a07d86ae050cc6 \
+  --output /absolute/fresh-evidence --work-parent /absolute/external-work \
+  --hide /absolute/crt --hide /absolute/crt-cli \
+  --cc /usr/bin/clang --cxx /usr/bin/clang++ \
+  --linker /usr/bin/ld.lld --ar /usr/bin/llvm-ar-21 --project-pin-cases
+```
+
+Retained evidence is `out/project-pins-linux-arm64-20261116/`: `inputs.json`,
+`command.json`, public downloads/package, `project-locks.json`,
+`verification.json`, `replay-r3/` and the scratch work tree. Actual scratch is
+`work/public-preview-88gwo3t9/`. `verification.json` records the adapter/helper
+and external-tool byte hashes. The repository root lock equals its committed
+unresolved bytes (SHA-256
+`8392d0a04e39c8fa4f1af8a2efc49dde57c4d97cae76be36dad46e3f233d9fe4`);
+CI/integration pins are unchanged.
+
+Preparation failures are retained: an initial package-path assumption failed
+before a CLI ran; `replay-r2` passes all project-pin cases but fails two source
+archive inventory cases because those manifest-listed inputs were absent.
+The missing public inputs were downloaded/verified and the final fresh replay
+passes all 54. These failed aggregate results are not relabeled as passing.
+No product/lock-format change, official publisher authentication, SDK promotion,
+release publication, schedule, other-host execution or STATUS update is claimed.

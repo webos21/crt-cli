@@ -50,6 +50,10 @@ separately requested dated snapshot.
   live per host in `.github/ci/pins.json` under the checked [promotion policy](docs/guides/development.md#ci-pin-promotion).
   Done when acceptance records show project-lock creation, reuse and tampered-lock refusal with the real public SDK on all
   four hosts; add only the missing cases.
+  - [x] Record the [root/project/CI policy and four-host evidence table](docs/acceptance/preview_acceptance.md#project-pin-policy-evidence-audit-2026-11-16).
+  - [x] Linux/aarch64: public CLI/SDK lock creation, byte-identical reuse, tampered-lock refusal and preservation under changed SDK selection
+    ([54-case native replay](docs/acceptance/preview_acceptance.md#linuxaarch64-public-byte-replay)).
+  - [ ] Close the table's remaining Linux/x86_64, macOS/arm64 and Windows/x64 gaps on their native hosts; keep the earlier release records.
 - The Full SDK review item moved to Planned: [Full SDK Support](#full-sdk-support).
 
 D4 may proceed against the frozen D3 contracts; it does not enlarge D3 or

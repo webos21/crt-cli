@@ -9,6 +9,26 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-16
+
+### Audit public Preview project pins and close Linux/aarch64 negatives
+
+Linked four hosts' public CLI/SDK identities and existing project creation/reuse
+records, distinguishing unresolved repository state, per-project SDK/tool pins
+and per-host CI inputs. Linux/x86_64, macOS and Windows retain explicit evidence
+gaps rather than inheriting this native result.
+
+The public aarch64 CLI and SDK pass 54/54 isolated checks, including C/C++
+byte-identical lock reuse, separate SDK/policy/tool lock tampering, unchanged
+binding/output bytes on refusal, changed-default preservation and explicit
+build-time SDK replacement refusal. Added an opt-in public Linux replay helper
+and required structured replies for expected failures. Preparation failures and
+the initial incomplete input inventory remain separate from the final pass.
+
+Root lock and CI pins are unchanged; no product format, release, integration
+runner, schedule or other-host qualification changes. Evidence and remaining
+host gates: [project-pin audit](docs/acceptance/preview_acceptance.md#project-pin-policy-evidence-audit-2026-11-16).
+
 ## 2026-11-11
 
 ### Skip automatic CI for documentation-only changes
