@@ -278,7 +278,8 @@ records the complete counts, failed thread prototypes and measured timing limits
 The five `port-*` suites (except `port-recipe-test`) print `skipped` and exit 0 without the machine-local
 `CRT_CLI_TEST_PORT_*` inputs, so they are **not** in the PR set: the driver fails if a suite prints `skipped`, and also
 if `crt.json` declares a test that `pins.json` classifies neither as PR-set nor as input-gated. They belong to a
-future `integration.yml` with pinned independent host tools.
+manual `integration.yml`; its port jobs remain blocked until independent host
+tools are publicly pinned and the hosted invocation is enabled.
 
 Run the same driver on a native host with LLVM installed (it creates `--work`, which must be new or empty, and sets
 `HOME` inside it, so the default SDK store is untouched):
@@ -303,6 +304,55 @@ distinguishes producer/local/public-byte evidence from completed hosted replay.
 The original `.3` failure remains historical evidence; the producer's TLSDESC
 fix is shipped in `.4`, rather than hidden by a runner upgrade. [TODO](../../TODO.md#github-ci)
 owns integration/release work and any still-pending hosted qualification.
+
+### Linux Integration Driver
+
+`tools/ci_integration.py ports` owns the integration input and result policy.
+`tools/replay_port_linux.py` remains the Linux-only Bubblewrap/strace adapter;
+it builds a fresh copy of the CLI sources against the installed public SDK,
+then runs the five requested port suites. This tooling is a test-host
+orchestrator, not a Python dependency of the CLI or generated applications.
+
+The default input file is `.github/ci/integration-pins.json`. An absent pin
+fails before work starts. `--pins` selects an explicit alternate file, useful
+for local fixtures; `--input-dir` consumes local archives instead of downloading
+them and still checks their pinned sizes and hashes. Neither option promotes
+a bundle or changes the committed pins. Native execution must match `--host`;
+the work directory must be fresh, outside the source checkout and `/tmp`.
+
+Preparation without execution:
+
+```text
+python3 tools/ci_integration.py ports --host linux-x64 --pins /absolute/test-pins.json --input-dir /absolute/test-archives --work /absolute/fresh-preparation --prepare-only
+```
+
+This verifies source/archive pins, stages the host-tools archive with bounded
+extraction (512 MiB / 32,768 members), checks its manifest pin, host, version
+and clean assembler provenance, and writes `port-inputs.json` with
+`native_validation: not_run`. It reports no passing suites. Native
+`HostTools::load` still owns full payload/alias/ABI validation; preparation of
+a synthetic bundle is not proof that it can execute.
+
+To exercise the native path with separately reviewed local test inputs:
+
+```text
+python3 tools/ci_integration.py ports --host linux-x64 --pins /absolute/test-pins.json --input-dir /absolute/test-archives --work /absolute/fresh-native-work --llvm-bin /usr/lib/llvm-21/bin --oracle-python /absolute/python3 --oracle-python-sha256 <selected-executable-sha256> --hide /absolute/producer-checkout
+```
+
+The driver separately downloads the published bootstrap CLI and pinned public
+SDK, installs into a private HOME/store, then delegates native execution to
+the Linux adapter. The oracle interpreter is an explicit test-host tool with
+a verified executable digest; only `port-oracle-test` may use it. Missing or
+tampered inputs, unsafe extraction, adapter failure, missing/failed cases,
+different input identities, a missing suite, a skipped suite or a zero-check
+suite all fail. `port-inputs.json`, adapter argv, stdout/stderr, inventories,
+traces and `replay/result.json` retain the evidence.
+
+The committed workflow still lacks the published host-tools pins, native
+invocation arguments and `schedule:`. Activate those together after producer
+publication and reviewed pinning; then run all five suites on both hosted
+Linux architectures. Local preparation/replay does not close that gate or
+macOS/Windows D2. See [driver preparation evidence](../acceptance/ci_acceptance.md#linux-integration-driver-preparation-2026-11-16).
 
 ### Repository, Project and CI Pins
 

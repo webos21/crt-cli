@@ -10,8 +10,8 @@ explicitly replay; an earlier "not covered" statement is not a current
 cross-host summary. The [README release table](../../README.md#download-the-previews)
 lists the four published CLI Previews, and [CI acceptance](ci_acceptance.md#current-hosted-coverage-2026-11-11)
 separates packaged-release qualification from hosted source self-build results.
-The [project-pin audit](#project-pin-policy-evidence-audit-2026-11-16) tracks
-the remaining per-host lock-policy evidence independently of publication.
+The [project-pin audit](#project-pin-policy-evidence-audit-2026-11-16) closes
+the four recorded public combinations' lock-policy evidence independently of publication.
 
 ## Linux local candidate (2026-11-10)
 
@@ -627,7 +627,7 @@ gap, not a product failure or an inference from a download-pin negative.
 
 | Native host / pin key | Public CLI release / public SDK release | Initial project lock and subsequent reuse | Tampered project lock refused | Changed SDK selection preserves bound lock |
 | --- | --- | --- | --- | --- |
-| Linux/x86_64 / `linux-x64` | `v0.1.0-preview.20261110.linux-x86_64.1` / `v0.0.1-preview.20261110.4` | Recorded C/C++ first-build/warm reuse in [public .4 consumer evidence](ci_acceptance.md#linux-loader-repair-sdk-adoption-2026-11-10); byte-for-byte lock receipt should be confirmed on that host | Not recorded for this public combination | Not recorded for this public combination |
+| Linux/x86_64 / `linux-x64` | `v0.1.0-preview.20261110.linux-x86_64.1` / `v0.0.1-preview.20261110.4` | **Pass**, C/C++ creation and byte-identical warm reuse in [native replay](#linuxx86_64-public-byte-replay), retaining [public .4 consumer evidence](ci_acceptance.md#linux-loader-repair-sdk-adoption-2026-11-10) | **Pass**, SDK content, compiler policy and LLVM digest in native replay | **Pass**, changed defaults ignored and explicit build replacement refused in native replay |
 | Linux/aarch64 / `linux-arm64` | `v0.1.0-preview.20261111.linux-arm64.1` / `v0.0.1-preview.20261110.linux.arm64.2` | **Pass**, C/C++ creation and byte-identical warm reuse, below | **Pass**, SDK content, compiler policy and LLVM digest, below | **Pass**, changed defaults ignored and explicit build replacement refused, below |
 | macOS/arm64 / `macos-arm64` | `v0.1.0-preview.20261110.macos-arm64.1` / `v0.0.1-preview.20261110.macos.1` | **Pass**, C/C++ creation and byte-identical warm reuse in [native replay](#macosarm64-public-byte-replay), retaining [release evidence](#macos-cli-preview-release-2026-11-10) | **Pass**, SDK content, compiler policy and LLVM digest in native replay | **Pass**, changed defaults ignored and explicit build replacement refused in native replay |
 | Windows/x64 / `win-x64` | `v0.1.0-preview.20261110.windows-x86_64.1` / `v0.0.1-preview.20261110.windows.1` | **Pass**, C/C++ creation and byte-identical warm reuse in [native public-byte replay](#windowsx64-public-byte-replay) | **Pass**, SDK content, compiler policy and LLVM digest, below | **Pass**, changed defaults ignored and explicit build replacement refused, below |
@@ -636,9 +636,59 @@ The Linux/x86_64 CLI was originally built against `.3`; the linked `.4`
 consumer record qualifies that published executable against the repaired SDK
 without relabeling its compiled-in inputs. Earlier SDK-selection/first-build
 fixtures using local CLI/SDK candidates retain their own identities; they do
-not close the public-combination gaps above. Complete four-host adoption stays
-open until the remaining Linux/x86_64 row supplies the missing native cases.
+not close public-combination gaps by inference. The four-host project-pin policy
+audit is complete at the exact combinations above: all four native records now
+cover creation, byte-identical reuse, tampered-lock refusal and changed-selection
+preservation. This adopts the existing policy; no SDK/CLI pin is promoted.
 Each native replay qualifies only its stated host and public combination.
+
+### Linux/x86_64 public-byte replay
+
+**Pass, 54/54 on native Linux/x86_64 (2026-11-16).** Review baseline is CLI
+`154ef31813d73d8effef9b604d848614e37d0ce5`. Host: Linux `7.0.0-43-generic`,
+Ubuntu LLVM 21.1.8. Fresh public CLI/SDK downloads match every size and digest
+in the unchanged CI pins and pinned SDK manifest, including both source
+archives listed by that manifest. The executable is extracted from the public
+CLI archive; no source rebuild is used as a substitute.
+
+| Input / receipt | SHA-256 |
+| --- | --- |
+| Public CLI archive, 5,232,844 bytes | `ad43afbf7e810bb7b1a587c47568ba6d17bc404e5ee05069a83d9ef56edc1383` |
+| Extracted executable | `a8fb76a4b257c52345d79560312e0a94f52aaa9251f67524823a0fab8476a43a` |
+| Public `.4` SDK manifest | `983dbcf143b1fe227bf519f07ec153ce5baf50e190382222995770affe43b2c3` |
+| Installed SDK content | `22107183e5127d44e979f328fa78aaf2a436db802aa9f8821a864a39d492ca81` |
+| Stored compiler policy | `369dae4fbe6c220a5f451431b2bbc76de947a7d618184abe0520424c4db84cfb` |
+| Independently generated C / C++ lock bytes (same digest) | `c2975569857a9d3fba2e1f2ea4a8ccc51b3b95863abf9ffd237e481d50e8a6f1` |
+| Final `replay-r1/result.json` | `f2d2bee333bb52d90ee4a059cf84838d5e50b19a8eef95abf1d5d385aa9b460b` |
+
+The unchanged Linux public adapter and shared helper run the same 30 existing
+checks plus 24 project-pin assertions documented for aarch64 below. C/C++ first
+builds create exact locks; test/run and warm builds retain their bytes. Separate
+SDK-content, policy and compiler-digest mutations fail with their expected
+structured identity errors and preserve the altered lock, local binding and
+all existing output bytes. Changed local SDK defaults are ignored; explicit
+build-time replacement requires configure. Restoring each lock restores warm
+reuse. The wrong release-manifest pin remains a separate install negative.
+
+Bubblewrap denies network, uses a read-only root and private HOME/store/tmp,
+clears the environment/PATH, and hides both checkouts and the earlier producer
+and CLI Preview workspaces. The writable scratch parent contains spaces and
+Korean characters. Explicit LLVM tools remain external host inputs. This
+focused replay adds no new port-suite, execve/import or hosted-CI acceptance.
+
+Reproduce using the Linux command below with the x86_64 manifest/content pins
+above, `/usr/lib/llvm-21/bin/{clang,clang++,ld.lld,llvm-ar}`, and fresh output
+and external work paths. The exact argv is retained in
+`out/project-pins-linux-x64-20261116/command.json`; that directory also contains
+`inputs.json`, public downloads/package, `project-locks.json`, `verification.json`
+(adapter/helper/tool hashes), `replay.log` and `replay-r1/`.
+Actual scratch:
+`/home/syszone/crt-cli-project-pins-linux-x64-20261116/work space 한글/public-preview-kjqo9mgl/`.
+Root `crt.lock` retains its committed unresolved bytes
+(`8392d0a04e39c8fa4f1af8a2efc49dde57c4d97cae76be36dad46e3f233d9fe4`).
+CI/integration pins, producer/product sources and releases are unchanged.
+Earlier `.3` publication and `.4` loader-repair records retain their own scope;
+this is no official-default/channel, publisher-authentication or Full SDK claim.
 
 ### Linux/aarch64 public-byte replay
 

@@ -11,6 +11,40 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-16
 
+### Prepare the common Linux integration driver without promoting test inputs
+
+The common driver now stages pinned online/local inputs with bounded archive
+extraction and judges complete five-suite results. Linux Bubblewrap/strace
+isolation stays in its adapter; the oracle uses an explicit executable digest.
+Preparation-only output makes no suite-pass claim. Missing/tampered inputs,
+cross-host native execution, unsafe extraction and skipped/incomplete/wrong-input
+results fail closed; restored inputs work in a new directory.
+
+All 44 CI host tests pass. A fresh Linux/x86_64 source-copy build against the
+public `.4` SDK and an explicitly local-only host-tools archive passes 25/25
+adapter checks and all five suites (35/90/23/33/81), plus publish/reuse/verify,
+immutable inventories and source/SDK-free CLI checks. The known SDK-provider
+C shared control remains unendorsed; no byte-reproducibility claim is added.
+
+Checked only the driver-preparation subitem. Public bundles remain unavailable
+under CRT issue #2; two-host hosted D1, invocation/schedule activation and the
+independent genuine-Preview publication gate remain open. CI/integration pins,
+workflows, root lock, product/producer sources, releases and STATUS are unchanged.
+[Evidence and remaining gates](docs/acceptance/ci_acceptance.md#linux-integration-driver-preparation-2026-11-16).
+
+### Close the four-host public Preview project-pin policy audit
+
+The remaining Linux/x86_64 public CLI / `.4` SDK combination passes 54/54 native
+Bubblewrap checks using fresh, verified public downloads. C/C++ lock creation,
+exact reuse, independent SDK/policy/LLVM lock tampering, refusal without binding
+or output changes, changed-default preservation and restored reuse all pass.
+The existing three native host records are retained rather than rerun.
+
+Checked the aggregate policy item and Linux/x86_64 subitem; all checked items
+stay in TODO. Root lock stays unresolved and project/CI pins retain their
+separate ownership. No format, product, pin, release or STATUS change.
+[Exact identities and receipts](docs/acceptance/preview_acceptance.md#linuxx86_64-public-byte-replay).
+
 ### Verify Windows/x64 public Preview identities and project pins
 
 Fresh unauthenticated CLI/SDK downloads match the existing Windows pins and public

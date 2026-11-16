@@ -487,6 +487,110 @@ source is pinned (`zlib-1.3.1.tar.gz`, 1,512,791 bytes, SHA-256 equal to the rec
 
 Not covered: macOS and Windows integration jobs, the oracle's pinned Python, the port suites themselves, and any repository secret (none is used).
 
+## Linux integration driver preparation (2026-11-16)
+
+Scope: prepare the CLI-owned driver while the independent public host-tools
+bundles remain unavailable. This is separate from the 2026-11-11 hosted run
+above. CRT issue [#2](https://github.com/webos21/crt/issues/2) is still open,
+with no publication response as checked on 2026-11-16; the committed x64/arm64
+host-tools fields remain null. No workflow, schedule, release, SDK/project
+format or product-source change is made by this increment.
+
+**Input and result interface.** `tools/ci_integration.py` owns online downloads
+or explicit local input copies, size/SHA-256 checks, fresh work directories,
+host-tools archive staging and final result judging. Extraction rejects
+traversal/absolute/drive paths, escaping links, hard links, duplicate/case
+collisions and member/expanded-size limits. The pinned manifest must have the
+requested host/version and clean assembler provenance. Failed staging never
+creates `port-inputs.json` or publishes the `host-tools` directory. A retained
+`.extracting` tree belongs only to that failed disposable work directory.
+
+`ports --prepare-only` writes an input record with `native_validation: not_run`
+and no suite-pass result. An explicit `--pins` file and `--input-dir` allow
+local test-only bundles without changing committed pins; byte verification
+is identical to online preparation. Synthetic fixture executables are never
+run or described as a native CRT bundle.
+
+The native path downloads the existing public bootstrap CLI/SDK separately,
+installs the SDK into a private HOME, then invokes the Linux adapter against a
+fresh source copy. Bubblewrap, visibility probes and strace remain exclusively
+in `tools/replay_port_linux.py`; it is not a universal runner. The adapter
+records and verifies the explicitly selected oracle Python executable digest,
+and labels the oracle's separate host-tool allowance. Other suites continue
+to reject host shell/interpreter execution. Only an exact report of all five
+required suites, each with a positive integer check count and no skip, all
+passing cases, clean SDK policy and matching source/host-tools/contract input
+identities is accepted by the common driver.
+
+**Fast checks.** All 44 `test_ci_*.py` tests pass, including 21 integration-driver
+tests. A synthetic archive exercises local and simulated-download paths,
+manifest/host/version/provenance refusals, unsafe/bounded extraction, stale-work
+refusal, missing/tampered bytes, pinned oracle validation and incomplete,
+skipped, zero-check, failed or wrong-input result rejection. Separate real CLI
+invocations prepare a valid synthetic fixture without a native result, reject
+same-size tampering and a missing input, accept restored inputs in fresh work,
+and reject both committed missing
+host-tools pins before creating work. These are test-host checks, not five
+native port-suite passes.
+
+**Native local rehearsal: pass, 25/25 adapter checks, no skipped suite.** On
+Linux/x86_64 `7.0.0-43-generic` with Ubuntu LLVM 21.1.8, the common driver's
+full native path consumes the existing public x64 CLI and `.4` SDK pins plus
+an explicitly local-only bundle archived from the earlier immutable handoff.
+It installs into a fresh private store, builds a new CLI source copy, runs the
+five suites, checks SDK/source-free CLI execution and ELF imports, probes
+denied original-tree access, and checks input inventories and native
+shell/interpreter traces. Actual port publication, exact-key reuse, verification
+and a zero-command warm CLI build also pass.
+
+| Suite | Checks passed |
+| --- | ---: |
+| `port-build-test` | 35 |
+| `port-store-test` | 90 |
+| `port-oracle-test` | 23 |
+| `port-command-test` | 33 |
+| `port-project-test` | 81 |
+
+| Local rehearsal input / receipt | Exact identity |
+| --- | --- |
+| Review baseline (plus this driver preparation) | CLI `154ef31813d73d8effef9b604d848614e37d0ce5`; product/test source fingerprint `2e2cbdc60dcb60d9d3613bbabaf2f82cdf5c5652de1f92e7ba67e17ce008aca0` |
+| Local-only host-tools manifest | `v0.0.1-hosttools.20261110.3`, SHA-256 `922c76155957a55d095f902077cb73bbc120ae2c2453e9c1c000f5e58acdefa9`; clean assembler CRT `0ab8f8cfbbde19e14dd5861ba176fb8881e06182` |
+| Test-only host-tools archive | 1,184,348 bytes, SHA-256 `f32949c86706c35440c6527e90329c75cde107b20251662e743bfc58a5ffb897`; no public URL or promotion |
+| Public SDK content / stored policy | `22107183e5127d44e979f328fa78aaf2a436db802aa9f8821a864a39d492ca81` / `369dae4fbe6c220a5f451431b2bbc76de947a7d618184abe0520424c4db84cfb` |
+| Zlib source archive | `9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23` |
+| Explicit oracle Python | `/usr/bin/python3.14`, executable SHA-256 `52e0a13e60a981d8c4b6478be2ba5176f69da07948a056bf49cf6f077e30cb41` |
+| Fresh SDK-only CLI | SHA-256 `752fd57c99e660a909423261a83e672e35f413ac555e60c80e8248c16e530982` |
+| Adapter `result.json` | SHA-256 `1dbad400b25db913d1a0f52a90d69081a6bd4196bfd9f95c2c6e9ee5b679a754` |
+
+The local host-tools fixture comes from
+`/home/syszone/GitLocal/crt-preview-20261110/handoff-r4/host-tools/`; it is copied
+through a test archive, never rebuilt or modified here. Its `promotion` remains
+`local-only`. This rehearsal is not evidence of a published bundle and adds no
+Linux/aarch64 hosted acceptance. The project's existing SDK-provider C shared
+control still prints host `libz`; it remains explicitly unendorsed under
+[CRT 6.4](sdk_install_acceptance.md#isolation-scope-and-observed-control-limitation),
+not accepted SDK shared binding. The oracle still reports differing shared
+library/pkg-config bytes; its existing semantic comparisons pass and do not
+claim byte reproducibility.
+
+Evidence is retained under `out/ci-integration-prep-20261116/`, including
+`host-tests.log`, `synthetic-cli-results.json`, `committed-pin-refusals.json`
+and the explicit local-test pin file/command, copied `native-result.json`,
+`native-inputs.json`, `native-commands.json`, `native-port-inputs.json` and
+`verification.json` (driver/adapter hashes and unchanged-boundary checks).
+Full logs and traces remain at
+`/home/syszone/crt-cli-ci-integration-20261116/native-r1/`, with native scratch
+`native-work/d3-linux-jecfcxuc/`. Reproduction and ownership:
+[Linux integration driver](../guides/development.md#linux-integration-driver).
+
+**Still required for D1:** publish/promote acceptable producer bundles for both
+Linux hosts, review/pin those public bytes, add the hosted invocation arguments
+and `schedule:` in the activation commit (including declared LLVM, isolation
+prerequisites and the selected per-host oracle Python identity), then record all five suites with no
+skip on both hosted runners and the scheduled execution. Local test-only input
+success cannot close this gate. macOS/Windows integration remains separate D2;
+actual CLI Preview publication remains an independent release gate.
+
 ## Release workflow (2026-11-11)
 
 `release.yml` is started by hand (`workflow_dispatch`: host, a full commit SHA, date, serial, a notes template path, `dry_run` defaulting to true). Three jobs, driven by `tools/ci_release.py` (14 unit tests):

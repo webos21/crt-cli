@@ -41,7 +41,7 @@ separately requested dated snapshot.
 - [x] Restricted HTTPS redirect policy implemented and Linux-replayed, including real
   GitHub `sdk acquire` ([record](docs/acceptance/preview_acceptance.md#restricted-https-redirects-and-github-acquisition-2026-11-10)).
 - [x] Redirect policy replayed on macOS/arm64: 54/54 cases and real GitHub `sdk acquire` ([record](docs/acceptance/preview_acceptance.md#macos-cli-preview-release-2026-11-10)).
-- [ ] Adopt the default/project pin policy against the published Linux/x86_64,
+- [x] Adopt the default/project pin policy against the published Linux/x86_64,
   Linux/aarch64, macOS/arm64 and Windows/x64 SDK/CLI Previews, and close it by confirming the existing records
   (retain the [Windows publication baseline](docs/acceptance/preview_acceptance.md#windowsx64-cli-preview-release-2026-11-10)
   and the Linux/macOS records). The policy is two separate contracts, not a new lock format: the repository root
@@ -57,7 +57,8 @@ separately requested dated snapshot.
     close project-lock tamper and changed-selection gaps ([54-case native Seatbelt replay](docs/acceptance/preview_acceptance.md#macosarm64-public-byte-replay)).
   - [x] Windows/x64: public CLI/SDK identities, C/C++ lock creation/reuse, tampered-lock refusal and changed-selection preservation
     ([58-case native replay](docs/acceptance/preview_acceptance.md#windowsx64-public-byte-replay)).
-  - [ ] Close the table's remaining Linux/x86_64 gap on its native host; keep the earlier release records.
+  - [x] Linux/x86_64: public CLI/SDK identities, C/C++ lock creation/reuse, tampered-lock refusal and changed-selection preservation
+    ([54-case native replay](docs/acceptance/preview_acceptance.md#linuxx86_64-public-byte-replay)); the four-host policy audit is complete.
 - The Full SDK review item moved to Planned: [Full SDK Support](#full-sdk-support).
 
 D4 may proceed against the frozen D3 contracts; it does not enlarge D3 or
@@ -95,6 +96,9 @@ paths and the Linux/arm64 dispatch, push and pull-request runs.
   CLI-side runner may be prepared (input interface, a local test bundle for the driver, fail-closed missing or tampered inputs), but that
   does not replace this acceptance. This gate covers Linux only; hosted macOS/Windows integration is the separate D2 item under
   [CI Platform Expansion](#ci-platform-expansion) and must not be reported as complete D3 integration here.
+  - [x] Prepare and locally validate the common input/result driver and Linux adapter with explicit test-only inputs
+    ([44 host tests and five-suite Linux/x86_64 local replay](docs/acceptance/ci_acceptance.md#linux-integration-driver-preparation-2026-11-16));
+    retain the public-bundle, two-host hosted-run and schedule gates above.
 - [x] `release.yml` (manual; `package` → `verify` → approval-gated `publish`): the dry run produced a verified draft and an unchecked
   commit was rejected ([record](docs/acceptance/ci_acceptance.md#release-workflow-2026-11-11)).
 - [ ] Exercise the real publish step (`dry_run: false`) on the next genuine Preview, with the reviewer's approval comment on the

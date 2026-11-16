@@ -32,6 +32,15 @@ def source_inputs(root):
             for path in paths if path.is_file()]
 
 
+def suite_outcome(name, returncode, stdout, stderr):
+    """An exit-zero skip, empty report or contradictory failure is not acceptance."""
+    matches = re.findall(r'(?m)^' + re.escape(name) + r': (\d+) checks passed\s*$', stdout)
+    skipped = re.search(r'\bskipped\b', stdout + '\n' + stderr, re.IGNORECASE) is not None
+    checks = int(matches[0]) if len(matches) == 1 else None
+    return {'passed': returncode == 0 and checks is not None and checks > 0 and not skipped,
+            'checks': checks, 'skipped': skipped}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('source', 'sdk-root', 'contract', 'host-tools', 'archive', 'seed', 'output', 'work-parent',
@@ -41,11 +50,21 @@ def main():
     parser.add_argument('--host-tools-sha256', required=True)
     parser.add_argument('--hide', type=Path, action='append', default=[])
     parser.add_argument('--allow-dirty-sdk', action='store_true')
+    parser.add_argument('--oracle-python', type=Path, help='explicit test-host interpreter for the packaged oracle only')
+    parser.add_argument('--oracle-python-sha256', help='required with --oracle-python')
     suites = ('port-recipe-test', 'port-build-test', 'port-store-test', 'port-project-test',
               'port-command-test', 'port-oracle-test', 'native-test')
     parser.add_argument('--cases', nargs='+', choices=suites)
     args = parser.parse_args()
     assert sys.platform.startswith('linux')
+    for executable in ('bwrap', 'strace', 'readelf'):
+        if not shutil.which(executable):
+            parser.error('missing Linux adapter prerequisite: ' + executable)
+    oracle = args.oracle_python or Path(sys.executable).resolve()
+    if args.oracle_python or args.oracle_python_sha256:
+        if (not args.oracle_python or not oracle.is_absolute() or not oracle.is_file() or
+                digest(oracle) != args.oracle_python_sha256):
+            parser.error('oracle Python executable does not match its explicit SHA-256')
     assert digest(args.contract) == args.contract_sha256
     assert digest(args.host_tools / 'manifest.json') == args.host_tools_sha256
     output = args.output.resolve(); output.mkdir(parents=True, exist_ok=False)
@@ -70,7 +89,8 @@ def main():
     inputs = {'source': source_rows, 'source_sha256': hashlib.sha256(json.dumps(source_rows, separators=(',', ':')).encode()).hexdigest(),
               'sdk': sdk_before, 'host_tools': bundle_before, 'contract_sha256': digest(provider), 'archive_sha256': digest(archive),
               'seed_sha256': digest(seed), 'external_tools': {role: {'path': str(path), 'sha256': digest(path)} for role, path in tools.items()},
-              'driver_sha256': digest(Path(__file__)), 'allow_dirty_sdk': args.allow_dirty_sdk}
+              'driver_sha256': digest(Path(__file__)), 'allow_dirty_sdk': args.allow_dirty_sdk,
+              'oracle_python': {'path': str(oracle), 'sha256': digest(oracle), 'scope': 'port-oracle-test only'}}
     (output / 'inputs.json').write_text(json.dumps(inputs, ensure_ascii=False, indent=2) + '\n')
     home, temporary, traces = scratch / 'home', scratch / 'tmp', scratch / 'traces'
     for path in (home, temporary, traces): path.mkdir()
@@ -136,7 +156,7 @@ def main():
 
         env = {'CRT_CLI_TEST_PORT_PROJECT': str(project), 'CRT_CLI_TEST_PORT_HOST_TOOLS': str(bundle),
                'CRT_CLI_TEST_PORT_HOST_TOOLS_SHA256': args.host_tools_sha256, 'CRT_CLI_TEST_PORT_ARCHIVE': str(archive),
-               'CRT_CLI_TEST_PORT_PYTHON': str(Path(sys.executable).resolve()), 'KEEP': '1'}
+               'CRT_CLI_TEST_PORT_PYTHON': str(oracle), 'KEEP': '1'}
         for name in args.cases or suites:
             proc = run('build-' + name, [cli, '--json', 'build', '--project', project, '--target', name])
             record('build ' + name, proc.returncode == 0, proc.stderr)
@@ -144,11 +164,9 @@ def main():
             argv = [project / 'out/native' / name]
             if name == 'native-test': argv += [cli, project]
             proc = run(name, argv, environment=env, oracle=name == 'port-oracle-test')
-            match = re.search(r'(\d+) checks passed', proc.stdout)
-            passed = proc.returncode == 0 and match is not None and 'skipped' not in proc.stdout
-            record(name, passed, proc.stdout[-1600:] + proc.stderr[-1000:])
-            outcomes[name] = {'passed': passed, 'checks': int(match.group(1)) if match else None}
-            assert passed
+            outcomes[name] = suite_outcome(name, proc.returncode, proc.stdout, proc.stderr)
+            record(name, outcomes[name]['passed'], proc.stdout[-1600:] + proc.stderr[-1000:])
+            assert outcomes[name]['passed']
 
         tail = ['port', 'build', 'zlib', '--project', project, '--archive', archive, '--host-tools', bundle,
                 '--host-tools-sha256', args.host_tools_sha256]
