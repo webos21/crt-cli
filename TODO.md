@@ -88,9 +88,9 @@ paths and the Linux/arm64 dispatch, push and pull-request runs.
 - [x] `integration.yml` (manual) enforces its pins and passes the 54-case restricted-redirect replay on Linux x64 and arm64
   ([record](docs/acceptance/ci_acceptance.md#integration-workflow-2026-11-11)); its `pins` and `ports` jobs fail on purpose while
   the host-tools bundle is unpublished.
-- [ ] D1, Linux integration: run the five port suites in `integration.yml` on Linux x64 and arm64 with no skipped suite. CRT publishes
-  and pins a per-host independent host-tools bundle ([crt#2](https://github.com/webos21/crt/issues/2),
-  [request](docs/crt_host_tools_publication_request.md)), then the runner is adapted and `schedule:` is added in the same commit.
+- [ ] D1, Linux integration: CRT published and the CLI pinned the per-host host-tools bundles ([crt#2](https://github.com/webos21/crt/issues/2),
+  [record](docs/acceptance/ci_acceptance.md#host-tools-pins-and-the-wired-ports-job-2026-11-16)); the `ports` job and `schedule:` are wired and the
+  x86_64 native preflight passes 5/5 suites. Open: the first hosted run on Linux x64 and arm64 with no skipped suite.
   Keep input download, digest check, work-directory setup and result judging in one common driver, and leave Bubblewrap/strace
   isolation in a Linux adapter rather than turning `tools/replay_port_linux.py` into a universal runner. Until the bundle exists the
   CLI-side runner may be prepared (input interface, a local test bundle for the driver, fail-closed missing or tampered inputs), but that

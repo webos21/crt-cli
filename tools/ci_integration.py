@@ -250,7 +250,7 @@ def verify_oracle(path, pin):
         raise IntegrationError('oracle Python executable does not match its pin')
 
 
-def extract_host_tools(archive, destination, pin, host):
+def extract_host_tools(archive, destination, pin, host, require_preview=False):
     """Bounded staging, not a replacement for native HostTools::load validation."""
     destination = Path(destination)
     staging = destination.with_name(destination.name + '.extracting')
@@ -282,6 +282,8 @@ def extract_host_tools(archive, destination, pin, host):
         raise IntegrationError('unsupported host-tools manifest')
     if manifest.get('host') != HOST_TARGETS[host] or manifest.get('version') != pin['version']:
         raise IntegrationError('host-tools manifest host/version mismatch')
+    if require_preview and manifest.get('promotion') != 'preview':
+        raise IntegrationError('a published host-tools pin must name a promotion preview bundle')
     if manifest.get('assembler', {}).get('working_tree_dirty') is not False:
         raise IntegrationError('host-tools assembler provenance must be clean')
     relative = manifest_path.parent.relative_to(staging)
@@ -310,7 +312,7 @@ def prepare_port_inputs(work, host, zlib, tools, *, input_dir=None):
             verify_download(label, source, entry)
             shutil.copyfile(source, destination)
             verify_download(label, destination, entry)
-    bundle = extract_host_tools(downloads / tools['name'], work / 'host-tools', tools, host)
+    bundle = extract_host_tools(downloads / tools['name'], work / 'host-tools', tools, host, require_preview=input_dir is None)
     prepared = {'schema': 'crt-cli.ci-port-inputs', 'format': 0, 'host': host,
                 'source_archive': str(downloads / zlib['name']), 'source_sha256': zlib['sha256'],
                 'host_tools_root': str(bundle), 'host_tools_sha256': tools['manifest_sha256'],

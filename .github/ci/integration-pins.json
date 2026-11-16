@@ -10,10 +10,26 @@
   },
   "hosts": {
     "linux-x64": {
-      "host_tools": {"url": null, "name": null, "sha256": null, "size": null, "manifest_sha256": null, "version": null}
+      "host_tools": {
+        "url": "https://github.com/webos21/crt/releases/download/v0.1.0-hosttools.20261116.linux-x86_64.1/crt-v0.1.0-hosttools.20261116.linux-x86_64.1.tar.xz",
+        "name": "crt-v0.1.0-hosttools.20261116.linux-x86_64.1.tar.xz",
+        "size": 626632,
+        "sha256": "811748496ed027339916609fceaee1a78c806d9dbdbb3aaa8b3a035095972155",
+        "manifest_sha256": "9bd3ddf18176c5a875e137846edc4f7e62dc2f178e1f1afcc97533a4cc5f192a",
+        "version": "v0.1.0-hosttools.20261116.linux-x86_64.1",
+        "source": "webos21/crt release record (commit 5fc1a7d, clean tree, promotion preview)"
+      }
     },
     "linux-arm64": {
-      "host_tools": {"url": null, "name": null, "sha256": null, "size": null, "manifest_sha256": null, "version": null}
+      "host_tools": {
+        "url": "https://github.com/webos21/crt/releases/download/v0.1.0-hosttools.20261116.linux-aarch64.1/crt-v0.1.0-hosttools.20261116.linux-aarch64.1.tar.xz",
+        "name": "crt-v0.1.0-hosttools.20261116.linux-aarch64.1.tar.xz",
+        "size": 589644,
+        "sha256": "7a4c26ada280e8a877d05d3adab9c76df2b6dc181a96cac42e8977030019c75f",
+        "manifest_sha256": "2ea7bff56cd784dd2dd5b6d5a858b59bf41a1585bf3f77e8b09e79c8b4b7b3c2",
+        "version": "v0.1.0-hosttools.20261116.linux-aarch64.1",
+        "source": "webos21/crt release record (commit 5fc1a7d, clean tree, promotion preview)"
+      }
     }
   }
 }

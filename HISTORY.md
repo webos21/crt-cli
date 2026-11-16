@@ -170,6 +170,12 @@ Linux/aarch64 Dev SDK `v0.0.1-preview.20261110.linux.arm64.2` alone (cold 21/0, 
 download matches the sums byte for byte. Not claimed at publication: publisher authentication, the 54-case redirect replay and a sandboxed SDK/source-hidden run on this host (both added in the follow-up entry above), other glibc versions.
 [Record](docs/acceptance/preview_acceptance.md#linuxaarch64-cli-preview-release-2026-11-11).
 
+## 2026-11-16
+
+### Pin the published host-tools bundles and wire the Linux `ports` job
+
+Both CRT host-tools Previews are pinned in `integration-pins.json`; the `ports` job runs the five suites and the daily `schedule:` is on. The x86_64 native preflight with the real public pins passes all five suites (adapter 25/25). Hosted runs are not recorded yet. [Record](docs/acceptance/ci_acceptance.md#host-tools-pins-and-the-wired-ports-job-2026-11-16).
+
 ## 2026-11-10
 
 ### Consume the Linux/aarch64 Dev SDK Preview

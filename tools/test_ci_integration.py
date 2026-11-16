@@ -75,16 +75,17 @@ class PinTest(unittest.TestCase):
         with self.assertRaisesRegex(IntegrationError, 'missing'):
             verify_download('blob', self.dir / 'nope', entry)
 
-    def test_committed_pins_fail_until_host_tools_are_pinned(self):
+    def test_committed_pins_name_published_preview_bundles(self):
         root = Path(__file__).resolve().parent.parent / '.github/ci/integration-pins.json'
         pins = json.loads(root.read_text())
-        # The zlib source is pinned to bytes the recipe also pins; the host tools stay unpinned until CRT publishes them.
         recipe = json.loads((Path(__file__).resolve().parent.parent / 'src/test/data/zlib.recipe.json').read_text())
         self.assertEqual(pins['zlib_source']['sha256'], recipe['source']['sha256'])
-        for host in pins['hosts']:
-            if any(v in (None, '') for v in pins['hosts'][host]['host_tools'].values()):
-                with self.assertRaisesRegex(IntegrationError, 'unpinned'):
-                    load_pins(root, host)
+        for host, arch in (('linux-x64', 'x86_64'), ('linux-arm64', 'aarch64')):
+            with self.subTest(host=host):
+                zlib, tools = load_pins(root, host)
+                self.assertTrue(tools['url'].startswith('https://github.com/webos21/crt/releases/download/' + tools['version'] + '/'))
+                self.assertIn('linux-' + arch, tools['version'])
+                self.assertEqual(tools['name'], 'crt-' + tools['version'] + '.tar.xz')
 
 
 class PortDriverTest(unittest.TestCase):
@@ -152,9 +153,18 @@ class PortDriverTest(unittest.TestCase):
             self.assertEqual(main(), 1)
         self.assertFalse(work.exists())
 
+    def test_online_interface_requires_a_published_preview_bundle(self):
+        def download(url, destination):
+            Path(destination).write_bytes((self.inputs / Path(destination).name).read_bytes())
+        with patch('ci_integration.download', side_effect=download):
+            with self.assertRaisesRegex(IntegrationError, 'promotion preview'):
+                prepare_port_inputs(self.dir / 'online-local-only', 'linux-x64', self.zlib, self.tools)
+        self.assertFalse((self.dir / 'online-local-only/host-tools').exists())
+
     def test_online_interface_verifies_downloaded_bytes(self):
         def download(url, destination):
             Path(destination).write_bytes((self.inputs / Path(destination).name).read_bytes())
+        self.tools = self.bundle(manifest=dict(self.manifest, promotion='preview'))
         with patch('ci_integration.download', side_effect=download) as get:
             prepare_port_inputs(self.dir / 'online', 'linux-x64', self.zlib, self.tools)
         self.assertEqual(get.call_count, 2)

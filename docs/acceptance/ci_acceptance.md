@@ -626,3 +626,32 @@ an archive missing from the manifest and a contract digest the manifest disagree
 
 Not covered: automatic detection that a newer Preview exists, a scheduled run of the checker, and any second reviewer.
 
+
+
+## Host-tools pins and the wired `ports` job (2026-11-16)
+
+CRT published the independent host-tools Previews ([crt#2](https://github.com/webos21/crt/issues/2),
+[CRT record](https://github.com/webos21/crt/blob/main/docs/acceptance/host_tools_acceptance.md#linux-host-tools-preview-publication-2026-11-16)).
+`.github/ci/integration-pins.json` now pins both Linux hosts from the CRT release records (clean tree `5fc1a7d`, `promotion: preview`); the
+`consumer_pin` values are quoted verbatim and the downloaded bytes were compared with them.
+
+| Host | `version` | Archive size / SHA-256 | `manifest_sha256` |
+| --- | --- | --- | --- |
+| linux-x64 | `v0.1.0-hosttools.20261116.linux-x86_64.1` | 626632 / `81174849...2155` | `9bd3ddf1...f192a` |
+| linux-arm64 | `v0.1.0-hosttools.20261116.linux-aarch64.1` | 589644 / `7a4c26ad...c75f` | `2ea7bff5...b3c2` |
+
+**Driver.** A download-mode pin must name a `promotion: preview` manifest (`extract_host_tools(require_preview=...)`); explicit local `--input-dir`
+fixtures are unchanged. Tests: 45 `test_ci_*` (the committed-pin test now asserts published-release URLs, names and versions; a local-only bundle is
+refused online and leaves no `host-tools` directory).
+
+**Workflow.** `integration.yml`'s `ports` job installs LLVM 21, Bubblewrap and strace, relaxes the AppArmor user-namespace restriction, records the
+oracle Python's real path and SHA-256 at run time (a recorded identity, not an independently chosen pin), runs the common driver and uploads the replay
+result. `schedule:` (daily 03:23 UTC) is added in the same change, as the request required.
+
+**Native preflight, Linux/x86_64 (this machine, real public pins): all five suites pass, adapter 25/25, none skipped.** `ci_integration.py ports`
+downloaded the pinned published CLI, SDK `.4` and the published host-tools archive, installed the SDK into a private store, built a CLI from this
+source, and ran: `port-build` 35, `port-store` 90, `port-oracle` 23, `port-command` 33, `port-project` 81. `replay/result.json` SHA-256
+`0da497f76f099f2df079bfb969b110ffe44394ca91a3a2fb38b5ba3e01c585de`; inputs matched `9bd3ddf1...` (host tools) and `9a93b2b7...` (zlib).
+
+**Not yet.** The hosted `ubuntu-26.04` and `ubuntu-26.04-arm` runs of the wired job, and any aarch64 evidence: this machine cannot run aarch64.
+The first hosted result is recorded separately after the run.

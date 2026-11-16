@@ -3,11 +3,13 @@ name: Integration
 # Input-gated integration checks that are too slow or too external for the required pull-request gate in ci.yml.
 # Every input is pinned in .github/ci/integration-pins.json; an unpinned input fails the job instead of skipping it,
 # because a skipped suite looks like a pass. This workflow is not a required check and never publishes anything.
-# The scheduled trigger is intentionally absent until the host-tools pin exists: a daily run that is red for a known,
-# unfixable-from-here reason teaches people to ignore red. Add `schedule:` in the commit that fills the pin.
+# The independent host-tools bundles are pinned (CRT Previews `v0.1.0-hosttools.20261116.linux-*.1`), so the daily trigger is
+# on: a red run now means a real regression or a changed external input, not a known gap. A scheduled run is not a required check.
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '23 3 * * *'
 
 permissions:
   contents: read
@@ -105,6 +107,44 @@ jobs:
         with:
           python-version: '3.12'
 
-      # Not wired yet: fails explicitly rather than reporting a pass for work that did not run.
-      - name: Port suites
-        run: python tools/ci_integration.py ports --host "${{ matrix.host }}"
+      - name: Install LLVM 21, Bubblewrap and strace
+        run: |
+          set -euo pipefail
+          sudo apt-get update -q
+          # Ubuntu 26.04 has LLVM 21 in its archive.
+          sudo apt-get install -y -q --no-install-recommends clang-21 lld-21 llvm-21 binutils bubblewrap strace
+          /usr/lib/llvm-21/bin/clang --version
+          # Ubuntu restricts unprivileged user namespaces by default; the isolated replay needs them.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+          bwrap --unshare-all --ro-bind / / true
+
+      - name: Select and record the oracle Python
+        id: oracle
+        run: |
+          set -euo pipefail
+          path="$(python -c 'import os, sys; print(os.path.realpath(sys.executable))')"
+          digest="$(sha256sum "$path" | cut -d' ' -f1)"
+          echo "oracle python $path sha256 $digest"
+          echo "path=$path" >> "$GITHUB_OUTPUT"
+          echo "sha256=$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Port suites (all five, none skipped)
+        run: >
+          python tools/ci_integration.py ports --host "${{ matrix.host }}"
+          --work "$RUNNER_TEMP/ports" --llvm-bin /usr/lib/llvm-21/bin
+          --oracle-python "${{ steps.oracle.outputs.path }}"
+          --oracle-python-sha256 "${{ steps.oracle.outputs.sha256 }}"
+
+      - name: Upload the port replay result
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ports-${{ matrix.host }}-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/ports/replay/result.json
+            ${{ runner.temp }}/ports/port-inputs.json
+            ${{ runner.temp }}/ports/replay-command.json
+            ${{ runner.temp }}/ports/replay.stdout
+            ${{ runner.temp }}/ports/replay.stderr
+          if-no-files-found: warn
+          retention-days: 14

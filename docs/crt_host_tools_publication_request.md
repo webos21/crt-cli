@@ -1,7 +1,8 @@
 # Request to CRT: publish the independent host-tools bundle
 
-**From** `webos21/crt-cli` **to** `webos21/crt` (producer). **Date** 2026-11-11. This is a request, not a change: no CRT file was edited
-for it, and nothing here claims the bundle is published or promoted.
+**From** `webos21/crt-cli` **to** `webos21/crt` (producer). **Date** 2026-11-11. This is a request, not a change. **Answered 2026-11-16:** CRT published the Linux bundles
+([crt#2](https://github.com/webos21/crt/issues/2#issuecomment-6909581567)); the CLI pins are recorded in
+[CI acceptance](acceptance/ci_acceptance.md#host-tools-pins-and-the-wired-ports-job-2026-11-16). The text below is the original request.
 
 ## Why
 
