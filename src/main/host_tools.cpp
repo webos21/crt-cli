@@ -61,7 +61,7 @@ HostTools HostTools::load(const fs::path& requested, const std::string& pin) {
     require(file_sha256(file) == pin, "host-tools manifest SHA-256 mismatch");
     auto manifest = read_json(file);
     require(manifest.value("schema", "") == "crt.experimental.host-tools" && manifest.value("format", 0) == 1 &&
-            manifest.value("promotion", "") == "local-only", "unsupported host-tools contract");
+            (manifest.value("promotion", "") == "local-only" || manifest.value("promotion", "") == "preview"), "unsupported host-tools contract");
     require(manifest.at("host") == native_target(), "host tools do not match the execution host");
     auto expected = manifest.at("inventory");
     require(expected.is_array() && expected.size() <= 16384 && !expected.empty(), "invalid host-tools inventory");
@@ -103,7 +103,7 @@ HostTools HostTools::load(const fs::path& requested, const std::string& pin) {
 Json HostTools::identity() const {
     return {{"host", manifest.at("host")}, {"version", manifest.at("version")},
             {"manifest_sha256", manifest_sha256}, {"content_sha256", manifest.at("content_sha256")},
-            {"assembler", manifest.at("assembler")}, {"promotion", "local-only"}};
+            {"assembler", manifest.at("assembler")}, {"promotion", manifest.at("promotion")}};
 }
 ChildEnvironment HostTools::environment(const fs::path& work, const fs::path& sdk) const {
     auto result = child_environment();
