@@ -174,7 +174,7 @@ download matches the sums byte for byte. Not claimed at publication: publisher a
 
 ### Pin the published host-tools bundles and wire the Linux `ports` job
 
-Both CRT host-tools Previews are pinned in `integration-pins.json`; the `ports` job runs the five suites and the daily `schedule:` is on. The x86_64 native preflight with the real public pins passes all five suites (adapter 25/25). Hosted runs are not recorded yet. [Record](docs/acceptance/ci_acceptance.md#host-tools-pins-and-the-wired-ports-job-2026-11-16).
+Both CRT host-tools Previews are pinned in `integration-pins.json`; the `ports` job runs the five suites and the daily `schedule:` is on. The x86_64 native preflight with the real public pins passes all five suites (adapter 25/25). The first hosted run (`43820315250`, commit `b1b6e44`) passes on Linux x64 and arm64: five suites each, none skipped (35/90/23/33/81), 25/25 cases, and closes the D1 Linux integration gate ([crt#2](https://github.com/webos21/crt/issues/2)). [Record](docs/acceptance/ci_acceptance.md#host-tools-pins-and-the-wired-ports-job-2026-11-16).
 
 ## 2026-11-10
 

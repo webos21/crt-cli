@@ -653,5 +653,17 @@ downloaded the pinned published CLI, SDK `.4` and the published host-tools archi
 source, and ran: `port-build` 35, `port-store` 90, `port-oracle` 23, `port-command` 33, `port-project` 81. `replay/result.json` SHA-256
 `0da497f76f099f2df079bfb969b110ffe44394ca91a3a2fb38b5ba3e01c585de`; inputs matched `9bd3ddf1...` (host tools) and `9a93b2b7...` (zlib).
 
-**Not yet.** The hosted `ubuntu-26.04` and `ubuntu-26.04-arm` runs of the wired job, and any aarch64 evidence: this machine cannot run aarch64.
-The first hosted result is recorded separately after the run.
+**First hosted run: pass on both Linux hosts.** `workflow_dispatch` run [43820315250](https://github.com/webos21/crt-cli/actions/runs/43820315250) on `main`
+at `b1b6e44` (2026-11-16): `pins`, `redirect` and `ports` succeed on `ubuntu-26.04` and `ubuntu-26.04-arm`. The uploaded `replay/result.json` of each host
+was read, not only the job status: `passed: true`, `allow_dirty_sdk: false`, 25/25 cases, and all five suites ran with no skip.
+
+| Host | `port-build` | `port-store` | `port-oracle` | `port-command` | `port-project` | Host-tools manifest | SDK contract |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| linux-x64 | 35 | 90 | 23 | 33 | 81 | `9bd3ddf1...` | `369dae4f...` |
+| linux-arm64 | 35 | 90 | 23 | 33 | 81 | `2ea7bff5...` | `a3df2fbd...` |
+
+Both runs used the zlib source `9a93b2b7...`. Linux/aarch64 is the first native aarch64 evidence for the five suites and for the published aarch64
+host-tools bundle's use by the CLI; the earlier aarch64 evidence for that bundle was CRT's own hosted replay. Each job ran about 11 minutes. The oracle
+Python is the runner's `setup-python` interpreter, whose path and SHA-256 the job records at run time; that is a recorded identity, not an independently
+chosen pin. Bubblewrap needed the AppArmor user-namespace restriction relaxed on the runner. The scheduled trigger fires from the next 03:23 UTC; its first
+result is not recorded here. This closes the CLI-side D1 Linux integration gate; hosted macOS/Windows integration remains the separate D2 item.
