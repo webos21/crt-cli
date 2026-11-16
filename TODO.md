@@ -53,7 +53,9 @@ separately requested dated snapshot.
   - [x] Record the [root/project/CI policy and four-host evidence table](docs/acceptance/preview_acceptance.md#project-pin-policy-evidence-audit-2026-11-16).
   - [x] Linux/aarch64: public CLI/SDK lock creation, byte-identical reuse, tampered-lock refusal and preservation under changed SDK selection
     ([54-case native replay](docs/acceptance/preview_acceptance.md#linuxaarch64-public-byte-replay)).
-  - [ ] Close the table's remaining Linux/x86_64, macOS/arm64 and Windows/x64 gaps on their native hosts; keep the earlier release records.
+  - [x] macOS/arm64: confirm public CLI/SDK identities, project-lock creation and byte-identical reuse;
+    close project-lock tamper and changed-selection gaps ([54-case native Seatbelt replay](docs/acceptance/preview_acceptance.md#macosarm64-public-byte-replay)).
+  - [ ] Close the table's remaining Linux/x86_64 and Windows/x64 gaps on their native hosts; keep the earlier release records.
 - The Full SDK review item moved to Planned: [Full SDK Support](#full-sdk-support).
 
 D4 may proceed against the frozen D3 contracts; it does not enlarge D3 or

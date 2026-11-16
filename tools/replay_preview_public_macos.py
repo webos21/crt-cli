@@ -16,6 +16,26 @@ import subprocess
 import sys
 import tempfile
 
+from replay_project_pin_cases import project_pin_cases
+
+
+def evaluate_reply(proc, *, expect_ok=True, check=None, expect_text=None):
+    """Require a real final CLI result, including for expected refusals."""
+    try:
+        reply = json.loads(proc.stdout)
+    except ValueError:
+        reply = {}
+    structured = (isinstance(reply, dict) and reply.get('schema') == 'crt-cli.bootstrap-result'
+                  and type(reply.get('format')) is int and reply['format'] == 1
+                  and isinstance(reply.get('data'), dict) and reply.get('ok') is expect_ok)
+    message = json.dumps(reply.get('data', {})) if isinstance(reply, dict) else ''
+    passed = structured and (proc.returncode == 0 if expect_ok else proc.returncode > 0)
+    if expect_text:
+        passed = passed and expect_text in message
+    if check:
+        passed = passed and bool(check(reply))
+    return reply, passed, message
+
 
 def digest(path):
     h = hashlib.sha256()
@@ -35,6 +55,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--work-parent', type=Path, required=True)
     parser.add_argument('--hide', type=Path, action='append', default=[])
+    parser.add_argument('--project-pin-cases', action='store_true', help='also test bound-project lock tampering and changed SDK defaults')
     for name in ('cc', 'cxx', 'linker', 'ar'):
         parser.add_argument('--' + name, type=Path, required=True)
     args = parser.parse_args()
@@ -56,6 +77,7 @@ def main():
     scratch = work / 'scratch'
     home = scratch / 'home'; home.mkdir()
     results = []
+    commands = []
     counter = [0]
     environment = {'HOME': str(home), 'PATH': '/nonexistent', 'TMPDIR': str(work / 'tmp'), 'LC_ALL': 'C'}
 
@@ -67,23 +89,16 @@ def main():
         counter[0] += 1
         text = '(version 1)\n(allow default)\n(deny network*)\n'
         for path in hidden:
-            text += '(deny file-read* file-write* (subpath ' + json.dumps(str(path)) + '))\n'
-        text += '(deny file-write* (require-not (require-any (subpath "/dev") (subpath ' + json.dumps(str(work / 'tmp')) + ') (subpath ' + json.dumps(str(scratch)) + '))))\n'
+            text += '(deny file-read* file-write* (subpath ' + json.dumps(str(path), ensure_ascii=False) + '))\n'
+        text += '(deny file-write* (require-not (require-any (subpath "/dev") (subpath ' + json.dumps(str(work / 'tmp'), ensure_ascii=False) + ') (subpath ' + json.dumps(str(scratch), ensure_ascii=False) + '))))\n'
         profile = work / f'policy-{counter[0]}.sb'; profile.write_text(text)
         return [sandbox, '-f', str(profile), str(cli), '--json', *tail]
 
     def call(label, tail, expect_ok=True, check=None, expect_text=None):
-        proc = subprocess.run(command(tail), capture_output=True, text=True, timeout=1800, env=environment, cwd=work)
-        try:
-            reply = json.loads(proc.stdout)
-        except Exception:
-            reply = {'ok': proc.returncode == 0, 'data': {'message': proc.stdout + proc.stderr}}
-        message = json.dumps(reply.get('data', {}))
-        passed = (proc.returncode == 0) == expect_ok and bool(reply.get('ok')) == expect_ok
-        if expect_text:
-            passed = passed and expect_text in message
-        if check:
-            passed = passed and bool(check(reply))
+        argv = command(tail)
+        proc = subprocess.run(argv, capture_output=True, text=True, timeout=1800, env=environment, cwd=work)
+        commands.append({'case': label, 'argv': argv, 'returncode': proc.returncode})
+        reply, passed, message = evaluate_reply(proc, expect_ok=expect_ok, check=check, expect_text=expect_text)
         (output / f'call-{counter[0]:03}.stdout').write_text(proc.stdout)
         (output / f'call-{counter[0]:03}.stderr').write_text(proc.stderr)
         record(label, passed, message[:300])
@@ -114,7 +129,8 @@ def main():
     call('reinstall is idempotent', ['sdk', 'install', '--archive', str(inputs / archive['name']), '--release-manifest', str(manifest_path),
          '--release-manifest-sha256', args.manifest_sha256, '--store', str(store)], check=lambda r: r['data']['already_installed'])
     call('a wrong manifest pin is refused', ['sdk', 'install', '--archive', str(inputs / archive['name']), '--release-manifest', str(manifest_path),
-         '--release-manifest-sha256', '0' * 64, '--store', str(scratch / 'wrong-pin-store')], expect_ok=False)
+         '--release-manifest-sha256', '0' * 64, '--store', str(scratch / 'wrong-pin-store')], expect_ok=False,
+         expect_text='release manifest SHA-256 mismatch')
     record('the refused install published nothing', not (scratch / 'wrong-pin-store').exists() or not [p for p in (scratch / 'wrong-pin-store').iterdir() if not p.name.startswith('.')])
 
     # 3. C and C++ first build through the installed SDK, no configure.
@@ -137,13 +153,16 @@ def main():
         call(f'{language}: warm build executes nothing', ['build', '--project', str(project)],
              check=lambda r: r['data']['cache']['executed'] == 0 and not r['data']['commands'])
         record(f'{language}: the project lock is unchanged by later builds', (project / 'crt.lock').read_bytes() == locks[language])
+        if args.project_pin_cases:
+            project_pin_cases(call=call, record=record, project=project, language=language, content_sha256=args.content_sha256)
 
     # 4. Nothing it consumed changed.
     call('sdk verify after the builds', ['sdk', 'verify', sdk_dir, '--store', str(store)], check=lambda r: r['data']['verified'])
     record('every downloaded input is unchanged', {p.name: digest(p) for p in sorted(inputs.iterdir())} == before_inputs)
     summary = {'passed': all(r['passed'] for r in results), 'cases': results, 'cli_sha256': digest(cli), 'sdk_directory': sdk_dir, 'work': str(work),
-               'manifest_sha256': args.manifest_sha256, 'content_sha256': args.content_sha256,
+               'manifest_sha256': args.manifest_sha256, 'content_sha256': args.content_sha256, 'project_pin_cases': args.project_pin_cases,
                'isolation': 'Seatbelt: no network, writes only to the scratch and private temporary directories, hidden checkouts, cleared environment'}
+    (output / 'commands.json').write_text(json.dumps(commands, indent=2) + '\n')
     (output / 'result.json').write_text(json.dumps(summary, indent=2) + '\n')
     print('passed' if summary['passed'] else 'FAILED', f"{sum(r['passed'] for r in results)}/{len(results)}")
     return 0 if summary['passed'] else 1

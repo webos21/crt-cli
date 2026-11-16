@@ -11,6 +11,22 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-16
 
+### Close macOS/arm64 public Preview project-pin evidence
+
+Fresh public CLI/SDK downloads match their pinned identities. Native Seatbelt
+replay passes 54/54 checks: C/C++ first-build lock creation, byte-identical warm
+reuse, separate SDK/policy/LLVM project-lock tamper refusal, unchanged binding
+and output bytes, changed-default preservation and explicit SDK replacement
+refusal. The release-manifest pin negative remains a separate install check.
+Three additional isolation probes and three harness regression tests pass.
+
+Extended the macOS public-byte adapter with the shared opt-in pin cases,
+strict final JSON/exit validation and UTF-8 Seatbelt paths. Linked the macOS
+evidence in the four-host table and retained the checked TODO item; Linux/x86_64
+and Windows/x64 remain open. Root lock and CI pins are unchanged. No product,
+release, integration runner, schedule or STATUS change.
+[Exact inputs, commands and limits](docs/acceptance/preview_acceptance.md#macosarm64-public-byte-replay).
+
 ### Audit public Preview project pins and close Linux/aarch64 negatives
 
 Linked four hosts' public CLI/SDK identities and existing project creation/reuse

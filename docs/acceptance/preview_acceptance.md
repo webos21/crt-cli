@@ -629,7 +629,7 @@ gap, not a product failure or an inference from a download-pin negative.
 | --- | --- | --- | --- | --- |
 | Linux/x86_64 / `linux-x64` | `v0.1.0-preview.20261110.linux-x86_64.1` / `v0.0.1-preview.20261110.4` | Recorded C/C++ first-build/warm reuse in [public .4 consumer evidence](ci_acceptance.md#linux-loader-repair-sdk-adoption-2026-11-10); byte-for-byte lock receipt should be confirmed on that host | Not recorded for this public combination | Not recorded for this public combination |
 | Linux/aarch64 / `linux-arm64` | `v0.1.0-preview.20261111.linux-arm64.1` / `v0.0.1-preview.20261110.linux.arm64.2` | **Pass**, C/C++ creation and byte-identical warm reuse, below | **Pass**, SDK content, compiler policy and LLVM digest, below | **Pass**, changed defaults ignored and explicit build replacement refused, below |
-| macOS/arm64 / `macos-arm64` | `v0.1.0-preview.20261110.macos-arm64.1` / `v0.0.1-preview.20261110.macos.1` | Recorded packaged C/C++ first-build/zero-command warm reuse in [release evidence](#macos-cli-preview-release-2026-11-10); byte-for-byte lock receipt should be confirmed on that host | Not recorded for this public combination | Not recorded for this public combination |
+| macOS/arm64 / `macos-arm64` | `v0.1.0-preview.20261110.macos-arm64.1` / `v0.0.1-preview.20261110.macos.1` | **Pass**, C/C++ creation and byte-identical warm reuse in [native replay](#macosarm64-public-byte-replay), retaining [release evidence](#macos-cli-preview-release-2026-11-10) | **Pass**, SDK content, compiler policy and LLVM digest in native replay | **Pass**, changed defaults ignored and explicit build replacement refused in native replay |
 | Windows/x64 / `win-x64` | `v0.1.0-preview.20261110.windows-x86_64.1` / `v0.0.1-preview.20261110.windows.1` | Recorded C/C++ first-build/warm reuse with unchanged project locks in [packaged/public-byte evidence](#windowsx64-cli-preview-release-2026-11-10) | Not recorded for this public combination | Not recorded for this public combination |
 
 The Linux/x86_64 CLI was originally built against `.3`; the linked `.4`
@@ -637,8 +637,8 @@ consumer record qualifies that published executable against the repaired SDK
 without relabeling its compiled-in inputs. Earlier SDK-selection/first-build
 fixtures using local CLI/SDK candidates retain their own identities; they do
 not close the public-combination gaps above. Complete four-host adoption stays
-open until all three remaining native rows supply the missing cases. Linux/
-aarch64 execution does not qualify x86_64, macOS or Windows.
+open until the remaining Linux/x86_64 and Windows/x64 rows supply the missing
+cases. Each native replay qualifies only its stated host and public combination.
 
 ### Linux/aarch64 public-byte replay
 
@@ -722,3 +722,98 @@ The missing public inputs were downloaded/verified and the final fresh replay
 passes all 54. These failed aggregate results are not relabeled as passing.
 No product/lock-format change, official publisher authentication, SDK promotion,
 release publication, schedule, other-host execution or STATUS update is claimed.
+
+### macOS/arm64 public-byte replay
+
+**Pass, 54/54** on native macOS/arm64 27.2.1 (`26B131`), Xcode 27.2
+(`27B52`), Apple clang 21.0.0 (`clang-2100.4.1.1`). Review baseline:
+CLI checkout `17ea2b84cd8107b41ac45b9908a5314e5c7cb179` plus the adapter
+changes recorded in `verification.json`. The consumer is the downloaded public
+executable, byte-identical to the [published CLI](#macos-cli-preview-release-2026-11-10)
+built from `541b2afd53980654591a1c6e0a49ceca4057f9b7`. SDK producer and compile
+provenance name `445f127dc2e1ef4ab538166aa2e374f25773a803`, both clean.
+
+The CLI archive, SDK manifest and every manifest-listed asset (including both
+source archives) were downloaded into a fresh directory using unauthenticated
+HTTPS. Their sizes/digests match the existing CI pin or SDK manifest. No new
+release, source self-build or producer-private input is involved.
+
+| Input | Exact SHA-256 |
+| --- | --- |
+| CLI archive, 1,229,408 bytes | `2767f18da7e7d51e3e3fc1172da99581bf0508c1f6b6794817488c0c58950011` |
+| Executable, 4,389,112 bytes | `42727ccaef0e46551bcb9578d5eee771166e8211b8434f8121b589ab57eddfa6` |
+| SDK manifest, 1,728 bytes | `0981110c84e5d24a903dbd3965dbe92eb2fe405edfa89804e3086dfeb75983de` |
+| SDK archive, 6,136,776 bytes | `41a1afe701514496a912de83e46481455c9f2c0526d2eadd5b058813c26b2146` |
+| Stored compiler policy, 402,864 bytes | `d5a100fdd0d38f940fe1c398996f013d57ccc7c4743af2b9ab4988c42b8de464` |
+| Installed SDK content | `e3dc7fb1810a3f78ab8ef33882225ccb562d21f6f5977a2037ab92819326bac8` |
+| C and C++ resolved lock bytes, independently generated | `47a6bd39d35973a0f4f1d3579a3e362e45ead69a90cf85ee32bf33d3c27a7499` |
+| `replay-r1/result.json` | `bc06a2f39aa5a5eb6d913e3b60b49448241074fe8ffda6ef6c28e653c3a8ad9d` |
+
+`tools/replay_preview_public_macos.py --project-pin-cases` reuses the same
+24 project-pin assertions as Linux/aarch64 in addition to the 30 existing
+public-input/install/C/C++ checks:
+
+- First C/C++ build, without `configure`, creates a resolved format-1 project
+  lock naming the installed SDK, stored policy and exact external LLVM tools.
+  Test/run and a zero-command warm build succeed with byte-identical locks.
+- Changing just the SDK content, compiler-policy digest or declared C compiler
+  digest in otherwise valid lock JSON fails with, respectively,
+  `locked SDK/toolchain identity mismatch`, `toolchain contract digest mismatch`
+  and `locked external tool digest mismatch`. Every refusal preserves the
+  altered lock, `.crt/local.json` and all output/cache file bytes.
+- A different full SDK selector and absent compiler in `.sdk.json` do not
+  replace the existing binding: the locked build executes no commands and
+  preserves lock/binding/output bytes. Explicit `build --sdk <other>` fails
+  with `use configure explicitly`. Restoring the original lock restores warm
+  reuse. The nonmatching selector is a negative fixture, not a qualified second
+  installed release or a test of explicit `configure` migration.
+- A wrong release-manifest pin separately fails with
+  `release manifest SHA-256 mismatch` and publishes no SDK. This install-input
+  rejection is independent of the project-lock tamper cases.
+
+All CLI calls use Seatbelt with network denied, private HOME/store and TMPDIR,
+cleared environment (`PATH=/nonexistent`), and writes limited to disposable
+scratch/tmp and `/dev`. The entire user home, including both checkouts and the
+download/package evidence, is unreadable; verified copies are consumed from
+the external work tree. Three additional native probes confirm both checkout
+reads and an outside-scratch write are denied. Work paths contain spaces and
+Hangul; the adapter emits literal UTF-8 paths in its Seatbelt policy.
+This adapter does not impose an executable allow-list or collect a new import
+or execution trace. Xcode tools are explicitly selected with `xcrun -f`;
+their absolute paths and hashes are in `host.json` and the project locks.
+Python 3.15.2, resolved at
+`/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/bin/python3.15`,
+is a test-host orchestrator (SHA-256
+`6cc907e4a022fefc843bcd93954eaf5a2cbfc77a095640bfadeeed96154190c5`),
+not a product prerequisite. Three focused harness regressions pass: a launcher
+failure, malformed/non-final reply, signal termination, mismatched diagnostic
+or inconsistent exit status cannot satisfy an expected refusal.
+
+Reproduce with fresh output/work directories and the verified public downloads:
+
+```sh
+python3 tools/replay_preview_public_macos.py \
+  --cli /absolute/extracted-package/crt-cli-macos-aarch64/crt-cli \
+  --download-dir /absolute/public-downloads \
+  --manifest-name release-manifest-dev-macos-aarch64.json \
+  --manifest-sha256 0981110c84e5d24a903dbd3965dbe92eb2fe405edfa89804e3086dfeb75983de \
+  --content-sha256 e3dc7fb1810a3f78ab8ef33882225ccb562d21f6f5977a2037ab92819326bac8 \
+  --output /absolute/fresh-evidence --work-parent '/private/tmp/work space 한글' \
+  --hide /Users/your-user \
+  --cc "$(xcrun -f clang)" --cxx "$(xcrun -f clang++)" \
+  --linker "$(xcrun -f ld)" --ar "$(xcrun -f ar)" --project-pin-cases
+python3 -m unittest discover -s tools -p test_replay_preview_public_macos.py -v
+```
+
+Retained local evidence: `out/project-pins-macos-arm64-20261116/` contains
+`inputs.json`, `downloads.json`, public downloads/package, `command.json`,
+`host.json`, `project-locks.json`, copied locks/local bindings,
+`isolation-probes.json`, `verification.json`, and `replay-r1/` with every call's
+stdout/stderr and argv/exit status. Scratch remains at
+`/private/tmp/crt-cli-project-pins-macos-20261116/work space 한글/public-preview-_v9jvt9c/`.
+The root lock still equals the committed unresolved bytes (SHA-256
+`8392d0a04e39c8fa4f1af8a2efc49dde57c4d97cae76be36dad46e3f233d9fe4`);
+CI and integration pins are unchanged. Linux/x86_64 and Windows/x64 pin-policy
+gaps remain open. This is no D1/D2 integration, Full SDK, release-publication,
+publisher-authentication, hosted-CI, schedule or current-source self-build
+acceptance; STATUS is unchanged.
