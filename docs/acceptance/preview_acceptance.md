@@ -630,15 +630,15 @@ gap, not a product failure or an inference from a download-pin negative.
 | Linux/x86_64 / `linux-x64` | `v0.1.0-preview.20261110.linux-x86_64.1` / `v0.0.1-preview.20261110.4` | Recorded C/C++ first-build/warm reuse in [public .4 consumer evidence](ci_acceptance.md#linux-loader-repair-sdk-adoption-2026-11-10); byte-for-byte lock receipt should be confirmed on that host | Not recorded for this public combination | Not recorded for this public combination |
 | Linux/aarch64 / `linux-arm64` | `v0.1.0-preview.20261111.linux-arm64.1` / `v0.0.1-preview.20261110.linux.arm64.2` | **Pass**, C/C++ creation and byte-identical warm reuse, below | **Pass**, SDK content, compiler policy and LLVM digest, below | **Pass**, changed defaults ignored and explicit build replacement refused, below |
 | macOS/arm64 / `macos-arm64` | `v0.1.0-preview.20261110.macos-arm64.1` / `v0.0.1-preview.20261110.macos.1` | **Pass**, C/C++ creation and byte-identical warm reuse in [native replay](#macosarm64-public-byte-replay), retaining [release evidence](#macos-cli-preview-release-2026-11-10) | **Pass**, SDK content, compiler policy and LLVM digest in native replay | **Pass**, changed defaults ignored and explicit build replacement refused in native replay |
-| Windows/x64 / `win-x64` | `v0.1.0-preview.20261110.windows-x86_64.1` / `v0.0.1-preview.20261110.windows.1` | Recorded C/C++ first-build/warm reuse with unchanged project locks in [packaged/public-byte evidence](#windowsx64-cli-preview-release-2026-11-10) | Not recorded for this public combination | Not recorded for this public combination |
+| Windows/x64 / `win-x64` | `v0.1.0-preview.20261110.windows-x86_64.1` / `v0.0.1-preview.20261110.windows.1` | **Pass**, C/C++ creation and byte-identical warm reuse in [native public-byte replay](#windowsx64-public-byte-replay) | **Pass**, SDK content, compiler policy and LLVM digest, below | **Pass**, changed defaults ignored and explicit build replacement refused, below |
 
 The Linux/x86_64 CLI was originally built against `.3`; the linked `.4`
 consumer record qualifies that published executable against the repaired SDK
 without relabeling its compiled-in inputs. Earlier SDK-selection/first-build
 fixtures using local CLI/SDK candidates retain their own identities; they do
 not close the public-combination gaps above. Complete four-host adoption stays
-open until the remaining Linux/x86_64 and Windows/x64 rows supply the missing
-cases. Each native replay qualifies only its stated host and public combination.
+open until the remaining Linux/x86_64 row supplies the missing native cases.
+Each native replay qualifies only its stated host and public combination.
 
 ### Linux/aarch64 public-byte replay
 
@@ -817,3 +817,110 @@ CI and integration pins are unchanged. Linux/x86_64 and Windows/x64 pin-policy
 gaps remain open. This is no D1/D2 integration, Full SDK, release-publication,
 publisher-authentication, hosted-CI, schedule or current-source self-build
 acceptance; STATUS is unchanged.
+
+### Windows/x64 public-byte replay
+
+**Pass, 58/58 on native Windows/x64 (2026-11-16).** Review baseline is CLI
+`17ea2b84cd8107b41ac45b9908a5314e5c7cb179`; the executable under test is the
+unchanged published Preview, not a build of that baseline. The CLI archive and
+all five SDK inputs (manifest plus every listed asset) were downloaded without
+authentication into a fresh directory. Existing CI pins match their size and
+SHA-256; SDK assets also match the pinned manifest. Public tag refs resolve to
+CLI `a55c0d0ea0801f0e6e8d235f20ca780f876bf970` and CRT
+`b31276a6acccf0a89731f7bb0aecbdcdc9b45cda`, respectively. No release or pin moved.
+
+| Input | Exact identity |
+| --- | --- |
+| CLI archive, 5,430,536 bytes | `4bafc8464b729049840f1f21807f505bbcc09e7d5f7bc260e63d8f971ade75c0` |
+| Extracted executable, 45,508,096 bytes | `8a2e854ec33d9e78c4f8c72ed64e928f036a34af62bf31a66016c6ab982cd39b` |
+| Package inventory, 30 files | `7381cd58919be1f1d007cf0091c17e33236797860a8a2087b1139a7e80e6676c` |
+| SDK manifest, 1,800 bytes | `b0fca4c81d29b8eee28e0d9fb7d6e26950b094a8be4f2c091e43922366a46976` |
+| SDK archive, 73,323,880 bytes | `c71bb91e9f2c623d44e8154c7798a446b850781bdc1cf515eb9675dc04137be1` |
+| Stored compiler policy, 440,297 bytes | `7762f572b4614b3068e1ea99694ce19360e213d31c5bd01019e4ad6ce005b726` |
+| Installed SDK content | `5bb55372ec10e3cfa24c84de981a7130f56aeb57ef0d43d5da22a65036dec7ef` |
+| C and C++ resolved locks, independently generated | `bc10a55b4e169b22fe5e254d12558d13c01a5d813c85fe1a3cfe7e1379a7656e` |
+| Final `replay-r2/result.json` | `c663d035c6bbf832ee14e6290e8c7476ab8928832bd8a186894dab5930f8fbc3` |
+
+`package_cli_archive.py verify` validates the fresh extraction. PE machine is
+`0x8664`; direct imports are only `kernel32.dll` and
+`api-ms-win-core-synch-l1-2-0.dll`. Host inputs are Windows build 26100,
+LLVM/Clang/LLD 22.1.8 and Windows SDK `10.0.28000.0/um/x64`. The native visibility
+probe is the retained public-SDK-built probe from the Windows Preview contract
+replay, separately hashed in `inputs.json`; no producer source is an application
+build input.
+
+The Windows public adapter adds `--project-pin-cases`, using the unchanged common
+`replay_project_pin_cases.py`. Its 24 focused assertions supplement the 31 existing
+public-input/install/C/C++ checks and three packaged version/resource-pin checks.
+All **30 CLI calls** require one versioned final JSON object, matching `ok` and
+exit status, no timeout and only allowed process images. A launch failure or
+non-JSON error cannot count as a pin refusal.
+
+- C and C++ `new` create sources without a binding. Their first `build --sdk`
+  writes a format-1 lock selecting the pinned SDK content and stored policy.
+  Test/run and zero-command warm builds preserve the original lock bytes.
+- In each project's lock, mutate one valid-JSON identity at a time: SDK content,
+  compiler-policy digest and declared C compiler digest. Each build refuses the
+  corresponding mismatch. The altered lock, `.crt/local.json` and every existing
+  output/cache file remain byte-identical on refusal. Restoring the original
+  lock restores zero-command warm reuse.
+- Set `.sdk.json` to a different full SDK selector and an absent compiler: the
+  bound build keeps its original lock, local binding and outputs. Passing that
+  different selector through `build --sdk` refuses implicit replacement with
+  `use configure explicitly` and preserves those bytes. This deliberately
+  nonmatching selector is not a second installed/qualified release; explicit
+  `configure` migration is outside this check.
+- The wrong **release-manifest** pin independently fails installation with
+  `release manifest SHA-256 mismatch` and publishes nothing. The wrong package
+  inventory pin is another separate control. Neither substitutes for project-
+  lock tampering. SDK verify after the workflows and all input inventories pass.
+
+Every consumer runs hidden under CRT's restricted-token adapter with a private
+HOME/USERPROFILE/store/temp directory, empty PATH, redirected stdio and job-object
+process accounting. A native probe proves both repositories and the prior producer/
+SDK workspace unreadable. Declared LLVM tools and generated applications are the
+allowed app-build/run images. Real parent paths contain spaces and Korean text.
+This is accounting, not executable or network denial; no read-only-root claim.
+
+The first retained replay is **52/58**, not relabeled as passing. All six failures
+were the adapter rejecting the explicitly declared `clang++.exe` resource-directory
+query during pin cases. `Toolchain::load` may execute `-print-resource-dir` even
+when the build-command cache reports zero execution. The Windows adapter now passes
+the same tool allowance as its existing app-build cases to the shared helper.
+The error-message, lock/local/output immutability and zero-build-command assertions
+are unchanged. A new private workspace passes all 58; product/SDK bytes are unchanged.
+
+Reproduce with verified public downloads/extraction and fresh work/output paths:
+
+```powershell
+$env:CRT_WINDOWS_SDK_LIBPATH = 'C:/Program Files (x86)/Windows Kits/10/Lib/10.0.28000.0/um/x64'
+python tools/replay_preview_public_windows.py `
+  --cli C:/absolute/package/crt-cli.exe --package C:/absolute/package `
+  --package-manifest-sha256 7381cd58919be1f1d007cf0091c17e33236797860a8a2087b1139a7e80e6676c `
+  --download-dir C:/absolute/public-sdk-downloads `
+  --manifest-name release-manifest-dev-windows-x86_64.json `
+  --manifest-sha256 b0fca4c81d29b8eee28e0d9fb7d6e26950b094a8be4f2c091e43922366a46976 `
+  --content-sha256 5bb55372ec10e3cfa24c84de981a7130f56aeb57ef0d43d5da22a65036dec7ef `
+  --output C:/absolute/fresh-evidence --work 'C:/absolute/fresh work 한글' `
+  --probe C:/absolute/sdk-built-probe.exe --crt-tools C:/absolute/crt/tools `
+  --hide C:/absolute/crt --hide C:/absolute/crt-cli --hide C:/absolute/prior-sdk `
+  --cc 'C:/Program Files/LLVM/bin/clang.exe' --cxx 'C:/Program Files/LLVM/bin/clang++.exe' `
+  --linker 'C:/Program Files/LLVM/bin/ld.lld.exe' --ar 'C:/Program Files/LLVM/bin/llvm-ar.exe' `
+  --project-pin-cases
+```
+
+Evidence is in ignored `out/project-pins-win-x64-20261116/`: `downloads.json`,
+`public-identities.json`, fresh public archives/extraction, `package.json`,
+`inputs.json`, `verification-inputs.json`, `project-locks.json`, `verification.json`,
+the failed `replay/` and passing `replay-r2/` with all raw responses/process images.
+Actual final work is `C:/Users/Lee/AppData/Local/Temp/crt project pins 한글 20261116 r2`.
+Driver/helper and external input identities are retained. Root `crt.lock` stays
+unresolved: checkout bytes are unchanged (SHA-256
+`60dadc9fcf3f832e177e688f60a0c9310f939e80bb95075c49822de9b3799a89`);
+normalizing the checkout's CRLF yields the committed LF hash `8392d0a0...d9fe4`.
+Ignored root SDK configuration, CI and integration pins remain unchanged.
+
+No product/lock-format change, SDK promotion, publisher authentication, release
+publication, Linux runner/schedule, hosted Windows D2, other-host replay or STATUS
+update is claimed. After incorporating the independent macOS receipt above, the
+four-host adoption item remains open for Linux/x86_64.

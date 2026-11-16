@@ -16,6 +16,8 @@ from pathlib import Path
 import shutil
 import sys
 
+from replay_project_pin_cases import project_pin_cases
+
 
 def digest(path):
     h = hashlib.sha256()
@@ -43,9 +45,12 @@ def main():
     parser.add_argument('--sdk-source', type=Path, help='optional pinned HTTPS source; acquire it instead of local install')
     parser.add_argument('--package', type=Path, help='optional extracted package containing the same --cli image')
     parser.add_argument('--package-manifest-sha256', help='independent package inventory pin')
+    parser.add_argument('--project-pin-cases', action='store_true', help='also reject tampered project locks and implicit SDK replacement')
     args = parser.parse_args()
     if os.name != 'nt':
         parser.error('requires native Windows')
+    if args.project_pin_cases and args.acquire_only:
+        parser.error('--project-pin-cases requires the C/C++ app workflows')
     assert os.environ.get('CRT_WINDOWS_SDK_LIBPATH'), 'set CRT_WINDOWS_SDK_LIBPATH to the Windows SDK um/<arch> import-library directory'
     sys.path.insert(0, str(args.crt_tools.resolve()))
     import crt_windows_external as sandbox
@@ -104,9 +109,13 @@ def main():
         try:
             reply = json.loads(out.read_bytes())
         except ValueError:
-            reply = {'ok': result['exit_code'] == 0, 'data': {'message': out.read_text(errors='replace')[:300]}}
+            reply = {}
+        if not isinstance(reply, dict):
+            reply = {}
         message = json.dumps(reply.get('data', {}), ensure_ascii=False)
-        passed = (result['exit_code'] == 0) == expect_ok and bool(reply.get('ok')) == expect_ok and not result['timed_out'] and not stray
+        structured = (reply.get('schema') == 'crt-cli.bootstrap-result' and reply.get('format') == 1
+                      and reply.get('ok') is expect_ok)
+        passed = (result['exit_code'] == 0) == expect_ok and structured and not result['timed_out'] and not stray
         if expect_text:
             passed = passed and expect_text in message
         if check:
@@ -163,7 +172,7 @@ def main():
     call('sdk verify', ['sdk', 'verify', sdk_dir, '--store', str(store)], check=lambda r: r['data']['verified'])
     call('reinstall is idempotent', install, check=lambda r: r['data']['already_installed'])
     wrong = list(install); wrong[wrong.index('--release-manifest-sha256') + 1] = '0' * 64; wrong[wrong.index('--store') + 1] = str(scratch / 'wrong-pin-store')
-    call('a wrong manifest pin is refused', wrong, expect_ok=False)
+    call('a wrong manifest pin is refused', wrong, expect_ok=False, expect_text='manifest SHA-256 mismatch')
     if args.sdk_source:
         wrong_source = dict(source); wrong_source['manifest'] = dict(source['manifest'], sha256='0' * 64)
         (inputs / 'wrong-source.json').write_text(json.dumps(wrong_source) + '\n', encoding='utf-8')
@@ -193,11 +202,17 @@ def main():
         call(f'{language}: warm build executes nothing', ['build', '--project', str(project)],
              check=lambda r: r['data']['cache']['executed'] == 0 and not r['data']['commands'], tools_allowed=True)
         record(f'{language}: the project lock is unchanged by later builds', (project / 'crt.lock').read_bytes() == locked)
+        if args.project_pin_cases:
+            # Bound builds may query the declared compiler's resource directory even with zero build commands.
+            def pin_call(label, tail, **options):
+                return call(label, tail, tools_allowed=True, **options)
+            project_pin_cases(call=pin_call, record=record, project=project, language=language, content_sha256=args.content_sha256)
 
     # 4. Nothing it consumed changed.
     call('sdk verify after the builds', ['sdk', 'verify', sdk_dir, '--store', str(store)], check=lambda r: r['data']['verified'])
     record('every downloaded input is unchanged', {p.name: digest(p) for p in sorted(inputs.iterdir())} == before_inputs)
-    summary = {'passed': all(r['passed'] for r in results), 'app_workflows_run': not args.acquire_only, 'cases': results, 'cli_sha256': digest(cli), 'sdk_directory': sdk_dir, 'work': str(work),
+    summary = {'passed': all(r['passed'] for r in results), 'app_workflows_run': not args.acquire_only,
+               'project_pin_cases_run': args.project_pin_cases, 'cases': results, 'cli_sha256': digest(cli), 'sdk_directory': sdk_dir, 'work': str(work),
                'manifest_sha256': args.manifest_sha256, 'content_sha256': args.content_sha256,
                'isolation': 'Windows restricted token (per-run SID, empty PATH), private work directory, job-object process accounting; '
                             'no network denial and no read-only root are claimed'}

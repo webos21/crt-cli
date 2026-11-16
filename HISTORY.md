@@ -11,6 +11,22 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-16
 
+### Verify Windows/x64 public Preview identities and project pins
+
+Fresh unauthenticated CLI/SDK downloads match the existing Windows pins and public
+tag commits. The extracted public CLI passes 58/58 restricted-token checks: C/C++
+lock creation and exact reuse, independent SDK/policy/LLVM lock tampering, no
+binding/output rewrite on refusal, changed-default preservation and explicit
+build-time SDK replacement refusal. Download/package-pin negatives remain separate.
+
+Connected the shared pin helper to the Windows adapter and required versioned JSON
+for every result. The first 52/58 run retained an adapter tool-allowance error;
+the corrected fresh run admits declared LLVM resource queries while keeping all
+lock/output assertions. Root lock/config, CI pins, product and producer sources,
+releases, schedules and STATUS stay unchanged. Windows is checked off; the remaining Linux/x86_64
+evidence gap keeps the four-host item open.
+[Exact identities, receipts and limits](docs/acceptance/preview_acceptance.md#windowsx64-public-byte-replay).
+
 ### Close macOS/arm64 public Preview project-pin evidence
 
 Fresh public CLI/SDK downloads match their pinned identities. Native Seatbelt

@@ -55,7 +55,9 @@ separately requested dated snapshot.
     ([54-case native replay](docs/acceptance/preview_acceptance.md#linuxaarch64-public-byte-replay)).
   - [x] macOS/arm64: confirm public CLI/SDK identities, project-lock creation and byte-identical reuse;
     close project-lock tamper and changed-selection gaps ([54-case native Seatbelt replay](docs/acceptance/preview_acceptance.md#macosarm64-public-byte-replay)).
-  - [ ] Close the table's remaining Linux/x86_64 and Windows/x64 gaps on their native hosts; keep the earlier release records.
+  - [x] Windows/x64: public CLI/SDK identities, C/C++ lock creation/reuse, tampered-lock refusal and changed-selection preservation
+    ([58-case native replay](docs/acceptance/preview_acceptance.md#windowsx64-public-byte-replay)).
+  - [ ] Close the table's remaining Linux/x86_64 gap on its native host; keep the earlier release records.
 - The Full SDK review item moved to Planned: [Full SDK Support](#full-sdk-support).
 
 D4 may proceed against the frozen D3 contracts; it does not enlarge D3 or
