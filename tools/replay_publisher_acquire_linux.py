@@ -169,6 +169,53 @@ def main():
     negative('an http signature URL is refused', publisher(), 'HTTPS', '/manifest', lambda s: s['publisher']['archive_signature'].update(url='http://localhost/x.sig'))
     negative('a missing signature object is refused', publisher(), None, '/manifest', lambda s: s['publisher'].pop('archive_signature'))
 
+    # `sdk install` (local files, release-manifest mode): the same key/signature options, verified before anything is installed.
+    inst = work / 'install-inputs'; inst.mkdir()
+    (inst / archive['name']).write_bytes(archive_bytes); (inst / policy['name']).write_bytes(contract_bytes)
+    (inst / 'release-manifest.json').write_bytes(manifest_bytes)
+    (inst / 'other.sig').write_bytes(other_key_sig); (inst / 'good.sig').write_bytes(good_sig); (inst / 'wrongdata.sig').write_bytes(wrong_data_sig)
+
+    def install(label, extra, expect_ok, needle=None, reuse_home=None, exit_code=None):
+        homes[0] += 1
+        home = reuse_home or (work / ('home%d' % homes[0])); home.mkdir(exist_ok=True)
+        argv = [str(args.cli.resolve()), '--json', 'sdk', 'install', '--archive', str(inst / archive['name']), '--release-manifest', str(inst / 'release-manifest.json'),
+                '--release-manifest-sha256', sha(manifest_bytes), '--store', str(home / 'sdks'), *extra]
+        proc = subprocess.run(argv, capture_output=True, text=True, env={'HOME': str(home), 'PATH': '/nonexistent'}, timeout=300, stdin=subprocess.DEVNULL)
+        try:
+            reply = json.loads(proc.stdout)
+        except ValueError:
+            reply = {}
+        detail = json.dumps(reply.get('data', {}))
+        passed = (proc.returncode == 0 and reply.get('ok') is True) if expect_ok else (proc.returncode > 0 and reply.get('ok') is False)
+        if exit_code is not None:
+            passed = passed and proc.returncode == exit_code
+        if needle:
+            passed = passed and needle in detail
+        store = home / 'sdks'
+        installed = [p.name for p in store.iterdir() if not p.name.startswith('.')] if store.exists() else []
+        leftovers = [p.name for area in ('.staging', '.locks') if (store / area).exists() for p in (store / area).iterdir()]
+        if not expect_ok:
+            passed = passed and not installed and not leftovers
+        results.append({'case': label, 'passed': bool(passed), 'detail': detail[:500]})
+        print(('PASS ' if passed else 'FAIL ') + label, flush=True)
+        return reply, home
+
+    good = ['--publisher-key', str(work / 'pub1.pub'), '--signature', str(inst / 'good.sig'), '--publisher-key-spki-sha256', fingerprint('pub1')]
+    reply, home = install('sdk install without publisher options keeps the unchanged result shape', [], True)
+    results[-1]['passed'] = results[-1]['passed'] and 'publisher_authentication' not in reply['data']
+    reply, home = install('sdk install verifies the archive signature with the pinned key and fingerprint', good, True, 'signature_verified')
+    results[-1]['passed'] = results[-1]['passed'] and reply['data']['publisher']['public_key_spki_sha256'] == fingerprint('pub1') and (home / 'sdks' / sdk_dir).is_dir()
+    install('sdk install with a signature by another key installs nothing', ['--publisher-key', str(work / 'pub1.pub'), '--signature', str(inst / 'other.sig')], False, 'signature verification failed')
+    install('sdk install with a signature over different bytes installs nothing', ['--publisher-key', str(work / 'pub1.pub'), '--signature', str(inst / 'wrongdata.sig')], False, 'signature verification failed')
+    install('sdk install with a key file that did not sign installs nothing', ['--publisher-key', str(work / 'pub2.pub'), '--signature', str(inst / 'good.sig')], False, 'signature verification failed')
+    install('sdk install with a mismatching fingerprint pin installs nothing', ['--publisher-key', str(work / 'pub2.pub'), '--signature', str(inst / 'other.sig'),
+            '--publisher-key-spki-sha256', fingerprint('pub1')], False, 'pinned key fingerprint')
+    install('sdk install refuses a key without a signature', ['--publisher-key', str(work / 'pub1.pub')], False, 'supplied together', exit_code=2)
+    install('sdk install refuses a signature without a key', ['--signature', str(inst / 'good.sig')], False, 'supplied together', exit_code=2)
+    install('sdk install refuses a fingerprint pin without a key', ['--publisher-key-spki-sha256', fingerprint('pub1')], False, 'needs --publisher-key', exit_code=2)
+    install('sdk install refuses a malformed fingerprint pin', [*good[:4], '--publisher-key-spki-sha256', 'ABC'], False, '64 lowercase', exit_code=2)
+    install('sdk install refuses a missing signature file', ['--publisher-key', str(work / 'pub1.pub'), '--signature', str(inst / 'absent.sig')], False)
+
     summary = {'passed': all(r['passed'] for r in results), 'cases': results, 'release_manifest_sha256': sha(manifest_bytes),
                'cli_sha256': sha(args.cli.read_bytes())}
     (out / 'result.json').write_text(json.dumps(summary, indent=2) + '\n')

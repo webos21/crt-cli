@@ -27,8 +27,10 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
 ### Dev SDK / CLI Preview preparation
 
 - [ ] Publisher signatures: `sdk acquire` and the CI host-tools pins accept/require them (Linux-verified, see
-  [ci_acceptance](docs/acceptance/ci_acceptance.md#publisher-signatures-for-host-tools-pins-and-sdk-acquire-2026-11-16)); remaining: `sdk install`,
-  the bootstrap CLI pin, macOS/Windows replays, signing the next releases in the release workflow.
+  [ci_acceptance](docs/acceptance/ci_acceptance.md#publisher-signatures-for-host-tools-pins-and-sdk-acquire-2026-11-16)); `sdk install` and the bootstrap/SDK pin
+  signatures are done too ([record](docs/acceptance/ci_acceptance.md#publisher-signatures-for-the-bootstrap-cli-pin-and-sdk-install-2026-11-16));
+  remaining: pin a CLI Preview with these options as the bootstrap so CI's SDK download is natively verified, macOS/Windows replays, signing the next
+  releases in the release workflow.
 
 D3's bounded zlib adapter contract is adopted for the exercised Linux/x86_64,
 macOS/arm64 and Windows/x64 combinations. [The adoption ledger](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09)

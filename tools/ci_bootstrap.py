@@ -25,6 +25,9 @@ import time
 import urllib.request
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import publisher_signature  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 EXE = '.exe' if os.name == 'nt' else ''
 
@@ -134,22 +137,38 @@ class Ci:
         return reply['data'], err
 
     # --- trust inputs -------------------------------------------------------------------------------------------
+    def download(self, url, destination, label):
+        for attempt in range(1, 4):  # bounded; the pins, not TLS, authenticate the bytes
+            try:
+                with urllib.request.urlopen(url, timeout=120, context=ssl.create_default_context()) as src, open(destination, 'wb') as dst:
+                    shutil.copyfileobj(src, dst)
+                return
+            except OSError as error:
+                log('download attempt %d failed: %s' % (attempt, error))
+                if attempt == 3:
+                    raise CiError('cannot download %s' % label)
+                time.sleep(5 * attempt)
+
+    def authenticate(self, label, archive, url, pin):
+        """Publisher authentication of a pinned archive: the pinned key must have signed exactly these bytes. A pin without a signature fails."""
+        try:
+            publisher = publisher_signature.pinned_publisher(self.pins.get('publisher'), ROOT)
+            signature = pin.get('signature')
+            publisher_signature.check_signature_pin(label, signature)
+            path = self.work / signature['name']
+            self.download(url + '.sig', path, 'the %s signature' % label)
+            publisher_signature.authenticate(label, archive, path, signature, publisher)
+        except (publisher_signature.SignatureError, OSError, ValueError) as error:
+            raise CiError(str(error))
+        self.summary.setdefault('publisher', {'key_spki_sha256': publisher['key_spki_sha256'], 'authenticated': []})['authenticated'].append(label)
     def bootstrap(self):
         pin = self.host_pins['bootstrap']
         url = 'https://github.com/webos21/crt-cli/releases/download/%s/%s' % (pin['release'], pin['asset'])
         archive = self.work / pin['asset']
-        for attempt in range(1, 4):  # bounded; the SHA-256 pin below, not TLS, authenticates the bytes
-            try:
-                with urllib.request.urlopen(url, timeout=120, context=ssl.create_default_context()) as src, open(archive, 'wb') as dst:
-                    shutil.copyfileobj(src, dst)
-                break
-            except OSError as error:
-                log('download attempt %d failed: %s' % (attempt, error))
-                if attempt == 3:
-                    raise CiError('cannot download the pinned bootstrap CLI')
-                time.sleep(5 * attempt)
+        self.download(url, archive, 'the pinned bootstrap CLI')
         if archive.stat().st_size != pin['size'] or sha256_file(archive) != pin['sha256']:
             raise CiError('bootstrap CLI archive does not match its pin')
+        self.authenticate('bootstrap CLI', archive, url, pin)
         target = self.work / 'bootstrap'
         target.mkdir()
         if not hasattr(tarfile, 'data_filter'):
@@ -164,7 +183,8 @@ class Ci:
         out, _ = self.run('bootstrap-version', [exe, '--version'])
         if pin['version'] not in out:
             raise CiError('bootstrap CLI reports an unexpected version: %s' % out.strip())
-        self.summary['bootstrap'] = {'release': pin['release'], 'archive_sha256': pin['sha256'], 'executable_sha256': sha256_file(exe)}
+        self.summary['bootstrap'] = {'release': pin['release'], 'archive_sha256': pin['sha256'], 'executable_sha256': sha256_file(exe),
+                                     'publisher_authentication': 'signature_verified'}
         return exe
 
     def roots(self):
@@ -414,7 +434,7 @@ class Ci:
         if target:
             rows = ['### crt-cli CI: %s (%s)' % (self.host, self.summary.get('result', 'fail')), '', '| Item | Value |', '| --- | --- |',
                     '| source | `%s` |' % self.summary['source_commit']]
-            for key in ('bootstrap', 'sdk', 'host_versions', 'stage1', 'stage2', 'tests', 'native_test_jobs', 'native_phases', 'test_failures', 'stage_bytes_identical', 'audit', 'ca_sha256'):
+            for key in ('bootstrap', 'publisher', 'sdk', 'host_versions', 'stage1', 'stage2', 'tests', 'native_test_jobs', 'native_phases', 'test_failures', 'stage_bytes_identical', 'audit', 'ca_sha256'):
                 if key in self.summary:
                     rows.append('| %s | `%s` |' % (key, json.dumps(self.summary[key], sort_keys=True)))
             with open(target, 'a', encoding='utf-8') as stream:

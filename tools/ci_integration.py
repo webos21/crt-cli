@@ -23,6 +23,9 @@ import time
 import urllib.request
 from pathlib import Path, PurePosixPath
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import publisher_signature  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -78,47 +81,31 @@ def load_pins(path, host):
     return pins['zlib_source'], pins['hosts'][host]['host_tools']
 
 
-def _openssl(argv, **kwargs):
-    openssl = shutil.which('openssl')
-    if not openssl:
-        raise IntegrationError('openssl is required to verify the publisher signature')
-    return subprocess.run([openssl, *map(str, argv)], capture_output=True, env={}, timeout=60, stdin=subprocess.DEVNULL, **kwargs)
-
-
 def spki_sha256(key_file):
-    done = _openssl(['pkey', '-pubin', '-in', key_file, '-outform', 'DER'])
-    if done.returncode != 0 or not done.stdout:
-        raise IntegrationError('the publisher key file is not a public key')
-    return hashlib.sha256(done.stdout).hexdigest()
+    try:
+        return publisher_signature.spki_sha256(key_file)
+    except (publisher_signature.SignatureError, OSError, ValueError) as error:
+        raise IntegrationError('the publisher key file is not a public key: %s' % error)
 
 
 def load_publisher(path):
     """The pinned publisher key: a repository file plus its SPKI SHA-256, which must agree (the fingerprint is what is published)."""
     pins = json.loads(Path(path).read_text(encoding='utf-8'))
-    entry = pins.get('publisher')
-    if not isinstance(entry, dict) or set(entry) - {'key_file', 'key_spki_sha256', 'note'}:
-        raise IntegrationError('publisher: pin is missing or has unknown fields')
-    fingerprint, relative = entry.get('key_spki_sha256'), entry.get('key_file')
-    if not isinstance(fingerprint, str) or re.fullmatch(r'[0-9a-f]{64}', fingerprint) is None:
-        raise IntegrationError('publisher: key_spki_sha256 is not a lowercase SHA-256')
-    if (not isinstance(relative, str) or PurePosixPath(relative).is_absolute() or '..' in PurePosixPath(relative).parts or
-            '\\' in relative):
-        raise IntegrationError('publisher: key_file must be a repository-relative path')
-    key = ROOT / relative
-    if key.is_symlink() or not key.is_file() or key.stat().st_size > 65536:
-        raise IntegrationError('publisher: key_file is not a regular file of at most 64 KiB')
-    if spki_sha256(key) != fingerprint:
-        raise IntegrationError('publisher: key_file does not match the pinned key_spki_sha256')
-    return {'key_file': key, 'key_spki_sha256': fingerprint}
+    try:
+        return publisher_signature.pinned_publisher(pins.get('publisher'), ROOT)
+    except (publisher_signature.SignatureError, OSError, ValueError) as error:
+        raise IntegrationError(str(error))
 
 
 def verify_publisher_signature(label, archive, signature, publisher):
-    """Detached RSA-PSS (SHA-256, MGF1-SHA256, salt 32) signature over the exact archive bytes, by the pinned key only."""
+    """Detached RSA-PSS (SHA-256, MGF1-SHA256, salt 32) signature over the exact archive bytes, by the pinned key only (stdlib verifier)."""
     if Path(signature).stat().st_size > MAX_SIGNATURE_BYTES:
         raise IntegrationError('%s: signature is larger than %d bytes' % (label, MAX_SIGNATURE_BYTES))
-    done = _openssl(['dgst', '-sha256', '-sigopt', 'rsa_padding_mode:pss', '-sigopt', 'rsa_pss_saltlen:32', '-sigopt', 'rsa_mgf1_md:sha256',
-                     '-verify', publisher['key_file'], '-signature', signature, archive])
-    if done.returncode != 0 or b'Verified OK' not in done.stdout:
+    try:
+        verified = publisher_signature.verify_file(archive, signature, publisher['key_file'])
+    except (publisher_signature.SignatureError, OSError, ValueError) as error:
+        raise IntegrationError('%s: publisher signature verification failed: %s' % (label, error))
+    if not verified:
         raise IntegrationError('%s: publisher signature verification failed' % label)
 
 
@@ -180,7 +167,19 @@ def published_cli(host, work):
     ci = json.loads((ROOT / '.github/ci/pins.json').read_text(encoding='utf-8'))['hosts'][host]
     pin = ci['bootstrap']
     archive = Path(work) / pin['asset']
-    fetch_pinned('bootstrap CLI', 'https://github.com/webos21/crt-cli/releases/download/%s/%s' % (pin['release'], pin['asset']), archive, pin)
+    url = 'https://github.com/webos21/crt-cli/releases/download/%s/%s' % (pin['release'], pin['asset'])
+    fetch_pinned('bootstrap CLI', url, archive, pin)
+    # The published CLI is authenticated by the pinned publisher key before it is extracted or run.
+    try:
+        ci_pins = json.loads((ROOT / '.github/ci/pins.json').read_text(encoding='utf-8'))
+        publisher = publisher_signature.pinned_publisher(ci_pins.get('publisher'), ROOT)
+        signature = pin.get('signature')
+        publisher_signature.check_signature_pin('bootstrap CLI', signature)
+        signature_file = Path(work) / signature['name']
+        download(url + '.sig', signature_file)
+        publisher_signature.authenticate('bootstrap CLI', archive, signature_file, signature, publisher)
+    except (publisher_signature.SignatureError, OSError, ValueError) as error:
+        raise IntegrationError(str(error))
     target = Path(work) / 'cli'
     target.mkdir()
     with tarfile.open(archive) as bundle:

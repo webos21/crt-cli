@@ -24,6 +24,7 @@ int main(int argc, char** argv) {
             "  fetch --url <https-url> --ca-file <pem> --output <file> --sha256 <hex> --size <bytes> [--redirect-policy github-release|--redirect-hosts <list>] [--max-redirects <1-5>] [--publisher-key <pem> --signature <file>]\n"
             "  sdk install --archive <file> --archive-sha256 <hex> [--content-sha256 <hex>] [--store <dir>] [--lock-wait <seconds>]\n"
             "  sdk install --archive <file> --release-manifest <file> --release-manifest-sha256 <hex> [--store <dir>] [--lock-wait <seconds>]\n"
+            "  sdk install|repair ... [--publisher-key <pem> --signature <file> [--publisher-key-spki-sha256 <hex>]]\n"
             "  sdk repair <sdk-directory> --archive <file> --release-manifest <file> --release-manifest-sha256 <hex> [--store <dir>]\n"
             "  sdk acquire --source <pinned-source.json> [--store <dir>]\n"
             "  sdk list|recover [--store <dir>]; sdk verify <sdk-directory> [--store <dir>]\n"

@@ -17,16 +17,30 @@
         "asset": "crt-cli-0.1.0-dev-linux-x86_64-preview.20261110.1.tar.xz",
         "sha256": "ad43afbf7e810bb7b1a587c47568ba6d17bc404e5ee05069a83d9ef56edc1383",
         "size": 5232844,
-        "version": "0.1.0-dev"
+        "version": "0.1.0-dev",
+        "signature": {
+          "name": "crt-cli-0.1.0-dev-linux-x86_64-preview.20261110.1.tar.xz.sig",
+          "size": 256,
+          "sha256": "662f101b881d047b83e17717771ac27fbb0154114e6d95d494dcc7d64427a282"
+        }
       },
       "sdk": {
         "release_base": "https://github.com/webos21/crt/releases/download/v0.0.1-preview.20261110.4/",
         "version": "v0.0.1-preview.20261110.4",
-        "manifest": {"name": "release-manifest-dev-linux-x86_64.json", "sha256": "983dbcf143b1fe227bf519f07ec153ce5baf50e190382222995770affe43b2c3", "size": 1683},
+        "manifest": {
+          "name": "release-manifest-dev-linux-x86_64.json",
+          "sha256": "983dbcf143b1fe227bf519f07ec153ce5baf50e190382222995770affe43b2c3",
+          "size": 1683
+        },
         "archive": "crt-v0.0.1-preview.20261110.4-linux-x86_64-dev.tar.xz",
         "contract": "crt-v0.0.1-preview.20261110.4-linux-x86_64-dev-toolchain.json",
         "content_sha256": "22107183e5127d44e979f328fa78aaf2a436db802aa9f8821a864a39d492ca81",
-        "contract_sha256": "369dae4fbe6c220a5f451431b2bbc76de947a7d618184abe0520424c4db84cfb"
+        "contract_sha256": "369dae4fbe6c220a5f451431b2bbc76de947a7d618184abe0520424c4db84cfb",
+        "signature": {
+          "name": "crt-v0.0.1-preview.20261110.4-linux-x86_64-dev.tar.xz.sig",
+          "size": 256,
+          "sha256": "bb85822e95ed1404857215dd4bf3fe550f100abd2ee2c30a4780f3542741826b"
+        }
       },
       "allowed_imports": []
     },
@@ -36,16 +50,30 @@
         "asset": "crt-cli-0.1.0-dev-linux-aarch64-preview.20261111.1.tar.xz",
         "sha256": "fa28ec8d6644da3dc32aaa8e9281c8b953b85d97498cc3cdc12f55b156014cff",
         "size": 5039156,
-        "version": "0.1.0-dev"
+        "version": "0.1.0-dev",
+        "signature": {
+          "name": "crt-cli-0.1.0-dev-linux-aarch64-preview.20261111.1.tar.xz.sig",
+          "size": 256,
+          "sha256": "1a09a77fd3d92514831f2fa2968872a75b83633d8b10e636de84d5034a9bc479"
+        }
       },
       "sdk": {
         "release_base": "https://github.com/webos21/crt/releases/download/v0.0.1-preview.20261110.linux.arm64.2/",
         "version": "v0.0.1-preview.20261110.linux.arm64.2",
-        "manifest": {"name": "release-manifest-dev-linux-aarch64.json", "sha256": "ba77b26edfa0413df5e8c17309506d7ae6ecf134ae7e9908e3742bc562067be3", "size": 1772},
+        "manifest": {
+          "name": "release-manifest-dev-linux-aarch64.json",
+          "sha256": "ba77b26edfa0413df5e8c17309506d7ae6ecf134ae7e9908e3742bc562067be3",
+          "size": 1772
+        },
         "archive": "crt-v0.0.1-preview.20261110.linux.arm64.2-linux-aarch64-dev.tar.xz",
         "contract": "crt-v0.0.1-preview.20261110.linux.arm64.2-linux-aarch64-dev-toolchain.json",
         "content_sha256": "cd2ab657615c0fa52a1804f301a57dfa21b1067e3e5ed5a9f9a07d86ae050cc6",
-        "contract_sha256": "a3df2fbd6b4d14d316b691a1d2831d0692aaba133e3b168076ee0ec7cb6434d4"
+        "contract_sha256": "a3df2fbd6b4d14d316b691a1d2831d0692aaba133e3b168076ee0ec7cb6434d4",
+        "signature": {
+          "name": "crt-v0.0.1-preview.20261110.linux.arm64.2-linux-aarch64-dev.tar.xz.sig",
+          "size": 256,
+          "sha256": "25287c3fc0141f6735b73d13e43f1754afcb089bb26df6bbf258436eab80f08f"
+        }
       },
       "allowed_imports": []
     },
@@ -55,16 +83,30 @@
         "asset": "crt-cli-0.1.0-dev-macos-aarch64-preview.20261110.1.tar.xz",
         "sha256": "2767f18da7e7d51e3e3fc1172da99581bf0508c1f6b6794817488c0c58950011",
         "size": 1229408,
-        "version": "0.1.0-dev"
+        "version": "0.1.0-dev",
+        "signature": {
+          "name": "crt-cli-0.1.0-dev-macos-aarch64-preview.20261110.1.tar.xz.sig",
+          "size": 256,
+          "sha256": "8a325e251babe74ccb389d67d19de041d173265f9a6222600d358b0d90019c6e"
+        }
       },
       "sdk": {
         "release_base": "https://github.com/webos21/crt/releases/download/v0.0.1-preview.20261110.macos.1/",
         "version": "v0.0.1-preview.20261110.macos.1",
-        "manifest": {"name": "release-manifest-dev-macos-aarch64.json", "sha256": "0981110c84e5d24a903dbd3965dbe92eb2fe405edfa89804e3086dfeb75983de", "size": 1728},
+        "manifest": {
+          "name": "release-manifest-dev-macos-aarch64.json",
+          "sha256": "0981110c84e5d24a903dbd3965dbe92eb2fe405edfa89804e3086dfeb75983de",
+          "size": 1728
+        },
         "archive": "crt-v0.0.1-preview.20261110.macos.1-macos-aarch64-dev.tar.xz",
         "contract": "crt-v0.0.1-preview.20261110.macos.1-macos-aarch64-dev-toolchain.json",
         "content_sha256": "e3dc7fb1810a3f78ab8ef33882225ccb562d21f6f5977a2037ab92819326bac8",
-        "contract_sha256": "d5a100fdd0d38f940fe1c398996f013d57ccc7c4743af2b9ab4988c42b8de464"
+        "contract_sha256": "d5a100fdd0d38f940fe1c398996f013d57ccc7c4743af2b9ab4988c42b8de464",
+        "signature": {
+          "name": "crt-v0.0.1-preview.20261110.macos.1-macos-aarch64-dev.tar.xz.sig",
+          "size": 256,
+          "sha256": "58f8749aeb71e4382de7aa4c3aeecac62f78936c2668ace19940b472b2a4f6e1"
+        }
       },
       "allowed_imports": ["/usr/lib/libSystem.B.dylib"]
     },
@@ -74,18 +116,37 @@
         "asset": "crt-cli-0.1.0-dev-windows-x86_64-preview.20261110.1.tar.xz",
         "sha256": "4bafc8464b729049840f1f21807f505bbcc09e7d5f7bc260e63d8f971ade75c0",
         "size": 5430536,
-        "version": "0.1.0-dev"
+        "version": "0.1.0-dev",
+        "signature": {
+          "name": "crt-cli-0.1.0-dev-windows-x86_64-preview.20261110.1.tar.xz.sig",
+          "size": 256,
+          "sha256": "3b3e5e0adb0d2dd8bd6783670bfebb429ad1bf93c64a3981a499f0fbef836db2"
+        }
       },
       "sdk": {
         "release_base": "https://github.com/webos21/crt/releases/download/v0.0.1-preview.20261110.windows.1/",
         "version": "v0.0.1-preview.20261110.windows.1",
-        "manifest": {"name": "release-manifest-dev-windows-x86_64.json", "sha256": "b0fca4c81d29b8eee28e0d9fb7d6e26950b094a8be4f2c091e43922366a46976", "size": 1800},
+        "manifest": {
+          "name": "release-manifest-dev-windows-x86_64.json",
+          "sha256": "b0fca4c81d29b8eee28e0d9fb7d6e26950b094a8be4f2c091e43922366a46976",
+          "size": 1800
+        },
         "archive": "crt-v0.0.1-preview.20261110.windows.1-windows-x86_64-dev.zip",
         "contract": "crt-v0.0.1-preview.20261110.windows.1-windows-x86_64-dev-toolchain.json",
         "content_sha256": "5bb55372ec10e3cfa24c84de981a7130f56aeb57ef0d43d5da22a65036dec7ef",
-        "contract_sha256": "7762f572b4614b3068e1ea99694ce19360e213d31c5bd01019e4ad6ce005b726"
+        "contract_sha256": "7762f572b4614b3068e1ea99694ce19360e213d31c5bd01019e4ad6ce005b726",
+        "signature": {
+          "name": "crt-v0.0.1-preview.20261110.windows.1-windows-x86_64-dev.zip.sig",
+          "size": 256,
+          "sha256": "4d9438a6298747988466a5bc38e54bb89596a94276abbd254fbdbf9f4539ad8b"
+        }
       },
       "allowed_imports": ["kernel32.dll", "api-ms-win-core-synch-l1-2-0.dll"]
     }
+  },
+  "publisher": {
+    "key_file": ".github/ci/crt-release-publisher.pub",
+    "key_spki_sha256": "59218576956e493476bc36f7385d8e01a03ff9b92946a531b013ad3937d43fa2",
+    "note": "Public key whose detached signatures authenticate published inputs; fingerprint published in webos21/crt docs/security/publisher_signing.md and on https://webos21.github.io/. Changing it needs a reviewed commit."
   }
 }

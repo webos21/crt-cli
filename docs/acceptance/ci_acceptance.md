@@ -648,9 +648,32 @@ two host-tools archives, five Dev SDK archives and four CLI archives. The consum
   every edit of the publisher pin fail). `ports --prepare-only` against the real public x86_64 bundle: `signature_verified`; a changed signature pin: fail.
 - Full `crt-cli test` on a clean copy with this change, built against the public `.4` SDK with explicit SDK root/contract: 913 native checks, archive 221,
   SDK store 114, port recipe 142 pass; the five input-gated port suites were not run for this change (it does not touch that path).
-- Not covered: the zlib source (third-party, digest-pinned only), the bootstrap CLI pin in `.github/ci/pins.json` and the `sdk install` path
-  (still digest-only; the signatures exist but no consumer field reads them), macOS/Windows hosts, and any claim beyond "the holder of this key
+- Not covered by that first step (see the next section for what followed): the zlib source (third-party, digest-pinned only), and any claim beyond "the holder of this key
   signed these bytes". The fingerprint's independent publication is still partial (repository and project site, both under the same GitHub account).
+
+## Publisher signatures for the bootstrap CLI pin and `sdk install` (2026-11-16)
+
+- **`sdk install` / `sdk repair`** take `--publisher-key --signature [--publisher-key-spki-sha256]` ([contract](../reference/bootstrap_contract.md#explicit-pinned-https-sdk-source-experimental-format-0)).
+  The replay `tools/replay_publisher_acquire_linux.py` now has 26 cases (15 acquire + 11 install): the right key and fingerprint install and report
+  `signature_verified`; no options keep the unchanged result; a signature by another key or over other bytes, a key file that did not sign, a
+  mismatching fingerprint pin and a missing signature file install nothing and leave no staging; a key without a signature, a signature without a
+  key, a fingerprint pin without a key and a malformed fingerprint exit 2. A live install of the public `.4` archive with its real `.sig` and the
+  published key passes.
+- **Bootstrap CLI pin and SDK pin.** `.github/ci/pins.json` carries the same `publisher` pin as the integration pins and a `signature` pin
+  (`name`, `size`, `sha256`) for each host's bootstrap archive and SDK archive (all eight were signed on 2026-11-16). `tools/ci_bootstrap.py` downloads the
+  `.sig` next to the bootstrap archive and verifies it with the pinned key *before* extracting or running the CLI; `ci_integration.py` does the same for its
+  published CLI; a pin without a signature fails. The summary records `publisher_authentication: signature_verified` and the key fingerprint.
+  `tools/check_ci_pins.py` (the review aid) now also compares each pinned `.sig` with the published bytes and verifies each bootstrap and SDK archive with the pinned
+  key: OK on linux-x64, linux-arm64, macos-arm64 and win-x64 against the real public releases.
+- **Verifier.** The Python side uses `tools/publisher_signature.py`, a stdlib-only RSASSA-PSS verifier (SHA-256, MGF1-SHA256, salt 32, RSA 2048-4096), so the
+  macOS and Windows hosts need no OpenSSL. It verifies all nine real release signatures and the two host-tools signatures; `test_publisher_signature` (6 cases against
+  OpenSSL-made keys: wrong key, bit flips, other salt/MGF/hash/PKCS#1 v1.5, wrong length, 1024-bit and EC keys refused), `test_check_ci_pins`, `test_ci_bootstrap`
+  and `test_ci_integration` pass (70 tests with `test_ci_release`). The integration driver's earlier OpenSSL call was replaced by it.
+- Full `crt-cli test` with these changes (clean copy, public `.4` SDK, explicit root/contract): 913 native checks, archive 221, SDK store 114, port recipe 142 pass; the five
+  input-gated port suites were not run.
+- **Still not covered.** The SDK archive used by CI is still acquired by the pinned *bootstrap CLI*, which predates the `publisher` source field, so that download
+  is digest-pinned in CI and only the review aid checks its signature; it becomes native once a CLI Preview with this change is pinned as the bootstrap.
+  macOS/Windows native replays of the new options were not run here; the zlib source stays digest-only; the key's independent publication is still partial.
 
 ## Host-tools pins and the wired `ports` job (2026-11-16)
 

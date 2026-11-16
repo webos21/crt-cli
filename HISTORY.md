@@ -11,6 +11,14 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-16
 
+### Extend publisher signatures to `sdk install` and the bootstrap CLI/SDK pins
+
+`sdk install`/`sdk repair` accept an explicit key, signature and optional fingerprint pin and install nothing unless the pinned digest carries a valid
+signature. The CI pins gained a signature pin for each host's bootstrap and SDK archive; the CI driver verifies the bootstrap CLI before running it, using
+a new stdlib-only RSA-PSS verifier (no OpenSSL on macOS/Windows). Replay 26/26, 70 Python tests, and the review aid passes on all four hosts against the real
+public bytes. Record: [ci_acceptance](docs/acceptance/ci_acceptance.md#publisher-signatures-for-the-bootstrap-cli-pin-and-sdk-install-2026-11-16).
+Not covered: the CI SDK download itself (the pinned bootstrap CLI predates the source field), macOS/Windows native replays, zlib.
+
 ### Accept the publisher signature in `sdk acquire` and require it for the CI host-tools pins
 
 The optional `publisher` object of the SDK source (pinned key file + SPKI fingerprint + pinned detached signature) authenticates the SDK archive

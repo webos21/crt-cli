@@ -128,6 +128,12 @@ jobs:
       - name: Check CI report gates
         run: python -m unittest discover -s tools -p test_ci_bootstrap.py
 
+      - name: Check publisher signature verification
+        run: python -m unittest discover -s tools -p test_publisher_signature.py
+
+      - name: Check CI pin review
+        run: python -m unittest discover -s tools -p test_check_ci_pins.py
+
       - name: Install LLVM 22.1.8 (Windows)
         if: matrix.host == 'win-x64'
         shell: pwsh

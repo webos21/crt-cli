@@ -1,5 +1,6 @@
 #include "crtcli/sdk_store.h"
 #include "crtcli/sdk_acquire.h"
+#include "crtcli/publisher.h"
 #include <cctype>
 #include <map>
 #include <set>
@@ -11,6 +12,7 @@ const char* usage =
     "usage: sdk acquire --source <pinned-source.json> [--store <dir>]\n"
     "       sdk install --archive <file> --archive-sha256 <hex> [--content-sha256 <hex>] [--store <dir>] [--lock-wait <seconds>]\n"
     "       sdk install --archive <file> --release-manifest <file> --release-manifest-sha256 <hex> [--store <dir>] [--lock-wait <seconds>]\n"
+    "       (install and repair) [--publisher-key <public.pem> --signature <file> [--publisher-key-spki-sha256 <hex>]]\n"
     "       sdk list [--store <dir>]\n"
     "       sdk verify <sdk-directory> [--store <dir>]\n"
     "       sdk recover [--store <dir>]\n"
@@ -57,7 +59,10 @@ Reply sdk_command(const std::vector<std::string>& args) {
     if (action == "install" || action == "repair") {
         const bool repairing = action == "repair";
         if (repairing && args.size() < 3) throw Error(usage, 2);
-        auto given = options(args, repairing ? 3 : 2, {"--archive", "--archive-sha256", "--content-sha256", "--release-manifest", "--release-manifest-sha256", "--store", "--lock-wait"});
+        auto given = options(args, repairing ? 3 : 2, {"--archive", "--archive-sha256", "--content-sha256", "--release-manifest", "--release-manifest-sha256", "--store", "--lock-wait", "--publisher-key", "--signature", "--publisher-key-spki-sha256"});
+        if (given.count("--publisher-key") != given.count("--signature")) throw Error("--publisher-key and --signature must be supplied together", 2);
+        if (given.count("--publisher-key-spki-sha256") && !given.count("--publisher-key")) throw Error("--publisher-key-spki-sha256 needs --publisher-key and --signature", 2);
+        if (given.count("--publisher-key-spki-sha256") && !lower_hex(given.at("--publisher-key-spki-sha256"), 64)) throw Error("--publisher-key-spki-sha256 must be 64 lowercase hex digits", 2);
         if (!given.count("--archive")) throw Error(usage, 2);
         const bool by_manifest = given.count("--release-manifest") || given.count("--release-manifest-sha256");
         InstallRequest request;
@@ -113,6 +118,20 @@ Reply sdk_command(const std::vector<std::string>& args) {
             request.archive_sha256 = given.at("--archive-sha256");
             if (given.count("--content-sha256")) request.expected_content_sha256 = given.at("--content-sha256");
         }
+        // Optional publisher authentication: a caller-chosen key (never a downloaded one) verifies a detached RSA-PSS signature over the exact
+        // archive bytes, whose digest must be the digest this command was pinned to. Nothing is installed unless it verifies.
+        Json publisher;
+        if (given.count("--publisher-key")) {
+            require(fs::is_regular_file(request.archive), "archive not found: " + request.archive.string());
+            PublisherSignature signature(given.at("--publisher-key"), given.at("--signature"));
+            const auto digest = file_sha256(request.archive);
+            require(digest == request.archive_sha256, "archive SHA-256 differs from the pinned digest");
+            require(signature.verify(digest), "publisher signature verification failed");
+            if (given.count("--publisher-key-spki-sha256"))
+                require(signature.key_sha256() == given.at("--publisher-key-spki-sha256"), "publisher key does not match the pinned key fingerprint");
+            publisher = {{"trust", "explicit-public-key"}, {"algorithm", "rsa-pss-sha256"}, {"salt_bytes", 32},
+                         {"public_key_spki_sha256", signature.key_sha256()}, {"archive_sha256", digest}};
+        }
         SdkStore store(store_path(given));
         if (given.count("--lock-wait")) {
             unsigned long long seconds = 0;
@@ -122,7 +141,9 @@ Reply sdk_command(const std::vector<std::string>& args) {
             store.lock_wait_seconds = static_cast<unsigned>(seconds);
         }
         auto result = store.install(request);
-        return {0, "sdk", result.to_json(),
+        auto reply = result.to_json();
+        if (!publisher.is_null()) { reply["publisher_authentication"] = "signature_verified"; reply["publisher"] = publisher; }
+        return {0, "sdk", reply,
                 (repairing ? "repaired installation metadata: " : result.already_installed ? "already installed: " : "installed: ") + result.identity.directory()};
     }
 

@@ -262,6 +262,11 @@ then fetched with `fetch --publisher-key --signature` (detached RSA-PSS, SHA-256
 fingerprint must equal `key_spki_sha256`. Any failure removes the staged bytes and publishes nothing. On success the acquisition record has
 `publisher_authentication: "signature_verified"`, `publisher_key_spki_sha256` and `publisher_signature_sha256`. Without `publisher` it stays
 `not_verified`. Only the archive is authenticated (its bytes are what the release manifest pins); the manifest and contract keep their digest pins.
+`sdk install` and `sdk repair` accept the same authentication for local files: `--publisher-key <public.pem> --signature <file>
+[--publisher-key-spki-sha256 <hex>]` (key and signature together; the fingerprint pin needs them). The archive must hash to the digest the
+command was pinned to (release manifest or `--archive-sha256`) and that digest must carry a valid RSA-PSS signature by the given key;
+otherwise nothing is installed. A verified install adds `publisher_authentication: "signature_verified"` and a `publisher` object (key
+fingerprint, algorithm, archive digest) to its result; without the options the result is unchanged and carries no such field.
 An already installed matching SDK is reused without network access; the record then says the signature was not re-checked and stays
 `not_verified`. `redirect_policy`, `timeout_seconds` and the reserved acquisition name `publisher-signature.bin` apply as for the other downloads.
 
