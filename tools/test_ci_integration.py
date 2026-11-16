@@ -3,14 +3,17 @@ import copy
 import hashlib
 import io
 import json
+import shutil
+import subprocess
 import tarfile
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from ci_integration import (IntegrationError, PORT_SUITES, judge_port_result, load_pins, main,
-                            prepare_port_inputs, sha256_file, verify_download, verify_oracle)
+from ci_integration import (IntegrationError, PORT_SUITES, judge_port_result, load_pins, load_publisher, main,
+                            prepare_port_inputs, sha256_file, spki_sha256, verify_download, verify_oracle,
+                            verify_publisher_signature)
 from replay_port_linux import suite_outcome
 
 GOOD_ZLIB = {'url': 'https://example.invalid/zlib.tar.gz', 'name': 'zlib.tar.gz', 'sha256': 'a' * 64, 'size': 10}
@@ -153,24 +156,57 @@ class PortDriverTest(unittest.TestCase):
             self.assertEqual(main(), 1)
         self.assertFalse(work.exists())
 
+    def signed(self, tampered=False):
+        """Throw-away key; returns (publisher, tools pin with a signature pin) for the archive currently in self.inputs."""
+        openssl = shutil.which('openssl')
+        if not openssl:
+            self.skipTest('openssl is a test-host tool')
+        key, pub = self.dir / 'k.key', self.dir / 'k.pub'
+        subprocess.run([openssl, 'genpkey', '-algorithm', 'RSA', '-pkeyopt', 'rsa_keygen_bits:2048', '-out', str(key)], check=True, capture_output=True)
+        subprocess.run([openssl, 'pkey', '-in', str(key), '-pubout', '-out', str(pub)], check=True, capture_output=True)
+        signature = self.inputs / 'tools.tar.xz.sig'
+        subprocess.run([openssl, 'dgst', '-sha256', '-sigopt', 'rsa_padding_mode:pss', '-sigopt', 'rsa_pss_saltlen:32', '-sigopt', 'rsa_mgf1_md:sha256',
+                        '-sign', str(key), '-out', str(signature), str(self.inputs / 'tools.tar.xz')], check=True, capture_output=True)
+        if tampered:
+            data = bytearray(signature.read_bytes()); data[0] ^= 1; signature.write_bytes(bytes(data))
+        pin = {'url': 'https://example.invalid/tools.tar.xz.sig', 'name': 'tools.tar.xz.sig', 'size': signature.stat().st_size,
+               'sha256': sha256_file(signature)}
+        return {'key_file': pub, 'key_spki_sha256': spki_sha256(pub)}, dict(self.tools, signature=pin)
+
     def test_online_interface_requires_a_published_preview_bundle(self):
         def download(url, destination):
             Path(destination).write_bytes((self.inputs / Path(destination).name).read_bytes())
+        publisher, tools = self.signed()
         with patch('ci_integration.download', side_effect=download):
             with self.assertRaisesRegex(IntegrationError, 'promotion preview'):
-                prepare_port_inputs(self.dir / 'online-local-only', 'linux-x64', self.zlib, self.tools)
+                prepare_port_inputs(self.dir / 'online-local-only', 'linux-x64', self.zlib, tools, publisher=publisher)
         self.assertFalse((self.dir / 'online-local-only/host-tools').exists())
 
-    def test_online_interface_verifies_downloaded_bytes(self):
+    def test_online_interface_verifies_downloaded_bytes_and_the_publisher_signature(self):
         def download(url, destination):
             Path(destination).write_bytes((self.inputs / Path(destination).name).read_bytes())
         self.tools = self.bundle(manifest=dict(self.manifest, promotion='preview'))
+        publisher, tools = self.signed()
         with patch('ci_integration.download', side_effect=download) as get:
-            prepare_port_inputs(self.dir / 'online', 'linux-x64', self.zlib, self.tools)
-        self.assertEqual(get.call_count, 2)
+            prepared = prepare_port_inputs(self.dir / 'online', 'linux-x64', self.zlib, tools, publisher=publisher)
+        self.assertEqual(get.call_count, 3)
+        self.assertEqual((prepared['publisher_authentication'], prepared['publisher_key_spki_sha256']), ('signature_verified', publisher['key_spki_sha256']))
         with patch('ci_integration.download', side_effect=lambda url, path: Path(path).write_bytes(b'bad')):
             with self.assertRaisesRegex(IntegrationError, 'size'):
-                prepare_port_inputs(self.dir / 'bad-online', 'linux-x64', self.zlib, self.tools)
+                prepare_port_inputs(self.dir / 'bad-online', 'linux-x64', self.zlib, tools, publisher=publisher)
+
+    def test_online_interface_refuses_unsigned_or_wrongly_signed_bundles_before_extraction(self):
+        def download(url, destination):
+            Path(destination).write_bytes((self.inputs / Path(destination).name).read_bytes())
+        self.tools = self.bundle(manifest=dict(self.manifest, promotion='preview'))
+        publisher, tools = self.signed(tampered=True)
+        with patch('ci_integration.download', side_effect=download):
+            with self.assertRaisesRegex(IntegrationError, 'signature verification failed'):
+                prepare_port_inputs(self.dir / 'tampered', 'linux-x64', self.zlib, tools, publisher=publisher)
+            with self.assertRaisesRegex(IntegrationError, 'signature: pin is not an object'):
+                prepare_port_inputs(self.dir / 'unsigned', 'linux-x64', self.zlib, self.tools, publisher=publisher)
+        self.assertFalse((self.dir / 'tampered/host-tools').exists() or (self.dir / 'unsigned/host-tools').exists())
+
 
     def test_missing_or_changed_local_input_never_creates_a_prepared_record(self):
         source = self.inputs / self.zlib['name']
@@ -312,3 +348,88 @@ class ResultGateTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class PublisherSignatureTest(unittest.TestCase):
+    """Throw-away RSA keys; the committed key is only checked against its pinned fingerprint."""
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self.tmp.name)
+        self.openssl = shutil.which('openssl')
+        if not self.openssl:
+            self.skipTest('openssl is a test-host tool')
+        for name in ('a', 'b'):
+            subprocess.run([self.openssl, 'genpkey', '-algorithm', 'RSA', '-pkeyopt', 'rsa_keygen_bits:2048', '-out', str(self.dir / (name + '.key'))],
+                           check=True, capture_output=True)
+            subprocess.run([self.openssl, 'pkey', '-in', str(self.dir / (name + '.key')), '-pubout', '-out', str(self.dir / (name + '.pub'))],
+                           check=True, capture_output=True)
+        self.archive = self.dir / 'bundle.tar.xz'
+        self.archive.write_bytes(b'published bytes')
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def sign(self, key, archive, out):
+        subprocess.run([self.openssl, 'dgst', '-sha256', '-sigopt', 'rsa_padding_mode:pss', '-sigopt', 'rsa_pss_saltlen:32',
+                        '-sigopt', 'rsa_mgf1_md:sha256', '-sign', str(self.dir / (key + '.key')), '-out', str(out), str(archive)],
+                       check=True, capture_output=True)
+        return out
+
+    def publisher(self, key):
+        return {'key_file': self.dir / (key + '.pub'), 'key_spki_sha256': spki_sha256(self.dir / (key + '.pub'))}
+
+    def test_good_signature_verifies_and_every_other_case_fails(self):
+        good = self.sign('a', self.archive, self.dir / 'good.sig')
+        verify_publisher_signature('t', self.archive, good, self.publisher('a'))
+        with self.assertRaisesRegex(IntegrationError, 'verification failed'):
+            verify_publisher_signature('t', self.archive, good, self.publisher('b'))
+        other = self.dir / 'other.tar.xz'
+        other.write_bytes(b'different bytes')
+        with self.assertRaisesRegex(IntegrationError, 'verification failed'):
+            verify_publisher_signature('t', other, good, self.publisher('a'))
+        garbage = self.dir / 'garbage.sig'
+        garbage.write_bytes(b'x' * 256)
+        with self.assertRaisesRegex(IntegrationError, 'verification failed'):
+            verify_publisher_signature('t', self.archive, garbage, self.publisher('a'))
+        huge = self.dir / 'huge.sig'
+        huge.write_bytes(b'x' * 2048)
+        with self.assertRaisesRegex(IntegrationError, 'larger than'):
+            verify_publisher_signature('t', self.archive, huge, self.publisher('a'))
+
+    def test_published_inputs_require_the_pinned_key_and_a_signature_pin(self):
+        zlib_file = self.dir / 'zlib.tar.gz'
+        zlib_file.write_bytes(b'z')
+        with self.assertRaisesRegex(IntegrationError, 'requires the pinned publisher key'), patch('ci_integration.fetch_pinned'):
+            prepare_port_inputs(self.dir / 'w1', 'linux-x64', dict(GOOD_ZLIB), dict(GOOD_TOOLS))
+        with self.assertRaisesRegex(IntegrationError, 'signature: pin is not an object'), patch('ci_integration.fetch_pinned'):
+            prepare_port_inputs(self.dir / 'w2', 'linux-x64', dict(GOOD_ZLIB), dict(GOOD_TOOLS), publisher=self.publisher('a'))
+
+    def test_committed_publisher_pin_matches_its_key_file_and_every_host_pins_a_signature(self):
+        root = Path(__file__).resolve().parent.parent / '.github/ci/integration-pins.json'
+        publisher = load_publisher(root)
+        self.assertEqual(publisher['key_spki_sha256'], '59218576956e493476bc36f7385d8e01a03ff9b92946a531b013ad3937d43fa2')
+        for host in ('linux-x64', 'linux-arm64'):
+            with self.subTest(host=host):
+                _, tools = load_pins(root, host)
+                self.assertEqual(tools['signature']['url'], tools['url'] + '.sig')
+                self.assertEqual(tools['signature']['name'], tools['name'] + '.sig')
+
+    def test_publisher_pin_edits_fail(self):
+        base = json.loads((Path(__file__).resolve().parent.parent / '.github/ci/integration-pins.json').read_text())
+        for label, change, message in [('wrong fingerprint', {'key_spki_sha256': '0' * 64}, 'does not match'),
+                                       ('bad fingerprint', {'key_spki_sha256': 'AB'}, 'lowercase'),
+                                       ('absolute key', {'key_file': '/etc/passwd'}, 'repository-relative'),
+                                       ('escaping key', {'key_file': '../x.pub'}, 'repository-relative'),
+                                       ('unknown field', {'extra': 1}, 'unknown fields')]:
+            pins = copy.deepcopy(base)
+            pins['publisher'].update(change)
+            path = self.dir / 'pins.json'
+            path.write_text(json.dumps(pins))
+            with self.subTest(label=label), self.assertRaisesRegex(IntegrationError, message):
+                load_publisher(path)
+        pins = copy.deepcopy(base)
+        del pins['publisher']
+        path = self.dir / 'pins.json'
+        path.write_text(json.dumps(pins))
+        with self.assertRaisesRegex(IntegrationError, 'missing'):
+            load_publisher(path)

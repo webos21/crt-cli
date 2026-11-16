@@ -628,6 +628,30 @@ Not covered: automatic detection that a newer Preview exists, a scheduled run of
 
 
 
+## Publisher signatures for host-tools pins and `sdk acquire` (2026-11-16)
+
+The publisher key (fingerprint `59218576...43fa2`, [CRT record](https://github.com/webos21/crt/blob/main/docs/security/publisher_signing.md)) signed the
+two host-tools archives, five Dev SDK archives and four CLI archives. The consumer side now accepts and requires it where the pins are CLI-owned.
+
+- **`sdk acquire` source** gains the optional `publisher` object ([contract](../reference/bootstrap_contract.md#explicit-pinned-https-sdk-source-experimental-format-0)). Native, no
+  OpenSSL. Replay `tools/replay_publisher_acquire_linux.py` (loopback HTTPS, throw-away key, real published `.4` release): 15/15 - no `publisher`
+  stays `not_verified`; the right key verifies with request order manifest, contract, signature, archive; a reused SDK is flagged not re-checked;
+  a key file that did not sign, a valid signature by another key against the pinned fingerprint, a signature over other bytes, a signature digest
+  pin mismatch (archive never requested), a missing signature asset (archive never requested), an oversized signature pin, a wrong fingerprint,
+  a relative key file, an unknown field, an `http` signature URL and a missing signature object all fail with no SDK and no staging left.
+  Live check with the real key through the GitHub redirect policy, public `.4` archive and its `.sig`: `signature_verified`, key `59218576...43fa2`.
+- **CI pins** carry a top-level `publisher` (`.github/ci/crt-release-publisher.pub` and its SPKI SHA-256, which the driver recomputes and compares) and a
+  `signature` pin (`url`, `name`, `size`, `sha256`) per host-tools entry. `ci_integration.py` fails if either is missing, downloads the signature under
+  its pin, and verifies the archive with the pinned key (`openssl dgst`, a build-host tool) before anything is extracted; `pins` checks their presence.
+  Local `--input-dir` fixtures are unpublished and record `publisher_authentication: not_verified`; a download-mode run records `signature_verified`
+  and the key fingerprint in `port-inputs.json`. Tests: 27 `test_ci_integration` (a tampered signature, a missing signature pin, a missing key and
+  every edit of the publisher pin fail). `ports --prepare-only` against the real public x86_64 bundle: `signature_verified`; a changed signature pin: fail.
+- Full `crt-cli test` on a clean copy with this change, built against the public `.4` SDK with explicit SDK root/contract: 913 native checks, archive 221,
+  SDK store 114, port recipe 142 pass; the five input-gated port suites were not run for this change (it does not touch that path).
+- Not covered: the zlib source (third-party, digest-pinned only), the bootstrap CLI pin in `.github/ci/pins.json` and the `sdk install` path
+  (still digest-only; the signatures exist but no consumer field reads them), macOS/Windows hosts, and any claim beyond "the holder of this key
+  signed these bytes". The fingerprint's independent publication is still partial (repository and project site, both under the same GitHub account).
+
 ## Host-tools pins and the wired `ports` job (2026-11-16)
 
 CRT published the independent host-tools Previews ([crt#2](https://github.com/webos21/crt/issues/2),

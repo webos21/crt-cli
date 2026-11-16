@@ -44,7 +44,7 @@ void filename(const std::string& name) {
     require(!name.empty() && name.size() <= 200 && name[0] != '.' && name.find_first_of("/\\:") == std::string::npos,
             "SDK asset name must be a plain file name");
     for (unsigned char c : name) require(std::isalnum(c) || c == '.' || c == '-' || c == '_' || c == '+', "invalid SDK asset name");
-    require(name != "txn.json" && name != "release-manifest.json", "SDK asset uses a reserved acquisition name");
+    require(name != "txn.json" && name != "release-manifest.json" && name != "publisher-signature.bin", "SDK asset uses a reserved acquisition name");
 }
 Json asset(const Json& manifest, const std::string& name, uint64_t maximum) {
     require(manifest.contains("assets") && manifest.at("assets").is_array(), "release manifest requires assets");
@@ -62,7 +62,7 @@ Json asset(const Json& manifest, const std::string& name, uint64_t maximum) {
 Json acquire_sdk(const fs::path& source, const fs::path& root, const std::string& version) {
     require(fs::is_regular_file(source) && fs::file_size(source) <= 65536, "SDK source must be a regular file of at most 64 KiB");
     const auto input = read_json(source);
-    keys(input, {"schema", "format", "ca_file", "ca_sha256", "manifest", "archive", "contract_url", "sdk", "timeout_seconds", "redirect_policy", "redirect_hosts", "max_redirects"});
+    keys(input, {"schema", "format", "ca_file", "ca_sha256", "manifest", "archive", "contract_url", "sdk", "timeout_seconds", "redirect_policy", "redirect_hosts", "max_redirects", "publisher"});
     require(input.at("schema") == "crt-cli.sdk-source" && input.at("format") == 0, "unsupported SDK source schema/format");
     const auto& meta = input.at("manifest"); keys(meta, {"url", "sha256", "size"});
     const auto& archive = input.at("archive"); keys(archive, {"name", "url"});
@@ -103,12 +103,27 @@ Json acquire_sdk(const fs::path& source, const fs::path& root, const std::string
         require(!redirect_options.empty(), "SDK source max_redirects needs redirect_policy or redirect_hosts");
         redirect_options.insert(redirect_options.end(), {"--max-redirects", std::to_string(size(input, "max_redirects", 5))});
     }
+    // Optional, explicit publisher authentication of the SDK archive: a caller-pinned public key (by file and by SPKI SHA-256) and a
+    // pinned detached RSA-PSS signature over the archive bytes. Absent: the acquisition stays "not_verified". Present: it fails closed.
+    fs::path publisher_key;
+    std::string publisher_pin, signature_url, signature_pin;
+    uint64_t signature_size = 0;
+    if (input.contains("publisher")) {
+        const auto& publisher = input.at("publisher"); keys(publisher, {"key_file", "key_spki_sha256", "archive_signature"});
+        const auto& signature = publisher.at("archive_signature"); keys(signature, {"url", "sha256", "size"});
+        publisher_key = text(publisher, "key_file");
+        publisher_pin = pin(publisher, "key_spki_sha256");
+        signature_url = url(signature, "url"); signature_pin = pin(signature, "sha256"); signature_size = size(signature, "size", 1024);
+        require(publisher_key.is_absolute() && fs::is_regular_file(publisher_key) && fs::file_size(publisher_key) <= 65536,
+                "SDK source publisher key_file must be an absolute regular file of at most 64 KiB");
+    }
     const auto timeout = input.contains("timeout_seconds") ? size(input, "timeout_seconds", 3600) : 60;
     require(root.is_absolute() && !fs::is_symlink(root) && !fs::is_symlink(root / ".staging"), "SDK acquisition store/staging must be absolute, non-symlink directories");
     const auto directory = sdk_version + "-" + content_pin.substr(0, 12);
     SdkStore store(root);
     Json provenance{{"source_sha256", file_sha256(source)}, {"manifest_sha256", manifest_pin}, {"ca_sha256", ca_pin},
                     {"integrity", "explicit-pinned-inputs"}, {"publisher_authentication", "not_verified"}, {"downloads", Json::array()}};
+    if (!publisher_pin.empty()) provenance["publisher_key_spki_sha256"] = publisher_pin;
     if (fs::exists(fs::symlink_status(root / directory))) {
         require(!fs::is_symlink(root / directory) && fs::is_directory(root / directory), "installed SDK must be a real directory");
         store.verify(directory);
@@ -117,6 +132,7 @@ Json acquire_sdk(const fs::path& source, const fs::path& root, const std::string
                 !receipt.at("contract").is_null() && receipt.at("contract").at("sha256") == contract_pin,
                 "installed SDK does not match the pinned SDK source identity/contract");
         require(sdk_problems(root / directory).empty(), "installed SDK source is not compatible with this native host");
+        if (!publisher_pin.empty()) provenance["publisher_note"] = "installed SDK reused; no archive was downloaded, so the signature was not re-checked";
         return {{"identity", receipt.at("sdk")}, {"path", (root / directory).string()}, {"already_installed", true}, {"acquisition", provenance}};
     }
 
@@ -127,16 +143,24 @@ Json acquire_sdk(const fs::path& source, const fs::path& root, const std::string
     require(fs::create_directory(pending), "cannot create SDK acquisition staging");
     struct Cleanup { fs::path path; ~Cleanup() { std::error_code ignored; fs::remove_all(path, ignored); } } cleanup{pending};
     write_text(pending / "txn.json", Json{{"pid", getpid()}, {"state", "fetching"}, {"source_sha256", provenance.at("source_sha256")}}.dump() + "\n");
-    auto download = [&](const std::string& address, const std::string& name, const std::string& digest, uint64_t bytes) {
+    auto download = [&](const std::string& address, const std::string& name, const std::string& digest, uint64_t bytes, bool signed_asset = false) {
         check_ca();
         std::vector<std::string> command{"fetch", "--url", address, "--ca-file", ca.string(), "--output", (pending / name).string(),
                                          "--sha256", digest, "--size", std::to_string(bytes), "--timeout", std::to_string(timeout)};
         command.insert(command.end(), redirect_options.begin(), redirect_options.end());
+        if (signed_asset) command.insert(command.end(), {"--publisher-key", publisher_key.string(), "--signature", (pending / "publisher-signature.bin").string()});
         auto result = fetch(command);
         require(result.code == 0, "SDK acquisition fetch failed (" + result.data.value("code", "failure") + "): " + result.data.value("message", "transfer failed"));
         Json record{{"url", address}, {"sha256", digest}, {"size", bytes}};
         if (result.data.contains("trust") && result.data.at("trust").contains("redirects")) {
             record["redirect_chain"] = result.data.at("trust").at("redirects").at("chain");
+        }
+        if (signed_asset) {
+            require(result.data.value("publisher_authentication", "") == "signature_verified" && result.data.contains("publisher") &&
+                    result.data.at("publisher").value("public_key_spki_sha256", "") == publisher_pin,
+                    "SDK archive was not verified by the pinned publisher key");
+            record["publisher_authentication"] = "signature_verified";
+            provenance["publisher_authentication"] = "signature_verified";
         }
         provenance["downloads"].push_back(record);
     };
@@ -154,7 +178,12 @@ Json acquire_sdk(const fs::path& source, const fs::path& root, const std::string
     auto policy = asset(manifest, contract_name, 16u << 20);
     require(pin(policy, "sha256") == contract_pin, "release manifest contract differs from the pinned SDK source");
     download(contract_url, contract_name, contract_pin, size(policy, "size", 16u << 20));
-    download(archive_url, archive_name, pin(package, "sha256"), size(package, "size", 1ull << 31));
+    if (!publisher_pin.empty()) {
+        // The signature is fetched first, by its own pin; a missing, changed or foreign signature stops before the archive is downloaded.
+        download(signature_url, "publisher-signature.bin", signature_pin, signature_size);
+        provenance["publisher_signature_sha256"] = signature_pin;
+    }
+    download(archive_url, archive_name, pin(package, "sha256"), size(package, "size", 1ull << 31), !publisher_pin.empty());
     // The ordinary installer remains the authoritative release/archive/contract
     // validator and transaction owner. This is a native call, never a subprocess.
     auto installed = sdk_command({"sdk", "install", "--archive", (pending / archive_name).string(),

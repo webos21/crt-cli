@@ -35,6 +35,8 @@ ZLIB_FIELDS = ('url', 'name', 'sha256', 'size')
 PORT_SUITES = ('port-build-test', 'port-store-test', 'port-oracle-test', 'port-command-test', 'port-project-test')
 HOST_TARGETS = {'linux-x64': {'os': 'linux', 'arch': 'x86_64'},
                 'linux-arm64': {'os': 'linux', 'arch': 'aarch64'}}
+SIGNATURE_FIELDS = ('url', 'name', 'sha256', 'size')
+MAX_SIGNATURE_BYTES = 1024
 MAX_HOST_TOOL_BYTES = 512 * 1024 * 1024
 MAX_HOST_TOOL_MEMBERS = 32768
 
@@ -74,6 +76,50 @@ def load_pins(path, host):
     _require_fields('zlib_source', pins.get('zlib_source'), ZLIB_FIELDS)
     _require_fields('%s host_tools' % host, pins['hosts'][host].get('host_tools'), HOST_TOOL_FIELDS)
     return pins['zlib_source'], pins['hosts'][host]['host_tools']
+
+
+def _openssl(argv, **kwargs):
+    openssl = shutil.which('openssl')
+    if not openssl:
+        raise IntegrationError('openssl is required to verify the publisher signature')
+    return subprocess.run([openssl, *map(str, argv)], capture_output=True, env={}, timeout=60, stdin=subprocess.DEVNULL, **kwargs)
+
+
+def spki_sha256(key_file):
+    done = _openssl(['pkey', '-pubin', '-in', key_file, '-outform', 'DER'])
+    if done.returncode != 0 or not done.stdout:
+        raise IntegrationError('the publisher key file is not a public key')
+    return hashlib.sha256(done.stdout).hexdigest()
+
+
+def load_publisher(path):
+    """The pinned publisher key: a repository file plus its SPKI SHA-256, which must agree (the fingerprint is what is published)."""
+    pins = json.loads(Path(path).read_text(encoding='utf-8'))
+    entry = pins.get('publisher')
+    if not isinstance(entry, dict) or set(entry) - {'key_file', 'key_spki_sha256', 'note'}:
+        raise IntegrationError('publisher: pin is missing or has unknown fields')
+    fingerprint, relative = entry.get('key_spki_sha256'), entry.get('key_file')
+    if not isinstance(fingerprint, str) or re.fullmatch(r'[0-9a-f]{64}', fingerprint) is None:
+        raise IntegrationError('publisher: key_spki_sha256 is not a lowercase SHA-256')
+    if (not isinstance(relative, str) or PurePosixPath(relative).is_absolute() or '..' in PurePosixPath(relative).parts or
+            '\\' in relative):
+        raise IntegrationError('publisher: key_file must be a repository-relative path')
+    key = ROOT / relative
+    if key.is_symlink() or not key.is_file() or key.stat().st_size > 65536:
+        raise IntegrationError('publisher: key_file is not a regular file of at most 64 KiB')
+    if spki_sha256(key) != fingerprint:
+        raise IntegrationError('publisher: key_file does not match the pinned key_spki_sha256')
+    return {'key_file': key, 'key_spki_sha256': fingerprint}
+
+
+def verify_publisher_signature(label, archive, signature, publisher):
+    """Detached RSA-PSS (SHA-256, MGF1-SHA256, salt 32) signature over the exact archive bytes, by the pinned key only."""
+    if Path(signature).stat().st_size > MAX_SIGNATURE_BYTES:
+        raise IntegrationError('%s: signature is larger than %d bytes' % (label, MAX_SIGNATURE_BYTES))
+    done = _openssl(['dgst', '-sha256', '-sigopt', 'rsa_padding_mode:pss', '-sigopt', 'rsa_pss_saltlen:32', '-sigopt', 'rsa_mgf1_md:sha256',
+                     '-verify', publisher['key_file'], '-signature', signature, archive])
+    if done.returncode != 0 or b'Verified OK' not in done.stdout:
+        raise IntegrationError('%s: publisher signature verification failed' % label)
 
 
 def verify_download(label, path, entry):
@@ -194,7 +240,8 @@ def command_ports(args, host):
         if not args.llvm_bin:
             raise IntegrationError('native ports requires --llvm-bin')
         verify_oracle(args.oracle_python, args.oracle_python_sha256)
-    prepared = prepare_port_inputs(work, host, zlib, tools, input_dir=args.input_dir)
+    publisher = load_publisher(args.pins) if args.input_dir is None else None
+    prepared = prepare_port_inputs(work, host, zlib, tools, input_dir=args.input_dir, publisher=publisher)
     if args.prepare_only:
         log('port inputs prepared only; no suite executed: %s' % (work / 'port-inputs.json'))
         return
@@ -291,7 +338,7 @@ def extract_host_tools(archive, destination, pin, host, require_preview=False):
     return destination / relative
 
 
-def prepare_port_inputs(work, host, zlib, tools, *, input_dir=None):
+def prepare_port_inputs(work, host, zlib, tools, *, input_dir=None, publisher=None):
     """Common online/offline input interface. Local fixtures obey the same byte pins."""
     _require_fields('zlib_source', zlib, ZLIB_FIELDS)
     _require_fields('host_tools', tools, HOST_TOOL_FIELDS)
@@ -312,11 +359,25 @@ def prepare_port_inputs(work, host, zlib, tools, *, input_dir=None):
             verify_download(label, source, entry)
             shutil.copyfile(source, destination)
             verify_download(label, destination, entry)
+    authentication = 'not_verified'
+    if input_dir is None:
+        # A published pin is authenticated by the pinned publisher key before anything is extracted; fixtures are not published.
+        if publisher is None:
+            raise IntegrationError('a published host-tools pin requires the pinned publisher key')
+        _require_fields('host_tools signature', tools.get('signature'), SIGNATURE_FIELDS)
+        signature = downloads / tools['signature']['name']
+        if tools['signature']['name'] in (tools['name'], zlib['name']) or tools['signature']['size'] > MAX_SIGNATURE_BYTES:
+            raise IntegrationError('host_tools signature must be a distinct small file')
+        fetch_pinned('host tools signature', tools['signature']['url'], signature, tools['signature'])
+        verify_publisher_signature('host tools', downloads / tools['name'], signature, publisher)
+        authentication = 'signature_verified'
     bundle = extract_host_tools(downloads / tools['name'], work / 'host-tools', tools, host, require_preview=input_dir is None)
     prepared = {'schema': 'crt-cli.ci-port-inputs', 'format': 0, 'host': host,
                 'source_archive': str(downloads / zlib['name']), 'source_sha256': zlib['sha256'],
                 'host_tools_root': str(bundle), 'host_tools_sha256': tools['manifest_sha256'],
                 'zlib_source': zlib, 'host_tools': tools, 'input_mode': 'local' if input_dir is not None else 'download',
+                'publisher_authentication': authentication,
+                'publisher_key_spki_sha256': publisher['key_spki_sha256'] if publisher else None,
                 'native_validation': 'not_run'}
     (work / 'port-inputs.json').write_text(json.dumps(prepared, indent=2) + '\n', encoding='utf-8')
     return prepared
@@ -361,7 +422,9 @@ def main():
     try:
         host = args.host or host_key()
         if args.command == 'pins':
-            load_pins(args.pins, host)
+            _, tools = load_pins(args.pins, host)
+            load_publisher(args.pins)
+            _require_fields('%s host_tools signature' % host, tools.get('signature'), SIGNATURE_FIELDS)
             log('integration pins complete for %s' % host)
         elif args.command == 'redirect':
             if not args.work:

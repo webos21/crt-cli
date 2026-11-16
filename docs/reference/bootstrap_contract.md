@@ -246,6 +246,25 @@ redirect policy of `fetch`; see "Restricted HTTPS redirects". Producer install m
 separately bounds extraction. Archive/contract names
 must be distinct plain file names; internal acquisition names are reserved.
 
+Optional `publisher` authenticates the SDK archive with a caller-pinned key (the only trust input, never a downloaded key):
+
+```json
+"publisher": {
+  "key_file": "/absolute/crt-release-publisher.pub",
+  "key_spki_sha256": "<64 lowercase hex digits: SHA-256 of the DER SubjectPublicKeyInfo>",
+  "archive_signature": {"url": "https://.../<archive>.sig", "size": 256, "sha256": "<64 lowercase hex digits>"}
+}
+```
+
+The key file must be an absolute regular file of at most 64 KiB; the signature is at most 1024 bytes and is fetched first under its own
+size/SHA-256 pin (same CA and redirect options), so a missing or changed signature stops before the archive is requested. The archive is
+then fetched with `fetch --publisher-key --signature` (detached RSA-PSS, SHA-256, MGF1-SHA256, salt 32, RSA 2048-4096) and the resulting key
+fingerprint must equal `key_spki_sha256`. Any failure removes the staged bytes and publishes nothing. On success the acquisition record has
+`publisher_authentication: "signature_verified"`, `publisher_key_spki_sha256` and `publisher_signature_sha256`. Without `publisher` it stays
+`not_verified`. Only the archive is authenticated (its bytes are what the release manifest pins); the manifest and contract keep their digest pins.
+An already installed matching SDK is reused without network access; the record then says the signature was not re-checked and stays
+`not_verified`. `redirect_policy`, `timeout_seconds` and the reserved acquisition name `publisher-signature.bin` apply as for the other downloads.
+
 `crt-cli sdk acquire --source <file> [--store <absolute-dir>]` validates the
 expected SDK/contract identity against an existing installed receipt and actual
 SDK inventory. A compatible exact match needs no network access, even if the

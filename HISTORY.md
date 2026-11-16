@@ -11,6 +11,15 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-16
 
+### Accept the publisher signature in `sdk acquire` and require it for the CI host-tools pins
+
+The optional `publisher` object of the SDK source (pinned key file + SPKI fingerprint + pinned detached signature) authenticates the SDK archive
+natively, fails closed and records `signature_verified`; without it acquisition stays `not_verified`. The CI integration pins gained the publisher key and
+a signature pin per host-tools bundle, verified before extraction. New replay `tools/replay_publisher_acquire_linux.py` passes 15/15 and the real public
+`.4` archive verifies with the published key; the driver passes against the real public bundle and rejects a changed signature pin. Record:
+[ci_acceptance](docs/acceptance/ci_acceptance.md#publisher-signatures-for-host-tools-pins-and-sdk-acquire-2026-11-16). The `sdk install`
+path, the bootstrap CLI pin and macOS/Windows replays are not covered.
+
 ### Prepare the common Linux integration driver without promoting test inputs
 
 The common driver now stages pinned online/local inputs with bounded archive
