@@ -11,6 +11,11 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-17
 
+### Move the macOS and Windows bootstrap pins to the 20261117 Preview
+
+`pins.json` now bootstraps `macos-arm64` and `win-x64` with the signed 20261117 Previews and flags both `sdk_source_publisher`; the SDK pins are unchanged. `check_ci_pins.py` is OK for all four hosts including the new signatures. No hosted run of the new pins yet.
+[Acceptance](docs/acceptance/ci_acceptance.md#macos-and-windows-bootstrap-pins-moved-to-the-20261117-preview-2026-11-17).
+
 ### Clean up the 20261117 rehearsal drafts
 
 Deleted the Windows/x64 and macOS/arm64 serial-9 rehearsal drafts at the owner's request; no draft release remains and the published `.1` Preview releases are unchanged.

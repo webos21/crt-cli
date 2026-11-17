@@ -964,3 +964,22 @@ host-tools bundle's use by the CLI; the earlier aarch64 evidence for that bundle
 Python is the runner's `setup-python` interpreter, whose path and SHA-256 the job records at run time; that is a recorded identity, not an independently
 chosen pin. Bubblewrap needed the AppArmor user-namespace restriction relaxed on the runner. The scheduled trigger fires from the next 03:23 UTC; its first
 result is not recorded here. This closes the CLI-side D1 Linux integration gate; hosted macOS/Windows integration remains the separate D2 item.
+
+## macOS and Windows bootstrap pins moved to the 20261117 Preview (2026-11-17)
+
+`.github/ci/pins.json`: `macos-arm64` and `win-x64` now bootstrap with the Previews that `release.yml` published and the owner signed on 2026-11-17
+([`v0.1.0-preview.20261117.macos-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261117.macos-arm64.1), built from `b51d103`;
+[`v0.1.0-preview.20261117.windows-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261117.windows-x86_64.1), built from `b6cc5af`).
+Only the bootstrap pin changes (release, asset, size, SHA-256 and the signature pin, all as served by GitHub and matching the digests recorded in the publication
+and signature records above); the SDK pins of both hosts are untouched. Both builds descend from `eab525c`, which added the source `publisher` object, so the
+pins are flagged `sdk_source_publisher: true` as the Linux pins are, and `ci_bootstrap.py` now gives their SDK acquisition the pinned key and archive signature.
+
+| Host | Bootstrap archive | Bytes | SHA-256 |
+| --- | --- | ---: | --- |
+| macos-arm64 | `crt-cli-0.1.0-dev-macos-aarch64-preview.20261117.1.tar.xz` | 1,248,592 | `5084b2b3...0cb` |
+| win-x64 | `crt-cli-0.1.0-dev-windows-x86_64-preview.20261117.1.tar.xz` | 5,458,816 | `02396e04...706f` |
+
+Evidence: `tools/check_ci_pins.py` is `OK` for all four hosts against the public bytes, including both new bootstrap signatures and the unchanged SDK signatures, and
+`test_check_ci_pins.py` passes. Hosted: [pull request 15](https://github.com/webos21/crt-cli/pull/15) (`5b39a8e`, merge-ref run [44023277756](https://github.com/webos21/crt-cli/actions/runs/44023277756)) passed `CI gate` with all five native legs (macOS 12m57s, Windows 14m18s, Linux 4m53s-6m58s). The downloaded `ci-summary.json` of `macos-arm64` and `win-x64` record the new `v0.1.0-preview.20261117` bootstrap with the bootstrap CLI authenticated by the pinned publisher key and the SDK archive `signature_verified`, as the Linux legs do for `20261116`.
+
+Not covered: a local `ci_bootstrap.py` run on Windows/x64 or macOS/arm64 (the hosted legs ran the same driver), and a second reviewer. The move does not change the SDK pins; it is separate from the Windows/arm64 wiring.
