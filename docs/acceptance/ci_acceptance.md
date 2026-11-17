@@ -691,7 +691,9 @@ two host-tools archives, five Dev SDK archives and four CLI archives. The consum
 
 Evidence: `tools/check_ci_pins.py` OK for all four hosts against the public bytes (including the new bootstrap signatures); 59 Python tests pass (3 new for the source shape); a full local `tools/ci_bootstrap.py --host linux-x64` run on Linux/x86_64 (LLVM 21) passed: bootstrap archive and the SDK archive both `signature_verified`, native 913, archive 221, SDK store 114, port recipe 142, stage 1 and stage 2 byte-identical. Summary: `publisher_authentication` for bootstrap and SDK.
 
-Not covered: a hosted run (that is the pull request's `CI gate`), the arm64 pin on a native arm64 machine (only the hosted `linux-arm64` leg will exercise it), macOS/Windows (still digest-only for the SDK download), and the 24.04 leg locally.
+Hosted: pull request 14 (`6ba425b`) passed `CI gate` with all five native legs; the downloaded `ci-summary.json` of linux-x64, linux-x64-ubuntu2404 and linux-arm64 record `v0.1.0-preview.20261116` as bootstrap with `signature_verified` for the bootstrap and the SDK archive (913/221/114/142, stages identical); macOS and Windows record `signature_verified` for their older bootstrap only. Merged as `1dcae3a`; the `push` run on `main` (`43989300254`) passed `CI gate` with every leg.
+
+Not covered: macOS/Windows (still digest-only for the SDK download), and a second reviewer (the merge was a one-maintainer step).
 
 ## Host-tools pins and the wired `ports` job (2026-11-16)
 
