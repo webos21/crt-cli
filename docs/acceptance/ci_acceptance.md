@@ -618,6 +618,16 @@ a tampered archive and an already-published tag (checked against the real serial
 
 Not covered: an actual publication (`dry_run: false`), the other two hosts, the environment's behaviour for a second reviewer, and workflow-level tests for `actions/download-artifact` across a failed upload.
 
+## First real publication and its signatures (2026-11-17)
+
+`release.yml` ran with `dry_run: false` on `main` at `eab525c` for both Linux hosts (runs `43857798919` linux-x64, `43857804937` linux-arm64, serial 1, date 20261116). `package`, `verify` and `publish` succeeded for both; `publish` waited for the `release` environment and the approval was recorded as `approved` by `webos21` **with an empty comment**, so the target commit, tag, digest and reviewer are not written into an approval comment as the TODO item asked. As before, one maintainer approving their own release is a deliberate pause, not independent review.
+
+External consumption, from the public URLs in a fresh directory: both archives matched their release sums file and the digests in the notes (x64 `52fbe5d1...7fdca`, 5,261,236 bytes; arm64 `311bc451...77aa`, 5,063,404 bytes); both tags resolve to `eab525c`; the extracted x86_64 executable reports `crt-cli 0.1.0-dev`. The arm64 archive was not executed here (no arm64 machine in this session); its draft-stage `verify` job ran on a hosted arm64 runner.
+
+Signatures: the owner signed both archives offline; the files arrived named `...preview.20261116.1.sig` and were stored as `<archive>.sig` (256 bytes each). Both verified with `openssl` and were then attached to their releases (no existing asset changed). From the public URLs, `crt-cli fetch --publisher-key --signature` returned `signature_verified` for both, and the x86_64 signature against the aarch64 archive is refused with `publisher_signature_invalid`.
+
+Not covered: macOS and Windows Previews (the workflow supports Linux only), executing the arm64 archive from the public asset, and the CI bootstrap pin, which still names the older Preview.
+
 ## CI pin promotion (2026-11-11)
 
 [The policy](../guides/development.md#ci-pin-promotion) fixes when a pin may move, what moves with it, the evidence a pull request must quote, what must pass and how a new host is added. `tools/check_ci_pins.py` re-downloads each host's published CLI archive and SDK manifest, archive and

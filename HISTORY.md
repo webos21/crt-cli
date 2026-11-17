@@ -9,6 +9,16 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-17
+
+### First real publication of the CLI Preview and its publisher signatures
+
+`release.yml` published `v0.1.0-preview.20261116.linux-x86_64.1` and `...linux-arm64.1` from `eab525c` (`dry_run: false`, approved in the `release` environment with an empty
+comment). Downloaded from the public URLs, both archives match their sums and notes and the x86_64 executable runs; the owner-made signatures were attached and
+verify through `crt-cli fetch --publisher-key --signature` (a swapped signature is refused). Record:
+[ci_acceptance](docs/acceptance/ci_acceptance.md#first-real-publication-and-its-signatures-2026-11-17). Not covered: macOS/Windows Previews, running the arm64
+archive from the public asset, and pinning this Preview as the CI bootstrap.
+
 ## 2026-11-16
 
 ### Extend publisher signatures to `sdk install` and the bootstrap CLI/SDK pins

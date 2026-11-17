@@ -98,12 +98,9 @@ paths and the Linux/arm64 dispatch, push and pull-request runs.
   input, not a known gap. Hosted macOS/Windows integration is the separate D2 item under [CI Platform Expansion](#ci-platform-expansion).
 - [x] `release.yml` (manual; `package` → `verify` → approval-gated `publish`): the dry run produced a verified draft and an unchecked
   commit was rejected ([record](docs/acceptance/ci_acceptance.md#release-workflow-2026-11-11)).
-- [ ] Exercise the real publish step (`dry_run: false`) on the next genuine Preview, with the reviewer's approval comment on the
-  `release` environment; Linux x64 and arm64 only, macOS and Windows hosts follow the same host-key pattern. The approval comment
-  records the target commit, tag, artifact digest and reviewer; a single maintainer approving their own release is a deliberate pause,
-  not independent third-party review, and is not claimed as one. After publication, download the public assets in a fresh workspace
-  and verify digests and execution: that external-consumption evidence is separate from the draft-stage `verify` job. This item does not
-  wait for D1 and D1 does not wait for it; whichever Preview or bundle arrives first closes first.
+- [x] Real publish step (`dry_run: false`) exercised 2026-11-17 on Linux x64/arm64 ([record](docs/acceptance/ci_acceptance.md#first-real-publication-and-its-signatures-2026-11-17));
+  the approval comment was empty, so commit/tag/digest/reviewer are not recorded in one. macOS and Windows hosts follow the same host-key pattern.
+  A single maintainer approving their own release is a deliberate pause, not independent review.
 - [x] CI pin promotion policy and `tools/check_ci_pins.py` ([guide](docs/guides/development.md#ci-pin-promotion)); every current pin
   matches the published bytes.
 - The Windows/arm64 leg moved to Planned: [CI Platform Expansion](#ci-platform-expansion).
