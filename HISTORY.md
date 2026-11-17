@@ -11,6 +11,14 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-17
 
+### Publish the macOS/arm64 Preview through GitHub Actions
+
+The approved `release.yml` run published `v0.1.0-preview.20261117.macos-arm64.1`
+from `b51d103`. A fresh public download matched the hosted archive and checksum,
+and passed macOS SDK acquisition and the C/C++ build, test, run and warm build
+checks. The detached publisher signature and signed public replay remain
+pending. [Public asset evidence](docs/acceptance/preview_acceptance.md#github-actions-macosarm64-preview-release-2026-11-17).
+
 ### Extend the Preview release workflow to macOS/arm64
 
 Added `macos-arm64` to the shared release workflow. The package and verify jobs
@@ -21,8 +29,7 @@ both public Linux Previews. [Preflight record](docs/acceptance/ci_acceptance.md#
 
 The hosted `macos-15` dry run passed `package`, `verify` and the approved
 draft stage. The draft archive and checksum matched the package artifacts
-byte for byte on a fresh download. Approved public release and signed-byte
-replay remain pending. [Hosted rehearsal](docs/acceptance/ci_acceptance.md#hosted-macosarm64-draft-rehearsal-2026-11-17).
+byte for byte on a fresh download. [Hosted rehearsal](docs/acceptance/ci_acceptance.md#hosted-macosarm64-draft-rehearsal-2026-11-17).
 
 ### Pin the signed 20261116 Preview as the Linux bootstrap
 

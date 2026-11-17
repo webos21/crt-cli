@@ -686,7 +686,23 @@ The SHA-256 in the package receipt, verification receipt and draft notes is
 `39a6250fd122f76df9099f1617b5df2a9f70a466419f46f2250c0e20aafbb1a6`.
 The GitHub release record confirms draft status and the exact target commit.
 Hosted receipts are retained under `out/macos-release-workflow-20261117/hosted-43995986848/`.
-The next gate is approved publication and replay of the signed public bytes.
+
+### First hosted macOS/arm64 publication (2026-11-17)
+
+The [release run](https://github.com/webos21/crt-cli/actions/runs/43998835624)
+used `main` workflow revision `7f2381d447a1b54c4e029868aae8dd07c06ee52e`
+and built the reviewed commit `b51d103e7d0cf3b1816e0d3671963811ea7bf07e`
+with `dry_run: false`, date `20261117` and serial `1`. `package` and `verify`
+passed on separate `macos-15` runners. `webos21` approved `release` with the
+comment `OK`. The tag and full archive digest for that approval are recorded
+in the [public asset evidence](preview_acceptance.md#github-actions-macosarm64-preview-release-2026-11-17).
+`publish` passed and the Git tag resolves to the reviewed commit.
+
+The public archive and checksum matched the hosted receipts, and the public
+executable passed native macOS SDK acquisition and both C/C++ workflows.
+Release, approval, tag, package, verification and public replay receipts are
+retained in `out/macos-release-workflow-20261117/hosted-43998835624/`.
+The detached publisher signature and signed public replay are pending.
 
 ## CI pin promotion (2026-11-11)
 

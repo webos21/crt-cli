@@ -109,6 +109,9 @@ paths and the Linux/arm64 dispatch, push and pull-request runs.
     verification result and approval-gated draft comparison
     ([hosted rehearsal](docs/acceptance/ci_acceptance.md#hosted-macosarm64-draft-rehearsal-2026-11-17)).
   - [ ] Publish a reviewed macOS candidate and replay the signed public bytes on macOS/arm64.
+    - [x] Publish the candidate and pass native replay of the public archive against its
+      approved digest ([public asset evidence](docs/acceptance/preview_acceptance.md#github-actions-macosarm64-preview-release-2026-11-17)).
+    - [ ] Attach the offline publisher signature and replay the signed public archive.
 - [x] CI pin promotion policy and `tools/check_ci_pins.py` ([guide](docs/guides/development.md#ci-pin-promotion)); every current pin
   matches the published bytes.
 - The Windows/arm64 leg moved to Planned: [CI Platform Expansion](#ci-platform-expansion).

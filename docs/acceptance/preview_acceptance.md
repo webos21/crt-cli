@@ -419,6 +419,35 @@ and the local archive byte for byte. The archive extracted from those public byt
 `doctor --resources` against the pin (`publisher_authentication: not_verified`) and a real GitHub `sdk acquire` (three redirects, installed identity `e3dc7fb1...bac8`). The committed
 `bin/macos/crt-cli` is now this executable (`42727cca...a6`). Executable publication does not change root locks, defaults or STATUS.
 
+## GitHub Actions macOS/arm64 Preview release (2026-11-17)
+
+[`v0.1.0-preview.20261117.macos-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261117.macos-arm64.1)
+was published as a prerelease at `2026-11-17T02:10:36Z`. The tag resolves to
+`b51d103e7d0cf3b1816e0d3671963811ea7bf07e`. The approved
+[`release.yml` run](ci_acceptance.md#first-hosted-macosarm64-publication-2026-11-17)
+built and verified on separate `macos-15` runners. The executable is ARM64,
+declares macOS 15.0 and SDK 15.5, imports only `libSystem`, and has no `LC_RPATH`.
+
+| Public artifact | Recorded identity |
+| --- | --- |
+| `crt-cli-0.1.0-dev-macos-aarch64-preview.20261117.1.tar.xz`, 1,248,592 bytes | `5084b2b334cbec008e1f1b60de4e5616f4c7d5b4299635f657983c70790fb0cb` |
+| `SHA256SUMS-macos-aarch64`, 124 bytes | Lists the same archive name and SHA-256 |
+| Archived `crt-cli` executable | `afcdf9b6a368e0c9c2efbfc9f2d8ac18945c310c361c627ac6e0c0d3e0df0073` |
+| Resource manifest, 30 files | `8c543b1fc4ae463f36f4c29f433920f5df8acad9d982ed543e0523ce9621bfd8` |
+
+In a fresh workspace on macOS 27.2.1/arm64, unauthenticated HTTPS downloads
+matched the size, digest and checksum in the hosted receipts. Running
+`tools/ci_release.py verify --host macos-arm64 --date 20261117 --serial 1`
+over those public files passed the resource inventory, self `doctor`, wrong
+pin refusal, and native SDK acquisition. The installed public SDK was
+`v0.0.1-preview.20261110.macos.1`, content
+`e3dc7fb1810a3f78ab8ef33882225ccb562d21f6f5977a2037ab92819326bac8`.
+Both C and C++ passed `new`, `build`, `test` and `run`. Each warm build
+executed zero commands and preserved the lock bytes.
+
+The publisher `.sig` asset and signed public replay remain pending. The
+archive was verified against the approved digest during this replay.
+
 ## Windows/x64 CLI Preview release (2026-11-10)
 
 Published prerelease [`v0.1.0-preview.20261110.windows-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.windows-x86_64.1), not latest, at `2026-11-10T05:12:57Z`.
