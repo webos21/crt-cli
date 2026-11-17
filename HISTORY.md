@@ -17,8 +17,12 @@ Added `macos-arm64` to the shared release workflow. The package and verify jobs
 use `macos-15`, Xcode tools and system CA roots. The verifier records ARM64
 package execution and C/C++ warm reuse in `verify.json`. Local macOS packaging
 and independent verification passed, along with regression verification of
-both public Linux Previews. Hosted draft and publication evidence remain
-pending. [Preflight record](docs/acceptance/ci_acceptance.md#macosarm64-preview-workflow-preflight-2026-11-17).
+both public Linux Previews. [Preflight record](docs/acceptance/ci_acceptance.md#macosarm64-preview-workflow-preflight-2026-11-17).
+
+The hosted `macos-15` dry run passed `package`, `verify` and the approved
+draft stage. The draft archive and checksum matched the package artifacts
+byte for byte on a fresh download. Approved public release and signed-byte
+replay remain pending. [Hosted rehearsal](docs/acceptance/ci_acceptance.md#hosted-macosarm64-draft-rehearsal-2026-11-17).
 
 ### Pin the signed 20261116 Preview as the Linux bootstrap
 

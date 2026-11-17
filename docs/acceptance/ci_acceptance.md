@@ -663,9 +663,30 @@ Ubuntu 26.04 containers on the test Mac (aarch64 and x86_64 with emulation for
 x86_64), using fresh SDK stores and LLVM 21. The records are local evidence.
 
 Local receipts and logs are retained in `out/macos-release-workflow-20261117/`.
-The hosted `macos-15` dry run, approved publication, and replay of the newly
-published signed bytes are pending. The [release procedure](../guides/development.md#publish-a-cli-preview)
-describes the inputs and the evidence to retain for each of these gates.
+The [release procedure](../guides/development.md#publish-a-cli-preview)
+describes the shared inputs and evidence for each gate.
+
+### Hosted macOS/arm64 draft rehearsal (2026-11-17)
+
+The [required CI run](https://github.com/webos21/crt-cli/actions/runs/43994193784)
+passed on all five runners for `b51d103e7d0cf3b1816e0d3671963811ea7bf07e`.
+The [release run](https://github.com/webos21/crt-cli/actions/runs/43995986848)
+then passed `package` and `verify` on separate `macos-15` runners with
+`dry_run: true` and tag `v0.1.0-preview.20261117.macos-arm64.9`. The verifier
+acquired the pinned public SDK and ran the C and C++ workflows. Each first
+build executed three commands and each warm build executed zero with unchanged
+lock bytes. The ARM64 Mach-O declares minimum macOS 15.0 and SDK 15.5, imports
+only `libSystem`, and has no `LC_RPATH`.
+
+`webos21` approved the `release` environment with the comment `Good to go`.
+The commit, tag and digest are recorded here. `publish` passed and stopped at
+the draft. An independent download confirmed that the 1,248,552-byte archive
+and `SHA256SUMS-macos-aarch64` are byte-identical to the package artifacts.
+The SHA-256 in the package receipt, verification receipt and draft notes is
+`39a6250fd122f76df9099f1617b5df2a9f70a466419f46f2250c0e20aafbb1a6`.
+The GitHub release record confirms draft status and the exact target commit.
+Hosted receipts are retained under `out/macos-release-workflow-20261117/hosted-43995986848/`.
+The next gate is approved publication and replay of the signed public bytes.
 
 ## CI pin promotion (2026-11-11)
 

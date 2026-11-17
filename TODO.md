@@ -105,8 +105,9 @@ paths and the Linux/arm64 dispatch, push and pull-request runs.
   approved publication, then verify the signed public archive and native C/C++ SDK workflows.
   - [x] Wire the native package and verify jobs and pass the
     [local macOS preflight](docs/acceptance/ci_acceptance.md#macosarm64-preview-workflow-preflight-2026-11-17).
-  - [ ] Rehearse with `dry_run: true` on `macos-15` and record the hosted package,
-    verification result and approval-gated draft comparison.
+  - [x] Rehearse with `dry_run: true` on `macos-15` and record the hosted package,
+    verification result and approval-gated draft comparison
+    ([hosted rehearsal](docs/acceptance/ci_acceptance.md#hosted-macosarm64-draft-rehearsal-2026-11-17)).
   - [ ] Publish a reviewed macOS candidate and replay the signed public bytes on macOS/arm64.
 - [x] CI pin promotion policy and `tools/check_ci_pins.py` ([guide](docs/guides/development.md#ci-pin-promotion)); every current pin
   matches the published bytes.
