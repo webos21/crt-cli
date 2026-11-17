@@ -726,8 +726,28 @@ sums file and `release.json`. The hosted verifier ran on those same bytes: 30 pa
 `api-ms-win-core-synch-l1-2-0.dll`, public Windows Dev SDK `v0.0.1-preview.20261110.windows.1` acquisition, and both C and C++ workflows (cold 3, warm 0 commands,
 lock `bc10a55b...656e`). Receipts and the public download are retained under `out/windows-release-workflow-20261117/hosted-44015918992/`.
 
-Not covered: the owner's offline `.sig` is not attached, so no publisher signature is verified for this archive; no separate local replay of the public download was run
-beyond the hosted `verify` job on identical bytes; the earlier draft `...windows-x86_64.9` still exists and is to be deleted by hand; no pin adopts this release.
+Not covered at publication time: the owner's offline `.sig` was not attached yet (see the next section) and the earlier draft `...windows-x86_64.9` still existed; no pin adopts this release.
+
+### Windows/x64 Preview signature and public replay (2026-11-17)
+
+The owner signed the archives offline and placed the two 256-byte detached signatures on this device. Before anything was uploaded, `tools/publisher_signature.py`
+verified each against the exact archive bytes with the repository's pinned public key (`.github/ci/crt-release-publisher.pub`, SPKI SHA-256
+`59218576956e493476bc36f7385d8e01a03ff9b92946a531b013ad3937d43fa2`, identical to CRT's `docs/security/crt-release-publisher.pub`):
+
+| Asset | Signature SHA-256 | Result |
+| --- | --- | --- |
+| `...preview.20261117.1.tar.xz` (public) | `cfad3442...5587` | verifies |
+| `...preview.20261117.9.tar.xz` (rehearsal draft) | `836682bb...8a39` | verifies |
+| each signature over the other archive | | refused |
+
+Both `.sig` files were then uploaded as **new** assets of their releases (`gh release upload`, no replacement; the archive and `SHA256SUMS-windows-x86_64` are unchanged,
+and the draft stays a draft). From a fresh download of the public `.1` release into a new workspace the signature still verifies, and `tools/ci_release.py verify`
+(unchanged) ran on the public bytes natively on this device (Windows 11 build 26100, LLVM 22.1.8, a work path with spaces and Korean): archive SHA-256 `02396e04...706f`
+matches the checksum file, all 30 package files verify, the PE is x64 importing only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`, public Windows Dev SDK acquisition
+works and the C and C++ workflows build, test and run (cold 3, warm 0 commands, lock `bc10a55b...656e`). Receipts: `out/windows-release-workflow-20261117/` (`signatures/`, `public-replay/`).
+
+Limits: the signature is checked with this repository's Python verifier, not with `crt-cli fetch --publisher-key` on the public download; the `release.json` used for the public replay is the
+package artifact's, not a file served by GitHub; the `.9` draft is signed only because the owner supplied that signature, and it is still to be deleted by hand; no pin adopts this release.
 
 ## macOS/arm64 Preview workflow preflight (2026-11-17)
 

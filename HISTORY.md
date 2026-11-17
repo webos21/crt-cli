@@ -11,6 +11,13 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-17
 
+### Sign and replay the Windows/x64 Preview
+
+The owner's detached signatures for `...windows-x86_64.1` and the `.9` draft verify against the pinned publisher key (SPKI `59218576...3fa2`; each is refused
+for the other archive) and were attached to their releases as new assets. A fresh public download of `.1` re-verifies, and the unchanged package verifier passes natively on the
+public bytes (30 files, x64 PE importing only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`, public SDK acquisition, C and C++ cold 3 / warm 0).
+[Acceptance](docs/acceptance/ci_acceptance.md#windowsx64-preview-signature-and-public-replay-2026-11-17).
+
 ### Publish the Windows/x64 Preview through GitHub Actions
 
 Release run 44015918992 (`win-x64`, `b6cc5af`, serial 1, `dry_run: false`, approved `release` environment) published the pre-release
