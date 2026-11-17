@@ -983,3 +983,80 @@ Evidence: `tools/check_ci_pins.py` is `OK` for all four hosts against the public
 `test_check_ci_pins.py` passes. Hosted: [pull request 15](https://github.com/webos21/crt-cli/pull/15) (`5b39a8e`, merge-ref run [44023277756](https://github.com/webos21/crt-cli/actions/runs/44023277756)) passed `CI gate` with all five native legs (macOS 12m57s, Windows 14m18s, Linux 4m53s-6m58s). The downloaded `ci-summary.json` of `macos-arm64` and `win-x64` record the new `v0.1.0-preview.20261117` bootstrap with the bootstrap CLI authenticated by the pinned publisher key and the SDK archive `signature_verified`, as the Linux legs do for `20261116`.
 
 Not covered: a local `ci_bootstrap.py` run on Windows/x64 or macOS/arm64 (the hosted legs ran the same driver), and a second reviewer. The move does not change the SDK pins; it is separate from the Windows/arm64 wiring.
+
+## Windows/arm64 host wiring and local candidate preflight (2026-11-17)
+
+**Local candidate and driver wiring only; nothing is published, no leg is required and no pin is adopted.** The
+[host-adding policy](../guides/development.md#ci-pin-promotion) (item 7) requires, in order, a public Dev SDK for the host, a published CLI
+Preview built by that SDK alone, a hosted runner and a local pass. At this date `webos21/crt` has no Windows/aarch64 SDK release and this
+repository has no `win-arm64` Preview, so the `ci.yml` matrix row and the `pins.json` host are **deliberately not added**: the driver fails with
+"no CI pins for host win-arm64" instead of skipping, and a row without pins would turn the required `CI gate` red on `main`.
+
+### What is wired
+
+| Area | Change |
+| --- | --- |
+| `tools/ci_bootstrap.py` | host key `win-arm64` (Python `ARM64`/`aarch64` on `win32`), `--host` choice, the Windows SDK `um/arm64` import-library directory for that host (`um/x64` for `win-x64`), a clear error for a host without pins |
+| `tools/ci_release.py` | `win-arm64`: tag `v0.1.0-preview.<date>.windows-arm64.<n>`, asset `crt-cli-0.1.0-dev-windows-aarch64-preview.<date>.<n>.tar.xz`, checksum file `SHA256SUMS-windows-aarch64`; the PE audit checks machine `0xAA64` for it and `0x8664` for `win-x64`, each refusing the other |
+| `.github/workflows/release.yml` | host option `win-arm64`, runner `windows-11-arm`, native ARM64 LLVM 22.1.8 installed from the LLVM release (`LLVM-22.1.8-woa64.exe`, SHA-256 checked, `clang` must report `aarch64-pc-windows-msvc`), `--llvm-bin` for every `win-*` host, `actions/setup-python` told `arm64` for it (empty, i.e. the runner default, for every other host) |
+| Tests | new and updated cases: host key and unsupported hosts, a host without pins, the import-library directory per host, ARM64 and x64 PE identity (each refusing the other), `win-arm64` names |
+| `tools/replay_cli_package_windows.py` | new `--sdk-version`: the check "compiled-in SDK input" hard-coded the first x64 Preview's SDK version and failed for any other SDK; the default keeps the old value |
+
+All five CI driver test modules pass (bootstrap 17, release 21, pins 11, integration 27, publisher signature 6); both workflow files parse. The
+hosted runner label `windows-11-arm` is generally available for public repositories and CRT's own `ci.yml` already builds on it with the same
+installer and `um/arm64` libraries, but **no crt-cli job has run on it**.
+
+### Local SDK candidate (producer)
+
+Clean CRT `ded8e99ec77f60269adf56340af0123c24372345` in a fresh worktree, build root `out/preview/build`, local label
+`v0.0.1-preview.20261117.windows.arm64.1` (no tag, nothing uploaded): `crt-development-sdk-test` passes, `crt-c-test` passes 168 of 169 with
+`fork_heap_snapshot_test_runs` skipped, `crt-dev-release` collects the six public-format assets. The first `crt-dev-release` failed because
+the toolchain-contract export needs `CRT_WINDOWS_SDK_LIBPATH` (CRT's workflows set it explicitly); its partial output was kept, not deleted, and
+the release was repeated with the variable set. CRT's independent asset verifier (`tools/ci_sdk_release.py verify --os windows --arch aarch64`,
+importing none of the producer's code) reports `OK`.
+
+| Asset | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `...windows-aarch64-dev.zip` | 141,779,092 | `5ed0692fa19951ab0eee1862bd4662644cfaa9b3354ce3cc7caf8bd0f767251a` |
+| `...windows-aarch64-dev-toolchain.json` | 441,104 | `c420ec22c6430acbdd29d03f819bc61b8a8887a9e0d01b6bc42518505d96a228` |
+| `release-manifest-dev-windows-aarch64.json` (manifest pin) | 1,848 | `547b055376eb8e53d557ac0dc5a3fecafefd40b04c3f5d3706c322d5a96e6b3a` |
+
+SDK content identity `4e1c71663dd9ec52866f874faed482577c22497d525f41c8f0c1a677542f397b`. CRT `main` has moved on (`1c441e9`: an Apple-only compiler flag and a port-build
+environment change), so the bytes for an actual release must be rebuilt from the final `main`; this candidate only proves the path.
+
+### Local CLI candidate and package
+
+The sources are the working tree of `ci/windows-arm64-wiring` (`main` `d0efcaa` plus the uncommitted wiring above; driver source SHA-256
+`9488335022250feb985826fd912ddb82b20a8494623f91ef51c8459c0a44d472`), built against the extracted candidate SDK by CRT's native Windows replay
+driver (CRT-hosted seed, then self-build, hidden CRT and CLI checkouts, per-run SID, empty `PATH`, job-object accounting, a Hangul/accented/space work path).
+Result: every step exit 0, **1005 native / 214 archive / 113 SDK-store / 142 port-recipe checks**, cold self-build 21 executed / 0 reused, warm 0 / 21, 635 recorded processes,
+bare doctor `narrow_encoding: utf-8`, imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`; executable
+`eb8b1d2b0e734b37e52e9380db1c7e8fef92eddbba3bc033ae76569354100c1c`, 46,423,552 bytes (built `-O1 -g`).
+
+**First attempt failed on path length, not on the product.** With the work root `...\Temp\crt arm preflight 한글 é 20261117` the deepest installed libc++
+header path was 262 characters, over Windows' 260 limit, because the public-format SDK directory name
+(`v0.0.1-preview.20261117.windows.arm64.1-4e1c71663dd9`) is about 20 characters longer than the earlier local names (`v0.4.0-cli.20261102-...`); `copy_file` and the archive test's long-name case failed.
+A shorter Hangul/accented/space root (237 characters) passes. Keep the hosted `RUNNER_TEMP` and any local work root short; the hosted Windows legs have not been measured against the new name length.
+
+Package: `create_bootstrap_resources.py` and `package_cli_archive.py pack` over the self-built executable and the candidate SDK's notices: 30 files, manifest SHA-256
+`7ce2c11c50e6b307261ae629b82876289cee8aeb55e8364031eeab4c958ae291`; archive `crt-cli-0.1.0-dev-windows-aarch64-preview.20261117.1.tar.xz`, 5,393,124 bytes, SHA-256
+`38b8004a59238663bdbfd2b5076e97a4e6fe84f0f9121014ae67e576bb6b50e2`; two packings are byte-identical. Extraction verifies all 30 files; the PE is ARM64 (`0xAA64`) with only the two allowed imports.
+
+| Replay | Result |
+| --- | --- |
+| Package run, restricted token (`replay_cli_package_windows.py`) | first attempt **11/12**: the tool expected the x64 Preview's SDK version; the product output was correct (`explicit-at-fetch`, compiled-in SDK `...windows.arm64.1`). With `--sdk-version`: **12/12** (`07b5fe50...50c8`) |
+| Consumer of the candidate SDK (`replay_preview_public_windows.py`, local download directory) | **31/31**: manifest and asset digests, pinned install and idempotent reinstall, wrong pin refused, C and C++ first build without configure, test, run, warm build executes nothing, locks and inputs unchanged (`7357a0c0...71f3`) |
+
+### Not covered
+
+No signature, no Authenticode, no GitHub release or draft, no hosted `windows-11-arm` run of any crt-cli workflow, no `ci_release.py package`/`verify` run for `win-arm64` (they need the
+pinned public bootstrap and SDK that do not exist yet; the local steps above reproduce their assemble, pack, extract, audit and consumer parts but not the real GitHub SDK acquisition), no HTTPS
+fetch cases and no Preview-notes text for this host. The package replay and consumer replay ran against a local download directory. Evidence is in the ignored local directory `cw/preflight/`
+(`replay2/`, `package-run2/`, `consumer-run/`, `sdk-verification.json`); the failed first attempts `replay/` and `package-run/` are retained.
+
+### Remaining order
+
+1. CRT: add a Windows/arm64 row to `sdk-integration.yml` and the planned `sdk-release.yml`; rebuild the SDK from the final `main`, publish it and attach the owner's offline signature.
+2. Here: build and package the first `win-arm64` Preview from that published SDK (the first Preview of a host cannot use `release.yml` because it has no bootstrap pin; use the local path above, then publish and sign it).
+3. Pin both in one reviewed pull request that also adds the `ci.yml` matrix row (`windows-11-arm`, `--llvm-bin 'C:/Program Files/LLVM/bin'`, the ARM64 LLVM step) and the `win-arm64` host key to the pin tests; dispatch it manually before treating the leg as required.
+4. Dispatch `release.yml` with `host: win-arm64` and `dry_run: true`, then publish and sign a Preview built by the workflow.

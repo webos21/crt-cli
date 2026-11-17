@@ -6,9 +6,10 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
-from ci_bootstrap import Ci, CiError, ROOT as ROOT_FOR_TESTS, host_key, native_phase_report
+from ci_bootstrap import Ci, CiError, ROOT as ROOT_FOR_TESTS, host_key, native_phase_report, windows_sdk_path
 
 
 class NativePhaseReportTest(unittest.TestCase):
@@ -64,13 +65,36 @@ if __name__ == '__main__':
 class HostKeyTest(unittest.TestCase):
     def test_supported_hosts(self):
         for system, machine, key in [('linux', 'x86_64', 'linux-x64'), ('linux', 'aarch64', 'linux-arm64'), ('linux', 'arm64', 'linux-arm64'),
-                                     ('darwin', 'arm64', 'macos-arm64'), ('win32', 'AMD64', 'win-x64')]:
+                                     ('darwin', 'arm64', 'macos-arm64'), ('win32', 'AMD64', 'win-x64'),
+                                     ('win32', 'ARM64', 'win-arm64'), ('win32', 'aarch64', 'win-arm64')]:
             self.assertEqual(host_key(system, machine), key)
 
     def test_unsupported_hosts_are_refused(self):
-        for system, machine in [('linux', 'riscv64'), ('darwin', 'x86_64'), ('win32', 'ARM64')]:
+        for system, machine in [('linux', 'riscv64'), ('darwin', 'x86_64'), ('win32', 'x86'), ('win32', 'riscv64')]:
             with self.assertRaisesRegex(CiError, 'unsupported CI host'):
                 host_key(system, machine)
+
+    def test_a_known_host_without_published_pins_fails_instead_of_skipping(self):
+        # Windows/arm64 is a supported host key before its public SDK and Preview exist: the driver must say what is missing.
+        with tempfile.TemporaryDirectory() as folder:
+            pins = Path(folder) / 'pins.json'
+            pins.write_text(json.dumps({'schema': 'crt-cli.ci-pins', 'format': 0, 'hosts': {}}), encoding='utf-8')
+            with self.assertRaisesRegex(CiError, 'no CI pins for host win-arm64'):
+                Ci(SimpleNamespace(host='win-arm64', pins=str(pins)))
+
+    def test_the_windows_import_library_directory_follows_the_host(self):
+        with tempfile.TemporaryDirectory() as folder:
+            libs = Path(folder) / 'Windows Kits/10/Lib'
+            for version in ('10.0.22621.0', '10.0.26100.0'):
+                for arch in ('x64', 'arm64'):
+                    (libs / version / 'um' / arch).mkdir(parents=True)
+                    (libs / version / 'um' / arch / 'kernel32.lib').write_bytes(b'')
+            real_path = Path
+            with patch('ci_bootstrap.Path', side_effect=lambda *a: real_path(folder, 'Windows Kits/10/Lib') if a and 'Windows Kits' in str(a[0]) else real_path(*a)):
+                self.assertTrue(windows_sdk_path('arm64').endswith('10.0.26100.0/um/arm64'))
+                self.assertTrue(windows_sdk_path('x64').endswith('10.0.26100.0/um/x64'))
+                with self.assertRaisesRegex(CiError, 'um/riscv import libraries'):
+                    windows_sdk_path('riscv')
 
 
 @unittest.skipUnless(shutil.which('openssl'), 'openssl is a test-host tool')

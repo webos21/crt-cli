@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from ci_bootstrap import CiError, host_key, macos_tool_paths, windows_sdk_path, write_system_roots  # noqa: E402
+from ci_bootstrap import CiError, WINDOWS_IMPORT_ARCH, host_key, macos_tool_paths, windows_sdk_path, write_system_roots  # noqa: E402
 
 
 class ReleaseError(Exception):
@@ -34,6 +34,12 @@ HOSTS = {
     'linux-arm64': ('linux-arm64', 'linux-aarch64', 'linux-aarch64'),
     'macos-arm64': ('macos-arm64', 'macos-aarch64', 'macos-aarch64'),
     'win-x64': ('windows-x86_64', 'windows-x86_64', 'windows-x86_64'),
+    'win-arm64': ('windows-arm64', 'windows-aarch64', 'windows-aarch64'),
+}
+# Windows host key -> (PE machine as llvm-readobj prints it, its hex value, the label used in messages).
+WINDOWS_MACHINES = {
+    'win-x64': ('IMAGE_FILE_MACHINE_AMD64 (0x8664)', '0x8664', 'x64'),
+    'win-arm64': ('IMAGE_FILE_MACHINE_ARM64 (0xAA64)', '0xAA64', 'ARM64'),
 }
 PRODUCT_VERSION = '0.1.0-dev'
 DATE = re.compile(r'^20\d{6}$')
@@ -55,7 +61,8 @@ def names(host, date, serial):
         'archive': 'crt-cli-%s-%s-preview.%s.%d.tar.xz' % (PRODUCT_VERSION, machine, date, serial),
         'sums': 'SHA256SUMS-%s' % sums,
         'title': 'crt-cli Preview %s (%s)' % (date, {'linux-x64': 'Linux x86_64', 'linux-arm64': 'Linux aarch64',
-                                                      'macos-arm64': 'macOS arm64', 'win-x64': 'Windows x86_64'}[host]),
+                                                      'macos-arm64': 'macOS arm64', 'win-x64': 'Windows x86_64',
+                                                      'win-arm64': 'Windows aarch64'}[host]),
     }
 
 
@@ -153,13 +160,14 @@ def require_native_host(requested):
         raise ReleaseError('release host %s requires a native runner, found %s' % (requested, actual))
 
 
-def windows_image_identity(listing, allowed_imports):
-    if not re.search(r'^\s*Machine: IMAGE_FILE_MACHINE_AMD64 \(0x8664\)\s*$', listing, re.MULTILINE):
-        raise ReleaseError('expected an x64 PE executable')
+def windows_image_identity(listing, allowed_imports, host='win-x64'):
+    machine, machine_hex, label = WINDOWS_MACHINES[host]
+    if not re.search(r'^\s*Machine: ' + re.escape(machine) + r'\s*$', listing, re.MULTILINE):
+        raise ReleaseError('expected an %s PE executable' % label)
     imports = {name.lower() for name in re.findall(r'^\s*Name:\s*(\S+\.dll)\s*$', listing, re.I | re.MULTILINE)}
     if 'kernel32.dll' not in imports or imports - {name.lower() for name in allowed_imports}:
         raise ReleaseError('unexpected Windows PE imports: %s' % sorted(imports))
-    return {'machine': '0x8664', 'imports': sorted(imports)}
+    return {'machine': machine_hex, 'imports': sorted(imports)}
 
 
 def command_package(args):
@@ -223,12 +231,16 @@ def command_verify(args):
         raise ReleaseError('archive verification failed: %s' % result.stderr.strip()[-400:])
     info = json.loads(result.stdout)
     root = Path(info['root'])
-    windows = args.host == 'win-x64'
+    windows = args.host in WINDOWS_MACHINES
     expected_exe = 'crt-cli.exe' if windows else 'crt-cli'
     if info['executable'] != expected_exe:
         raise ReleaseError('expected package executable %s, found %s' % (expected_exe, info['executable']))
     exe = root / expected_exe
-    host_pins = json.loads((ROOT / '.github/ci/pins.json').read_text(encoding='utf-8'))['hosts'][args.host]
+    all_pins = json.loads((ROOT / '.github/ci/pins.json').read_text(encoding='utf-8'))['hosts']
+    if args.host not in all_pins:
+        raise ReleaseError('no CI pins for host %s: publish and pin its Dev SDK and bootstrap Preview first '
+                           '(docs/guides/development.md#ci-pin-promotion, item 7)' % args.host)
+    host_pins = all_pins[args.host]
     binary = {}
     child_options = {}
     if args.host == 'macos-arm64':
@@ -241,14 +253,14 @@ def command_verify(args):
             raise ReleaseError('--llvm-bin is required on Windows')
         llvm = Path(args.llvm_bin).resolve()
         tools = {'--cc': llvm / 'clang.exe', '--cxx': llvm / 'clang++.exe', '--linker': llvm / 'ld.lld.exe',
-                 '--ar': llvm / 'llvm-ar.exe', '--os-sdk': windows_sdk_path()}
+                 '--ar': llvm / 'llvm-ar.exe', '--os-sdk': windows_sdk_path(WINDOWS_IMPORT_ARCH[args.host])}
         reader = llvm / 'llvm-readobj.exe'
         for tool in [reader, *(Path(path) for flag, path in tools.items() if flag != '--os-sdk')]:
             if not tool.is_file():
                 raise ReleaseError('missing Windows host tool: %s' % tool)
         listing = run('pe-audit', [reader, '--file-headers', '--coff-imports', exe], capture_output=True, text=True,
                       creationflags=subprocess.CREATE_NO_WINDOW).stdout
-        binary = windows_image_identity(listing, host_pins['allowed_imports'])
+        binary = windows_image_identity(listing, host_pins['allowed_imports'], args.host)
         # Do not let the source checkout participate in the Windows DLL search.
         child_options = {'cwd': work, 'creationflags': subprocess.CREATE_NO_WINDOW}
     else:

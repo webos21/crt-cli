@@ -30,6 +30,8 @@ def main():
     parser.add_argument('--probe', type=Path, required=True, help='SDK-built executable that must fail to read every --hide root')
     parser.add_argument('--crt-tools', type=Path, required=True)
     parser.add_argument('--hide', type=Path, action='append', default=[])
+    parser.add_argument('--sdk-version', default='v0.0.1-preview.20261110.windows.1',
+                        help='the Dev SDK version compiled into this executable (default: the first Windows/x86_64 Preview SDK)')
     args = parser.parse_args()
     if os.name != 'nt':
         parser.error('requires native Windows')
@@ -94,7 +96,7 @@ def main():
     good = call('doctor --scope self with the pinned resources', resources,
                 check=lambda r: r['data'].get('publisher_authentication') == 'not_verified' or 'not_verified' in json.dumps(r['data']))
     text = json.dumps(good.get('data', {}))
-    record('the report states explicit-at-fetch trust and the compiled-in SDK input', 'explicit-at-fetch' in text and 'v0.0.1-preview.20261110.windows.1' in text, text[:300])
+    record('the report states explicit-at-fetch trust and the compiled-in SDK input', 'explicit-at-fetch' in text and args.sdk_version in text, text[:300])
 
     # Negative controls: each must fail for its own reason, and the restored package must pass again.
     wrong = list(resources); wrong[wrong.index('--resources-sha256') + 1] = '0' * 64

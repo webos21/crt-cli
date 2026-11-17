@@ -29,15 +29,24 @@ class NativeRunnerTest(unittest.TestCase):
 class WindowsImageIdentityTest(unittest.TestCase):
     ALLOWED = ['kernel32.dll', 'api-ms-win-core-synch-l1-2-0.dll']
     AMD64 = '  Machine: IMAGE_FILE_MACHINE_AMD64 (0x8664)\n'
+    ARM64 = '  Machine: IMAGE_FILE_MACHINE_ARM64 (0xAA64)\n'
     IMPORTS = 'Import {\n  Name: KERNEL32.dll\n}\nImport {\n  Name: api-ms-win-core-synch-l1-2-0.dll\n}\n'
 
     def test_x64_with_windows_imports(self):
         self.assertEqual(windows_image_identity(self.AMD64 + self.IMPORTS, self.ALLOWED),
                          {'machine': '0x8664', 'imports': sorted(self.ALLOWED)})
 
-    def test_wrong_architecture_missing_or_extra_imports_are_refused(self):
+    def test_arm64_with_windows_imports(self):
+        self.assertEqual(windows_image_identity(self.ARM64 + self.IMPORTS, self.ALLOWED, 'win-arm64'),
+                         {'machine': '0xAA64', 'imports': sorted(self.ALLOWED)})
+
+    def test_each_windows_host_refuses_the_other_architecture(self):
         with self.assertRaisesRegex(ReleaseError, 'expected an x64 PE'):
-            windows_image_identity('  Machine: IMAGE_FILE_MACHINE_ARM64 (0xAA64)\n' + self.IMPORTS, self.ALLOWED)
+            windows_image_identity(self.ARM64 + self.IMPORTS, self.ALLOWED)
+        with self.assertRaisesRegex(ReleaseError, 'expected an ARM64 PE'):
+            windows_image_identity(self.AMD64 + self.IMPORTS, self.ALLOWED, 'win-arm64')
+
+    def test_missing_or_extra_imports_are_refused(self):
         for imports in ('', self.IMPORTS + 'Import {\n  Name: ucrtbase.dll\n}\n'):
             with self.subTest(imports=imports), self.assertRaisesRegex(ReleaseError, 'unexpected Windows PE imports'):
                 windows_image_identity(self.AMD64 + imports, self.ALLOWED)
@@ -58,6 +67,14 @@ class NamesTest(unittest.TestCase):
         self.assertEqual(names('macos-arm64', '20261110', 1)['archive'], 'crt-cli-0.1.0-dev-macos-aarch64-preview.20261110.1.tar.xz')
         self.assertEqual(names('win-x64', '20261110', 1)['tag'], 'v0.1.0-preview.20261110.windows-x86_64.1')
         self.assertEqual(names('win-x64', '20261110', 1)['sums'], 'SHA256SUMS-windows-x86_64')
+
+    def test_windows_arm64_names_follow_the_other_arm_hosts(self):
+        # The tag carries OS-arch as the linux-arm64 and macos-arm64 tags do; the asset and checksum file carry the machine name.
+        n = names('win-arm64', '20261118', 1)
+        self.assertEqual(n['tag'], 'v0.1.0-preview.20261118.windows-arm64.1')
+        self.assertEqual(n['archive'], 'crt-cli-0.1.0-dev-windows-aarch64-preview.20261118.1.tar.xz')
+        self.assertEqual(n['sums'], 'SHA256SUMS-windows-aarch64')
+        self.assertEqual(n['title'], 'crt-cli Preview 20261118 (Windows aarch64)')
 
     def test_bad_inputs_are_refused(self):
         for args in [('freebsd', '20261111', 1), ('linux-x64', '2026-11-11', 1), ('linux-x64', '20261111', 0), ('linux-x64', '20261111', '1')]:
