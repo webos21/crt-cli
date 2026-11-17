@@ -689,6 +689,28 @@ tests. Logs and receipts are retained under `out/wrel17/`, including
 `pkg/ci/artifact/ci-summary.json`, `pkg/release/release.json`,
 `fresh runner 한글/verify-work/verify.json`, and `draft-replay.json`.
 
+### Hosted Windows/x64 draft rehearsal (2026-11-17)
+
+The [required CI run](https://github.com/webos21/crt-cli/actions/runs/44004872940) passed all five native jobs and `CI gate` for
+`b6cc5af00220578839f6e173eccd8e89c809ee99`. The [release run](https://github.com/webos21/crt-cli/actions/runs/44012191646)
+(`main`, `host: win-x64`, that commit, date `20261117`, serial `9`, `dry_run: true`) passed `package` and `verify` on separate
+`windows-2022` runners and `publish` after `webos21` approved the `release` environment (comment `OK`). The run took 30 minutes
+from dispatch to completion, including the approval. The verifier acquired the pinned public Windows Dev SDK `v0.0.1-preview.20261110.windows.1`
+(content `5bb55372...c7ef`), verified all 30 package files and ran both C and C++ workflows: each first build executed three
+commands, each warm build zero, with identical project-lock bytes (`bc10a55b...656e`). The extracted `crt-cli.exe` is PE machine
+`0x8664` and imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`.
+
+The draft `v0.1.0-preview.20261117.windows-x86_64.9` is a pre-release draft that targets `b6cc5af`. Its 5,459,460-byte archive has SHA-256
+`cc41be6274726e36bca45f9ee56adacf3c0e037e2ecf22755f52acb19348cc33` (the executable is `bd6a9630...5420`) and was re-downloaded from GitHub
+and compared with `cmp`: the archive and `SHA256SUMS-windows-x86_64` are byte-identical to the `package` job's artifacts, and the digest
+matches the sums file. The package consumed the bootstrap CLI `v0.1.0-preview.20261110.windows-x86_64.1` after a verified publisher signature.
+This record is the second Windows build of the workflow's inputs: the local preflight above (serial 91, no GitHub release) packed a different commit and is not reused.
+
+Receipts, the downloaded draft and the run artifacts are retained under `out/windows-release-workflow-20261117/hosted-44012191646/`.
+Limits: nothing was published, no `.sig` was attached (the owner signs offline, as for the other hosts), and the draft is **not deleted**; delete it by hand
+(or sign and publish a separate serial) as the workflow header says. Windows/x64 is therefore at the same gate as macOS/arm64 was after its draft rehearsal;
+the first hosted publication (`dry_run: false`), the signature replay and a public-asset replay remain open.
+
 ## macOS/arm64 Preview workflow preflight (2026-11-17)
 
 `release.yml` now accepts `macos-arm64` for `package` and `verify` on separate

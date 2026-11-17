@@ -17,8 +17,11 @@ inventing commits or test results. Older months may later be summarized under
 `windows-2022` with LLVM 22.1.8. The verifier audits the x64 PE and its declared
 DLL imports, then exercises public SDK acquisition and both C/C++ workflows.
 Native package/verify, repeat packing and a simulated draft comparison pass.
-The approved hosted draft and public release remain separate gates.
-[Preflight and exact inputs](docs/acceptance/ci_acceptance.md#windowsx64-preview-workflow-preflight-2026-11-17).
+The hosted draft rehearsal (run 44012191646, serial 9, `dry_run: true`, approved `release` environment) passed `package`, `verify` and `publish`:
+the draft archive is byte-identical to the package artifact, both C/C++ workflows run (cold 3/warm 0) and the PE imports only `kernel32.dll` and
+`api-ms-win-core-synch-l1-2-0.dll`. The draft is left for the owner to delete or sign; no publication, signature or public replay yet.
+[Preflight and exact inputs](docs/acceptance/ci_acceptance.md#windowsx64-preview-workflow-preflight-2026-11-17),
+[hosted draft rehearsal](docs/acceptance/ci_acceptance.md#hosted-windowsx64-draft-rehearsal-2026-11-17).
 
 ### Publish the macOS/arm64 Preview through GitHub Actions
 
