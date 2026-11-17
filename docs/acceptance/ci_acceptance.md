@@ -980,5 +980,6 @@ pins are flagged `sdk_source_publisher: true` as the Linux pins are, and `ci_boo
 | win-x64 | `crt-cli-0.1.0-dev-windows-x86_64-preview.20261117.1.tar.xz` | 5,458,816 | `02396e04...706f` |
 
 Evidence: `tools/check_ci_pins.py` is `OK` for all four hosts against the public bytes, including both new bootstrap signatures and the unchanged SDK signatures, and
-`test_check_ci_pins.py` passes. Not covered: a hosted `CI gate` run with these pins (it needs the change on a pull request), a local `ci_bootstrap.py` run on
-Windows/x64 or macOS/arm64, and a second reviewer. The move does not change the SDK pins; it is separate from the Windows/arm64 wiring.
+`test_check_ci_pins.py` passes. Hosted: [pull request 15](https://github.com/webos21/crt-cli/pull/15) (`5b39a8e`, merge-ref run [44023277756](https://github.com/webos21/crt-cli/actions/runs/44023277756)) passed `CI gate` with all five native legs (macOS 12m57s, Windows 14m18s, Linux 4m53s-6m58s). The downloaded `ci-summary.json` of `macos-arm64` and `win-x64` record the new `v0.1.0-preview.20261117` bootstrap with the bootstrap CLI authenticated by the pinned publisher key and the SDK archive `signature_verified`, as the Linux legs do for `20261116`.
+
+Not covered: a local `ci_bootstrap.py` run on Windows/x64 or macOS/arm64 (the hosted legs ran the same driver), and a second reviewer. The move does not change the SDK pins; it is separate from the Windows/arm64 wiring.
