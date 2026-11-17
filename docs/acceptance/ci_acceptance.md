@@ -707,7 +707,7 @@ matches the sums file. The package consumed the bootstrap CLI `v0.1.0-preview.20
 This record is the second Windows build of the workflow's inputs: the local preflight above (serial 91, no GitHub release) packed a different commit and is not reused.
 
 Receipts, the downloaded draft and the run artifacts are retained under `out/windows-release-workflow-20261117/hosted-44012191646/`.
-Limits: nothing was published, no `.sig` was attached (the owner signs offline, as for the other hosts), and the draft is **not deleted**; delete it by hand
+Limits at that point (all closed by the sections below: publication, signature, public replay and draft cleanup): nothing was published, no `.sig` was attached (the owner signs offline, as for the other hosts), and the draft is **not deleted**; delete it by hand
 (or sign and publish a separate serial) as the workflow header says. Windows/x64 is therefore at the same gate as macOS/arm64 was after its draft rehearsal;
 the first hosted publication (`dry_run: false`), the signature replay and a public-asset replay remain open.
 
@@ -747,7 +747,14 @@ matches the checksum file, all 30 package files verify, the PE is x64 importing 
 works and the C and C++ workflows build, test and run (cold 3, warm 0 commands, lock `bc10a55b...656e`). Receipts: `out/windows-release-workflow-20261117/` (`signatures/`, `public-replay/`).
 
 Limits: the signature is checked with this repository's Python verifier, not with `crt-cli fetch --publisher-key` on the public download; the `release.json` used for the public replay is the
-package artifact's, not a file served by GitHub; the `.9` draft is signed only because the owner supplied that signature, and it is still to be deleted by hand; no pin adopts this release.
+package artifact's, not a file served by GitHub; the `.9` draft was signed only because the owner supplied that signature (it was deleted afterwards, see below); no pin adopts this release.
+
+### Rehearsal draft cleanup (2026-11-17)
+
+At the owner's request the two serial-9 rehearsal drafts, `v0.1.0-preview.20261117.windows-x86_64.9` (with its attached `.sig`) and
+`v0.1.0-preview.20261117.macos-arm64.9`, were deleted with `gh release delete`. Both were drafts; no Git tag existed for either. Afterwards the repository
+lists no draft release, and the published `.1` releases (assets, signatures and tags `b6cc5af` and `b51d103`) are unchanged. The rehearsal run records, receipts under
+`out/` and the digests recorded above remain as evidence; a rehearsal draft carries no authority once deleted, and the next rehearsal uses a new serial.
 
 ## macOS/arm64 Preview workflow preflight (2026-11-17)
 

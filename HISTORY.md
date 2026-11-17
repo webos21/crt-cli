@@ -11,6 +11,11 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-17
 
+### Clean up the 20261117 rehearsal drafts
+
+Deleted the Windows/x64 and macOS/arm64 serial-9 rehearsal drafts at the owner's request; no draft release remains and the published `.1` Preview releases are unchanged.
+[Acceptance](docs/acceptance/ci_acceptance.md#rehearsal-draft-cleanup-2026-11-17).
+
 ### Sign and replay the Windows/x64 Preview
 
 The owner's detached signatures for `...windows-x86_64.1` and the `.9` draft verify against the pinned publisher key (SPKI `59218576...3fa2`; each is refused
