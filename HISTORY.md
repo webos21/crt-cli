@@ -11,6 +11,14 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-17
 
+### Publish the Windows/x64 Preview through GitHub Actions
+
+Release run 44015918992 (`win-x64`, `b6cc5af`, serial 1, `dry_run: false`, approved `release` environment) published the pre-release
+`v0.1.0-preview.20261117.windows-x86_64.1`. The public 5,458,816-byte archive is byte-identical to the package artifact that the hosted verifier ran
+(30 files, x64 PE importing only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`, public SDK acquisition, C and C++ cold 3 / warm 0). Not done: the owner's
+offline signature, a separate local public-asset replay, deleting the `.9` rehearsal draft.
+[Acceptance](docs/acceptance/ci_acceptance.md#first-hosted-windowsx64-publication-2026-11-17).
+
 ### Add Windows/x64 to the shared Preview release workflow
 
 `release.yml` runs Windows packaging and independent verification on

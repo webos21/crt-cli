@@ -711,6 +711,24 @@ Limits: nothing was published, no `.sig` was attached (the owner signs offline, 
 (or sign and publish a separate serial) as the workflow header says. Windows/x64 is therefore at the same gate as macOS/arm64 was after its draft rehearsal;
 the first hosted publication (`dry_run: false`), the signature replay and a public-asset replay remain open.
 
+### First hosted Windows/x64 publication (2026-11-17)
+
+The [release run](https://github.com/webos21/crt-cli/actions/runs/44015918992) used `main` workflow revision `ec0f105` and built the
+reviewed commit `b6cc5af00220578839f6e173eccd8e89c809ee99` (the commit of the draft rehearsal above, `CI gate` green) with `host: win-x64`,
+`dry_run: false`, date `20261117` and serial `1`. `package` and `verify` passed on separate `windows-2022` runners; `webos21` approved the
+`release` environment with the comment `OK`, and `publish` passed. The pre-release
+[`v0.1.0-preview.20261117.windows-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261117.windows-x86_64.1) was published at
+2026-11-17T04:34:34Z (not a draft, not the latest release). The Git tag resolves to `b6cc5af`.
+
+The public 5,458,816-byte archive has SHA-256 `02396e04cd4775cb7cfd65bd5c0e2c8975c4fa5b4ad18cfa039f65bf5cdd706f` (executable `feb97791...84df`). It was downloaded
+from the public release and compared with `cmp`: the archive and `SHA256SUMS-windows-x86_64` are byte-identical to the `package` job's artifacts, and the digest matches the
+sums file and `release.json`. The hosted verifier ran on those same bytes: 30 package files, the x64 PE (`0x8664`) importing only `kernel32.dll` and
+`api-ms-win-core-synch-l1-2-0.dll`, public Windows Dev SDK `v0.0.1-preview.20261110.windows.1` acquisition, and both C and C++ workflows (cold 3, warm 0 commands,
+lock `bc10a55b...656e`). Receipts and the public download are retained under `out/windows-release-workflow-20261117/hosted-44015918992/`.
+
+Not covered: the owner's offline `.sig` is not attached, so no publisher signature is verified for this archive; no separate local replay of the public download was run
+beyond the hosted `verify` job on identical bytes; the earlier draft `...windows-x86_64.9` still exists and is to be deleted by hand; no pin adopts this release.
+
 ## macOS/arm64 Preview workflow preflight (2026-11-17)
 
 `release.yml` now accepts `macos-arm64` for `package` and `verify` on separate
