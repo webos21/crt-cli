@@ -215,6 +215,14 @@ class Ci:
             'contract_url': base + sdk['contract'],
             'sdk': {'version': sdk['version'], 'content_sha256': sdk['content_sha256'], 'contract_sha256': sdk['contract_sha256']},
             'redirect_policy': 'github-release', 'timeout_seconds': 300}
+        if self.host_pins['bootstrap'].get('sdk_source_publisher') is True:
+            # Only a bootstrap CLI that knows the source `publisher` field may be given it (an older one rejects unknown fields): the pin says which.
+            publisher = publisher_signature.pinned_publisher(self.pins.get('publisher'), ROOT)
+            signature = sdk.get('signature')
+            publisher_signature.check_signature_pin('SDK archive', signature)
+            source['publisher'] = {
+                'key_file': publisher['key_file'].resolve().as_posix(), 'key_spki_sha256': publisher['key_spki_sha256'],
+                'archive_signature': {'url': base + sdk['archive'] + '.sig', 'sha256': signature['sha256'], 'size': signature['size']}}
         path = self.work / 'sdk-source.json'
         path.write_text(json.dumps(source, indent=2) + '\n', encoding='utf-8')
         return path
@@ -396,6 +404,11 @@ class Ci:
         if identity['content_sha256'] != self.host_pins['sdk']['content_sha256']:
             raise CiError('acquired SDK identity differs from its pin: %s' % identity)
         self.summary['sdk'] = {'version': identity['version'], 'content_sha256': identity['content_sha256']}
+        if self.host_pins['bootstrap'].get('sdk_source_publisher') is True:
+            acquisition = data.get('acquisition', {})
+            if acquisition.get('publisher_authentication') != 'signature_verified':
+                raise CiError('the SDK archive was not authenticated by the pinned publisher key: %s' % acquisition.get('publisher_authentication'))
+            self.summary['sdk']['publisher_authentication'] = 'signature_verified'
         # The native suite drives explicit --sdk-root/--sdk-contract flows and reads them from the project's local binding,
         # so stage 1 is bound explicitly to the installed SDK and the contract the store kept beside it.
         store = Path(self.env['HOME']) / '.crt' / 'sdks'

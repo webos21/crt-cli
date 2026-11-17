@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from ci_bootstrap import Ci, CiError, host_key, native_phase_report
+from ci_bootstrap import Ci, CiError, ROOT as ROOT_FOR_TESTS, host_key, native_phase_report
 
 
 class NativePhaseReportTest(unittest.TestCase):
@@ -135,3 +135,37 @@ class BootstrapAuthenticationTest(unittest.TestCase):
         ci.pins['publisher']['key_spki_sha256'] = '0' * 64
         with self.assertRaisesRegex(CiError, 'does not match'):
             self.authenticate(ci, self.sign('a'))
+
+class SdkSourcePublisherTest(unittest.TestCase):
+    """The SDK source gets the `publisher` object only for a bootstrap CLI that the pin says understands it (an older one rejects unknown fields)."""
+    def source(self, flag, signature=True):
+        import publisher_signature
+        with tempfile.TemporaryDirectory() as folder:
+            ci = Ci.__new__(Ci)
+            ci.work, ci.summary = Path(folder), {}
+            key = ROOT_FOR_TESTS / '.github' / 'ci' / 'crt-release-publisher.pub'
+            sdk = {'release_base': 'https://example.invalid/r/', 'version': 'v1', 'archive': 'a.tar.xz', 'contract': 'c.json', 'content_sha256': '1' * 64,
+                   'contract_sha256': '2' * 64, 'manifest': {'name': 'm.json', 'sha256': '3' * 64, 'size': 10}}
+            if signature:
+                sdk['signature'] = {'name': 'a.tar.xz.sig', 'size': 256, 'sha256': '4' * 64}
+            boot = {'sdk_source_publisher': True} if flag else {}
+            ci.pins = {'publisher': {'key_file': '.github/ci/crt-release-publisher.pub', 'key_spki_sha256': publisher_signature.spki_sha256(key)}}
+            ci.host_pins = {'bootstrap': boot, 'sdk': sdk}
+            pem = Path(folder) / 'roots.pem'
+            pem.write_text('x', encoding='ascii')
+            path = ci.sdk_source(pem)
+            return json.loads(path.read_text(encoding='utf-8'))
+
+    def test_a_flagged_bootstrap_gets_the_pinned_key_and_signature(self):
+        source = self.source(True)
+        publisher = source['publisher']
+        self.assertTrue(Path(publisher['key_file']).is_absolute())
+        self.assertEqual(publisher['archive_signature'], {'url': 'https://example.invalid/r/a.tar.xz.sig', 'sha256': '4' * 64, 'size': 256})
+        self.assertEqual(len(publisher['key_spki_sha256']), 64)
+
+    def test_an_unflagged_bootstrap_keeps_the_source_it_always_had(self):
+        self.assertNotIn('publisher', self.source(False))
+
+    def test_a_flagged_bootstrap_without_a_signature_pin_fails(self):
+        with self.assertRaises(Exception):
+            self.source(True, signature=False)
