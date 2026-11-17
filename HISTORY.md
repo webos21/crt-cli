@@ -11,6 +11,15 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-17
 
+### Add Windows/x64 to the shared Preview release workflow
+
+`release.yml` runs Windows packaging and independent verification on
+`windows-2022` with LLVM 22.1.8. The verifier audits the x64 PE and its declared
+DLL imports, then exercises public SDK acquisition and both C/C++ workflows.
+Native package/verify, repeat packing and a simulated draft comparison pass.
+The approved hosted draft and public release remain separate gates.
+[Preflight and exact inputs](docs/acceptance/ci_acceptance.md#windowsx64-preview-workflow-preflight-2026-11-17).
+
 ### Publish the macOS/arm64 Preview through GitHub Actions
 
 The approved `release.yml` run published `v0.1.0-preview.20261117.macos-arm64.1`

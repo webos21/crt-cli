@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from ci_release import (ReleaseError, command_package, command_verify, locate_executable, locate_sdk, names, parse_sums,
-                        render_notes, require_artifact_match, require_commit, sums_line)
+                        render_notes, require_artifact_match, require_commit, sums_line, windows_image_identity)
 
 
 class NativeRunnerTest(unittest.TestCase):
@@ -17,6 +17,30 @@ class NativeRunnerTest(unittest.TestCase):
                 with self.subTest(command=command.__name__):
                     with self.assertRaisesRegex(ReleaseError, 'macos-arm64 requires a native runner, found linux-arm64'):
                         command(SimpleNamespace(host='macos-arm64'))
+
+    def test_windows_release_rejects_a_linux_runner(self):
+        with patch('ci_release.host_key', return_value='linux-x64'):
+            for command in (command_package, command_verify):
+                with self.subTest(command=command.__name__):
+                    with self.assertRaisesRegex(ReleaseError, 'win-x64 requires a native runner, found linux-x64'):
+                        command(SimpleNamespace(host='win-x64'))
+
+
+class WindowsImageIdentityTest(unittest.TestCase):
+    ALLOWED = ['kernel32.dll', 'api-ms-win-core-synch-l1-2-0.dll']
+    AMD64 = '  Machine: IMAGE_FILE_MACHINE_AMD64 (0x8664)\n'
+    IMPORTS = 'Import {\n  Name: KERNEL32.dll\n}\nImport {\n  Name: api-ms-win-core-synch-l1-2-0.dll\n}\n'
+
+    def test_x64_with_windows_imports(self):
+        self.assertEqual(windows_image_identity(self.AMD64 + self.IMPORTS, self.ALLOWED),
+                         {'machine': '0x8664', 'imports': sorted(self.ALLOWED)})
+
+    def test_wrong_architecture_missing_or_extra_imports_are_refused(self):
+        with self.assertRaisesRegex(ReleaseError, 'expected an x64 PE'):
+            windows_image_identity('  Machine: IMAGE_FILE_MACHINE_ARM64 (0xAA64)\n' + self.IMPORTS, self.ALLOWED)
+        for imports in ('', self.IMPORTS + 'Import {\n  Name: ucrtbase.dll\n}\n'):
+            with self.subTest(imports=imports), self.assertRaisesRegex(ReleaseError, 'unexpected Windows PE imports'):
+                windows_image_identity(self.AMD64 + imports, self.ALLOWED)
 
 
 class NamesTest(unittest.TestCase):

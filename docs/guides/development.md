@@ -307,8 +307,8 @@ owns integration/release work and any still-pending hosted qualification.
 
 ### Publish a CLI Preview
 
-Dispatch `release.yml` from `main` with `host` (`linux-x64`, `linux-arm64`
-or `macos-arm64`), the full commit SHA on `main`, a date, a serial and the
+Dispatch `release.yml` from `main` with `host` (`linux-x64`, `linux-arm64`,
+`macos-arm64` or `win-x64`), the full commit SHA on `main`, a date, a serial and the
 reviewed notes path (`.github/release/preview-notes.md`). The commit must have
 a successful `CI gate` and contain the release driver. Use `dry_run: true`
 to stage a verified draft for rehearsal. Use an unused date/serial for the
@@ -316,6 +316,11 @@ actual Preview.
 
 The package and verify jobs use separate native runners. macOS/arm64 uses
 `macos-15`, the selected Xcode tools and the macOS system root certificates.
+Windows/x64 uses `windows-2022`, LLVM 22.1.8, Windows SDK `um/x64` import
+libraries and the Windows root certificate store. Both Windows jobs pass
+`--llvm-bin 'C:/Program Files/LLVM/bin'` to the Python driver. The verifier
+checks `crt-cli.exe` for x64 PE architecture and allowed DLL imports before
+starting it from a private working directory.
 Verification extracts the package into a new workspace, installs the pinned
 public SDK into a private home and runs C and C++ project workflows. The
 package artifact contains `release.json`, the archive and its checksum file.

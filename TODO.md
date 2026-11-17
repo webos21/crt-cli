@@ -114,6 +114,10 @@ paths and the Linux/arm64 dispatch, push and pull-request runs.
     - [x] Publish the candidate and pass native replay of the public archive against its
       approved digest ([public asset evidence](docs/acceptance/preview_acceptance.md#github-actions-macosarm64-preview-release-2026-11-17)).
     - [x] Attach the offline publisher signature and replay the signed public archive.
+- [ ] Extend the shared Preview release workflow to Windows/x64.
+  - [x] Wire `windows-2022` package/verify and pass the [native Windows preflight](docs/acceptance/ci_acceptance.md#windowsx64-preview-workflow-preflight-2026-11-17).
+  - [ ] Record a hosted `dry_run: true` rehearsal through the approval-gated draft comparison.
+  - [ ] Publish a separately reviewed candidate and replay its signed public archive on Windows/x64.
 - [x] CI pin promotion policy and `tools/check_ci_pins.py` ([guide](docs/guides/development.md#ci-pin-promotion)); every current pin
   matches the published bytes.
 - The Windows/arm64 leg moved to Planned: [CI Platform Expansion](#ci-platform-expansion).

@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from ci_bootstrap import CiError, host_key, macos_tool_paths, write_system_roots  # noqa: E402
+from ci_bootstrap import CiError, host_key, macos_tool_paths, windows_sdk_path, write_system_roots  # noqa: E402
 
 
 class ReleaseError(Exception):
@@ -153,6 +153,15 @@ def require_native_host(requested):
         raise ReleaseError('release host %s requires a native runner, found %s' % (requested, actual))
 
 
+def windows_image_identity(listing, allowed_imports):
+    if not re.search(r'^\s*Machine: IMAGE_FILE_MACHINE_AMD64 \(0x8664\)\s*$', listing, re.MULTILINE):
+        raise ReleaseError('expected an x64 PE executable')
+    imports = {name.lower() for name in re.findall(r'^\s*Name:\s*(\S+\.dll)\s*$', listing, re.I | re.MULTILINE)}
+    if 'kernel32.dll' not in imports or imports - {name.lower() for name in allowed_imports}:
+        raise ReleaseError('unexpected Windows PE imports: %s' % sorted(imports))
+    return {'machine': '0x8664', 'imports': sorted(imports)}
+
+
 def command_package(args):
     """Build the exact commit with the pinned published CLI and the pinned public SDK, then pack deterministically.
 
@@ -214,21 +223,45 @@ def command_verify(args):
         raise ReleaseError('archive verification failed: %s' % result.stderr.strip()[-400:])
     info = json.loads(result.stdout)
     root = Path(info['root'])
-    exe = root / 'crt-cli'
+    windows = args.host == 'win-x64'
+    expected_exe = 'crt-cli.exe' if windows else 'crt-cli'
+    if info['executable'] != expected_exe:
+        raise ReleaseError('expected package executable %s, found %s' % (expected_exe, info['executable']))
+    exe = root / expected_exe
+    host_pins = json.loads((ROOT / '.github/ci/pins.json').read_text(encoding='utf-8'))['hosts'][args.host]
+    binary = {}
+    child_options = {}
     if args.host == 'macos-arm64':
         arch = run('mach-o-architecture', ['/usr/bin/lipo', '-archs', exe], capture_output=True, text=True)
         if arch.stdout.strip() != 'arm64':
             raise ReleaseError('expected an ARM64 Mach-O executable, found %r' % arch.stdout.strip())
         tools = macos_tool_paths()
+    elif windows:
+        if not args.llvm_bin:
+            raise ReleaseError('--llvm-bin is required on Windows')
+        llvm = Path(args.llvm_bin).resolve()
+        tools = {'--cc': llvm / 'clang.exe', '--cxx': llvm / 'clang++.exe', '--linker': llvm / 'ld.lld.exe',
+                 '--ar': llvm / 'llvm-ar.exe', '--os-sdk': windows_sdk_path()}
+        reader = llvm / 'llvm-readobj.exe'
+        for tool in [reader, *(Path(path) for flag, path in tools.items() if flag != '--os-sdk')]:
+            if not tool.is_file():
+                raise ReleaseError('missing Windows host tool: %s' % tool)
+        listing = run('pe-audit', [reader, '--file-headers', '--coff-imports', exe], capture_output=True, text=True,
+                      creationflags=subprocess.CREATE_NO_WINDOW).stdout
+        binary = windows_image_identity(listing, host_pins['allowed_imports'])
+        # Do not let the source checkout participate in the Windows DLL search.
+        child_options = {'cwd': work, 'creationflags': subprocess.CREATE_NO_WINDOW}
     else:
         llvm = Path(args.llvm_bin or '/usr/lib/llvm-21/bin')
         tools = {'--cc': llvm / 'clang', '--cxx': llvm / 'clang++', '--linker': llvm / 'ld.lld', '--ar': llvm / 'llvm-ar'}
     flags = [part for flag, path in tools.items() for part in (flag, path)]
     env = {'PATH': str(work / 'nowhere'), 'HOME': str(work / 'home'), 'TMPDIR': str(work / 'tmp'), 'LC_ALL': 'C'}
+    if windows:
+        env.update(USERPROFILE=env['HOME'], SystemRoot=os.environ['SystemRoot'], TEMP=env['TMPDIR'], TMP=env['TMPDIR'])
     (work / 'home').mkdir()
     (work / 'tmp').mkdir()
     def cli(label, *argv, expect=0):
-        done = subprocess.run([str(exe), *map(str, argv)], capture_output=True, text=True, env=env, timeout=1800)
+        done = subprocess.run([str(exe), *map(str, argv)], capture_output=True, encoding='utf-8', env=env, timeout=1800, **child_options)
         log('[%s] exit=%d' % (label, done.returncode))
         if done.returncode != expect:
             raise ReleaseError('%s: unexpected exit %d: %s' % (label, done.returncode, (done.stdout + done.stderr)[-300:]))
@@ -242,7 +275,7 @@ def command_verify(args):
         raise ReleaseError('self doctor did not pass the resources check')
     cli('wrong-pin', '--json', 'doctor', '--scope', 'self', '--resources', root, '--resources-sha256', '0' * 64, expect=1)
     # Real network: the packaged executable acquires the pinned public SDK through the github-release redirect policy.
-    pins = json.loads((ROOT / '.github/ci/pins.json').read_text(encoding='utf-8'))['hosts'][args.host]['sdk']
+    pins = host_pins['sdk']
     roots = write_system_roots(work / 'roots.pem')
     base = pins['release_base']
     source = {'schema': 'crt-cli.sdk-source', 'format': 0, 'ca_file': roots.as_posix(), 'ca_sha256': hashlib.sha256(roots.read_bytes()).hexdigest(),
@@ -278,7 +311,8 @@ def command_verify(args):
                                                   'manifest_sha256': pin, 'files': info['files'],
                                                   'executable_version': version.strip(), 'sdk': acquired['data']['identity'],
                                                   'tools': {flag: str(path) for flag, path in tools.items()},
-                                                  'projects': projects}, indent=2) + '\n', encoding='utf-8')
+                                                  'projects': projects, **({'binary': binary} if windows else {})},
+                                                 indent=2) + '\n', encoding='utf-8')
 
 
 def gh(*argv, check=True):

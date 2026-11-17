@@ -116,6 +116,13 @@ def macos_tool_paths():
     return tools
 
 
+def windows_sdk_path():
+    libs = sorted(Path('C:/Program Files (x86)/Windows Kits/10/Lib').glob('*/um/x64/kernel32.lib'))
+    if not libs:
+        raise CiError('no Windows SDK um/x64 import libraries found')
+    return libs[-1].parent.as_posix()
+
+
 class Ci:
     def __init__(self, args):
         self.args = args
@@ -267,10 +274,7 @@ class Ci:
     def windows_sdk(self):
         if self.args.os_sdk:
             return self.args.os_sdk
-        libs = sorted(Path('C:/Program Files (x86)/Windows Kits/10/Lib').glob('*/um/x64/kernel32.lib'))
-        if not libs:
-            raise CiError('no Windows SDK um/x64 import libraries found; pass --os-sdk')
-        return libs[-1].parent.as_posix()
+        return windows_sdk_path()
 
     # --- stages -------------------------------------------------------------------------------------------------
     def export(self, name):

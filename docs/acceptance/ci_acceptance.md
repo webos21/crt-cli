@@ -628,6 +628,67 @@ Signatures: the owner signed both archives offline; the files arrived named `...
 
 Not covered: macOS and Windows Previews (the workflow supports Linux only), executing the arm64 archive from the public asset, and the CI bootstrap pin, which still names the older Preview.
 
+## Windows/x64 Preview workflow preflight (2026-11-17)
+
+`release.yml` accepts `win-x64` for separate `package` and `verify` jobs on
+`windows-2022`. Both use the same LLVM 22.1.8 installation as Windows CI.
+Verification shares Windows SDK import-library discovery with bootstrap CI,
+uses the Windows root certificate store, and checks the extracted `crt-cli.exe`
+with `llvm-readobj` before launch. It records the PE machine and imports in
+`verify.json`. The common `main`/`CI gate` check, test set, artifact transfer,
+and approval-gated `publish` job are unchanged.
+
+**Native package replay.** On Windows/x64 build 26100, LLVM 22.1.8, Python
+3.11.9 and Windows SDK `10.0.28000.0/um/x64`, the unchanged `package` command
+built a clean clone at `71682966a7512f42196e6e7a2f5c216a295e6963` with
+`--host win-x64 --date 20261117 --serial 91 --llvm-bin 'C:/Program Files/LLVM/bin'`.
+It authenticated the pinned public Windows bootstrap archive, then acquired
+the pinned Windows Dev SDK `v0.0.1-preview.20261110.windows.1` (content
+`5bb55372ec10e3cfa24c84de981a7130f56aeb57ef0d43d5da22a65036dec7ef`)
+through the older bootstrap's digest-based SDK acquisition.
+
+Native, archive, SDK-store and recipe tests passed **991/214/113/142** checks.
+Both cold self-builds executed 21 commands; stage 2 reused 21 on a warm build.
+The executable bytes differ between the two stages; both pass the standalone
+help/version/doctor and direct-import checks. Two packings of the stage-2
+package produced identical 5,459,168-byte archives. This proves deterministic
+packing of one build, not byte-identical self-builds.
+
+| Local rehearsal identity | Value |
+| --- | --- |
+| Label only, no tag or release created | `v0.1.0-preview.20261117.windows-x86_64.91` |
+| Archive SHA-256 | `a651b9626a1d7be5a36968a520a204a56a45b0ea7e194768c8edd33e1e9cb944` |
+| Executable SHA-256 | `dccfa15b735e123c07d4ebb81315cf0497e080b76f06fc6df7c7e83ea217a076` |
+| Package manifest SHA-256 | `e83c1624000cd9b61966c51fb8b0b58098773a8fe519235305a5f48b2767e7c2` |
+| Verification receipt SHA-256 | `315bceaf57cd5ece0a40a86888e1327f7ee7c5e150aec2df5f538dfb9cf2c30b` |
+
+**Separate native verification.** Ran the updated workflow's Bash `verify`
+step on this device in a fresh workspace with spaces and Korean text, using
+the copied archive and checksum. All 30 package files verified. The extracted
+PE is x64 (`0x8664`) and imports only `kernel32.dll` and
+`api-ms-win-core-synch-l1-2-0.dll`. Version, self doctor, wrong resource pin
+refusal, public GitHub SDK acquisition and both C/C++ create/build/test/run
+flows pass. Both first builds executed three commands and both warm builds
+executed zero, with unchanged project locks. The updated verifier also passes
+on the existing public Windows Preview. A one-byte change to that archive is
+refused before extraction with the original checksum.
+
+**Draft comparison and limits.** A local fixture substitutes only the `gh`
+operations of the unchanged `publish --draft-only` driver. It checks the
+commit, tag and digest in the rendered notes and compares the archive and
+checksum bytes after copying them back; it never invokes `gh release edit`.
+This is an offline check of the shared draft logic. No Actions run, GitHub
+draft, actual publication, new signature, or pin adoption is claimed.
+Hosted rehearsal still requires the change on `main`, a passing `CI gate` for
+the selected commit, and approval on the `release` environment.
+
+All 100 Python tool tests pass in the native Windows test environment, and
+`actionlint` 1.7.12 passes. An initial test run in the restricted app shell
+failed at real-symlink fixtures; the native run passed without changing those
+tests. Logs and receipts are retained under `out/wrel17/`, including
+`pkg/ci/artifact/ci-summary.json`, `pkg/release/release.json`,
+`fresh runner 한글/verify-work/verify.json`, and `draft-replay.json`.
+
 ## macOS/arm64 Preview workflow preflight (2026-11-17)
 
 `release.yml` now accepts `macos-arm64` for `package` and `verify` on separate
