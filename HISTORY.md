@@ -11,6 +11,12 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-17
 
+### Pin the signed 20261116 Preview as the Linux bootstrap
+
+`linux-x64`/`linux-arm64` bootstrap with the new Previews; their SDK source carries the `publisher` object (per-host flag, older macOS/Windows CLIs unchanged), so the
+SDK archive is authenticated natively. `check_ci_pins` OK on four hosts, 59 tests, and a local linux-x64 bootstrap run passed (913/221/114/142, stages identical). Record:
+[ci_acceptance](docs/acceptance/ci_acceptance.md#linux-bootstrap-pin-moved-to-the-20261116-preview-2026-11-17). The hosted `CI gate` is the pull request's evidence.
+
 ### First real publication of the CLI Preview and its publisher signatures
 
 `release.yml` published `v0.1.0-preview.20261116.linux-x86_64.1` and `...linux-arm64.1` from `eab525c` (`dry_run: false`, approved in the `release` environment with an empty

@@ -681,9 +681,17 @@ two host-tools archives, five Dev SDK archives and four CLI archives. The consum
   and `test_ci_integration` pass (70 tests with `test_ci_release`). The integration driver's earlier OpenSSL call was replaced by it.
 - Full `crt-cli test` with these changes (clean copy, public `.4` SDK, explicit root/contract): 913 native checks, archive 221, SDK store 114, port recipe 142 pass; the five
   input-gated port suites were not run.
-- **Still not covered.** The SDK archive used by CI is still acquired by the pinned *bootstrap CLI*, which predates the `publisher` source field, so that download
+- **Still not covered (Linux superseded 2026-11-17, see the next-but-one section).** The SDK archive used by CI is still acquired by the pinned *bootstrap CLI*, which predates the `publisher` source field, so that download
   is digest-pinned in CI and only the review aid checks its signature; it becomes native once a CLI Preview with this change is pinned as the bootstrap.
   macOS/Windows native replays of the new options were not run here; the zlib source stays digest-only; the key's independent publication is still partial.
+
+## Linux bootstrap pin moved to the 20261116 Preview (2026-11-17)
+
+`.github/ci/pins.json`: `linux-x64` and `linux-arm64` now bootstrap with the Previews published by `release.yml` on 2026-11-17 (`v0.1.0-preview.20261116.linux-x86_64.1`, `...linux-arm64.1`; sizes, digests and signature pins as published). Their `sdk acquire` understands the source `publisher` object, so a bootstrap pin flagged `sdk_source_publisher: true` makes `ci_bootstrap.py` add the pinned key, its fingerprint and the pinned SDK-archive signature to the SDK source, and the run fails unless the acquisition reports `signature_verified`. `macos-arm64` and `win-x64` keep the older CLI and the unchanged source; an older CLI rejects unknown source fields, which is why the flag is per host.
+
+Evidence: `tools/check_ci_pins.py` OK for all four hosts against the public bytes (including the new bootstrap signatures); 59 Python tests pass (3 new for the source shape); a full local `tools/ci_bootstrap.py --host linux-x64` run on Linux/x86_64 (LLVM 21) passed: bootstrap archive and the SDK archive both `signature_verified`, native 913, archive 221, SDK store 114, port recipe 142, stage 1 and stage 2 byte-identical. Summary: `publisher_authentication` for bootstrap and SDK.
+
+Not covered: a hosted run (that is the pull request's `CI gate`), the arm64 pin on a native arm64 machine (only the hosted `linux-arm64` leg will exercise it), macOS/Windows (still digest-only for the SDK download), and the 24.04 leg locally.
 
 ## Host-tools pins and the wired `ports` job (2026-11-16)
 

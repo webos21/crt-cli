@@ -13,16 +13,17 @@
   "hosts": {
     "linux-x64": {
       "bootstrap": {
-        "release": "v0.1.0-preview.20261110.linux-x86_64.1",
-        "asset": "crt-cli-0.1.0-dev-linux-x86_64-preview.20261110.1.tar.xz",
-        "sha256": "ad43afbf7e810bb7b1a587c47568ba6d17bc404e5ee05069a83d9ef56edc1383",
-        "size": 5232844,
+        "release": "v0.1.0-preview.20261116.linux-x86_64.1",
+        "asset": "crt-cli-0.1.0-dev-linux-x86_64-preview.20261116.1.tar.xz",
+        "sha256": "52fbe5d1950740e1b7e52b88e67169ea390f83a09f9b03be9c1867555ec7fdca",
+        "size": 5261236,
         "version": "0.1.0-dev",
         "signature": {
-          "name": "crt-cli-0.1.0-dev-linux-x86_64-preview.20261110.1.tar.xz.sig",
+          "name": "crt-cli-0.1.0-dev-linux-x86_64-preview.20261116.1.tar.xz.sig",
           "size": 256,
-          "sha256": "662f101b881d047b83e17717771ac27fbb0154114e6d95d494dcc7d64427a282"
-        }
+          "sha256": "eb2f706d3cee016d75c62c4e348d814d433c9e8502e5cb45fadfb1feabe2e8cc"
+        },
+        "sdk_source_publisher": true
       },
       "sdk": {
         "release_base": "https://github.com/webos21/crt/releases/download/v0.0.1-preview.20261110.4/",
@@ -46,16 +47,17 @@
     },
     "linux-arm64": {
       "bootstrap": {
-        "release": "v0.1.0-preview.20261111.linux-arm64.1",
-        "asset": "crt-cli-0.1.0-dev-linux-aarch64-preview.20261111.1.tar.xz",
-        "sha256": "fa28ec8d6644da3dc32aaa8e9281c8b953b85d97498cc3cdc12f55b156014cff",
-        "size": 5039156,
+        "release": "v0.1.0-preview.20261116.linux-arm64.1",
+        "asset": "crt-cli-0.1.0-dev-linux-aarch64-preview.20261116.1.tar.xz",
+        "sha256": "311bc451b0c20402f6298ba469e596326bef2c5ae526333ef861edff860e77aa",
+        "size": 5063404,
         "version": "0.1.0-dev",
         "signature": {
-          "name": "crt-cli-0.1.0-dev-linux-aarch64-preview.20261111.1.tar.xz.sig",
+          "name": "crt-cli-0.1.0-dev-linux-aarch64-preview.20261116.1.tar.xz.sig",
           "size": 256,
-          "sha256": "1a09a77fd3d92514831f2fa2968872a75b83633d8b10e636de84d5034a9bc479"
-        }
+          "sha256": "f51383466415c05a2a4e0a705be8e490f03c5973c11fb22783c76ffdb4e2ebd7"
+        },
+        "sdk_source_publisher": true
       },
       "sdk": {
         "release_base": "https://github.com/webos21/crt/releases/download/v0.0.1-preview.20261110.linux.arm64.2/",
