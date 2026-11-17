@@ -16,7 +16,7 @@ on:
       host:
         description: Host to release
         type: choice
-        options: [linux-x64, linux-arm64]
+        options: [linux-x64, linux-arm64, macos-arm64]
         required: true
       commit:
         description: Full 40-character commit SHA on main to build (a branch or tag is refused)
@@ -50,7 +50,7 @@ concurrency:
 jobs:
   package:
     name: package (${{ inputs.host }})
-    runs-on: ${{ inputs.host == 'linux-arm64' && 'ubuntu-26.04-arm' || 'ubuntu-26.04' }}
+    runs-on: ${{ fromJSON('{"linux-x64":"ubuntu-26.04","linux-arm64":"ubuntu-26.04-arm","macos-arm64":"macos-15"}')[inputs.host] }}
     timeout-minutes: 120
     steps:
       - name: Check out exactly the requested commit
@@ -79,6 +79,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install LLVM 21
+        if: startsWith(inputs.host, 'linux-')
         run: |
           set -euo pipefail
           sudo apt-get update
@@ -94,8 +95,10 @@ jobs:
           DATE: ${{ inputs.date }}
           SERIAL: ${{ inputs.serial }}
         run: |
-          python tools/ci_release.py package --host "$HOST" --commit "$COMMIT" --date "$DATE" --serial "$SERIAL" \
-            --work "$RUNNER_TEMP/release-work" --llvm-bin /usr/lib/llvm-21/bin
+          set -euo pipefail
+          args=(--host "$HOST" --commit "$COMMIT" --date "$DATE" --serial "$SERIAL" --work "$RUNNER_TEMP/release-work")
+          if [[ "$HOST" == linux-* ]]; then args+=(--llvm-bin /usr/lib/llvm-21/bin); fi
+          python tools/ci_release.py package "${args[@]}"
 
       - name: Upload the release files
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -108,7 +111,7 @@ jobs:
   verify:
     name: verify (${{ inputs.host }})
     needs: package
-    runs-on: ${{ inputs.host == 'linux-arm64' && 'ubuntu-26.04-arm' || 'ubuntu-26.04' }}
+    runs-on: ${{ fromJSON('{"linux-x64":"ubuntu-26.04","linux-arm64":"ubuntu-26.04-arm","macos-arm64":"macos-15"}')[inputs.host] }}
     timeout-minutes: 60
     steps:
       - name: Check out the driver at the requested commit
@@ -123,6 +126,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install LLVM 21
+        if: startsWith(inputs.host, 'linux-')
         run: |
           set -euo pipefail
           sudo apt-get update
@@ -140,8 +144,19 @@ jobs:
           DATE: ${{ inputs.date }}
           SERIAL: ${{ inputs.serial }}
         run: |
-          python tools/ci_release.py verify --host "$HOST" --date "$DATE" --serial "$SERIAL" \
-            --release-dir "$RUNNER_TEMP/release-files" --work "$RUNNER_TEMP/verify-work" --llvm-bin /usr/lib/llvm-21/bin
+          set -euo pipefail
+          args=(--host "$HOST" --date "$DATE" --serial "$SERIAL" --release-dir "$RUNNER_TEMP/release-files"
+                --work "$RUNNER_TEMP/verify-work")
+          if [[ "$HOST" == linux-* ]]; then args+=(--llvm-bin /usr/lib/llvm-21/bin); fi
+          python tools/ci_release.py verify "${args[@]}"
+
+      - name: Upload the package verification result
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-verify-${{ inputs.host }}-${{ inputs.date }}-${{ inputs.serial }}
+          path: ${{ runner.temp }}/verify-work/verify.json
+          if-no-files-found: error
+          retention-days: 14
 
   publish:
     name: publish (${{ inputs.host }})

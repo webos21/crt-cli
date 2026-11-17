@@ -21,6 +21,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from ci_bootstrap import CiError, host_key, macos_tool_paths, write_system_roots  # noqa: E402
+
 
 class ReleaseError(Exception):
     pass
@@ -145,12 +147,19 @@ def run(label, argv, **kwargs):
     return done
 
 
+def require_native_host(requested):
+    actual = host_key()
+    if actual != requested:
+        raise ReleaseError('release host %s requires a native runner, found %s' % (requested, actual))
+
+
 def command_package(args):
     """Build the exact commit with the pinned published CLI and the pinned public SDK, then pack deterministically.
 
     The heavy lifting is tools/ci_bootstrap.py (bootstrap, SDK acquisition, stage 1 and stage 2); this adds the resource
     assembly and the archive, and refuses a tree that is not the requested commit.
     """
+    require_native_host(args.host)
     commit = require_commit(args.commit)
     head = subprocess.run(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
     if head != commit:
@@ -191,6 +200,7 @@ def command_package(args):
 
 def command_verify(args):
     """Independent check of the packed archive on a fresh runner: only the archive, its sums file and the pinned SDK source."""
+    require_native_host(args.host)
     n = names(args.host, args.date, args.serial)
     release = Path(args.release_dir).resolve()
     archive = release / n['archive']
@@ -205,12 +215,22 @@ def command_verify(args):
     info = json.loads(result.stdout)
     root = Path(info['root'])
     exe = root / 'crt-cli'
-    env = {'PATH': str(work / 'nowhere'), 'HOME': str(work / 'home'), 'LC_ALL': 'C'}
+    if args.host == 'macos-arm64':
+        arch = run('mach-o-architecture', ['/usr/bin/lipo', '-archs', exe], capture_output=True, text=True)
+        if arch.stdout.strip() != 'arm64':
+            raise ReleaseError('expected an ARM64 Mach-O executable, found %r' % arch.stdout.strip())
+        tools = macos_tool_paths()
+    else:
+        llvm = Path(args.llvm_bin or '/usr/lib/llvm-21/bin')
+        tools = {'--cc': llvm / 'clang', '--cxx': llvm / 'clang++', '--linker': llvm / 'ld.lld', '--ar': llvm / 'llvm-ar'}
+    flags = [part for flag, path in tools.items() for part in (flag, path)]
+    env = {'PATH': str(work / 'nowhere'), 'HOME': str(work / 'home'), 'TMPDIR': str(work / 'tmp'), 'LC_ALL': 'C'}
     (work / 'home').mkdir()
+    (work / 'tmp').mkdir()
     def cli(label, *argv, expect=0):
         done = subprocess.run([str(exe), *map(str, argv)], capture_output=True, text=True, env=env, timeout=1800)
         log('[%s] exit=%d' % (label, done.returncode))
-        if (done.returncode == 0) != (expect == 0):
+        if done.returncode != expect:
             raise ReleaseError('%s: unexpected exit %d: %s' % (label, done.returncode, (done.stdout + done.stderr)[-300:]))
         return done
     version = cli('version', '--version').stdout
@@ -223,11 +243,9 @@ def command_verify(args):
     cli('wrong-pin', '--json', 'doctor', '--scope', 'self', '--resources', root, '--resources-sha256', '0' * 64, expect=1)
     # Real network: the packaged executable acquires the pinned public SDK through the github-release redirect policy.
     pins = json.loads((ROOT / '.github/ci/pins.json').read_text(encoding='utf-8'))['hosts'][args.host]['sdk']
-    roots = next((c for c in ('/etc/ssl/certs/ca-certificates.crt', '/etc/pki/tls/certs/ca-bundle.crt') if Path(c).is_file()), None)
-    if roots is None:
-        raise ReleaseError('no system CA bundle found for the SDK acquisition')
+    roots = write_system_roots(work / 'roots.pem')
     base = pins['release_base']
-    source = {'schema': 'crt-cli.sdk-source', 'format': 0, 'ca_file': roots, 'ca_sha256': hashlib.sha256(Path(roots).read_bytes()).hexdigest(),
+    source = {'schema': 'crt-cli.sdk-source', 'format': 0, 'ca_file': roots.as_posix(), 'ca_sha256': hashlib.sha256(roots.read_bytes()).hexdigest(),
               'manifest': {'url': base + pins['manifest']['name'], 'sha256': pins['manifest']['sha256'], 'size': pins['manifest']['size']},
               'archive': {'name': pins['archive'], 'url': base + pins['archive']}, 'contract_url': base + pins['contract'],
               'sdk': {'version': pins['version'], 'content_sha256': pins['content_sha256'], 'contract_sha256': pins['contract_sha256']},
@@ -236,21 +254,31 @@ def command_verify(args):
     acquired = json.loads(cli('sdk-acquire', '--json', 'sdk', 'acquire', '--source', work / 'sdk-source.json').stdout)
     if acquired['data']['identity']['content_sha256'] != pins['content_sha256']:
         raise ReleaseError('the acquired SDK identity differs from the pin')
-    llvm = Path(args.llvm_bin or '/usr/lib/llvm-21/bin')
-    flags = ['--cc', llvm / 'clang', '--cxx', llvm / 'clang++', '--linker', llvm / 'ld.lld', '--ar', llvm / 'llvm-ar']
+    projects = {}
     for language in ('c', 'cxx'):
         project = work / 'projects' / ('app_' + language)
         project.parent.mkdir(exist_ok=True)
         cli(language + '-new', 'new', project, '--language', language)
-        cli(language + '-build', 'build', '--project', project, '--sdk', pins['content_sha256'], *flags)
+        cold = json.loads(cli(language + '-build', '--json', 'build', '--project', project,
+                              '--sdk', pins['content_sha256'], *flags).stdout)['data']
+        if cold['cache']['executed'] < 1:
+            raise ReleaseError('%s: first build executed no commands' % language)
+        lock = (project / 'crt.lock').read_bytes()
         cli(language + '-test', 'test', '--project', project)
         ran = cli(language + '-run', 'run', '--project', project)
         if 'Hello from CRT' not in (ran.stdout + ran.stderr):
             raise ReleaseError('%s: the built program did not print its greeting' % language)
-        cli(language + '-warm', 'build', '--project', project)
+        warm = json.loads(cli(language + '-warm', '--json', 'build', '--project', project).stdout)['data']
+        if warm['cache']['executed'] != 0 or warm['commands'] or (project / 'crt.lock').read_bytes() != lock:
+            raise ReleaseError('%s: warm build did not fully reuse the project lock and outputs' % language)
+        projects[language] = {'cold_commands': cold['cache']['executed'], 'warm_commands': warm['cache']['executed'],
+                              'lock_sha256': hashlib.sha256(lock).hexdigest()}
     log('archive %s verified: sha256=%s manifest=%s' % (n['archive'], digest, pin))
-    (work / 'verify.json').write_text(json.dumps({'archive_sha256': digest, 'manifest_sha256': pin, 'files': info['files'],
-                                                  'executable_version': version.strip()}, indent=2) + '\n', encoding='utf-8')
+    (work / 'verify.json').write_text(json.dumps({'host': args.host, 'tag': n['tag'], 'archive_sha256': digest,
+                                                  'manifest_sha256': pin, 'files': info['files'],
+                                                  'executable_version': version.strip(), 'sdk': acquired['data']['identity'],
+                                                  'tools': {flag: str(path) for flag, path in tools.items()},
+                                                  'projects': projects}, indent=2) + '\n', encoding='utf-8')
 
 
 def gh(*argv, check=True):
@@ -336,7 +364,7 @@ def main():
             command_verify(args)
         elif args.command == 'publish':
             command_publish(args)
-    except ReleaseError as error:
+    except (ReleaseError, CiError) as error:
         log('RELEASE FAIL: %s' % error)
         return 1
     return 0

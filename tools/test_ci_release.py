@@ -3,9 +3,20 @@ import hashlib
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
-from ci_release import (ReleaseError, locate_executable, locate_sdk, names, parse_sums, render_notes, require_artifact_match,
-                        require_commit, sums_line)
+from ci_release import (ReleaseError, command_package, command_verify, locate_executable, locate_sdk, names, parse_sums,
+                        render_notes, require_artifact_match, require_commit, sums_line)
+
+
+class NativeRunnerTest(unittest.TestCase):
+    def test_macos_release_rejects_a_linux_runner_before_using_artifacts(self):
+        with patch('ci_release.host_key', return_value='linux-arm64'):
+            for command in (command_package, command_verify):
+                with self.subTest(command=command.__name__):
+                    with self.assertRaisesRegex(ReleaseError, 'macos-arm64 requires a native runner, found linux-arm64'):
+                        command(SimpleNamespace(host='macos-arm64'))
 
 
 class NamesTest(unittest.TestCase):

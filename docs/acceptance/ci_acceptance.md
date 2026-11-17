@@ -628,6 +628,45 @@ Signatures: the owner signed both archives offline; the files arrived named `...
 
 Not covered: macOS and Windows Previews (the workflow supports Linux only), executing the arm64 archive from the public asset, and the CI bootstrap pin, which still names the older Preview.
 
+## macOS/arm64 Preview workflow preflight (2026-11-17)
+
+`release.yml` now accepts `macos-arm64` for `package` and `verify` on separate
+`macos-15` runners. Package uses the shared public bootstrap and Dev SDK pins.
+Verify selects the Xcode tools with `xcrun`, exports the macOS system CA roots,
+checks the extracted Mach-O architecture and records the SDK identity and C/C++
+build results in `verify.json`. The approval-gated `publish` job uses the same
+archive, checksum and draft comparison path as Linux.
+
+**Native preflight.** On macOS 27.2.1 (`26B131`), Xcode 27.2 (`27B52`),
+Apple clang 21.0.0, `ci_release.py package --host macos-arm64` ran from a
+clean checkout of `9a2de21847f9a3fe938a439b40fa1beade291079`, with date
+`20261117` and serial `1`. The bootstrap archive signature verified and the
+CLI consumed the pinned public macOS Dev SDK `v0.0.1-preview.20261110.macos.1`
+(content `e3dc7fb1810a3f78ab8ef33882225ccb562d21f6f5977a2037ab92819326bac8`).
+The native, archive, SDK-store and port-recipe suites passed 941/221/114/142
+checks. Both cold self-builds executed 21 commands, with different executable
+hashes. Stage 2 reused all 21 outputs on a warm build. The Mach-O imports only
+`libSystem`, has no `LC_RPATH`, and declares minimum OS 27.2 in this local build.
+
+Two packings of that stage-2 package produced identical 1,234,032-byte
+archives (SHA-256 `fc2c77c7a4d26286c1cf0e310de8e98b8e7b6c241834fad5b02d599d1bb78bc2`).
+The updated `ci_release.py verify --host macos-arm64` used a separate fresh
+workspace and passed ARM64, inventory, resource pin, wrong-pin refusal, real
+GitHub SDK acquisition, and both C/C++ create/build/test/run flows. Each first
+build executed three commands and each warm build executed zero, with identical
+lock bytes across the two builds. The same verifier passed against the existing
+published macOS Preview after checking its size, digest and detached signature.
+
+**Regression checks.** All 97 Python tool tests and `actionlint` pass. Both
+published `20261116` Linux CLI Previews pass the updated `verify` command in
+Ubuntu 26.04 containers on the test Mac (aarch64 and x86_64 with emulation for
+x86_64), using fresh SDK stores and LLVM 21. The records are local evidence.
+
+Local receipts and logs are retained in `out/macos-release-workflow-20261117/`.
+The hosted `macos-15` dry run, approved publication, and replay of the newly
+published signed bytes are pending. The [release procedure](../guides/development.md#publish-a-cli-preview)
+describes the inputs and the evidence to retain for each of these gates.
+
 ## CI pin promotion (2026-11-11)
 
 [The policy](../guides/development.md#ci-pin-promotion) fixes when a pin may move, what moves with it, the evidence a pull request must quote, what must pass and how a new host is added. `tools/check_ci_pins.py` re-downloads each host's published CLI archive and SDK manifest, archive and

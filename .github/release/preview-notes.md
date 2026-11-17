@@ -16,7 +16,7 @@ repository's replay records do (`docs/acceptance/ci_acceptance.md`).
 | --- | ---: | --- |
 | the `.tar.xz` archive attached to this release | {{ARCHIVE_BYTES}} | `{{ARCHIVE_SHA256}}` |
 
-The archive holds one statically linked executable `crt-cli`, the Apache-2.0 license, component licenses/provenance notices and a
+The archive holds one `crt-cli` executable with statically linked CRT libraries, the Apache-2.0 license, component licenses/provenance notices and a
 format-1 `manifest.json` pinning every file. It contains no SDK, compiler, interpreter, CA certificate or key. Verify the archive digest
 from a source you trust independently of this page.
 

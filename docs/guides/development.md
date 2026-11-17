@@ -305,6 +305,33 @@ The original `.3` failure remains historical evidence; the producer's TLSDESC
 fix is shipped in `.4`, rather than hidden by a runner upgrade. [TODO](../../TODO.md#github-ci)
 owns integration/release work and any still-pending hosted qualification.
 
+### Publish a CLI Preview
+
+Dispatch `release.yml` from `main` with `host` (`linux-x64`, `linux-arm64`
+or `macos-arm64`), the full commit SHA on `main`, a date, a serial and the
+reviewed notes path (`.github/release/preview-notes.md`). The commit must have
+a successful `CI gate` and contain the release driver. Use `dry_run: true`
+to stage a verified draft for rehearsal. Use an unused date/serial for the
+actual Preview.
+
+The package and verify jobs use separate native runners. macOS/arm64 uses
+`macos-15`, the selected Xcode tools and the macOS system root certificates.
+Verification extracts the package into a new workspace, installs the pinned
+public SDK into a private home and runs C and C++ project workflows. The
+package artifact contains `release.json`, the archive and its checksum file.
+The verification artifact contains `verify.json` with the tag, archive
+digest, SDK identity, tool paths and project results.
+
+Compare the package and verify digests before approving the `release`
+environment. Put the full commit SHA, tag, archive SHA-256 and reviewer in
+the approval comment. `dry_run: false` publishes the verified draft as a
+prerelease. The owner follows the [CRT offline signing procedure](https://github.com/webos21/crt/blob/main/docs/security/publisher_signing.md#signing-procedure-owner)
+to attach the detached `.sig`. Download the public files into a fresh
+workspace, verify the checksum and signature, and rerun the package verifier
+on the target host against those downloaded bytes. Record the results in
+[CI acceptance](../acceptance/ci_acceptance.md) and
+[Preview acceptance](../acceptance/preview_acceptance.md).
+
 ### Linux Integration Driver
 
 `tools/ci_integration.py ports` owns the integration input and result policy.

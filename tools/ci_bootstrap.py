@@ -85,6 +85,37 @@ def host_key(system=None, machine=None):
     raise CiError('unsupported CI host: %s/%s' % (system, machine))
 
 
+def write_system_roots(pem):
+    """Export the system CA roots as the caller's explicit transport trust input."""
+    if sys.platform.startswith('linux'):
+        candidates = ('/etc/ssl/certs/ca-certificates.crt', '/etc/pki/tls/certs/ca-bundle.crt')
+        found = next((path for path in candidates if Path(path).is_file()), None)
+        if found is None:
+            raise CiError('no system CA bundle found')
+        shutil.copyfile(found, pem)
+    elif sys.platform == 'darwin':
+        done = subprocess.run(['/usr/bin/security', 'find-certificate', '-a', '-p',
+                               '/System/Library/Keychains/SystemRootCertificates.keychain'], capture_output=True)
+        if done.returncode or b'-----BEGIN CERTIFICATE-----' not in done.stdout:
+            raise CiError('cannot export the macOS system roots: %s' % done.stderr.decode(errors='replace').strip())
+        pem.write_bytes(done.stdout)
+    else:
+        blocks = [ssl.DER_cert_to_PEM_cert(der) for der, encoding, _ in ssl.enum_certificates('ROOT') if encoding == 'x509_asn']
+        pem.write_text(''.join(blocks), encoding='ascii', newline='\n')
+    return pem
+
+
+def macos_tool_paths():
+    tools = {}
+    for flag, name in (('--cc', 'clang'), ('--cxx', 'clang++'), ('--linker', 'ld'), ('--ar', 'ar')):
+        done = subprocess.run(['/usr/bin/xcrun', '-f', name], capture_output=True, text=True)
+        path = Path(done.stdout.strip())
+        if done.returncode or not path.is_absolute() or not path.is_file():
+            raise CiError('xcrun cannot find %s' % name)
+        tools[flag] = path
+    return tools
+
+
 class Ci:
     def __init__(self, args):
         self.args = args
@@ -188,21 +219,7 @@ class Ci:
         return exe
 
     def roots(self):
-        """The caller-chosen PEM bundle (the CLI's explicit trust input); it only protects transport, the pins authenticate."""
-        pem = self.work / 'roots.pem'
-        if sys.platform.startswith('linux'):
-            candidates = ['/etc/ssl/certs/ca-certificates.crt', '/etc/pki/tls/certs/ca-bundle.crt']
-            found = [c for c in candidates if Path(c).is_file()]
-            if not found:
-                raise CiError('no system CA bundle found')
-            shutil.copyfile(found[0], pem)
-        elif sys.platform == 'darwin':
-            done = subprocess.run(['security', 'find-certificate', '-a', '-p', '/System/Library/Keychains/SystemRootCertificates.keychain'],
-                                  capture_output=True, check=True)
-            pem.write_bytes(done.stdout)
-        else:
-            blocks = [ssl.DER_cert_to_PEM_cert(der) for der, encoding, _ in ssl.enum_certificates('ROOT') if encoding == 'x509_asn']
-            pem.write_text(''.join(blocks), encoding='ascii', newline='\n')
+        pem = write_system_roots(self.work / 'roots.pem')
         self.summary['ca_sha256'] = sha256_file(pem)
         return pem
 
@@ -230,13 +247,7 @@ class Ci:
     # --- host tools ---------------------------------------------------------------------------------------------
     def tools(self):
         if self.host == 'macos-arm64':
-            names = {'--cc': 'clang', '--cxx': 'clang++', '--linker': 'ld', '--ar': 'ar'}
-            tools = {}
-            for flag, name in names.items():
-                done = subprocess.run(['xcrun', '-f', name], capture_output=True, text=True)
-                if done.returncode != 0:
-                    raise CiError('xcrun cannot find %s' % name)
-                tools[flag] = done.stdout.strip()
+            tools = macos_tool_paths()
         else:
             if not self.args.llvm_bin:
                 raise CiError('--llvm-bin is required on this host')

@@ -11,6 +11,15 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-17
 
+### Extend the Preview release workflow to macOS/arm64
+
+Added `macos-arm64` to the shared release workflow. The package and verify jobs
+use `macos-15`, Xcode tools and system CA roots. The verifier records ARM64
+package execution and C/C++ warm reuse in `verify.json`. Local macOS packaging
+and independent verification passed, along with regression verification of
+both public Linux Previews. Hosted draft and publication evidence remain
+pending. [Preflight record](docs/acceptance/ci_acceptance.md#macosarm64-preview-workflow-preflight-2026-11-17).
+
 ### Pin the signed 20261116 Preview as the Linux bootstrap
 
 `linux-x64`/`linux-arm64` bootstrap with the new Previews; their SDK source carries the `publisher` object (per-host flag, older macOS/Windows CLIs unchanged), so the
