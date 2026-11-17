@@ -308,13 +308,18 @@ owns integration/release work and any still-pending hosted qualification.
 ### Publish a CLI Preview
 
 Dispatch `release.yml` from `main` with `host` (`linux-x64`, `linux-arm64`,
-`macos-arm64` or `win-x64`), the full commit SHA on `main`, a date, a serial and the
+`macos-arm64`, `win-x64` or `win-arm64`), the full commit SHA on `main`, a date, a serial and the
 reviewed notes path (`.github/release/preview-notes.md`). The commit must have
 a successful `CI gate` and contain the release driver. Use `dry_run: true`
 to stage a verified draft for rehearsal. Use an unused date/serial for the
 actual Preview.
 
-The package and verify jobs use separate native runners. macOS/arm64 uses
+The package and verify jobs use separate native runners. `win-arm64` runs on `windows-11-arm`, installs the native ARM64
+LLVM 22.1.8 from the LLVM release (SHA-256 checked; the image's LLVM 20 is not used), uses the `um/arm64` import libraries and
+checks the PE for ARM64 (`0xAA64`); until its Dev SDK and bootstrap Preview are published and pinned the drivers stop with
+"no CI pins for host win-arm64" ([wiring record](../acceptance/ci_acceptance.md#windowsarm64-host-wiring-and-local-candidate-preflight-2026-11-17)).
+Keep local and hosted work roots short on Windows: the public-format SDK directory name makes the deepest installed libc++ header path
+exceed 260 characters from a work root longer than about 240 including the test fixture. macOS/arm64 uses
 `macos-15`, the selected Xcode tools and the macOS system root certificates.
 Windows/x64 uses `windows-2022`, LLVM 22.1.8, Windows SDK `um/x64` import
 libraries and the Windows root certificate store. Both Windows jobs pass
@@ -433,7 +438,8 @@ inputs `ci.yml` and `integration.yml` trust. A pin moves in a pull request, neve
    published CLI Preview for that host built by that SDK alone, a hosted runner label that exists for the repository, and a local
    `tools/ci_bootstrap.py --host <key>` pass. Only then add the matrix row, the `pins.json` host and the driver's host key in one pull
    request, and run it through a manual dispatch before treating it as required. A host with no hosted runner is recorded as unsupported,
-   not simulated.
+   not simulated. Windows/arm64 (`windows-11-arm`) has its release-driver wiring and a [local candidate preflight](../acceptance/ci_acceptance.md#windowsarm64-host-wiring-and-local-candidate-preflight-2026-11-17); its SDK release,
+   Preview, pins and `ci.yml` row are still missing, in that order.
 8. **Release pins are separate.** Publishing a Preview does not move `ci.yml` pins. After publication, raise the pin in its own pull
    request under this policy, because the published bytes are what the pin must match.
 

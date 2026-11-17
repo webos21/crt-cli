@@ -114,13 +114,13 @@ paths and the Linux/arm64 dispatch, push and pull-request runs.
     - [x] Publish the candidate and pass native replay of the public archive against its
       approved digest ([public asset evidence](docs/acceptance/preview_acceptance.md#github-actions-macosarm64-preview-release-2026-11-17)).
     - [x] Attach the offline publisher signature and replay the signed public archive.
-- [ ] Extend the shared Preview release workflow to Windows/x64.
+- [x] Extend the shared Preview release workflow to Windows/x64.
   - [x] Wire `windows-2022` package/verify and pass the [native Windows preflight](docs/acceptance/ci_acceptance.md#windowsx64-preview-workflow-preflight-2026-11-17).
-  - [ ] Record a hosted `dry_run: true` rehearsal through the approval-gated draft comparison.
-  - [ ] Publish a separately reviewed candidate and replay its signed public archive on Windows/x64.
+  - [x] Record a hosted `dry_run: true` rehearsal through the approval-gated draft comparison ([record](docs/acceptance/ci_acceptance.md#hosted-windowsx64-draft-rehearsal-2026-11-17)).
+  - [x] Publish a separately reviewed candidate and replay its signed public archive on Windows/x64 ([publication](docs/acceptance/ci_acceptance.md#first-hosted-windowsx64-publication-2026-11-17), [signature and replay](docs/acceptance/ci_acceptance.md#windowsx64-preview-signature-and-public-replay-2026-11-17)).
 - [x] CI pin promotion policy and `tools/check_ci_pins.py` ([guide](docs/guides/development.md#ci-pin-promotion)); every current pin
   matches the published bytes.
-- The Windows/arm64 leg moved to Planned: [CI Platform Expansion](#ci-platform-expansion).
+- Windows/arm64: the release drivers and `release.yml` are wired and a local candidate passes ([record](docs/acceptance/ci_acceptance.md#windowsarm64-host-wiring-and-local-candidate-preflight-2026-11-17)); the leg itself remains in [CI Platform Expansion](#ci-platform-expansion).
 
 ## Planned
 
@@ -138,6 +138,11 @@ Producer readiness and CLI support have different owners and neither blocks the 
   oracle suites with their own pinned host-tools bundles. Resume after D1 and the per-host bundles; each host needs its own acceptance record.
 - [ ] Add a Windows/arm64 leg under that policy once its public SDK, its CLI Preview and a hosted runner exist, and the leg has its own
   native build and test qualification.
+  - [x] Wire `win-arm64` into `ci_bootstrap.py`, `ci_release.py`, `release.yml` and their tests; prepare and replay a local SDK and CLI candidate
+    ([record](docs/acceptance/ci_acceptance.md#windowsarm64-host-wiring-and-local-candidate-preflight-2026-11-17)).
+  - [ ] CRT: Windows/arm64 rows in `sdk-integration.yml` and the planned `sdk-release.yml`; publish and sign the Dev SDK built from the final `main`.
+  - [ ] Publish and sign the first `win-arm64` Preview built from that SDK; then pin SDK and Preview and add the `ci.yml` matrix row in one reviewed pull request.
+  - [ ] Hosted `windows-11-arm` qualification: manual `ci.yml` dispatch, then a `release.yml` `dry_run: true` rehearsal, publication and signature replay.
 
 ### CI Operations
 

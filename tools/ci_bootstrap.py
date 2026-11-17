@@ -82,6 +82,8 @@ def host_key(system=None, machine=None):
         return 'macos-arm64'
     if system == 'win32' and machine in ('amd64', 'x86_64'):
         return 'win-x64'
+    if system == 'win32' and machine in ('arm64', 'aarch64'):
+        return 'win-arm64'
     raise CiError('unsupported CI host: %s/%s' % (system, machine))
 
 
@@ -116,10 +118,14 @@ def macos_tool_paths():
     return tools
 
 
-def windows_sdk_path():
-    libs = sorted(Path('C:/Program Files (x86)/Windows Kits/10/Lib').glob('*/um/x64/kernel32.lib'))
+# Windows host key -> the Windows SDK `um/<arch>` import-library directory its programs link against.
+WINDOWS_IMPORT_ARCH = {'win-x64': 'x64', 'win-arm64': 'arm64'}
+
+
+def windows_sdk_path(arch='x64'):
+    libs = sorted(Path('C:/Program Files (x86)/Windows Kits/10/Lib').glob('*/um/%s/kernel32.lib' % arch))
     if not libs:
-        raise CiError('no Windows SDK um/x64 import libraries found')
+        raise CiError('no Windows SDK um/%s import libraries found' % arch)
     return libs[-1].parent.as_posix()
 
 
@@ -130,6 +136,9 @@ class Ci:
         pins = json.loads(Path(args.pins).read_text(encoding='utf-8'))
         if pins.get('schema') != 'crt-cli.ci-pins' or pins.get('format') != 0:
             raise CiError('unsupported pin file')
+        if self.host not in pins['hosts']:
+            raise CiError('no CI pins for host %s: its public Dev SDK and bootstrap Preview must be published and pinned first '
+                          '(docs/guides/development.md#ci-pin-promotion, item 7)' % self.host)
         self.pins, self.host_pins = pins, pins['hosts'][self.host]
         self.work = Path(args.work).resolve()
         if self.work.exists() and any(self.work.iterdir()):
@@ -267,14 +276,14 @@ class Ci:
                 raise CiError('missing host tool: %s' % path)
             flags += [flag, str(path)]
             self.tool_paths[flag] = str(path)
-        if self.host == 'win-x64':
+        if self.host in WINDOWS_IMPORT_ARCH:
             flags += ['--os-sdk', self.windows_sdk()]
         return flags
 
     def windows_sdk(self):
         if self.args.os_sdk:
             return self.args.os_sdk
-        return windows_sdk_path()
+        return windows_sdk_path(WINDOWS_IMPORT_ARCH[self.host])
 
     # --- stages -------------------------------------------------------------------------------------------------
     def export(self, name):
@@ -473,9 +482,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--work', required=True, help='new or empty directory for downloads, stages, logs and artifacts')
     parser.add_argument('--pins', default=str(ROOT / '.github/ci/pins.json'))
-    parser.add_argument('--host', choices=['linux-x64', 'linux-arm64', 'macos-arm64', 'win-x64'], help='default: detect')
+    parser.add_argument('--host', choices=['linux-x64', 'linux-arm64', 'macos-arm64', 'win-x64', 'win-arm64'], help='default: detect')
     parser.add_argument('--llvm-bin', help='directory with clang, clang++, ld.lld and llvm-ar (not used on macOS)')
-    parser.add_argument('--os-sdk', help='Windows um/x64 import-library directory (default: newest installed)')
+    parser.add_argument('--os-sdk', help='Windows um/<arch> import-library directory for the host (default: newest installed)')
     parser.add_argument('--tests', nargs='+', help='run only these declared tests (default: the pinned PR set)')
     parser.add_argument('--native-test-jobs', type=int, choices=range(1, 5), default=2,
                         help='bounded workers for independent native-test projects/variants (default: 2; use 1 for serial comparison)')

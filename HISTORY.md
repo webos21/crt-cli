@@ -11,6 +11,11 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-17
 
+### Wire Windows/arm64 into the release drivers and prepare a local candidate
+
+`ci_bootstrap.py`, `ci_release.py` and `release.yml` accept `win-arm64` (runner `windows-11-arm`, native ARM64 LLVM 22.1.8, PE `0xAA64` audit); the `ci.yml` row and the pins wait for a public Windows/aarch64 SDK and a Preview, and a host without pins fails by name. A local candidate from CRT `ded8e99` (independent verifier OK) builds a CLI that passes 1005/214/113/142 checks, packs byte-identically twice, and passes the package run (12/12) and the SDK consumer (31/31). A first replay failed on Windows path length (262 > 260). `replay_cli_package_windows.py` no longer hard-codes the x64 Preview's SDK version. No hosted run, release, signature or pin.
+[Acceptance](docs/acceptance/ci_acceptance.md#windowsarm64-host-wiring-and-local-candidate-preflight-2026-11-17).
+
 ### Move the macOS and Windows bootstrap pins to the 20261117 Preview
 
 `pins.json` now bootstraps `macos-arm64` and `win-x64` with the signed 20261117 Previews and flags both `sdk_source_publisher`; the SDK pins are unchanged. `check_ci_pins.py` is OK for all four hosts including the new signatures. No hosted run of the new pins yet.
