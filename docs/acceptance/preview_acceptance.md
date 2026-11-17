@@ -431,6 +431,7 @@ declares macOS 15.0 and SDK 15.5, imports only `libSystem`, and has no `LC_RPATH
 | Public artifact | Recorded identity |
 | --- | --- |
 | `crt-cli-0.1.0-dev-macos-aarch64-preview.20261117.1.tar.xz`, 1,248,592 bytes | `5084b2b334cbec008e1f1b60de4e5616f4c7d5b4299635f657983c70790fb0cb` |
+| Detached archive `.sig`, 256 bytes | `5e4757dab1d6c67d1df01c9e3e4b255ed9892d74bef813e242ab2a2ebb1a6c5d` |
 | `SHA256SUMS-macos-aarch64`, 124 bytes | Lists the same archive name and SHA-256 |
 | Archived `crt-cli` executable | `afcdf9b6a368e0c9c2efbfc9f2d8ac18945c310c361c627ac6e0c0d3e0df0073` |
 | Resource manifest, 30 files | `8c543b1fc4ae463f36f4c29f433920f5df8acad9d982ed543e0523ce9621bfd8` |
@@ -445,8 +446,14 @@ pin refusal, and native SDK acquisition. The installed public SDK was
 Both C and C++ passed `new`, `build`, `test` and `run`. Each warm build
 executed zero commands and preserved the lock bytes.
 
-The publisher `.sig` asset and signed public replay remain pending. The
-archive was verified against the approved digest during this replay.
+After the owner signed the archive offline, the archive, checksum and `.sig`
+were downloaded again from their public URLs into a fresh directory. The
+detached RSA-PSS signature verifies over the approved archive bytes with
+publisher key SPKI SHA-256
+`59218576956e493476bc36f7385d8e01a03ff9b92946a531b013ad3937d43fa2`.
+The native package verifier repeated the C/C++ workflow successfully on the
+signed inputs. The shipped CLI also acquired the pinned SDK with its own
+publisher signature enabled. [SDK replay evidence](ci_acceptance.md#macosarm64-sdk-publisher-signature-replay-2026-11-17).
 
 ## Windows/x64 CLI Preview release (2026-11-10)
 

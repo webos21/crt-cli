@@ -16,8 +16,11 @@ inventing commits or test results. Older months may later be summarized under
 The approved `release.yml` run published `v0.1.0-preview.20261117.macos-arm64.1`
 from `b51d103`. A fresh public download matched the hosted archive and checksum,
 and passed macOS SDK acquisition and the C/C++ build, test, run and warm build
-checks. The detached publisher signature and signed public replay remain
-pending. [Public asset evidence](docs/acceptance/preview_acceptance.md#github-actions-macosarm64-preview-release-2026-11-17).
+checks. The owner signed the rehearsal and public archives offline. Each
+detached signature verified after downloading it again from its own release.
+The signed `.1` public archive passed the native replay, and the shipped CLI
+passed publisher checks for SDK acquisition, install and repair on macOS.
+[Public asset evidence](docs/acceptance/preview_acceptance.md#github-actions-macosarm64-preview-release-2026-11-17).
 
 ### Extend the Preview release workflow to macOS/arm64
 

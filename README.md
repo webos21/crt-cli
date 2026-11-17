@@ -40,7 +40,8 @@ is implemented with Linux, macOS and Windows replay evidence: `sdk acquire --sou
 installed identity. Public GitHub release assets need the opt-in
 [restricted redirect policy](docs/reference/bootstrap_contract.md#restricted-https-redirects-experimental-cli-owned)
 (`"redirect_policy": "github-release"`; default is refusal), exercised on Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64 ([Windows record](docs/acceptance/preview_acceptance.md#windowsx64-cli-preview-release-2026-11-10)). `fetch` also supports explicit-key RSA-PSS verification.
-Official default-download trust, channels and publisher signatures remain pending.
+Current CLI builds also accept a caller-pinned key and detached signature for
+SDK acquisition, install and repair. Official default-download trust and channels remain pending.
 
 The experimental D3 source-port path implements `port build|list|verify|recover|lock` for the pinned zlib recipe on Linux,
 macOS and Windows/x64. It builds both static/shared forms through explicitly selected CRT host tools into a separate port store,
@@ -53,15 +54,16 @@ Other recipes, general dependency resolution and Windows/arm64 replay remain sep
 
 ## Download the Previews
 
-Four host prereleases each carry one static CLI executable, its notices and a pinned inventory. They are
-unsigned: verify the archive against a digest you trust independently. Each needs the host's LLVM-compatible
-tools and a CA bundle you choose, and installs the Dev SDK separately. Release tags carry the OS and architecture.
+Each host prerelease carries one CLI executable with statically linked CRT libraries, notices and a pinned inventory.
+Verify the archive using an independently trusted digest and, where provided, its detached `.sig` and the
+independently verified [publisher key](https://github.com/webos21/crt/blob/main/docs/security/publisher_signing.md).
+Each host needs its LLVM-compatible tools and a CA bundle you choose, and installs the Dev SDK separately.
 
 | Host | Release | Explicit SDK input |
 | --- | --- | --- |
 | Linux/x86_64 | [`v0.1.0-preview.20261110.linux-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.linux-x86_64.1) ([record](docs/acceptance/preview_acceptance.md#linuxx86_64-cli-preview-release-2026-11-10)) | [`v0.0.1-preview.20261110.4`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.4); needs LLVM 21 |
 | Linux/aarch64 | [`v0.1.0-preview.20261111.linux-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261111.linux-arm64.1) ([record](docs/acceptance/preview_acceptance.md#linuxaarch64-cli-preview-release-2026-11-11)) | [`v0.0.1-preview.20261110.linux.arm64.2`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.linux.arm64.2); needs LLVM 21 |
-| macOS/arm64 | [`v0.1.0-preview.20261110.macos-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.macos-arm64.1) ([record](docs/acceptance/preview_acceptance.md#macos-cli-preview-release-2026-11-10)) | [`v0.0.1-preview.20261110.macos.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.macos.1); needs Xcode's command-line tools |
+| macOS/arm64 | [`v0.1.0-preview.20261117.macos-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261117.macos-arm64.1) ([record](docs/acceptance/preview_acceptance.md#github-actions-macosarm64-preview-release-2026-11-17)) | [`v0.0.1-preview.20261110.macos.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.macos.1); needs macOS 15.0 or later and Xcode's command-line tools |
 | Windows/x64 | [`v0.1.0-preview.20261110.windows-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.windows-x86_64.1) ([guide](docs/guides/windows_preview.md), [record](docs/acceptance/preview_acceptance.md#windowsx64-cli-preview-release-2026-11-10)) | [`v0.0.1-preview.20261110.windows.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.windows.1); needs LLVM and Windows SDK |
 
 SDK acquisition uses the caller's pinned source file; the table does not set a

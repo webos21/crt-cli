@@ -686,6 +686,10 @@ The SHA-256 in the package receipt, verification receipt and draft notes is
 `39a6250fd122f76df9099f1617b5df2a9f70a466419f46f2250c0e20aafbb1a6`.
 The GitHub release record confirms draft status and the exact target commit.
 Hosted receipts are retained under `out/macos-release-workflow-20261117/hosted-43995986848/`.
+The owner's offline `.9.tar.xz.sig` was subsequently attached to this draft.
+The detached 256-byte signature re-downloaded from GitHub verifies against
+the draft archive. Its SHA-256 is
+`b7bcf141a067d173fde02228ab66497e1f8381f670e3eb50279d88e9bfd13027`.
 
 ### First hosted macOS/arm64 publication (2026-11-17)
 
@@ -702,7 +706,29 @@ The public archive and checksum matched the hosted receipts, and the public
 executable passed native macOS SDK acquisition and both C/C++ workflows.
 Release, approval, tag, package, verification and public replay receipts are
 retained in `out/macos-release-workflow-20261117/hosted-43998835624/`.
-The detached publisher signature and signed public replay are pending.
+The owner signed the `.1` archive offline. After attachment, the detached
+signature verified on a fresh public download and the signed archive passed
+the native replay described in the public asset evidence above.
+
+### macOS/arm64 SDK publisher signature replay (2026-11-17)
+
+The CLI from the signed `.1` Preview and the pinned public macOS Dev SDK
+`v0.0.1-preview.20261110.macos.1` were exercised on macOS 27.2.1/arm64.
+With test-only keys and loopback HTTPS, `tools/replay_publisher_acquire_linux.py`
+passes all 26 acquisition and local-install cases on this host. The cases
+cover explicit authentication, unsigned input, installed SDK reuse without
+rechecking, wrong keys and signatures, invalid pins, and failure without
+publishing an SDK or leaving staging files. The result SHA-256 is
+`fd8b9a3f3fc2b57f0d8a9c6a46d6fdef26c51144da30ad4eee5ec0f30cf06dbf`.
+
+In separate fresh homes, the shipped executable acquired the SDK from
+GitHub with `publisher_authentication: signature_verified`, and installed
+the public SDK archive with the actual publisher key and `.sig`. A repair
+with a modified signature preserved the damaged contract and original
+receipt without leaving staging or locks. Repair with the valid published
+signature restored the original contract and `sdk verify` passed. Receipts
+are in `public-signed-v3hnxbd0/`, `sdk-publisher-replay.GvrKY50N/` and
+`sdk-signed-repair.VRCPzgS4/` under the hosted receipt directory above.
 
 ## CI pin promotion (2026-11-11)
 

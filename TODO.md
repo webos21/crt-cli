@@ -29,8 +29,10 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
 - [ ] Publisher signatures: `sdk acquire` and the CI host-tools pins accept/require them (Linux-verified, see
   [ci_acceptance](docs/acceptance/ci_acceptance.md#publisher-signatures-for-host-tools-pins-and-sdk-acquire-2026-11-16)); `sdk install` and the bootstrap/SDK pin
   signatures are done too ([record](docs/acceptance/ci_acceptance.md#publisher-signatures-for-the-bootstrap-cli-pin-and-sdk-install-2026-11-16));
-  remaining: pin a CLI Preview with these options as the bootstrap so CI's SDK download is natively verified, macOS/Windows replays, signing the next
+  remaining: pin a CLI Preview with these options as the bootstrap so CI's SDK download is natively verified on macOS/Windows, Windows replay, signing the next
   releases in the release workflow.
+  - [x] Replay native macOS/arm64 `sdk acquire`, `sdk install` and `sdk repair`
+    publisher authentication ([record](docs/acceptance/ci_acceptance.md#macosarm64-sdk-publisher-signature-replay-2026-11-17)).
 
 D3's bounded zlib adapter contract is adopted for the exercised Linux/x86_64,
 macOS/arm64 and Windows/x64 combinations. [The adoption ledger](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09)
@@ -101,17 +103,17 @@ paths and the Linux/arm64 dispatch, push and pull-request runs.
 - [x] Real publish step (`dry_run: false`) exercised 2026-11-17 on Linux x64/arm64 ([record](docs/acceptance/ci_acceptance.md#first-real-publication-and-its-signatures-2026-11-17));
   the approval comment was empty, so commit/tag/digest/reviewer are not recorded in one. macOS and Windows hosts follow the same host-key pattern.
   A single maintainer approving their own release is a deliberate pause, not independent review.
-- [ ] Extend `release.yml` to macOS/arm64 on `macos-15`. Record the hosted draft and
+- [x] Extend `release.yml` to macOS/arm64 on `macos-15`. Record the hosted draft and
   approved publication, then verify the signed public archive and native C/C++ SDK workflows.
   - [x] Wire the native package and verify jobs and pass the
     [local macOS preflight](docs/acceptance/ci_acceptance.md#macosarm64-preview-workflow-preflight-2026-11-17).
   - [x] Rehearse with `dry_run: true` on `macos-15` and record the hosted package,
     verification result and approval-gated draft comparison
     ([hosted rehearsal](docs/acceptance/ci_acceptance.md#hosted-macosarm64-draft-rehearsal-2026-11-17)).
-  - [ ] Publish a reviewed macOS candidate and replay the signed public bytes on macOS/arm64.
+  - [x] Publish a reviewed macOS candidate and replay the signed public bytes on macOS/arm64.
     - [x] Publish the candidate and pass native replay of the public archive against its
       approved digest ([public asset evidence](docs/acceptance/preview_acceptance.md#github-actions-macosarm64-preview-release-2026-11-17)).
-    - [ ] Attach the offline publisher signature and replay the signed public archive.
+    - [x] Attach the offline publisher signature and replay the signed public archive.
 - [x] CI pin promotion policy and `tools/check_ci_pins.py` ([guide](docs/guides/development.md#ci-pin-promotion)); every current pin
   matches the published bytes.
 - The Windows/arm64 leg moved to Planned: [CI Platform Expansion](#ci-platform-expansion).

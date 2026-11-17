@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Publisher-signature cases of `sdk acquire` over a private HTTPS server; Linux entry point.
+"""Native publisher-signature cases for SDK acquisition and local install.
 
 Python/OpenSSL are test-host tools (they sign with a throw-away RSA key and serve loopback TLS); the consumer is the native
 crt-cli with a cleared environment and a private HOME. --release-dir holds one published native Dev SDK release (its
-release-manifest-dev-linux-*.json, contract and archive). Nothing here proves an acquisition from a public host.
+release-manifest-dev-*.json, contract and archive). The acquisition cases use loopback HTTPS.
 """
 import argparse
 import copy
@@ -29,6 +29,9 @@ def main():
     parser.add_argument('--release-dir', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
+    manifests = sorted(args.release_dir.glob('release-manifest-dev-*.json'))
+    if len(manifests) != 1:
+        parser.error('--release-dir must contain exactly one release-manifest-dev-*.json')
     out = args.output.resolve(); out.mkdir(parents=True)
     work = Path(tempfile.mkdtemp(prefix='publisher acquire 한글 ', dir=out))
     openssl = shutil.which('openssl'); assert openssl
@@ -36,7 +39,7 @@ def main():
     def ossl(*argv, **kw):
         return subprocess.run([openssl, *argv], cwd=work, check=True, capture_output=True, **kw)
 
-    manifest_path = next(args.release_dir.glob('release-manifest-dev-linux-*.json'))
+    manifest_path = manifests[0]
     manifest_bytes = manifest_path.read_bytes(); manifest = json.loads(manifest_bytes)
     archive = next(a for a in manifest['assets'] if 'install' in a)
     policy = next(a for a in manifest['assets'] if a['name'] == archive['contract'])
