@@ -74,54 +74,6 @@ become a first-preview release gate. General updates/self-upgrade and Studio
 retain their later queues. Execution policy remains in
 [the design](docs/design/crt_cli.md#execution-priorities-adopted-2026-11-05).
 
-### GitHub CI
-
-`ci.yml` (PR and main; a documentation-only change skips the matrix inside the workflow, and
-`CI gate` is the one required check of the `main` ruleset) bootstraps from
-the pinned published Preview and is described in the
-[development guide](docs/guides/development.md#continuous-integration); finished steps are checked below
-and recorded in HISTORY.
-Linux/x86_64 (`ubuntu-24.04` and `ubuntu-26.04`), Linux/arm64 (`ubuntu-26.04-arm`), macOS/arm64 (`macos-15`) and Windows/x64
-(`windows-2022`) are required legs.
-[CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)
-owns the completed combinations, event scope and ruleset, including both repaired Linux
-paths and the Linux/arm64 dispatch, push and pull-request runs.
-
-- [x] Linux/arm64 leg (`ubuntu-26.04-arm`) is a required leg and has passed on manual dispatch, `push` to `main` and a pull request
-  ([record](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)).
-- [x] `CI gate` is the single required check of the `main` ruleset (`27002916`): a documentation-only pull request is `CLEAN`
-  with the matrix skipped, and a failing change is `BLOCKED` ([record](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)).
-- The ruleset setting and pull-request states are accepted; the unverified non-administrator rejection moved to Planned:
-  [CI Operations](#ci-operations).
-- [x] `integration.yml` (manual) enforces its pins and passes the 54-case restricted-redirect replay on Linux x64 and arm64
-  ([record](docs/acceptance/ci_acceptance.md#integration-workflow-2026-11-11)); its `pins` and `ports` jobs fail on purpose while
-  the host-tools bundle is unpublished.
-- [ ] Record the first scheduled `integration.yml` run (daily 03:23 UTC); a red scheduled run is a regression or a changed external
-  input, not a known gap. Hosted macOS/Windows integration is the separate D2 item under [CI Platform Expansion](#ci-platform-expansion).
-- [x] `release.yml` (manual; `package` → `verify` → approval-gated `publish`): the dry run produced a verified draft and an unchecked
-  commit was rejected ([record](docs/acceptance/ci_acceptance.md#release-workflow-2026-11-11)).
-- [x] Real publish step (`dry_run: false`) exercised 2026-11-17 on Linux x64/arm64 ([record](docs/acceptance/ci_acceptance.md#first-real-publication-and-its-signatures-2026-11-17));
-  the approval comment was empty, so commit/tag/digest/reviewer are not recorded in one. macOS and Windows hosts follow the same host-key pattern.
-  A single maintainer approving their own release is a deliberate pause, not independent review.
-- [x] Extend `release.yml` to macOS/arm64 on `macos-15`. Record the hosted draft and
-  approved publication, then verify the signed public archive and native C/C++ SDK workflows.
-  - [x] Wire the native package and verify jobs and pass the
-    [local macOS preflight](docs/acceptance/ci_acceptance.md#macosarm64-preview-workflow-preflight-2026-11-17).
-  - [x] Rehearse with `dry_run: true` on `macos-15` and record the hosted package,
-    verification result and approval-gated draft comparison
-    ([hosted rehearsal](docs/acceptance/ci_acceptance.md#hosted-macosarm64-draft-rehearsal-2026-11-17)).
-  - [x] Publish a reviewed macOS candidate and replay the signed public bytes on macOS/arm64.
-    - [x] Publish the candidate and pass native replay of the public archive against its
-      approved digest ([public asset evidence](docs/acceptance/preview_acceptance.md#github-actions-macosarm64-preview-release-2026-11-17)).
-    - [x] Attach the offline publisher signature and replay the signed public archive.
-- [x] Extend the shared Preview release workflow to Windows/x64.
-  - [x] Wire `windows-2022` package/verify and pass the [native Windows preflight](docs/acceptance/ci_acceptance.md#windowsx64-preview-workflow-preflight-2026-11-17).
-  - [x] Record a hosted `dry_run: true` rehearsal through the approval-gated draft comparison ([record](docs/acceptance/ci_acceptance.md#hosted-windowsx64-draft-rehearsal-2026-11-17)).
-  - [x] Publish a separately reviewed candidate and replay its signed public archive on Windows/x64 ([publication](docs/acceptance/ci_acceptance.md#first-hosted-windowsx64-publication-2026-11-17), [signature and replay](docs/acceptance/ci_acceptance.md#windowsx64-preview-signature-and-public-replay-2026-11-17)).
-- [x] CI pin promotion policy and `tools/check_ci_pins.py` ([guide](docs/guides/development.md#ci-pin-promotion)); every current pin
-  matches the published bytes.
-- Windows/arm64: the release drivers and `release.yml` are wired and a local candidate passes ([record](docs/acceptance/ci_acceptance.md#windowsarm64-host-wiring-and-local-candidate-preflight-2026-11-17)); the leg itself remains in [CI Platform Expansion](#ci-platform-expansion).
-
 ## Planned
 
 ### Full SDK Support
@@ -152,6 +104,9 @@ Producer readiness and CLI support have different owners and neither blocks the 
 
 ### CI Operations
 
+- [ ] Observe the daily cadence of the scheduled `integration.yml`: its first scheduled run happened and passed
+  ([record](docs/acceptance/ci_acceptance.md#first-scheduled-integrationyml-run-2026-11-18)), but the 2026-11-18 03:23 UTC slot had no run at 09:44 UTC.
+  Determine over several days whether runs are late, skipped or missing; a red run is a regression or a changed external input, not a known gap.
 - [ ] Observe the ruleset rejecting a non-administrator's direct push or failing-check merge: administrator bypass is `always`, so a
   rejection was not seen. This needs a second account; tighten the bypass when a second maintainer exists. The ruleset setting and the
   passing and `BLOCKED` pull-request states are accepted; this is a recorded verification limit, not a verified enforcement.

@@ -2,7 +2,7 @@
 
 This record owns what the CI driver and workflow have actually been run against. The design and the
 procedure are in the [development guide](../guides/development.md#continuous-integration); open work is in
-[TODO](../../TODO.md#github-ci). A passing local rehearsal is not a GitHub-hosted run.
+[TODO](../../TODO.md#ci-platform-expansion). A passing local rehearsal is not a GitHub-hosted run.
 
 ## Current Hosted Coverage (2026-11-11)
 
@@ -963,7 +963,7 @@ Both runs used the zlib source `9a93b2b7...`. Linux/aarch64 is the first native 
 host-tools bundle's use by the CLI; the earlier aarch64 evidence for that bundle was CRT's own hosted replay. Each job ran about 11 minutes. The oracle
 Python is the runner's `setup-python` interpreter, whose path and SHA-256 the job records at run time; that is a recorded identity, not an independently
 chosen pin. Bubblewrap needed the AppArmor user-namespace restriction relaxed on the runner. The scheduled trigger fires from the next 03:23 UTC; its first
-result is not recorded here. This closes the CLI-side D1 Linux integration gate; hosted macOS/Windows integration remains the separate D2 item.
+result is recorded in [First scheduled integration run](#first-scheduled-integrationyml-run-2026-11-18). This closes the CLI-side D1 Linux integration gate; hosted macOS/Windows integration remains the separate D2 item.
 
 ## macOS and Windows bootstrap pins moved to the 20261117 Preview (2026-11-17)
 
@@ -1135,3 +1135,12 @@ The step log reports the check results of the driver but not the test counts of 
 this record; the counts of the local pass in the earlier section are the ones recorded. Not covered by this record: a manual `ci.yml` dispatch of the leg on its own
 (both runs are the ordinary events), the `release.yml` `dry_run: true` rehearsal for `win-arm64`, and a `release.yml`-built second Preview. The leg is
 non-experimental, so it is part of the required `CI gate` from the merge on.
+
+## First scheduled `integration.yml` run (2026-11-18)
+
+The daily trigger (`cron: '23 3 * * *'`) has run once. [Run 44079658878](https://github.com/webos21/crt-cli/actions/runs/44079658878) (`schedule`, at `d0efcaa`) was created 2026-11-17 12:04:01 UTC and finished
+12:15:35 UTC (about 11.5 minutes), so it started about 8 hours 41 minutes after the 03:23 UTC slot of that day: GitHub does not guarantee the start time of a scheduled run. All six jobs succeeded:
+`redirect`, `pins` and `ports`, each on `linux-x64` and `linux-arm64`. The workflow is `active` (id 414171448). This is a record of one hosted scheduled run, not of a daily cadence.
+
+**Open observation.** At 2026-11-18 09:44 UTC the workflow's run list holds no scheduled run for the 2026-11-18 03:23 UTC slot. Whether it is late, skipped or missing was not diagnosed. It is tracked in
+[TODO](../../TODO.md#ci-operations) rather than treated as a failure of the first run. A red scheduled run remains a regression or a changed external input, not a known gap.

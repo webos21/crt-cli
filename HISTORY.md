@@ -11,6 +11,18 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-18
 
+### Close the GitHub CI group
+
+The hosted CI is complete for its scope and its TODO group is retired. `ci.yml` builds and tests every required leg from the pinned published Preview: Linux/x86_64 (`ubuntu-24.04` and
+`ubuntu-26.04`), Linux/arm64 (`ubuntu-26.04-arm`), macOS/arm64 (`macos-15`), Windows/x64 (`windows-2022`) and, since 2026-11-18, Windows/arm64 (`windows-11-arm`); `CI gate` is the single required
+check of the `main` ruleset and a documentation-only change skips the matrix inside the workflow. `integration.yml` enforces its pins and the 54-case redirect replay and now has its first scheduled run
+recorded. `release.yml` (package, verify, approval-gated publish) was exercised with real publication and offline signatures on Linux/x86_64 and Linux/arm64, rehearsed and published on macOS/arm64 and
+Windows/x64, and is wired for Windows/arm64 (its first Preview was built by hand). The pin promotion policy and `tools/check_ci_pins.py` check every pin against the published bytes.
+Left open on purpose and kept in Planned: the `release.yml` rehearsal and a workflow-built Preview for `win-arm64`, hosted macOS/Windows integration (D2), the unverified non-administrator rejection
+and the daily cadence of the scheduled integration run (CI Operations).
+Evidence: [CI acceptance](docs/acceptance/ci_acceptance.md) (for example the [first scheduled run](docs/acceptance/ci_acceptance.md#first-scheduled-integrationyml-run-2026-11-18) and the
+[hosted Windows/arm64 leg](docs/acceptance/ci_acceptance.md#hosted-windows-11-arm-result-of-the-win-arm64-pins-2026-11-18)).
+
 ### Publish and pin the first Windows/arm64 Preview and add its `ci.yml` row
 
 Built the first ARM64 CLI against the published, signed CRT Dev SDK `v0.0.1-preview.20261118.windows.arm64.1`, packaged it deterministically, published

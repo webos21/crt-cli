@@ -302,7 +302,7 @@ stop later stages, so one run reports everything that is broken.
 [The loader-repair record](../acceptance/ci_acceptance.md#linux-loader-repair-sdk-adoption-2026-11-10)
 distinguishes producer/local/public-byte evidence from completed hosted replay.
 The original `.3` failure remains historical evidence; the producer's TLSDESC
-fix is shipped in `.4`, rather than hidden by a runner upgrade. [TODO](../../TODO.md#github-ci)
+fix is shipped in `.4`, rather than hidden by a runner upgrade. [TODO](../../TODO.md#ci-platform-expansion)
 owns integration/release work and any still-pending hosted qualification.
 
 ### Publish a CLI Preview
