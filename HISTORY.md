@@ -9,13 +9,23 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-19
+
+### Replay the SDK publisher-signature cases natively on Linux/arm64
+
+The only host the earlier records left unrun. On this Linux/arm64 machine (Ubuntu 26.04.1, glibc 2.43) the pinned, signed bootstrap Preview `v0.1.0-preview.20261116.linux-arm64.1` ran the shared drivers against the pinned
+Dev SDK `v0.0.1-preview.20261110.linux.arm64.2`: 37/37 with test keys and 10/10 with the real publisher key, signature and a real GitHub `sdk acquire`. All six downloaded inputs matched `pins.json` first, and the Preview's own signature
+was verified with the pinned key through the CLI's `fetch` (a one-bit-changed signature is refused). The refusal messages were read, not inferred from exit codes: none is a connection, certificate or process-start failure. No CLI change. With
+this, every item of the Dev SDK / CLI Preview preparation section of the TODO is checked; the section stays until its removal is requested.
+[Acceptance](docs/acceptance/ci_acceptance.md#linuxarm64-sdk-publisher-signature-replay-2026-11-19).
+
 ## 2026-11-18
 
 ### Replay the `sdk repair` publisher-signature cases natively on Linux/x86_64
 
 The pinned, signed bootstrap Preview `v0.1.0-preview.20261116.linux-x86_64.1` ran the shared driver against the pinned, signed Dev SDK `v0.0.1-preview.20261118.linux.x64.1`: 37/37 test-key cases (acquisition, `sdk install` and the eleven
 `sdk repair` cases, each refusal read for its own reason, damaged contract and receipt preserved, verified repair restoring both) and 10/10 with the real key and signature, including a real GitHub `sdk acquire`
-(`signature_verified`). No CLI change. The macOS/arm64 repair replay is recorded separately; Linux/arm64 was not run.
+(`signature_verified`). No CLI change. The macOS/arm64 repair replay is recorded separately; Linux/arm64 was not run then and was run on 2026-11-19 (see below).
 [Acceptance](docs/acceptance/ci_acceptance.md#linuxx86_64-sdk-publisher-signature-replay-2026-11-18).
 
 ### Replay the complete SDK publisher repair cases on macOS/arm64

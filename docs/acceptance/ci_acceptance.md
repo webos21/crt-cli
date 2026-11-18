@@ -1299,4 +1299,30 @@ signature digest) is `signature_verified` with the pinned content; `sdk install`
 after the stored contract is damaged, `sdk repair` with the changed signature leaves the damaged contract and the original receipt untouched, `sdk repair` with the real signature restores both, and `sdk verify` passes.
 
 **Not covered.** macOS/arm64 is recorded in its own [repair case closure](#macosarm64-sdk-repair-case-closure-2026-11-18); the isolation of the bubblewrap-based port jobs is not exercised here (cleared environment, test keys and loopback only); an acquisition refused for a
-real signature (the signature URL is fixed by the pin). Linux/arm64 was not run. Receipts: `out/linux-x64-sigreplay-20261118/` (`test-keys/`, `real-key/`, the release inputs and the extracted CLI).
+real signature (the signature URL is fixed by the pin). Linux/arm64 was not run there; it is recorded in [its own section](#linuxarm64-sdk-publisher-signature-replay-2026-11-19). Receipts: `out/linux-x64-sigreplay-20261118/` (`test-keys/`, `real-key/`, the release inputs and the extracted CLI).
+
+## Linux/arm64 SDK publisher signature replay (2026-11-19)
+
+The publisher-signature replay that the [Linux/x86_64 record](#linuxx86_64-sdk-publisher-signature-replay-2026-11-18) left unrun on Linux/arm64 was run natively on this host (Ubuntu 26.04.1, kernel 7.0.0-43 aarch64, OpenSSL 3.5.5 as test-host
+signer, Python 3.14.4) at `main` `3aa7030` with no CLI source change. The consumer is the executable of the pinned, signed bootstrap Preview `v0.1.0-preview.20261116.linux-arm64.1`: archive SHA-256 `311bc451...77aa`
+(5,063,404 bytes) equals the `pins.json` pin, executable SHA-256 `4b5109e9...3d3b`. The SDK is the pinned Dev SDK `v0.0.1-preview.20261110.linux.arm64.2` (manifest `ba77b26e...67be3`, contract `a3df2fbd...34d4`,
+archive signature `25287c3f...f08f`, content `cd2ab657...0cc6`). All six inputs (CLI archive and signature; SDK manifest, contract, archive and signature) were downloaded for this record and compared with the pins before use.
+
+**The consumer is the genuine signed Preview.** The CLI's own `fetch` with the pinned key (SPKI SHA-256 `59218576...3fa2`, equal to `key_spki_sha256` in `pins.json`) and the `github-release` redirect policy downloaded the Preview archive
+from its public URL and reported `signature_verified`; a copy of the signature with one bit changed was refused with "publisher signature verification failed" and left no output file.
+
+**Test keys, loopback HTTPS (`tools/replay_publisher_acquire_linux.py`): 37/37**, result SHA-256 `920880ff...b15f`. These are the cases of the other hosts' records: `sdk acquire`, `sdk install` and `sdk repair` with a signature by another key, a
+signature over different bytes, a key that did not sign, a mismatching or malformed fingerprint pin, a key without a signature and a signature without a key, a missing signature file, an oversized or `http` signature URL and a missing
+signature asset. The repair group damaged a signed install by editing the stored contract, saw `sdk verify` report it, and every refused repair left the damaged contract and the original receipt untouched with no staging or lock files; the
+repair with the valid signature restored both and `sdk verify` then passed. The refusals were read from the recorded responses, not inferred from exit codes: of the 37 cases, 17 carry a signature or key refusal text ("publisher signature verification
+failed" 9, "publisher key does not match the pinned key fingerprint" 2, "--publisher-key and --signature must be supplied together" 4, "publisher input must be a regular file" 2), and none carries a connection, certificate or process-start failure. This
+record does not split the 37 into acquire/install/repair counts: a split derived from case names here (14/12/11) differs by one case from the earlier records' (15/11/11), so the earlier split is neither confirmed nor corrected.
+
+**Real key, real bytes, real signature (`tools/replay_publisher_real.py --host linux-arm64`): 10/10**, result SHA-256 `9140277b...9d0e`, key SPKI `59218576...3fa2`. A real GitHub `sdk acquire` (the `github-release` redirect policy and the pinned signature
+digest) is `signature_verified` with the pinned content; `sdk install` with a one-bit-changed copy of the real signature (`ac23f0a9...4fda`) is refused and publishes nothing; with the real signature it is `signature_verified`; after the stored contract is
+damaged, `sdk repair` with the changed signature leaves the damaged contract and the original receipt untouched, `sdk repair` with the real signature restores both, and `sdk verify` passes. Both refusals carry "publisher signature verification failed".
+
+**Not covered.** An acquisition refused for a real signature (the signature URL is fixed by the pin); the isolation of the bubblewrap-based port jobs (cleared environment, test keys and loopback only); other glibc versions or distributions (Ubuntu
+26.04, glibc 2.43 only); a bootstrap Preview built by `release.yml`. The CLI Preview used is the signed `20261116` one pinned in `pins.json`, not a newer one. Receipts are on this host under `/home/cmjo/GitLocal/crt-cli-sigreplay-20261119/`
+(`test-keys/result.json`, `real-key/result.json`, the logs, the verified release inputs and the extracted CLI).
+
