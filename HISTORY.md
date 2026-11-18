@@ -11,6 +11,12 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-18
 
+### Align the CI, Preview and README documents with the TODO state
+
+`development.md` now says that the CI driver authenticates every bootstrap archive and the SDK archive with the pinned publisher key; `README.md`, `docs/README.md` and the "Current Hosted
+Coverage" record list six required jobs across five host pairs and Windows/arm64; the README table lists each host's first published Preview and the Windows/arm64 Preview;
+`preview_acceptance.md` carries a record of the Windows/arm64 Preview; and the TODO's publisher-signature item is split into its done and open parts. Documentation only.
+
 ### Close the GitHub CI group
 
 The hosted CI is complete for its scope and its TODO group is retired. `ci.yml` builds and tests every required leg from the pinned published Preview: Linux/x86_64 (`ubuntu-24.04` and

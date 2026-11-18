@@ -22,7 +22,7 @@ store, and configure can select an installed SDK with its stored portable
 compiler contract. Local installation and Stage 2 project selection have native
 records on Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64/arm64 at
 identified snapshots. They are local technical results, not a current-source
-support matrix; the published CLIs are the [Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64 Previews](#download-the-previews). See [STATUS](STATUS.md) for scope and
+support matrix; the published CLIs are the [Linux/x86_64, Linux/aarch64, macOS/arm64, Windows/x64 and Windows/arm64 Previews](#download-the-previews). See [STATUS](STATUS.md) for scope and
 [SDK installation acceptance](docs/acceptance/sdk_install_acceptance.md) for evidence.
 
 The current installer/project selection supports the native `dev` profile.
@@ -63,8 +63,13 @@ Each host needs its LLVM-compatible tools and a CA bundle you choose, and instal
 | --- | --- | --- |
 | Linux/x86_64 | [`v0.1.0-preview.20261110.linux-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.linux-x86_64.1) ([record](docs/acceptance/preview_acceptance.md#linuxx86_64-cli-preview-release-2026-11-10)) | [`v0.0.1-preview.20261118.linux.x64.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261118.linux.x64.1); needs LLVM 21 |
 | Linux/aarch64 | [`v0.1.0-preview.20261111.linux-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261111.linux-arm64.1) ([record](docs/acceptance/preview_acceptance.md#linuxaarch64-cli-preview-release-2026-11-11)) | [`v0.0.1-preview.20261110.linux.arm64.2`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.linux.arm64.2); needs LLVM 21 |
-| macOS/arm64 | [`v0.1.0-preview.20261117.macos-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261117.macos-arm64.1) ([record](docs/acceptance/preview_acceptance.md#github-actions-macosarm64-preview-release-2026-11-17)) | [`v0.0.1-preview.20261110.macos.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.macos.1); needs macOS 15.0 or later and Xcode's command-line tools |
+| macOS/arm64 | [`v0.1.0-preview.20261110.macos-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.macos-arm64.1) ([record](docs/acceptance/preview_acceptance.md#macos-cli-preview-release-2026-11-10)) | [`v0.0.1-preview.20261110.macos.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.macos.1); needs macOS 15.0 or later and Xcode's command-line tools |
 | Windows/x64 | [`v0.1.0-preview.20261110.windows-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.windows-x86_64.1) ([guide](docs/guides/windows_preview.md), [record](docs/acceptance/preview_acceptance.md#windowsx64-cli-preview-release-2026-11-10)) | [`v0.0.1-preview.20261110.windows.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.windows.1); needs LLVM and Windows SDK |
+| Windows/arm64 | [`v0.1.0-preview.20261118.windows-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261118.windows-arm64.1) ([record](docs/acceptance/preview_acceptance.md#windowsarm64-cli-preview-release-2026-11-18)) | [`v0.0.1-preview.20261118.windows.arm64.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261118.windows.arm64.1); needs native ARM64 LLVM and Windows SDK |
+
+The Release column lists each host's first published Preview. Later Previews built by `release.yml` (Linux/x86_64 and Linux/arm64
+`20261116`, macOS/arm64 `20261117`, Windows/x64 `20261117`) are the CI bootstrap pins in `.github/ci/pins.json`
+([records](docs/acceptance/ci_acceptance.md)); the Windows/arm64 Preview is both its first and its CI bootstrap, and was built by hand.
 
 SDK acquisition uses the caller's pinned source file; the table does not set a
 default channel or migrate project locks. Linux/x86_64's published executable
@@ -119,16 +124,16 @@ also exercise this workflow at their recorded baselines.
 
 ## Next User Workflow
 
-[The active plan](TODO.md) continues the Dev SDK + CLI preview: the Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64
-packages are out; default/project pin adoption is next; CI covers Linux/x86_64, Linux/arm64, macOS/arm64 and Windows/x64. The D3 zlib contract is
+[The active plan](TODO.md) continues the Dev SDK + CLI preview: the Linux/x86_64, Linux/aarch64, macOS/arm64, Windows/x64 and Windows/arm64
+packages are out and default/project pin adoption is done; CI covers Linux/x86_64, Linux/arm64, macOS/arm64, Windows/x64 and Windows/arm64. The D3 zlib contract is
 [approved and adopted](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09) for the three exercised host pairs;
 Windows/arm64 D3 remains a separate qualification target.
 
-CI's five required jobs have a passing manual run, with Linux/x86_64 on two
-Ubuntu versions. The Linux/arm64 leg has also passed on push and pull-request events, and `main`
+CI's six required jobs (Linux/x86_64 on two Ubuntu versions) pass on pull requests and pushes to `main`, and `main`
 requires the `CI gate` check; [CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)
-distinguishes workflow configuration, hosted results, the manual integration workflow (redirect replay passes; port suites wait for a
-published host-tools bundle) and the release workflow (dry run verified; real publication not yet exercised).
+distinguishes workflow configuration, hosted results, the integration workflow (the redirect replay and the port suites run on Linux/x86_64 and
+Linux/arm64, manually and daily) and the release workflow (published and signed through the workflow on every host except Windows/arm64, whose first
+Preview was built by hand and whose workflow rehearsal is still open).
 
 Preview qualification covers the actual packaged CLI, promoted SDK pin, trust,
 notices/resources, external LLVM setup and a source-hidden user flow. Full SDK

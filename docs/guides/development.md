@@ -235,11 +235,15 @@ documentation-only pull requests. Sources, headers, tests, tools, manifests, CI 
 covered. Manual dispatch is available regardless of paths.
 
 1. **Bootstrap.** `tools/ci_bootstrap.py` downloads the host's published CRT-CLI Preview and checks its size and
-   SHA-256 against `.github/ci/pins.json`. The pin verifies byte identity;
-   TLS protects transport, and neither establishes publisher authentication here.
+   SHA-256 against `.github/ci/pins.json`. The pin verifies byte identity and TLS protects transport; neither is publisher
+   authentication. Every host pin also carries a detached-signature pin: the driver downloads the `.sig`, checks its size and SHA-256 and
+   verifies it over the exact archive bytes with the pinned publisher key (`publisher` in `pins.json`). An unsigned or wrongly signed
+   archive fails the run, and `ci-summary.json` records `publisher_authentication: signature_verified`.
 2. **SDK.** The bootstrap CLI runs `sdk acquire` with a generated `crt-cli.sdk-source` carrying the pinned public Dev SDK
    manifest, archive, contract and content digests, the `github-release` redirect policy and the runner's system roots as
-   the caller-chosen CA (its hash is recorded). Publisher authentication stays `not_verified`.
+   the caller-chosen CA (its hash is recorded). When the bootstrap pin is flagged `sdk_source_publisher` (every current host is), the source also
+   carries the pinned key and the SDK archive's signature, so the CLI itself authenticates the archive; the driver fails unless it reports
+   `signature_verified`.
 3. **Stage 1.** The bootstrap CLI builds a clean export of the checked-out sources (tracked and unignored files only).
 4. **Tests.** The deterministic suites `native-test`, `archive-test`, `sdk-store-test` and `port-recipe-test` run on the
    **stage-1** executable. A bootstrap CLI's own test results are never evidence for the sources under test.
@@ -449,7 +453,7 @@ The reviewed `src/test/data/zlib.recipe.json` fixture is checked out with LF
 through `.gitattributes` on every host. Recipe verification hashes exact bytes;
 line-ending conversion produces a different, unreviewed input.
 The [Windows hosted qualification](../acceptance/ci_acceptance.md#windows-hosted-qualification-2026-11-10)
-records a complete passing run of all three required legs, including the common
+records a complete passing run of all three required legs of that date (Linux/x86_64, macOS/arm64 and Windows/x64), including the common
 fixture regressions. Windows/macOS byte differences remain reported separately.
 
 ## Replay the Local SDK Installer (D2)

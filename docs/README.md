@@ -42,10 +42,10 @@ from the SDK build baseline:
 ## Acceptance Contracts and Evidence
 
 - [GitHub CI](acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11):
-  five required hosted jobs across four host/architecture pairs, the retained
+  six required hosted jobs across five host/architecture pairs, the retained
   local and failed-run evidence, the `main` ruleset, and outstanding integration/release gates.
 - [Dev SDK / CLI Preview](acceptance/preview_acceptance.md): bounded local candidate,
-  published Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64 packages,
+  published Linux/x86_64, Linux/aarch64, macOS/arm64, Windows/x64 and Windows/arm64 packages,
   actual SDK/CLI/resource identities, isolated workflows and publication limits.
 - [D0/D1 Bootstrap Acceptance](acceptance/bootstrap_acceptance.md): SDK-only
   CLI consumption, initial layout/decisions, single-executable feasibility,

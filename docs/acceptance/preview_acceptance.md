@@ -1010,3 +1010,27 @@ No product/lock-format change, SDK promotion, publisher authentication, release
 publication, Linux runner/schedule, hosted Windows D2, other-host replay or STATUS
 update is claimed. After incorporating the independent macOS receipt above, the
 four-host adoption item remains open for Linux/x86_64.
+
+## Windows/arm64 CLI Preview release (2026-11-18)
+
+[`v0.1.0-preview.20261118.windows-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261118.windows-arm64.1) was published as a non-latest prerelease on
+2026-11-18 after the user confirmed publication; its tag resolves to `2a025858fa72bb93bdd155eb82c2c2fe2145e530`. It is the first Preview for Windows/arm64 and **was not built by
+`release.yml`** (a host's first Preview cannot be: the workflow needs a bootstrap pin) and no reviewer approval gate applied to it; the release notes say so. It was built by hand on native
+Windows/arm64 against the published, signed Dev SDK `v0.0.1-preview.20261118.windows.arm64.1` (manifest SHA-256 `354ab45f94540877dda619d7613937a8caff413ad64fc4aa3f1b88c0a3fceecc`, installed content
+`3b251637845621ba28d6ba1d9c2f6a5e097f6b328f57054f7e7cb5c5eb52621f`). The owner's detached signature was attached after publication and re-downloaded identical.
+
+| Public artifact | Recorded identity |
+| --- | --- |
+| `crt-cli-0.1.0-dev-windows-aarch64-preview.20261118.1.tar.xz` | 5,234,024 bytes, SHA-256 `c5ff710532c0ff9191ae373b48a8f8fe5ceb04bea70647989f9146e255e46e11` |
+| `...tar.xz.sig` | 256 bytes, SHA-256 `b72eb649d476673d784a6f4f84c090f73da9df505372cfc9005d19fa2a2da5e6`, verifies with the pinned publisher key |
+| package manifest | SHA-256 `89e58853ec874ec2d7391773d1606701e874fc338934f3f3e87bce6341e68057`, 30 files |
+| `crt-cli.exe` | ARM64 PE, 45,776,384 bytes, SHA-256 `132c8b5ae15f66ed9dd82fcb5a425160e4d682c008ab218353b7eed30f6d3db8`, imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll` |
+
+Native results (Windows/arm64): CRT's contract replay (seed, self-build, native suite; cold 21 executed / 0 reused, warm 0 / 21; 601 recorded processes), two byte-identical packings, the package
+replay under the restricted token 12/12 and the consumer replay of the published SDK bytes 31/31. Details, the three failed replays that preceded the passing one and the pin/CI results are in
+[CI acceptance](ci_acceptance.md#first-windowsarm64-preview-pins-and-the-ciyml-row-2026-11-18) and its
+[hosted result](ci_acceptance.md#hosted-windows-11-arm-result-of-the-win-arm64-pins-2026-11-18); the adoption is in
+[compatibility](../compatibility.md#windowsarm64-first-preview-and-dev-sdk-adoption-2026-11-18).
+
+Not claimed: a workflow-built Preview or a `release.yml` rehearsal for this host, a real HTTPS `sdk acquire` by the packaged executable on Windows/arm64 (the consumer replay used a local download
+directory), Authenticode signing, and any Windows/arm64 D3 or port qualification.
