@@ -11,6 +11,13 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-18
 
+### Replay publisher-signature authentication natively on Windows/arm64
+
+`sdk acquire`, `sdk install` and `sdk repair` publisher authentication, with their refusals, ran on native Windows/arm64: 37/37 cases with test keys and loopback HTTPS (the driver gained a Windows
+environment and eleven `sdk repair` cases), and with the real publisher key and `.sig` against the published SDK, including a real GitHub `sdk acquire` (`signature_verified`). A first run with an incomplete
+environment (no `SystemRoot`) failed 9 acquisition cases for a test-environment reason and is kept in the record. Windows/x64 was not run.
+[Acceptance](docs/acceptance/ci_acceptance.md#windowsarm64-sdk-publisher-signature-replay-2026-11-18).
+
 ### Decide that release signing stays offline
 
 The owner decided that publisher signatures are made offline by the owner and that this is the intended design: `release.yml` (and the producer's `sdk-release.yml`) never hold a

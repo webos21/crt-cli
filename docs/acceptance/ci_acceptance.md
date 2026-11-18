@@ -1150,3 +1150,34 @@ The daily trigger (`cron: '23 3 * * *'`) has run once. [Run 44079658878](https:/
 
 **Open observation.** At 2026-11-18 09:44 UTC the workflow's run list holds no scheduled run for the 2026-11-18 03:23 UTC slot. Whether it is late, skipped or missing was not diagnosed. It is tracked in
 [TODO](../../TODO.md#ci-operations) rather than treated as a failure of the first run. A red scheduled run remains a regression or a changed external input, not a known gap.
+
+## Windows/arm64 SDK publisher signature replay (2026-11-18)
+
+The same replay that was run on macOS/arm64 ([record](#macosarm64-sdk-publisher-signature-replay-2026-11-17)) was run natively on Windows/arm64 (Windows 11, build 26300): the executable of the signed first
+Windows/arm64 Preview `v0.1.0-preview.20261118.windows-arm64.1` (SHA-256 `132c8b5ae15f66ed9dd82fcb5a425160e4d682c008ab218353b7eed30f6d3db8`) against the published, signed Dev SDK
+`v0.0.1-preview.20261118.windows.arm64.1` (manifest `354ab45f...eecc`, content `3b251637...621f`), in fresh homes under a path with spaces and Korean. **Windows/x64 was not run:** this host is ARM64 and an emulated x64
+run would not be native evidence.
+
+**Test keys, loopback HTTPS (`tools/replay_publisher_acquire_linux.py`): 37/37.** Result SHA-256 `93f51afb...8cf7`. The driver gained, for this record, a Windows child environment (see below) and eleven `sdk repair` cases; its
+26 acquisition and local-install cases are the ones run on macOS. Acquisition: no `publisher` field keeps `not_verified`; the pinned key and signature give `signature_verified` with the request order manifest, contract,
+signature, archive; an installed SDK is reused without a network request and reported `not_verified`; refused, with nothing published and no staging or lock files left: a key that did not sign, a valid signature by a key other than the
+pinned fingerprint, a signature by another key, a signature over different bytes, a signature digest pin mismatch (stops before the archive is requested), a missing signature asset (HTTP 404), an oversized signature pin, a wrong
+fingerprint pin, a relative key file, an unknown publisher field, an `http` signature URL and a missing signature object. `sdk install`: the unchanged result shape without options, `signature_verified` with the options, and the same
+refusals plus the usage errors (exit code 2) for a key without a signature, a signature without a key, a fingerprint without a key and a malformed fingerprint. **`sdk repair`:** a signed install is damaged by a valid-looking edit
+of the stored contract; `sdk verify` reports the digest mismatch; a repair with a signature by another key, a signature over different bytes, a key that did not sign, or a mismatching fingerprint pin is refused and leaves the
+damaged contract bytes and the original receipt untouched with no staging or locks; the usage errors and a missing signature file are refused; a repair with the valid signature restores the original contract bytes and the original
+receipt, and `sdk verify` passes.
+
+**Real bytes, real key (not test keys).** The published archive and the owner's real `.sig` with `.github/ci/crt-release-publisher.pub` (SPKI `59218576...3fa2`), 5/5, result SHA-256 `5a3b699e...3628`: `sdk install` with a one-bit-changed
+copy of the real signature installs nothing; with the real signature it is `signature_verified`; after the stored contract is damaged, `sdk repair` with the one-bit-changed signature changes nothing (damaged contract and original receipt preserved,
+no staging or locks); `sdk repair` with the real signature restores the original contract and receipt; `sdk verify` passes. A real GitHub `sdk acquire` with the `github-release` redirect policy, the real key and the real signature pin
+(`50ec4f51...cf1c308`, 256 bytes) returned `signature_verified` with key `59218576...3fa2` and content `3b251637...621f` (reply SHA-256 `910aa19c...5e28`). The CI driver's accepting path on this SDK is recorded in the
+[first Preview record](#first-windows-arm64-preview-pins-and-the-ciyml-row-2026-11-18) and the hosted [result](#hosted-windows-11-arm-result-of-the-win-arm64-pins-2026-11-18).
+
+**First attempt, kept: 17/26, not evidence.** The driver passed the consumer only `HOME` and `PATH`. On Windows a process without `SystemRoot` cannot resolve `localhost` (shown directly: the same `fetch` reaches a loopback listener once `SystemRoot` is set and
+fails with "Could not connect" before connecting when it is not), so every case that needed the network failed and several refusal cases could have passed for the wrong reason. It is a test-environment fault, not a CLI fault; the driver now adds `SystemRoot`,
+`USERPROFILE`, `TEMP` and `TMP` on Windows (the POSIX environment is unchanged) and decodes the output as UTF-8. The second run's refusals were checked case by case for their intended reason (none is a connection failure).
+
+**Not covered.** Windows/x64; the restricted-token isolation of `crt_windows_trace` (this replay uses a cleared environment, test keys and loopback, as on macOS); the eleven new `sdk repair` cases and the Windows environment on Linux and macOS (only the unchanged POSIX
+environment is shared, and the repair cases have not been run there); an acquisition refused for a real signature (the signature URL is fixed by the pin). One observation, not changed here: the "missing signature object" case is refused with the raw JSON-library text
+`[json.exception.out_of_range.403] key 'archive_signature' not found` rather than a diagnostic of the CLI's own; the refusal and its effect are correct. Receipts are in the ignored local directories `cw/o3` (37 cases), `cw/r1`, `cw/r2` and the failed first run `cw/o2`.

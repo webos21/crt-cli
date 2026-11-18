@@ -35,8 +35,10 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
   - [x] Pin CLI Previews with these options as the bootstrap on every host, so CI's SDK download is natively verified with the pinned key
     (`sdk_source_publisher`; macOS/arm64 and Windows/x64 [moved to the 20261117 Previews](docs/acceptance/ci_acceptance.md#macos-and-windows-bootstrap-pins-moved-to-the-20261117-preview-2026-11-17),
     Windows/arm64 [pinned with its first Preview](docs/acceptance/ci_acceptance.md#first-windowsarm64-preview-pins-and-the-ciyml-row-2026-11-18)).
-  - [ ] Replay native Windows (x64 and arm64) `sdk acquire`, `sdk install` and `sdk repair` publisher authentication, including the refusals (wrong signature, wrong key,
-    tampered archive), as was done for macOS/arm64. CI exercises only the accepting path on Windows.
+  - [x] Replay native Windows/arm64 `sdk acquire`, `sdk install` and `sdk repair` publisher authentication, including the refusals (wrong signature, wrong key, tampered
+    archive), with test keys (37/37) and with the real key and signature
+    ([record](docs/acceptance/ci_acceptance.md#windowsarm64-sdk-publisher-signature-replay-2026-11-18)).
+  - [ ] The same replay on a native Windows/x64 host (`tools/replay_publisher_acquire_linux.py`; this device is ARM64), and on Linux and macOS for the new `sdk repair` cases.
   - [x] Decide where release signing happens: the owner signs offline after publication and `release.yml` never holds a key
     ([decision](docs/design/crt_cli.md#release-signing-decision-2026-11-18)).
 
