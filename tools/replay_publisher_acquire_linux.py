@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Native publisher-signature cases for SDK acquisition and local install.
+"""Native publisher-signature cases for SDK acquisition, local install and repair (Linux, macOS and Windows).
 
 Python/OpenSSL are test-host tools (they sign with a throw-away RSA key and serve loopback TLS); the consumer is the native
-crt-cli with a cleared environment and a private HOME. --release-dir holds one published native Dev SDK release (its
+crt-cli with a cleared environment and a private HOME (on Windows the variables the OS needs to resolve names and locate temp
+files are added: without SystemRoot a Windows process cannot resolve `localhost`). --release-dir holds one published native Dev SDK release (its
 release-manifest-dev-*.json, contract and archive). The acquisition cases use loopback HTTPS.
 """
 import argparse
@@ -21,6 +22,14 @@ import threading
 
 def sha(data):
     return hashlib.sha256(data).hexdigest()
+
+
+def child_env(home):
+    """The cleared environment of the consumer: a private home and no usable PATH, plus what Windows needs to run network code."""
+    env = {'HOME': str(home), 'PATH': '/nonexistent'}
+    if os.name == 'nt':
+        env.update(PATH='', USERPROFILE=str(home), TEMP=str(home), TMP=str(home), SystemRoot=os.environ['SystemRoot'])
+    return env
 
 
 def main():
@@ -117,7 +126,7 @@ def main():
         spec = work / ('source%d.json' % homes[0]); spec.write_text(json.dumps(source))
         before = len(hits)
         proc = subprocess.run([str(args.cli.resolve()), '--json', 'sdk', 'acquire', '--source', str(spec), '--store', str(home / 'sdks')],
-                              capture_output=True, text=True, env={'HOME': str(home), 'PATH': '/nonexistent'}, timeout=300, stdin=subprocess.DEVNULL)
+                              capture_output=True, text=True, encoding='utf-8', errors='replace', env=child_env(home), timeout=300, stdin=subprocess.DEVNULL)
         try:
             reply = json.loads(proc.stdout)
         except ValueError:
@@ -183,7 +192,7 @@ def main():
         home = reuse_home or (work / ('home%d' % homes[0])); home.mkdir(exist_ok=True)
         argv = [str(args.cli.resolve()), '--json', 'sdk', 'install', '--archive', str(inst / archive['name']), '--release-manifest', str(inst / 'release-manifest.json'),
                 '--release-manifest-sha256', sha(manifest_bytes), '--store', str(home / 'sdks'), *extra]
-        proc = subprocess.run(argv, capture_output=True, text=True, env={'HOME': str(home), 'PATH': '/nonexistent'}, timeout=300, stdin=subprocess.DEVNULL)
+        proc = subprocess.run(argv, capture_output=True, text=True, encoding='utf-8', errors='replace', env=child_env(home), timeout=300, stdin=subprocess.DEVNULL)
         try:
             reply = json.loads(proc.stdout)
         except ValueError:
@@ -218,6 +227,63 @@ def main():
     install('sdk install refuses a fingerprint pin without a key', ['--publisher-key-spki-sha256', fingerprint('pub1')], False, 'needs --publisher-key', exit_code=2)
     install('sdk install refuses a malformed fingerprint pin', [*good[:4], '--publisher-key-spki-sha256', 'ABC'], False, '64 lowercase', exit_code=2)
     install('sdk install refuses a missing signature file', ['--publisher-key', str(work / 'pub1.pub'), '--signature', str(inst / 'absent.sig')], False)
+
+    # `sdk repair` (local files, release-manifest mode) takes the same options. A refused repair must leave the damaged SDK exactly as it was:
+    # the damaged contract bytes, the original receipt, and no staging or lock files; a verified repair restores the original contract.
+    reply, rhome = install('sdk repair setup: a signed install of the SDK to damage', good, True, 'signature_verified')
+    rstore = rhome / 'sdks'
+    stored = rstore / '.contracts' / (sdk_dir + '.json')
+    receipt = rstore / '.receipts' / (sdk_dir + '.json')
+    original_contract, original_receipt = stored.read_bytes(), receipt.read_bytes()
+    damaged = json.loads(original_contract)
+    damaged['changed_policy'] = 'a valid-looking edit of the stored policy'
+    damaged_bytes = json.dumps(damaged).encode('utf-8')
+    stored.write_bytes(damaged_bytes)
+
+    def cli_json(label, argv, home, expect_ok, needle=None, exit_code=None):
+        proc = subprocess.run([str(args.cli.resolve()), '--json', *argv], capture_output=True, text=True, encoding='utf-8', errors='replace',
+                              env=child_env(home), timeout=300, stdin=subprocess.DEVNULL)
+        try:
+            reply = json.loads(proc.stdout)
+        except ValueError:
+            reply = {}
+        detail = json.dumps(reply.get('data', {}))
+        passed = (proc.returncode == 0 and reply.get('ok') is True) if expect_ok else (proc.returncode > 0 and reply.get('ok') is False)
+        if exit_code is not None:
+            passed = passed and proc.returncode == exit_code
+        if needle:
+            passed = passed and needle in detail
+        results.append({'case': label, 'passed': bool(passed), 'detail': detail[:500]})
+        print(('PASS ' if passed else 'FAIL ') + label, flush=True)
+        return reply
+
+    def leftovers_of(store):
+        return [p.name for area in ('.staging', '.locks') if (store / area).exists() for p in (store / area).iterdir()]
+
+    def repair(label, extra, expect_ok, needle=None, exit_code=None):
+        reply = cli_json(label, ['sdk', 'repair', sdk_dir, '--archive', str(inst / archive['name']), '--release-manifest', str(inst / 'release-manifest.json'),
+                                 '--release-manifest-sha256', sha(manifest_bytes), '--store', str(rstore), *extra], rhome, expect_ok, needle, exit_code)
+        if not expect_ok:
+            kept = stored.read_bytes() == damaged_bytes and receipt.read_bytes() == original_receipt and not leftovers_of(rstore)
+            results[-1]['passed'] = results[-1]['passed'] and kept
+            print(('PASS ' if results[-1]['passed'] else 'FAIL ') + '  (damaged contract and original receipt preserved, no staging or locks)', flush=True)
+        return reply
+
+    cli_json('the stored contract edit is detected before any repair', ['sdk', 'verify', sdk_dir, '--store', str(rstore)], rhome, False, 'digest mismatch')
+    repair('sdk repair with a signature by another key repairs nothing',
+           ['--publisher-key', str(work / 'pub1.pub'), '--signature', str(inst / 'other.sig')], False, 'signature verification failed')
+    repair('sdk repair with a signature over different bytes repairs nothing',
+           ['--publisher-key', str(work / 'pub1.pub'), '--signature', str(inst / 'wrongdata.sig')], False, 'signature verification failed')
+    repair('sdk repair with a key file that did not sign repairs nothing',
+           ['--publisher-key', str(work / 'pub2.pub'), '--signature', str(inst / 'good.sig')], False, 'signature verification failed')
+    repair('sdk repair with a mismatching fingerprint pin repairs nothing',
+           ['--publisher-key', str(work / 'pub2.pub'), '--signature', str(inst / 'other.sig'), '--publisher-key-spki-sha256', fingerprint('pub1')], False, 'pinned key fingerprint')
+    repair('sdk repair refuses a key without a signature', ['--publisher-key', str(work / 'pub1.pub')], False, 'supplied together', exit_code=2)
+    repair('sdk repair refuses a signature without a key', ['--signature', str(inst / 'good.sig')], False, 'supplied together', exit_code=2)
+    repair('sdk repair refuses a missing signature file', ['--publisher-key', str(work / 'pub1.pub'), '--signature', str(inst / 'absent.sig')], False)
+    reply = repair('sdk repair with the valid signature restores the original contract', good, True, 'signature_verified')
+    results[-1]['passed'] = results[-1]['passed'] and stored.read_bytes() == original_contract and receipt.read_bytes() == original_receipt and not leftovers_of(rstore)
+    cli_json('sdk verify passes after the verified repair', ['sdk', 'verify', sdk_dir, '--store', str(rstore)], rhome, True)
 
     summary = {'passed': all(r['passed'] for r in results), 'cases': results, 'release_manifest_sha256': sha(manifest_bytes),
                'cli_sha256': sha(args.cli.read_bytes())}
