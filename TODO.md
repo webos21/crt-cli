@@ -37,8 +37,8 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
     Windows/arm64 [pinned with its first Preview](docs/acceptance/ci_acceptance.md#first-windowsarm64-preview-pins-and-the-ciyml-row-2026-11-18)).
   - [ ] Replay native Windows (x64 and arm64) `sdk acquire`, `sdk install` and `sdk repair` publisher authentication, including the refusals (wrong signature, wrong key,
     tampered archive), as was done for macOS/arm64. CI exercises only the accepting path on Windows.
-  - [ ] Decide where release signing happens: `release.yml` holds no signing key and the owner signs offline after publication. Either record that as the intended design or
-    implement signing in the workflow; the second needs a key-custody decision.
+  - [x] Decide where release signing happens: the owner signs offline after publication and `release.yml` never holds a key
+    ([decision](docs/design/crt_cli.md#release-signing-decision-2026-11-18)).
 
 D3's bounded zlib adapter contract is adopted for the exercised Linux/x86_64,
 macOS/arm64 and Windows/x64 combinations. [The adoption ledger](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09)
@@ -110,6 +110,11 @@ Producer readiness and CLI support have different owners and neither blocks the 
 
 ### CI Operations
 
+- [ ] Sign-before-publish (the key stays offline, so the decision above is unchanged): the workflow stops at the verified draft, the owner attaches the `.sig` to the draft, and a
+  `finalize` step verifies the signature with the pinned key and the draft's exact asset set before making the release public. This removes the unsigned public window and
+  checks the signature inside the workflow; it needs the same change in `crt`'s `sdk-release.yml`. Open choices before building it: where the `release` approval sits (stage,
+  finalize or both), whether a `dry_run` draft may be finalized (default no), and whether the signature also covers the `SHA256SUMS-*` file. GitHub artifact attestations are a
+  separate, optional addition.
 - [ ] Observe the daily cadence of the scheduled `integration.yml`: its first scheduled run happened and passed
   ([record](docs/acceptance/ci_acceptance.md#first-scheduled-integrationyml-run-2026-11-18)), but the 2026-11-18 03:23 UTC slot had no run at 09:44 UTC.
   Determine over several days whether runs are late, skipped or missing; a red run is a regression or a changed external input, not a known gap.

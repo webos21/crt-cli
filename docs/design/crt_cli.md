@@ -533,6 +533,23 @@ every documentation change. External PRs receive no publishing tokens;
 only a separate trusted promotion process publishes artifacts. CI success
 and actual GUI/native-device acceptance are distinct.
 
+### Release signing decision (2026-11-18)
+
+**Decided by the owner: publisher signatures are made by the owner offline, and that is the intended design, not a gap.** `release.yml` and the producer's
+`sdk-release.yml` build, verify and publish; they hold no signing key. After publication the owner compares each asset's SHA-256 with the
+release record, signs it offline with the publisher key and attaches `<asset>.sig` to the same release; consumers pin the signature only after that. The procedure and the
+key policy are owned by CRT ([publisher signing](https://github.com/webos21/crt/blob/main/docs/security/publisher_signing.md)).
+
+Reasons considered: a workflow-held signing capability would turn the signature from "the owner approved exactly these bytes" into "the workflow produced these bytes", and with a single
+maintainer approving the `release` environment there is no second reviewer to compensate; the key lifecycle policy (expiry, rotation, revocation, recovery) is not yet settled,
+and moving the key would require a new key, a rotation notice signed with the old one and every publication channel updated, in both repositories' pins. Releases are infrequent
+enough that the manual step is affordable.
+
+Consequences: an asset is `not_verified` until its `.sig` is attached, and no pin may reference an asset before then. The unsigned window between publication and signature is a known
+limit of this design. Reconsider (key in a KMS reached through OIDC, or workflow signing) when releases become frequent or a second maintainer exists; that is a new decision and a key
+rotation, not a configuration change. Sigstore/cosign signatures are a different verification model and are not part of the CLI contract. Possible narrowing without moving the key
+(sign-before-publish, GitHub artifact attestations) is tracked in [TODO](../../TODO.md#ci-operations).
+
 ## 9. Joint Development Sequence
 
 This sequence consolidates the initial IDE-first J0-J6, CLI-only C0-C5, and

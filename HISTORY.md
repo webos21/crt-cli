@@ -11,6 +11,12 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-18
 
+### Decide that release signing stays offline
+
+The owner decided that publisher signatures are made offline by the owner and that this is the intended design: `release.yml` (and the producer's `sdk-release.yml`) never hold a
+signing key. The reasons, the consequences (an asset is `not_verified` until its `.sig` is attached, with a known unsigned window after publication) and the conditions for
+reconsidering are in [the CLI design](docs/design/crt_cli.md#release-signing-decision-2026-11-18). A narrowing that keeps the key offline (sign-before-publish) is queued in TODO.
+
 ### Align the CI, Preview and README documents with the TODO state
 
 `development.md` now says that the CI driver authenticates every bootstrap archive and the SDK archive with the pinned publisher key; `README.md`, `docs/README.md` and the "Current Hosted
