@@ -140,8 +140,10 @@ Producer readiness and CLI support have different owners and neither blocks the 
   native build and test qualification.
   - [x] Wire `win-arm64` into `ci_bootstrap.py`, `ci_release.py`, `release.yml` and their tests; prepare and replay a local SDK and CLI candidate
     ([record](docs/acceptance/ci_acceptance.md#windowsarm64-host-wiring-and-local-candidate-preflight-2026-11-17)).
-  - [ ] CRT: Windows/arm64 rows in `sdk-integration.yml` and the planned `sdk-release.yml`; publish and sign the Dev SDK built from the final `main`.
-  - [ ] Publish and sign the first `win-arm64` Preview built from that SDK; then pin SDK and Preview and add the `ci.yml` matrix row in one reviewed pull request.
+  - [x] CRT: Windows/arm64 rows in `sdk-integration.yml` and `sdk-release.yml`; Dev SDK `v0.0.1-preview.20261118.windows.arm64.1` published and signed.
+  - [x] Publish and sign the first `win-arm64` Preview built from that SDK ([record](docs/acceptance/ci_acceptance.md#first-windowsarm64-preview-pins-and-the-ciyml-row-2026-11-18)).
+  - [ ] Merge the pull request that pins SDK and Preview and adds the `ci.yml` matrix row once its hosted `windows-11-arm` leg passes.
+  - [ ] CRT: add `windows-aarch64` to `.github/ci/sdk-pins.json`, drop `cli_preview: none` from its integration row and the `bootstrap` marker of its `HOSTS` entry in `ci_sdk_publish.py`, in one reviewed change.
   - [ ] Hosted `windows-11-arm` qualification: manual `ci.yml` dispatch, then a `release.yml` `dry_run: true` rehearsal, publication and signature replay.
 
 ### CI Operations

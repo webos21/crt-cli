@@ -438,8 +438,9 @@ inputs `ci.yml` and `integration.yml` trust. A pin moves in a pull request, neve
    published CLI Preview for that host built by that SDK alone, a hosted runner label that exists for the repository, and a local
    `tools/ci_bootstrap.py --host <key>` pass. Only then add the matrix row, the `pins.json` host and the driver's host key in one pull
    request, and run it through a manual dispatch before treating it as required. A host with no hosted runner is recorded as unsupported,
-   not simulated. Windows/arm64 (`windows-11-arm`) has its release-driver wiring and a [local candidate preflight](../acceptance/ci_acceptance.md#windowsarm64-host-wiring-and-local-candidate-preflight-2026-11-17); its SDK release,
-   Preview, pins and `ci.yml` row are still missing, in that order.
+   not simulated. Windows/arm64 (`windows-11-arm`) has its release-driver wiring and a [local candidate preflight](../acceptance/ci_acceptance.md#windowsarm64-host-wiring-and-local-candidate-preflight-2026-11-17); its SDK, signed
+   Preview, pins and `ci.yml` row are recorded in the [2026-11-18 record](../acceptance/ci_acceptance.md#first-windowsarm64-preview-pins-and-the-ciyml-row-2026-11-18);
+   the row is required only after its hosted run passes.
 8. **Release pins are separate.** Publishing a Preview does not move `ci.yml` pins. After publication, raise the pin in its own pull
    request under this policy, because the published bytes are what the pin must match.
 
