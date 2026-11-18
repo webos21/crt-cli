@@ -6,6 +6,20 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## Linux/x86_64 automated Dev SDK adoption (2026-11-18)
+
+Producer publication and signing precede this CI pin change. Public Linux/x86_64 Dev SDK
+[`v0.0.1-preview.20261118.linux.x64.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261118.linux.x64.1),
+clean CRT `21ef266080760216f525c3725a652b5f1af4741c`, is the first Preview produced by the producer's `sdk-release.yml`
+([run 44088028759](https://github.com/webos21/crt/actions/runs/44088028759), reviewer-approved) and replaces `v0.0.1-preview.20261110.4` as the
+Linux/x86_64 CI input: manifest `b76aea28cd516628b83f75f2f513cc1d5d1bcddfad380eb485efaeb95a45a641`, SDK content
+`3008315d40f5785226ecb26aee9a746ddc7fe8513d1ac895e7f4ce77eb057a79`, portable policy
+`602e7a036e8ae2ed064f342121b363dfbe90bf8b0059ad9887297a7f0c8b63d0`, publisher signature (SHA-256 `a15eb945...e50b`) verified by
+`tools/check_ci_pins.py` against the pinned key. The producer's
+[acceptance record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#first-automated-dev-sdk-preview-s4-2026-11-18)
+states that the release intends no SDK source/ABI/policy change from `.4`; manifest, native policy, recipe and lock formats are unchanged. Other hosts'
+SDK pins are unchanged. Hosted suite counts on both Ubuntu legs are recorded after the pull request's `CI gate` and the `main` push run, not inferred here.
+
 ## Linux loader-repair SDK adoption (2026-11-10)
 
 Producer promotion precedes this CI pin change. Public Linux/x86_64 Dev SDK

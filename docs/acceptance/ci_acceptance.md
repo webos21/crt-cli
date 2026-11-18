@@ -16,7 +16,7 @@ tests were not rerun by that review.
 
 | Host/architecture | Required runner(s) | Qualified SDK input | Evidence |
 | --- | --- | --- | --- |
-| Linux/x86_64 | `ubuntu-24.04`, `ubuntu-26.04` | `v0.0.1-preview.20261110.4` | [Repaired-loader qualification and four artifact audits](#whole-required-matrix-and-artifact-verification) |
+| Linux/x86_64 | `ubuntu-24.04`, `ubuntu-26.04` | `v0.0.1-preview.20261118.linux.x64.1` | [Repaired-loader qualification and four artifact audits](#whole-required-matrix-and-artifact-verification) |
 | Linux/arm64 | `ubuntu-26.04-arm` | `v0.0.1-preview.20261110.linux.arm64.2` | [Manual hosted run and ARM64 artifact verification](#linuxarm64-leg-2026-11-11) |
 | macOS/arm64 | `macos-15` | `v0.0.1-preview.20261110.macos.1` | [Four-job qualification with its original host-specific SDK pin](#whole-required-matrix-and-artifact-verification) |
 | Windows/x64 | `windows-2022` | `v0.0.1-preview.20261110.windows.1` | [Four-job qualification with its original host-specific SDK pin](#whole-required-matrix-and-artifact-verification) |
