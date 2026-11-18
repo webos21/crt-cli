@@ -11,6 +11,13 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-18
 
+### Replay publisher-signature authentication natively on Windows/x64
+
+The Windows/arm64 replay ran natively on Windows/x64 with the executable of the signed public Preview `v0.1.0-preview.20261117.windows-x86_64.1` against the signed Windows/x64 Dev SDK: 37/37 test-key cases
+(acquisition, `sdk install`, `sdk repair`, every refusal checked for its own reason) and, with the new host-independent `tools/replay_publisher_real.py`, 10/10 with the real key and signature: a real GitHub `sdk acquire` is
+`signature_verified`, a one-bit-changed signature installs and repairs nothing, and the real one installs and restores the damaged contract. No CLI change. Not done: the same `sdk repair` cases on Linux and macOS.
+[Acceptance](docs/acceptance/ci_acceptance.md#windowsx64-sdk-publisher-signature-replay-2026-11-18).
+
 ### Replay publisher-signature authentication natively on Windows/arm64
 
 `sdk acquire`, `sdk install` and `sdk repair` publisher authentication, with their refusals, ran on native Windows/arm64: 37/37 cases with test keys and loopback HTTPS (the driver gained a Windows

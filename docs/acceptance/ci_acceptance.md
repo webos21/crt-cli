@@ -1181,3 +1181,28 @@ fails with "Could not connect" before connecting when it is not), so every case 
 **Not covered.** Windows/x64; the restricted-token isolation of `crt_windows_trace` (this replay uses a cleared environment, test keys and loopback, as on macOS); the eleven new `sdk repair` cases and the Windows environment on Linux and macOS (only the unchanged POSIX
 environment is shared, and the repair cases have not been run there); an acquisition refused for a real signature (the signature URL is fixed by the pin). One observation, not changed here: the "missing signature object" case is refused with the raw JSON-library text
 `[json.exception.out_of_range.403] key 'archive_signature' not found` rather than a diagnostic of the CLI's own; the refusal and its effect are correct. Receipts are in the ignored local directories `cw/o3` (37 cases), `cw/r1`, `cw/r2` and the failed first run `cw/o2`.
+
+## Windows/x64 SDK publisher signature replay (2026-11-18)
+
+The replays recorded for [macOS/arm64](#macosarm64-sdk-publisher-signature-replay-2026-11-17) and [Windows/arm64](#windowsarm64-sdk-publisher-signature-replay-2026-11-18) were run natively on
+**Windows/x64** (Windows 11 Pro build 26100, OpenSSL 3.5.9 from Git for Windows as the test-host signer, Python 3.11.9) with no CLI source change. The consumer is the executable of the signed public Preview
+`v0.1.0-preview.20261117.windows-x86_64.1`, extracted from its archive after the archive's signature verified (SHA-256 `feb97791...84df`, the executable the hosted `verify` job ran). The SDK is the published, signed Windows/x64 Dev SDK
+`v0.0.1-preview.20261110.windows.1` (manifest `b0fca4c8...6976`, content `5bb55372...c7ef`, archive signature `4d9438a6...ad8b`), downloaded from the GitHub release. Every case ran with a cleared environment, a private home and a work path with
+spaces and Korean (OpenSSL signs relative to its own working directory, so the non-ASCII path does not reach it).
+
+**Test keys, loopback HTTPS (`tools/replay_publisher_acquire_linux.py`): 37/37**, result SHA-256 `c574b3e6...c7dbc7`. These are the cases of the Windows/arm64 run with the same grouping: acquisition (not-verified without options, verified with the pinned key and signature,
+reuse of an installed SDK, a key that did not sign, a valid signature by a key other than the pinned fingerprint, another key, a signature over different bytes, a signature digest pin mismatch stopping before the archive request, a missing signature asset,
+an oversized pin, a wrong fingerprint, a relative key file, an unknown publisher field, an `http` signature URL, a missing signature object), `sdk install` (unchanged result shape, verified, the same refusals and the four usage errors) and eleven `sdk repair` cases
+(damage detected, four refusals that leave the damaged contract and the original receipt untouched, usage errors, a missing signature file, the verified repair and `sdk verify`). Each refusal was read for its reason: none is a connection failure and
+none is the missing-`SystemRoot` fault of the first arm64 attempt; the child environment of the driver adds `SystemRoot`, `USERPROFILE`, `TEMP` and `TMP` on Windows.
+
+**Real key, real bytes, real signature (`tools/replay_publisher_real.py`, new): 10/10**, result SHA-256 `6badd0b9...1bc4`, key SPKI `59218576...3fa2`. A real GitHub `sdk acquire` (the `github-release` redirect policy, the pinned signature digest `4d9438a6...ad8b`, the system roots as
+explicit transport trust) is `signature_verified` and installs content `5bb55372...c7ef`. `sdk install` of the published archive with a **one-bit-changed copy of the real signature** (`89cdf88f...1cf9`) is refused ("publisher signature verification failed") and
+publishes nothing and leaves no staging or locks; with the real signature it is `signature_verified`. After the stored contract is damaged, `sdk verify` reports the digest mismatch, `sdk repair` with the changed signature is refused and leaves the damaged contract and
+the original receipt untouched, and `sdk repair` with the real signature restores the original contract and receipt and `sdk verify` passes. The driver is host-independent (`--host` selects the pin set in `.github/ci/pins.json`); this is its first run.
+
+**First attempt, kept, not evidence.** The first run of the new driver failed at the refused-install case because the consumer ran in a different working directory than the driver and the relative `--release-dir` paths no longer resolved; the driver now resolves them. The refusal command was
+then repeated by hand with the same inputs and gave the expected refusal. The second run, above, is the record.
+
+**Not covered.** The restricted-token isolation of `crt_windows_trace` (this replay uses a cleared environment, test keys and loopback, as on macOS and Windows/arm64); the eleven `sdk repair` cases on Linux and macOS; an acquisition refused for a real signature (the signature
+URL is fixed by the pin); verification of the real signature by `crt-cli fetch --publisher-key`. Receipts: `out/windows-x64-sigreplay-20261118/` (`test-keys/`, `real-key/`, the failed first real-key attempt, the downloaded SDK release and the extracted CLI).

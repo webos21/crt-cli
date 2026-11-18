@@ -38,7 +38,9 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
   - [x] Replay native Windows/arm64 `sdk acquire`, `sdk install` and `sdk repair` publisher authentication, including the refusals (wrong signature, wrong key, tampered
     archive), with test keys (37/37) and with the real key and signature
     ([record](docs/acceptance/ci_acceptance.md#windowsarm64-sdk-publisher-signature-replay-2026-11-18)).
-  - [ ] The same replay on a native Windows/x64 host (`tools/replay_publisher_acquire_linux.py`; this device is ARM64), and on Linux and macOS for the new `sdk repair` cases.
+  - [x] The same replay on a native Windows/x64 host: 37/37 with test keys and 10/10 with the real key, signature and a real GitHub `sdk acquire`
+    ([record](docs/acceptance/ci_acceptance.md#windowsx64-sdk-publisher-signature-replay-2026-11-18)).
+  - [ ] The `sdk repair` cases (`tools/replay_publisher_acquire_linux.py`) on Linux and macOS.
   - [x] Decide where release signing happens: the owner signs offline after publication and `release.yml` never holds a key
     ([decision](docs/design/crt_cli.md#release-signing-decision-2026-11-18)).
 
