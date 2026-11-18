@@ -1060,3 +1060,42 @@ fetch cases and no Preview-notes text for this host. The package replay and cons
 2. Here: build and package the first `win-arm64` Preview from that published SDK (the first Preview of a host cannot use `release.yml` because it has no bootstrap pin; use the local path above, then publish and sign it).
 3. Pin both in one reviewed pull request that also adds the `ci.yml` matrix row (`windows-11-arm`, `--llvm-bin 'C:/Program Files/LLVM/bin'`, the ARM64 LLVM step) and the `win-arm64` host key to the pin tests; dispatch it manually before treating the leg as required.
 4. Dispatch `release.yml` with `host: win-arm64` and `dry_run: true`, then publish and sign a Preview built by the workflow.
+
+## First Windows/arm64 Preview, pins and the `ci.yml` row (2026-11-18)
+
+**Published and signed; pinned; a local `ci_bootstrap.py` pass. The hosted `windows-11-arm` result is recorded separately once it exists.**
+This follows the [host-adding policy](../guides/development.md#ci-pin-promotion) (item 7) and the order of the
+[preflight record](#windowsarm64-host-wiring-and-local-candidate-preflight-2026-11-17).
+
+| Input | Identity |
+| --- | --- |
+| Dev SDK | CRT `v0.0.1-preview.20261118.windows.arm64.1`, built by `sdk-release.yml` as a first-host bootstrap (consumer smoke recorded as NOT RUN), signed by the publisher; manifest SHA-256 `354ab45f94540877dda619d7613937a8caff413ad64fc4aa3f1b88c0a3fceecc` (1,847 bytes), installed content `3b251637845621ba28d6ba1d9c2f6a5e097f6b328f57054f7e7cb5c5eb52621f`, archive signature SHA-256 `50ec4f51089a37dc760bdef6e9e58af72a5acb73a90a41f3790cbf5d9cf1c308` |
+| CLI Preview | `v0.1.0-preview.20261118.windows-arm64.1` at `2a025858fa72bb93bdd155eb82c2c2fe2145e530`, archive `crt-cli-0.1.0-dev-windows-aarch64-preview.20261118.1.tar.xz`, 5,234,024 bytes, SHA-256 `c5ff710532c0ff9191ae373b48a8f8fe5ceb04bea70647989f9146e255e46e11`, package manifest `89e58853ec874ec2d7391773d1606701e874fc338934f3f3e87bce6341e68057`, signature SHA-256 `b72eb649d476673d784a6f4f84c090f73da9df505372cfc9005d19fa2a2da5e6` |
+
+**The Preview was not built by `release.yml`** (a host's first Preview cannot be: it has no bootstrap pin) and no reviewer approval gate applied.
+It was built by hand on native Windows/arm64: CRT's native contract replay (`replay_cli_contract_windows.py`; CRT-hosted seed, then self-build) against
+the downloaded, signature-verified SDK, then `create_bootstrap_resources.py` and `package_cli_archive.py pack` (two packings byte-identical,
+extraction verified). Replay: cold self-build 21 executed / 0 reused, warm 0 / 21, 601 recorded processes, native suite with archive 214, SDK store
+113 and port recipe 142 checks, imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`; executable
+`132c8b5ae15f66ed9dd82fcb5a425160e4d682c008ab218353b7eed30f6d3db8`, 45,776,384 bytes. Package replay under the restricted token
+(`replay_cli_package_windows.py --sdk-version ...windows.arm64.1`) 12/12 and the consumer replay of the published SDK bytes
+(`replay_preview_public_windows.py`, local download directory) 31/31. The draft was uploaded by `ci_release.py publish --draft-only`, downloaded
+and compared byte for byte, its notes rewritten to say that it is a first-host manual build, published as a non-latest prerelease after the user
+confirmed, and the owner's detached signature (verified with the publisher key; 256 bytes) was attached and re-downloaded identically.
+
+**Failed attempts, kept.** Three contract replays failed before the passing one, all through the replay inputs and not the product: a source export
+that was not a git checkout; `lld-link.exe` passed as `--linker` (the contract's GNU-style link command needs `ld.lld.exe`); and a work root whose
+installed-SDK path reached 263 characters, over Windows' 260 limit (the public-format SDK directory name is long). A root of 257 characters or less
+passes; keep it short. The failed work directories remain under the ignored local `cw/out1` and temp roots.
+
+**Pins and row.** `pins.json` gains `win-arm64` (bootstrap, SDK, `allowed_imports`, `sdk_source_publisher`); `ci.yml` gains the `windows-11-arm`
+row, `actions/setup-python` told `arm64` for it, the SHA-256-checked native ARM64 LLVM 22.1.8 installer step and `--llvm-bin` for it.
+`check_ci_pins.py --host win-arm64` re-derives every pin from the published bytes: `OK win-arm64`. The five driver test modules pass (bootstrap 17,
+release 21, pins 11, publisher signature 6, integration 27). **Local `tools/ci_bootstrap.py --host win-arm64`: `CI PASS`**, the bootstrap CLI and the
+SDK both `signature_verified`, cold stage 1 and stage 2 21 executed / 0 reused, native suite 1,004 checks, archive 214, SDK store 113, port recipe
+142, imports audited; stage 1 and stage 2 differ byte-wise (as on the other hosts), functional equivalence checked.
+
+**Not covered.** No hosted `windows-11-arm` run of any crt-cli job at the time of writing (the pull request's own run and a manual dispatch are the
+next evidence), no `release.yml` `dry_run` for `win-arm64`, no HTTPS `sdk acquire` by the packaged executable for this host (the consumer replay used a
+local download directory), no Authenticode. The `crt` repository still has `cli_preview: none` for `windows-aarch64` and no `sdk-pins.json` entry; that
+is a separate reviewed change in `crt` and is also needed before its consumer smoke can run.
