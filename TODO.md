@@ -144,8 +144,11 @@ Producer readiness and CLI support have different owners and neither blocks the 
   - [x] Publish and sign the first `win-arm64` Preview built from that SDK ([record](docs/acceptance/ci_acceptance.md#first-windowsarm64-preview-pins-and-the-ciyml-row-2026-11-18)).
   - [x] Pull request 19 pinned SDK and Preview and added the `ci.yml` matrix row; its hosted `windows-11-arm` leg passed on the pull request and on `main`
     ([record](docs/acceptance/ci_acceptance.md#hosted-windows-11-arm-result-of-the-win-arm64-pins-2026-11-18)).
-  - [ ] CRT: add `windows-aarch64` to `.github/ci/sdk-pins.json`, drop `cli_preview: none` from its integration row and the `bootstrap` marker of its `HOSTS` entry in `ci_sdk_publish.py`, in one reviewed change.
-  - [ ] Hosted `windows-11-arm` qualification: manual `ci.yml` dispatch, then a `release.yml` `dry_run: true` rehearsal, publication and signature replay.
+  - [x] CRT: `windows-aarch64` pinned in `.github/ci/sdk-pins.json`, `cli_preview: none` and the `bootstrap` marker removed in one reviewed change (crt pull request 5); the consumer smoke by this
+    Preview ran on `windows-11-arm` ([crt record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#hosted-windowsarm64-consumer-smoke-by-the-pinned-cli-s7-steps-4-5-2026-11-18)).
+  - [ ] `release.yml` for `win-arm64` (this repository owns it; crt only consumes the result): a `dry_run: true` rehearsal on `windows-11-arm`, then a Preview built, published and signed by the
+    workflow with its signature replay. Until then the pinned Preview is the hand-built first one. A later pin change to a workflow-built Preview is its own reviewed change in both repositories
+    (here `pins.json`, in crt `.github/ci/sdk-pins.json`). The leg itself needs no manual `ci.yml` dispatch: it passed as a pull request and as a push to `main`.
 
 ### CI Operations
 

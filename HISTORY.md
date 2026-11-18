@@ -15,7 +15,8 @@ inventing commits or test results. Older months may later be summarized under
 
 Built the first ARM64 CLI against the published, signed CRT Dev SDK `v0.0.1-preview.20261118.windows.arm64.1`, packaged it deterministically, published
 `v0.1.0-preview.20261118.windows-arm64.1` as a non-latest prerelease with the owner's detached signature, and pinned SDK and Preview in `pins.json` with
-the `windows-11-arm` row in `ci.yml`. Local `ci_bootstrap.py --host win-arm64` passes; the hosted leg is not yet recorded. It was built by hand
+the `windows-11-arm` row in `ci.yml`. Local `ci_bootstrap.py --host win-arm64` passes and the hosted leg passed on the pull request and on `main`
+([record](docs/acceptance/ci_acceptance.md#hosted-windows-11-arm-result-of-the-win-arm64-pins-2026-11-18)); crt pinned the Preview for its consumer smoke in its own pull request. It was built by hand
 because a host's first Preview cannot use `release.yml`.
 [Acceptance](docs/acceptance/ci_acceptance.md#first-windowsarm64-preview-pins-and-the-ciyml-row-2026-11-18).
 

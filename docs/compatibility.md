@@ -6,6 +6,28 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## Windows/arm64 first Preview and Dev SDK adoption (2026-11-18)
+
+Producer publication and signing precede this CI pin change. Public Windows/arm64 Dev SDK
+[`v0.0.1-preview.20261118.windows.arm64.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261118.windows.arm64.1), clean CRT
+`e7c763094d96ccba1b524077b24b04b876a91d5b`, was built by the producer's `sdk-release.yml` as a first-host bootstrap (its consumer smoke by a published CLI recorded **Not run**, because no ARM64 CLI
+existed) and signed by the owner: manifest `354ab45f94540877dda619d7613937a8caff413ad64fc4aa3f1b88c0a3fceecc`, SDK content `3b251637845621ba28d6ba1d9c2f6a5e097f6b328f57054f7e7cb5c5eb52621f`, archive
+signature SHA-256 `50ec4f51089a37dc760bdef6e9e58af72a5acb73a90a41f3790cbf5d9cf1c308`. The first ARM64 CLI Preview
+[`v0.1.0-preview.20261118.windows-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261118.windows-arm64.1), CLI commit `2a025858fa72bb93bdd155eb82c2c2fe2145e530`, was built **by hand**
+(a host's first Preview cannot use `release.yml`, which needs a bootstrap pin) against that signed SDK, archive SHA-256 `c5ff710532c0ff9191ae373b48a8f8fe5ceb04bea70647989f9146e255e46e11`, signature SHA-256
+`b72eb649d476673d784a6f4f84c090f73da9df505372cfc9005d19fa2a2da5e6`, and signed by the owner.
+
+| Scope | Outcome | Evidence |
+| --- | --- | --- |
+| CLI build, native suite, package and replays against that SDK (Windows/arm64) | **Pass** (local) | [first Preview record](acceptance/ci_acceptance.md#first-windowsarm64-preview-pins-and-the-ciyml-row-2026-11-18) |
+| CI leg `native (win-arm64)` with both pins on `windows-11-arm` | **Pass** (pull request and `main`) | [hosted record](acceptance/ci_acceptance.md#hosted-windows-11-arm-result-of-the-win-arm64-pins-2026-11-18) |
+| Producer's consumer smoke by this Preview installing a CI-built SDK | **Pass** (hosted, crt run 44247639474) | [crt record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#hosted-windowsarm64-consumer-smoke-by-the-pinned-cli-s7-steps-4-5-2026-11-18) |
+| `release.yml` `dry_run` and a workflow-built ARM64 Preview | **Not run** | [TODO](../TODO.md) |
+| Authenticode, official/default trust, STATUS | **Not run** | unchanged |
+
+The pinned Preview was not produced by the release workflow and no reviewer approval gate applied to it; that is stated in its release notes. Manifest, native policy, recipe and lock formats are unchanged;
+other hosts' pins are unchanged. This is a CI input adoption, not a promoted production combination.
+
 ## Linux/x86_64 automated Dev SDK adoption (2026-11-18)
 
 Producer publication and signing precede this CI pin change. Public Linux/x86_64 Dev SDK
