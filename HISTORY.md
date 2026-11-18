@@ -11,6 +11,17 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-18
 
+### Replay the complete SDK publisher repair cases on macOS/arm64
+
+The signed public macOS CLI Preview and Dev SDK pass the current shared
+publisher replays on macOS 27.2.1/arm64, 37/37 with test keys and 10/10 with
+the real publisher key and signature. The eleven repair cases added on
+Windows now have native macOS evidence. Refusals preserve the damaged contract
+and original receipt with no staging or locks left. Valid signatures restore
+the exact original metadata and the final `sdk verify` passes. The Linux
+repair replay remains open in TODO.
+[Acceptance](docs/acceptance/ci_acceptance.md#macosarm64-sdk-repair-case-closure-2026-11-18).
+
 ### Replay publisher-signature authentication natively on Windows/x64
 
 The Windows/arm64 replay ran natively on Windows/x64 with the executable of the signed public Preview `v0.1.0-preview.20261117.windows-x86_64.1` against the signed Windows/x64 Dev SDK: 37/37 test-key cases

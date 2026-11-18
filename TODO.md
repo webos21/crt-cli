@@ -29,7 +29,7 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
 - [ ] Publisher signatures: `sdk acquire` and the CI host-tools pins accept/require them (Linux-verified, see
   [ci_acceptance](docs/acceptance/ci_acceptance.md#publisher-signatures-for-host-tools-pins-and-sdk-acquire-2026-11-16)); `sdk install` and the bootstrap/SDK pin
   signatures are done too ([record](docs/acceptance/ci_acceptance.md#publisher-signatures-for-the-bootstrap-cli-pin-and-sdk-install-2026-11-16));
-  open: the two unchecked sub-items below.
+  open: the Linux repair replay below.
   - [x] Replay native macOS/arm64 `sdk acquire`, `sdk install` and `sdk repair`
     publisher authentication ([record](docs/acceptance/ci_acceptance.md#macosarm64-sdk-publisher-signature-replay-2026-11-17)).
   - [x] Pin CLI Previews with these options as the bootstrap on every host, so CI's SDK download is natively verified with the pinned key
@@ -41,6 +41,10 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
   - [x] The same replay on a native Windows/x64 host: 37/37 with test keys and 10/10 with the real key, signature and a real GitHub `sdk acquire`
     ([record](docs/acceptance/ci_acceptance.md#windowsx64-sdk-publisher-signature-replay-2026-11-18)).
   - [ ] The `sdk repair` cases (`tools/replay_publisher_acquire_linux.py`) on Linux and macOS.
+    - [x] macOS/arm64: replay the current 37 test-key cases and 10 real-key cases
+      against the signed public CLI and Dev SDK in fresh stores
+      ([record](docs/acceptance/ci_acceptance.md#macosarm64-sdk-repair-case-closure-2026-11-18)).
+    - [ ] Replay the same repair cases on native Linux.
   - [x] Decide where release signing happens: the owner signs offline after publication and `release.yml` never holds a key
     ([decision](docs/design/crt_cli.md#release-signing-decision-2026-11-18)).
 

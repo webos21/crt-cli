@@ -1206,3 +1206,76 @@ then repeated by hand with the same inputs and gave the expected refusal. The se
 
 **Not covered.** The restricted-token isolation of `crt_windows_trace` (this replay uses a cleared environment, test keys and loopback, as on macOS and Windows/arm64); the eleven `sdk repair` cases on Linux and macOS; an acquisition refused for a real signature (the signature
 URL is fixed by the pin); verification of the real signature by `crt-cli fetch --publisher-key`. Receipts: `out/windows-x64-sigreplay-20261118/` (`test-keys/`, `real-key/`, the failed first real-key attempt, the downloaded SDK release and the extracted CLI).
+
+## macOS/arm64 SDK repair case closure (2026-11-18)
+
+**Pass, 37/37 test-key cases and 10/10 real-key cases** on native macOS
+27.2.1 (`26B131`)/arm64. Review baseline is
+`2e99c65077abb4d67f686f99ca139056bc947f67`. The consumer is the executable
+from signed public Preview `v0.1.0-preview.20261117.macos-arm64.1`, built from
+`b51d103e7d0cf3b1816e0d3671963811ea7bf07e`. The repair, SDK store/acquire and
+publisher implementation files match those at the review baseline. This
+extends the [earlier macOS signature evidence](#macosarm64-sdk-publisher-signature-replay-2026-11-17)
+with the eleven shared repair cases added for Windows.
+
+Fresh downloads of the CLI archive and signature, SDK manifest, every listed
+SDK asset and the SDK signature matched their pinned sizes and digests. Both
+archive signatures verified with the committed publisher key, SPKI SHA-256
+`59218576956e493476bc36f7385d8e01a03ff9b92946a531b013ad3937d43fa2`.
+
+| Input or result | Exact identity |
+| --- | --- |
+| Public CLI executable SHA-256 | `afcdf9b6a368e0c9c2efbfc9f2d8ac18945c310c361c627ac6e0c0d3e0df0073` |
+| SDK release | `v0.0.1-preview.20261110.macos.1` |
+| SDK manifest SHA-256 | `0981110c84e5d24a903dbd3965dbe92eb2fe405edfa89804e3086dfeb75983de` |
+| SDK content SHA-256 | `e3dc7fb1810a3f78ab8ef33882225ccb562d21f6f5977a2037ab92819326bac8` |
+| SDK signature SHA-256 | `58f8749aeb71e4382de7aa4c3aeecac62f78936c2668ace19940b472b2a4f6e1` |
+| Test-key `result.json` SHA-256 | `c17abd621e4fc2317886b0842e1462ad224db46f43038ed636f36181f673c91e` |
+| Real-key `result.json` SHA-256 | `582ce4052c7b94550057f9adc08772092de528c262139589487b375c35c7664f` |
+
+The unmodified `tools/replay_publisher_acquire_linux.py` passes all 37 cases
+using loopback HTTPS and throw-away RSA keys. Its repair group installs a
+signed SDK and changes the stored compiler contract while keeping valid JSON.
+`sdk verify` detects the digest mismatch. Repairs with another key's signature,
+a signature over different bytes, a key that did not sign, or a mismatching
+fingerprint are refused. A key without a signature, a signature without a key
+and a missing signature file are refused as well. Every refusal preserves the
+damaged contract bytes and the original receipt and leaves no staging or lock
+files. The valid signature restores the original contract and receipt, and
+the final `sdk verify` passes.
+
+The unmodified `tools/replay_publisher_real.py --host macos-arm64` passes all
+10 cases. A real GitHub acquisition reports `signature_verified` with the
+pinned publisher fingerprint and SDK content. A one-bit-changed copy of the
+actual SDK signature is refused for install and repair. The original public
+signature installs successfully and restores the damaged contract, preserving
+the original receipt. All expected refusals were read for their own diagnostic
+and exit status. The local recording wrapper additionally requires a final
+versioned JSON reply from every native CLI invocation, including failures.
+
+Each replay uses fresh private homes and stores under paths containing spaces
+and Korean, with a cleared consumer environment and `PATH=/nonexistent`.
+Python 3.15.2 and OpenSSL 4.1.0 orchestrate the replay. Their identities and
+the harness hashes are retained in `inputs.json`. This run uses the shared
+drivers' process environment controls. Linux repair replay remains in TODO.
+
+Reproduce using verified public inputs and fresh output paths:
+
+```sh
+python3 tools/replay_publisher_acquire_linux.py \
+  --cli /absolute/package/crt-cli/crt-cli \
+  --release-dir /absolute/public-macos-sdk \
+  --output /absolute/fresh-test-key-results
+python3 tools/replay_publisher_real.py \
+  --host macos-arm64 --cli /absolute/package/crt-cli/crt-cli \
+  --release-dir /absolute/public-macos-sdk \
+  --output /absolute/fresh-real-key-results
+```
+
+Receipts are in `out/macos-sdk-repair-20261118/`, including verified public
+inputs, `test-keys/`, `real-key/`, per-invocation stdout/stderr and argv/exit
+records, `inputs.json`, the invocation wrapper and `verification.json`.
+An initial download-preparation script counted the package directory as an
+executable and stopped before either replay. Its failed log is retained as
+`download.log`. After selecting regular files, input preparation passed in
+`download-r2.log`; both native replays passed on their first run.
