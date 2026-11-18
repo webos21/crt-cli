@@ -16,7 +16,7 @@ tests were not rerun by that review.
 
 | Host/architecture | Required runner(s) | Qualified SDK input | Evidence |
 | --- | --- | --- | --- |
-| Linux/x86_64 | `ubuntu-24.04`, `ubuntu-26.04` | `v0.0.1-preview.20261110.4` | [Repaired-loader qualification and four artifact audits](#whole-required-matrix-and-artifact-verification) |
+| Linux/x86_64 | `ubuntu-24.04`, `ubuntu-26.04` | `v0.0.1-preview.20261118.linux.x64.1` | [First automated Dev SDK adoption](#linuxx86_64-sdk-pin-moved-to-the-first-automated-preview-2026-11-18); earlier [repaired-loader qualification](#whole-required-matrix-and-artifact-verification) used `.4` |
 | Linux/arm64 | `ubuntu-26.04-arm` | `v0.0.1-preview.20261110.linux.arm64.2` | [Manual hosted run and ARM64 artifact verification](#linuxarm64-leg-2026-11-11) |
 | macOS/arm64 | `macos-15` | `v0.0.1-preview.20261110.macos.1` | [Four-job qualification with its original host-specific SDK pin](#whole-required-matrix-and-artifact-verification) |
 | Windows/x64 | `windows-2022` | `v0.0.1-preview.20261110.windows.1` | [Four-job qualification with its original host-specific SDK pin](#whole-required-matrix-and-artifact-verification) |
@@ -1060,3 +1060,19 @@ fetch cases and no Preview-notes text for this host. The package replay and cons
 2. Here: build and package the first `win-arm64` Preview from that published SDK (the first Preview of a host cannot use `release.yml` because it has no bootstrap pin; use the local path above, then publish and sign it).
 3. Pin both in one reviewed pull request that also adds the `ci.yml` matrix row (`windows-11-arm`, `--llvm-bin 'C:/Program Files/LLVM/bin'`, the ARM64 LLVM step) and the `win-arm64` host key to the pin tests; dispatch it manually before treating the leg as required.
 4. Dispatch `release.yml` with `host: win-arm64` and `dry_run: true`, then publish and sign a Preview built by the workflow.
+
+## Linux/x86_64 SDK pin moved to the first automated Preview (2026-11-18)
+
+`.github/ci/pins.json` `linux-x64` SDK: `v0.0.1-preview.20261110.4` -> [`v0.0.1-preview.20261118.linux.x64.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261118.linux.x64.1),
+the first Preview built, verified and published by the producer's `sdk-release.yml` ([run 44088028759](https://github.com/webos21/crt/actions/runs/44088028759))
+and signed by the owner afterwards ([producer record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#first-automated-dev-sdk-preview-s4-2026-11-18)).
+Manifest `b76aea28...a641` (1753 bytes), content `3008315d...7a79`, contract `602e7a03...63d0`, signature `a15eb945...e50b`. Bootstrap CLI and other hosts' pins are unchanged.
+
+Evidence: `tools/check_ci_pins.py` is `OK` for all four hosts. [Pull request 17](https://github.com/webos21/crt-cli/pull/17) passed `CI gate` with all five native legs, and the
+`main` push run [44235742285](https://github.com/webos21/crt-cli/actions/runs/44235742285) (`8f4b163`) is green on all of them. Both Linux/x86_64 legs
+(`ubuntu-26.04`, glibc 2.43; `ubuntu-24.04`, glibc 2.39) report `sdk.publisher_authentication: signature_verified`, SDK content `3008315d...`, suites
+native / archive / sdk-store / port-recipe = 913 / 221 / 114 / 142 (unchanged from the `.4` qualification), identical stage-1/stage-2 bytes and 0 reused on a cold cache.
+
+Not covered: the other three hosts still consume their earlier SDKs; the producer states no intended SDK change from `.4`, so equal counts are expected and not proof of equivalence;
+no second reviewer (single-owner repository).
+
