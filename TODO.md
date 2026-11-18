@@ -24,76 +24,8 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
 
 ## In Progress
 
-### Dev SDK / CLI Preview preparation
-
-Scope: everything the Dev SDK + CLI Previews needed before they could be consumed with checked trust, on every host that has one. Every item below is
-checked (2026-11-19); the section stays until the user asks for its removal.
-
-- [x] Publisher signatures: `sdk acquire` and the CI host-tools pins accept/require them (first verified on Linux/x86_64, see
-  [ci_acceptance](docs/acceptance/ci_acceptance.md#publisher-signatures-for-host-tools-pins-and-sdk-acquire-2026-11-16)); `sdk install` and the bootstrap/SDK pin
-  signatures are done too ([record](docs/acceptance/ci_acceptance.md#publisher-signatures-for-the-bootstrap-cli-pin-and-sdk-install-2026-11-16));
-  the native replays on each of the five hosts are the sub-items below.
-  - [x] Replay native macOS/arm64 `sdk acquire`, `sdk install` and `sdk repair`
-    publisher authentication ([record](docs/acceptance/ci_acceptance.md#macosarm64-sdk-publisher-signature-replay-2026-11-17)).
-  - [x] Pin CLI Previews with these options as the bootstrap on every host, so CI's SDK download is natively verified with the pinned key
-    (`sdk_source_publisher`; macOS/arm64 and Windows/x64 [moved to the 20261117 Previews](docs/acceptance/ci_acceptance.md#macos-and-windows-bootstrap-pins-moved-to-the-20261117-preview-2026-11-17),
-    Windows/arm64 [pinned with its first Preview](docs/acceptance/ci_acceptance.md#first-windowsarm64-preview-pins-and-the-ciyml-row-2026-11-18)).
-  - [x] Replay native Windows/arm64 `sdk acquire`, `sdk install` and `sdk repair` publisher authentication, including the refusals (wrong signature, wrong key, tampered
-    archive), with test keys (37/37) and with the real key and signature
-    ([record](docs/acceptance/ci_acceptance.md#windowsarm64-sdk-publisher-signature-replay-2026-11-18)).
-  - [x] The same replay on a native Windows/x64 host: 37/37 with test keys and 10/10 with the real key, signature and a real GitHub `sdk acquire`
-    ([record](docs/acceptance/ci_acceptance.md#windowsx64-sdk-publisher-signature-replay-2026-11-18)).
-  - [x] The `sdk repair` cases (`tools/replay_publisher_acquire_linux.py`) on Linux (x86_64 and arm64) and macOS.
-    - [x] macOS/arm64: replay the current 37 test-key cases and 10 real-key cases
-      against the signed public CLI and Dev SDK in fresh stores
-      ([record](docs/acceptance/ci_acceptance.md#macosarm64-sdk-repair-case-closure-2026-11-18)).
-    - [x] Native Linux/x86_64: 37/37 with test keys and 10/10 with the real key, signature and a real GitHub `sdk acquire`
-      ([record](docs/acceptance/ci_acceptance.md#linuxx86_64-sdk-publisher-signature-replay-2026-11-18)).
-    - [x] Native Linux/arm64: 37/37 with test keys and 10/10 with the real key, signature and a real GitHub `sdk acquire`, against the pinned signed `20261116`
-      Preview and the pinned Dev SDK; the Preview's own signature was verified with its pinned key first
-      ([record](docs/acceptance/ci_acceptance.md#linuxarm64-sdk-publisher-signature-replay-2026-11-19)).
-  - [x] Decide where release signing happens: the owner signs offline after publication and `release.yml` never holds a key
-    ([decision](docs/design/crt_cli.md#release-signing-decision-2026-11-18)).
-
-D3's bounded zlib adapter contract is adopted for the exercised Linux/x86_64,
-macOS/arm64 and Windows/x64 combinations. [The adoption ledger](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09)
-links the producer decision and metadata/key/old-item regression. Windows/arm64
-D3 remains separate. D2's recorded installation/selection/first-build/pinned
-HTTPS baselines are retained. Completed work belongs to HISTORY; STATUS is the
-separately requested dated snapshot.
-
-- [x] Freeze the [bounded clean Linux Dev SDK + CLI local candidate](docs/acceptance/preview_acceptance.md#linux-local-candidate-2026-11-10),
-  LLVM inputs, complete notices, explicit-at-fetch trust and source-hidden workflow.
-  Linux C shared SDK mode remains excluded under CRT 6.4.
-- [x] Publish the selected producer source and approve scoped manual-pin trust;
-  [promote and exercise actual public SDK bytes](docs/acceptance/preview_acceptance.md#public-sdk-promotion-and-consumer-adoption-2026-11-10).
-- [x] Restricted HTTPS redirect policy implemented and Linux-replayed, including real
-  GitHub `sdk acquire` ([record](docs/acceptance/preview_acceptance.md#restricted-https-redirects-and-github-acquisition-2026-11-10)).
-- [x] Redirect policy replayed on macOS/arm64: 54/54 cases and real GitHub `sdk acquire` ([record](docs/acceptance/preview_acceptance.md#macos-cli-preview-release-2026-11-10)).
-- [x] Adopt the default/project pin policy against the published Linux/x86_64,
-  Linux/aarch64, macOS/arm64 and Windows/x64 SDK/CLI Previews, and close it by confirming the existing records
-  (retain the [Windows publication baseline](docs/acceptance/preview_acceptance.md#windowsx64-cli-preview-release-2026-11-10)
-  and the Linux/macOS records). The policy is two separate contracts, not a new lock format: the repository root
-  `crt.lock` stays `unresolved` (one source tree builds on every host, so it cannot pin one SDK); a user project's
-  `crt.lock` pins its own SDK and ports explicitly and an SDK change never migrates it silently; the CI bootstrap pins
-  live per host in `.github/ci/pins.json` under the checked [promotion policy](docs/guides/development.md#ci-pin-promotion).
-  Done when acceptance records show project-lock creation, reuse and tampered-lock refusal with the real public SDK on all
-  four hosts; add only the missing cases.
-  - [x] Record the [root/project/CI policy and four-host evidence table](docs/acceptance/preview_acceptance.md#project-pin-policy-evidence-audit-2026-11-16).
-  - [x] Linux/aarch64: public CLI/SDK lock creation, byte-identical reuse, tampered-lock refusal and preservation under changed SDK selection
-    ([54-case native replay](docs/acceptance/preview_acceptance.md#linuxaarch64-public-byte-replay)).
-  - [x] macOS/arm64: confirm public CLI/SDK identities, project-lock creation and byte-identical reuse;
-    close project-lock tamper and changed-selection gaps ([54-case native Seatbelt replay](docs/acceptance/preview_acceptance.md#macosarm64-public-byte-replay)).
-  - [x] Windows/x64: public CLI/SDK identities, C/C++ lock creation/reuse, tampered-lock refusal and changed-selection preservation
-    ([58-case native replay](docs/acceptance/preview_acceptance.md#windowsx64-public-byte-replay)).
-  - [x] Linux/x86_64: public CLI/SDK identities, C/C++ lock creation/reuse, tampered-lock refusal and changed-selection preservation
-    ([54-case native replay](docs/acceptance/preview_acceptance.md#linuxx86_64-public-byte-replay)); the four-host policy audit is complete.
-- The Full SDK review item moved to Planned: [Full SDK Support](#full-sdk-support).
-
-D4 may proceed against the frozen D3 contracts; it does not enlarge D3 or
-become a first-preview release gate. General updates/self-upgrade and Studio
-retain their later queues. Execution policy remains in
-[the design](docs/design/crt_cli.md#execution-priorities-adopted-2026-11-05).
+Nothing is in progress: the Dev SDK / CLI Preview preparation items are complete and their record is in [HISTORY](HISTORY.md) and
+[acceptance](docs/acceptance/preview_acceptance.md). Pick the next increment from Planned.
 
 ## Planned
 
@@ -149,6 +81,10 @@ Producer readiness and CLI support have different owners and neither blocks the 
   the first preview's critical path and does not block D3.
 
 ### D4 - Dependencies, Variants, Locks, and Local Cache
+
+D4 may proceed against the frozen D3 contracts; it does not enlarge D3 or become a first-preview release gate. General
+updates/self-upgrade and Studio retain their later queues. Execution policy remains in
+[the design](docs/design/crt_cli.md#execution-priorities-adopted-2026-11-05).
 
 - [ ] Add a bounded `amalgamation` executor/adapter for sqlite-amalgamation;
   the current D3 parser accepts only `configure`. Prove static/shared consumption.

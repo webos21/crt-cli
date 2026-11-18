@@ -11,6 +11,15 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-19
 
+### Retire the Preview preparation section and refresh STATUS
+
+At the owner's request the TODO section "Dev SDK / CLI Preview preparation" (20 checked items, 24 distinct evidence links, all resolving) was removed, and the D4 paragraph it carried
+("D4 may proceed against the frozen D3 contracts") moved to the D4 section so it is not lost; `In Progress` now says that nothing is in progress. STATUS was refreshed from 2026-11-11 to
+2026-11-19 against the recorded evidence: all five hosts have published CLI and Dev SDK Previews with pinned owner signatures, six required CI legs including Windows/arm64, the daily
+`integration.yml` with the port suites on Linux, and four Previews published by `release.yml` behind the `release` approval. While checking it, three of the assistant's own draft sentences
+were found wrong against the records and corrected before commit (an unverified claim that no macOS/Windows Preview came from `release.yml`, an unsigned-releases claim that the release
+assets contradict, and a workflow-preflight claim). The earlier HISTORY sentence that the section "stays until its removal is requested" describes the state before this entry.
+
 ### Replay the SDK publisher-signature cases natively on Linux/arm64
 
 The only host the earlier records left unrun. On this Linux/arm64 machine (Ubuntu 26.04.1, glibc 2.43) the pinned, signed bootstrap Preview `v0.1.0-preview.20261116.linux-arm64.1` ran the shared drivers against the pinned
