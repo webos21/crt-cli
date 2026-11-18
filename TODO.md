@@ -142,7 +142,8 @@ Producer readiness and CLI support have different owners and neither blocks the 
     ([record](docs/acceptance/ci_acceptance.md#windowsarm64-host-wiring-and-local-candidate-preflight-2026-11-17)).
   - [x] CRT: Windows/arm64 rows in `sdk-integration.yml` and `sdk-release.yml`; Dev SDK `v0.0.1-preview.20261118.windows.arm64.1` published and signed.
   - [x] Publish and sign the first `win-arm64` Preview built from that SDK ([record](docs/acceptance/ci_acceptance.md#first-windowsarm64-preview-pins-and-the-ciyml-row-2026-11-18)).
-  - [ ] Merge the pull request that pins SDK and Preview and adds the `ci.yml` matrix row once its hosted `windows-11-arm` leg passes.
+  - [x] Pull request 19 pinned SDK and Preview and added the `ci.yml` matrix row; its hosted `windows-11-arm` leg passed on the pull request and on `main`
+    ([record](docs/acceptance/ci_acceptance.md#hosted-windows-11-arm-result-of-the-win-arm64-pins-2026-11-18)).
   - [ ] CRT: add `windows-aarch64` to `.github/ci/sdk-pins.json`, drop `cli_preview: none` from its integration row and the `bootstrap` marker of its `HOSTS` entry in `ci_sdk_publish.py`, in one reviewed change.
   - [ ] Hosted `windows-11-arm` qualification: manual `ci.yml` dispatch, then a `release.yml` `dry_run: true` rehearsal, publication and signature replay.
 

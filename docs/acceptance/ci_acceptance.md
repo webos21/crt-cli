@@ -1115,3 +1115,23 @@ SDK both `signature_verified`, cold stage 1 and stage 2 21 executed / 0 reused, 
 next evidence), no `release.yml` `dry_run` for `win-arm64`, no HTTPS `sdk acquire` by the packaged executable for this host (the consumer replay used a
 local download directory), no Authenticode. The `crt` repository still has `cli_preview: none` for `windows-aarch64` and no `sdk-pins.json` entry; that
 is a separate reviewed change in `crt` and is also needed before its consumer smoke can run.
+
+## Hosted `windows-11-arm` result of the win-arm64 pins (2026-11-18)
+
+This closes the "no hosted `windows-11-arm` run of any crt-cli job" limit of the [first Windows/arm64 Preview record](#first-windows-arm64-preview-pins-and-the-ciyml-row-2026-11-18).
+The row was added by pull request 19 (merge `00b6fda`), which was first run as an ordinary pull request and then, after the merge, as a push to `main`.
+
+| Run | Event | Commit | `native (win-arm64)` | `CI gate` |
+| --- | --- | --- | --- | --- |
+| [44244028130](https://github.com/webos21/crt-cli/actions/runs/44244028130) | pull request | `32426d4` | success, 05:24:39-05:37:06 UTC (about 12.5 minutes) | success |
+| [44245882492](https://github.com/webos21/crt-cli/actions/runs/44245882492) | push to `main` | `00b6fda` | success, 05:40:44-05:52:51 UTC (about 12 minutes) | success |
+
+Both runs executed the whole job on `windows-11-arm`: the native ARM64 LLVM 22.1.8 installer step passed its SHA-256 and target checks (`clang version 22.1.8`,
+`Target: aarch64-pc-windows-msvc`), and `tools/ci_bootstrap.py --host win-arm64` ended in `CI PASS (win-arm64)` (the pull-request run's steps carry
+no failed or cancelled entry). The other jobs of both runs (`changes`, the five other native legs and the gate) passed. The earlier `DIRTY` state of the pull request (a conflict with `main`) produced no run at all,
+so the first run is the one that followed merging `main` into the branch.
+
+The step log reports the check results of the driver but not the test counts of the summary receipt, because the artifact `ci-summary.json` was not downloaded for
+this record; the counts of the local pass in the earlier section are the ones recorded. Not covered by this record: a manual `ci.yml` dispatch of the leg on its own
+(both runs are the ordinary events), the `release.yml` `dry_run: true` rehearsal for `win-arm64`, and a `release.yml`-built second Preview. The leg is
+non-experimental, so it is part of the required `CI gate` from the merge on.
