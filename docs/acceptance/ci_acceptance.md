@@ -1279,3 +1279,24 @@ An initial download-preparation script counted the package directory as an
 executable and stopped before either replay. Its failed log is retained as
 `download.log`. After selecting regular files, input preparation passed in
 `download-r2.log`; both native replays passed on their first run.
+
+## Linux/x86_64 SDK publisher signature replay (2026-11-18)
+
+The eleven `sdk repair` cases that the [Windows/arm64](#windowsarm64-sdk-publisher-signature-replay-2026-11-18) and [Windows/x64](#windowsx64-sdk-publisher-signature-replay-2026-11-18) records left unrun on Linux were run natively on
+Linux/x86_64 (Ubuntu 26.04.1, kernel 7.0.0-43, OpenSSL 3.5.5 as test-host signer, Python 3.14.4) with no CLI source change. The consumer is the executable of the pinned, signed bootstrap Preview
+`v0.1.0-preview.20261116.linux-x86_64.1` (archive SHA-256 `52fbe5d1...fdca` equals the `pins.json` pin; executable SHA-256 `a6b33cbd...6039`). The SDK is the pinned, signed Dev SDK `v0.0.1-preview.20261118.linux.x64.1`
+(manifest `b76aea28...a641`, contract `602e7a03...63d0`, archive signature `a15eb945...e50b`, content `3008315d...7a79`). The release files were taken from an earlier local download and compared with the pins before use; the one
+download made for this record is the GitHub acquisition below. Every case ran with a cleared environment and a private home.
+
+**Test keys, loopback HTTPS (`tools/replay_publisher_acquire_linux.py`): 37/37**, result SHA-256 `0fda58df...8c64`. These are the cases of the Windows records: 15 acquisition, 11 `sdk install` and 11 `sdk repair`. The repair group damaged
+a signed install by a valid-looking edit of the stored contract; `sdk verify` reported "toolchain contract digest mismatch"; repairs with a signature by another key, a signature over different bytes and a key that did not sign were refused with
+"publisher signature verification failed", a mismatching fingerprint pin with "publisher key does not match the pinned key fingerprint", a key without a signature and a signature without a key with the usage error (exit 2), and a missing
+signature file with "publisher input must be a regular file". Each refusal left the damaged contract bytes and the original receipt untouched with no staging or lock files. The repair with the valid signature restored the original contract
+and receipt, and `sdk verify` then passed (2618 files). Each refusal message was read; none is a connection or setup failure.
+
+**Real key, real bytes, real signature (`tools/replay_publisher_real.py --host linux-x64`): 10/10**, result SHA-256 `977a58e3...29fa`, key SPKI `59218576...3fa2`. A real GitHub `sdk acquire` (the `github-release` redirect policy and the pinned
+signature digest) is `signature_verified` with the pinned content; `sdk install` with a one-bit-changed copy of the real signature (`3b85c409...5a38`) is refused and publishes nothing; with the real signature it is `signature_verified`;
+after the stored contract is damaged, `sdk repair` with the changed signature leaves the damaged contract and the original receipt untouched, `sdk repair` with the real signature restores both, and `sdk verify` passes.
+
+**Not covered.** macOS/arm64 is recorded in its own [repair case closure](#macosarm64-sdk-repair-case-closure-2026-11-18); the isolation of the bubblewrap-based port jobs is not exercised here (cleared environment, test keys and loopback only); an acquisition refused for a
+real signature (the signature URL is fixed by the pin). Linux/arm64 was not run. Receipts: `out/linux-x64-sigreplay-20261118/` (`test-keys/`, `real-key/`, the release inputs and the extracted CLI).

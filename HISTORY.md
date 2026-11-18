@@ -11,6 +11,13 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-18
 
+### Replay the `sdk repair` publisher-signature cases natively on Linux/x86_64
+
+The pinned, signed bootstrap Preview `v0.1.0-preview.20261116.linux-x86_64.1` ran the shared driver against the pinned, signed Dev SDK `v0.0.1-preview.20261118.linux.x64.1`: 37/37 test-key cases (acquisition, `sdk install` and the eleven
+`sdk repair` cases, each refusal read for its own reason, damaged contract and receipt preserved, verified repair restoring both) and 10/10 with the real key and signature, including a real GitHub `sdk acquire`
+(`signature_verified`). No CLI change. The macOS/arm64 repair replay is recorded separately; Linux/arm64 was not run.
+[Acceptance](docs/acceptance/ci_acceptance.md#linuxx86_64-sdk-publisher-signature-replay-2026-11-18).
+
 ### Replay the complete SDK publisher repair cases on macOS/arm64
 
 The signed public macOS CLI Preview and Dev SDK pass the current shared
