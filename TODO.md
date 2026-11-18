@@ -24,19 +24,6 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
 
 ## In Progress
 
-Nothing is in progress: the Dev SDK / CLI Preview preparation items are complete and their record is in [HISTORY](HISTORY.md) and
-[acceptance](docs/acceptance/preview_acceptance.md). Pick the next increment from Planned.
-
-## Planned
-
-### Full SDK Support
-
-Producer readiness and CLI support have different owners and neither blocks the first Preview.
-
-- [ ] Keep Full SDK packaging/security/source/license review on its own path;
-  Full installation/profile support is not a prerequisite for the first CLI preview. Resume when CRT completes its Full SDK review;
-  CLI profile and installation support then joins the stage/profile item of D2 below and D5.
-
 ### CI Platform Expansion
 
 - [ ] D2, cross-platform integration: add hosted macOS/arm64 and Windows/x64 jobs to `integration.yml` that run the native Port and
@@ -54,6 +41,16 @@ Producer readiness and CLI support have different owners and neither blocks the 
   - [ ] `release.yml` for `win-arm64` (this repository owns it; crt only consumes the result): a `dry_run: true` rehearsal on `windows-11-arm`, then a Preview built, published and signed by the
     workflow with its signature replay. Until then the pinned Preview is the hand-built first one. A later pin change to a workflow-built Preview is its own reviewed change in both repositories
     (here `pins.json`, in crt `.github/ci/sdk-pins.json`). The leg itself needs no manual `ci.yml` dispatch: it passed as a pull request and as a push to `main`.
+
+## Planned
+
+### Full SDK Support
+
+Producer readiness and CLI support have different owners and neither blocks the first Preview.
+
+- [ ] Keep Full SDK packaging/security/source/license review on its own path;
+  Full installation/profile support is not a prerequisite for the first CLI preview. Resume when CRT completes its Full SDK review;
+  CLI profile and installation support then joins the stage/profile item of D2 below and D5.
 
 ### CI Operations
 
