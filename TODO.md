@@ -29,10 +29,16 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
 - [ ] Publisher signatures: `sdk acquire` and the CI host-tools pins accept/require them (Linux-verified, see
   [ci_acceptance](docs/acceptance/ci_acceptance.md#publisher-signatures-for-host-tools-pins-and-sdk-acquire-2026-11-16)); `sdk install` and the bootstrap/SDK pin
   signatures are done too ([record](docs/acceptance/ci_acceptance.md#publisher-signatures-for-the-bootstrap-cli-pin-and-sdk-install-2026-11-16));
-  remaining: pin a CLI Preview with these options as the bootstrap so CI's SDK download is natively verified on macOS/Windows, Windows replay, signing the next
-  releases in the release workflow.
+  open: the two unchecked sub-items below.
   - [x] Replay native macOS/arm64 `sdk acquire`, `sdk install` and `sdk repair`
     publisher authentication ([record](docs/acceptance/ci_acceptance.md#macosarm64-sdk-publisher-signature-replay-2026-11-17)).
+  - [x] Pin CLI Previews with these options as the bootstrap on every host, so CI's SDK download is natively verified with the pinned key
+    (`sdk_source_publisher`; macOS/arm64 and Windows/x64 [moved to the 20261117 Previews](docs/acceptance/ci_acceptance.md#macos-and-windows-bootstrap-pins-moved-to-the-20261117-preview-2026-11-17),
+    Windows/arm64 [pinned with its first Preview](docs/acceptance/ci_acceptance.md#first-windowsarm64-preview-pins-and-the-ciyml-row-2026-11-18)).
+  - [ ] Replay native Windows (x64 and arm64) `sdk acquire`, `sdk install` and `sdk repair` publisher authentication, including the refusals (wrong signature, wrong key,
+    tampered archive), as was done for macOS/arm64. CI exercises only the accepting path on Windows.
+  - [ ] Decide where release signing happens: `release.yml` holds no signing key and the owner signs offline after publication. Either record that as the intended design or
+    implement signing in the workflow; the second needs a key-custody decision.
 
 D3's bounded zlib adapter contract is adopted for the exercised Linux/x86_64,
 macOS/arm64 and Windows/x64 combinations. [The adoption ledger](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09)
@@ -88,8 +94,8 @@ Producer readiness and CLI support have different owners and neither blocks the 
 
 - [ ] D2, cross-platform integration: add hosted macOS/arm64 and Windows/x64 jobs to `integration.yml` that run the native Port and
   oracle suites with their own pinned host-tools bundles. Resume after D1 and the per-host bundles; each host needs its own acceptance record.
-- [ ] Add a Windows/arm64 leg under that policy once its public SDK, its CLI Preview and a hosted runner exist, and the leg has its own
-  native build and test qualification.
+- [ ] Windows/arm64 under that policy: the leg is added, pinned and hosted-qualified (checked sub-items below); open: its `release.yml` rehearsal and a
+  workflow-built Preview.
   - [x] Wire `win-arm64` into `ci_bootstrap.py`, `ci_release.py`, `release.yml` and their tests; prepare and replay a local SDK and CLI candidate
     ([record](docs/acceptance/ci_acceptance.md#windowsarm64-host-wiring-and-local-candidate-preflight-2026-11-17)).
   - [x] CRT: Windows/arm64 rows in `sdk-integration.yml` and `sdk-release.yml`; Dev SDK `v0.0.1-preview.20261118.windows.arm64.1` published and signed.

@@ -6,8 +6,8 @@ procedure are in the [development guide](../guides/development.md#continuous-int
 
 ## Current Hosted Coverage (2026-11-11)
 
-The checked-in workflow has five required jobs across four host/architecture
-pairs. The latest documented run,
+Updated 2026-11-18: the checked-in workflow has six required jobs across five host/architecture pairs; the Windows/arm64 leg (`windows-11-arm`) was added that day and has
+[its own hosted record](#hosted-windows-11-arm-result-of-the-win-arm64-pins-2026-11-18). The rest of this section is the 2026-11-11 state of the other four pairs. The latest documented run,
 [`42931003805`](https://github.com/webos21/crt-cli/actions/runs/42931003805),
 is a successful manual dispatch of branch `ci-linux-arm64` at `f6a41a8`.
 Its five job conclusions and event/source metadata were rechecked through the
@@ -20,15 +20,18 @@ tests were not rerun by that review.
 | Linux/arm64 | `ubuntu-26.04-arm` | `v0.0.1-preview.20261110.linux.arm64.2` | [Manual hosted run and ARM64 artifact verification](#linuxarm64-leg-2026-11-11) |
 | macOS/arm64 | `macos-15` | `v0.0.1-preview.20261110.macos.1` | [Four-job qualification with its original host-specific SDK pin](#whole-required-matrix-and-artifact-verification) |
 | Windows/x64 | `windows-2022` | `v0.0.1-preview.20261110.windows.1` | [Four-job qualification with its original host-specific SDK pin](#whole-required-matrix-and-artifact-verification) |
+| Windows/arm64 | `windows-11-arm` | `v0.0.1-preview.20261118.windows.arm64.1` | [Hosted result of the win-arm64 pins](#hosted-windows-11-arm-result-of-the-win-arm64-pins-2026-11-18) |
 
 The ARM64 addition independently verifies that run's ARM64 artifact. The other
 four job conclusions pass; their earlier independent artifact checks retain
 their recorded source revisions rather than being relabeled as fresh audits.
-The workflow enables PR and main-push triggers for non-documentation changes,
-but those events have not yet been observed for the ARM64 leg. Ubuntu 24.04
-arm64, other ARM64 glibc versions,
-Windows/arm64, input-gated port/redirect integration and release automation
-remain outside this CI qualification. The `.3` Ubuntu 24.04 failure below is
+The workflow enables PR and main-push triggers for non-documentation changes;
+those events were not yet observed for the Linux/arm64 leg when this section was written and
+have been since: it passed in the pull-request and `main` push runs of 2026-11-18
+([44244028130](https://github.com/webos21/crt-cli/actions/runs/44244028130) and
+[44245882492](https://github.com/webos21/crt-cli/actions/runs/44245882492)). Ubuntu 24.04
+arm64 and other ARM64 glibc versions remain outside this CI qualification; input-gated
+port/redirect integration and release automation have their own records below. The `.3` Ubuntu 24.04 failure below is
 historical; the later `.4` record closes it for the named x86_64 combinations.
 
 ## Documentation-only Trigger Exclusions (2026-11-11)
@@ -1061,6 +1064,9 @@ fetch cases and no Preview-notes text for this host. The package replay and cons
 3. Pin both in one reviewed pull request that also adds the `ci.yml` matrix row (`windows-11-arm`, `--llvm-bin 'C:/Program Files/LLVM/bin'`, the ARM64 LLVM step) and the `win-arm64` host key to the pin tests; dispatch it manually before treating the leg as required.
 4. Dispatch `release.yml` with `host: win-arm64` and `dry_run: true`, then publish and sign a Preview built by the workflow.
 
+Status 2026-11-18: steps 1 to 3 are done ([first Preview, pins and row](#first-windowsarm64-preview-pins-and-the-ciyml-row-2026-11-18) and its
+[hosted result](#hosted-windows-11-arm-result-of-the-win-arm64-pins-2026-11-18)); step 4 is still open in [TODO](../../TODO.md#ci-platform-expansion).
+
 ## Linux/x86_64 SDK pin moved to the first automated Preview (2026-11-18)
 
 `.github/ci/pins.json` `linux-x64` SDK: `v0.0.1-preview.20261110.4` -> [`v0.0.1-preview.20261118.linux.x64.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261118.linux.x64.1),
@@ -1118,7 +1124,7 @@ is a separate reviewed change in `crt` and is also needed before its consumer sm
 
 ## Hosted `windows-11-arm` result of the win-arm64 pins (2026-11-18)
 
-This closes the "no hosted `windows-11-arm` run of any crt-cli job" limit of the [first Windows/arm64 Preview record](#first-windows-arm64-preview-pins-and-the-ciyml-row-2026-11-18).
+This closes the "no hosted `windows-11-arm` run of any crt-cli job" limit of the [first Windows/arm64 Preview record](#first-windowsarm64-preview-pins-and-the-ciyml-row-2026-11-18).
 The row was added by pull request 19 (merge `00b6fda`), which was first run as an ordinary pull request and then, after the merge, as a push to `main`.
 
 | Run | Event | Commit | `native (win-arm64)` | `CI gate` |
