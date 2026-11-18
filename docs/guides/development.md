@@ -340,7 +340,8 @@ Compare the package and verify digests before approving the `release`
 environment. Put the full commit SHA, tag, archive SHA-256 and reviewer in
 the approval comment. `dry_run: false` publishes the verified draft as a
 prerelease. The owner follows the [CRT offline signing procedure](https://github.com/webos21/crt/blob/main/docs/security/publisher_signing.md#signing-procedure-owner)
-to attach the detached `.sig`. Download the public files into a fresh
+to attach the detached `.sig`; that the owner signs offline and the workflow never signs is a
+[recorded design decision](../design/crt_cli.md#release-signing-decision-2026-11-18). Download the public files into a fresh
 workspace, verify the checksum and signature, and rerun the package verifier
 on the target host against those downloaded bytes. Record the results in
 [CI acceptance](../acceptance/ci_acceptance.md) and
