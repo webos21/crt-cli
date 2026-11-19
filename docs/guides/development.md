@@ -284,7 +284,9 @@ The five `port-*` suites (except `port-recipe-test`) print `skipped` and exit 0 
 if `crt.json` declares a test that `pins.json` classifies neither as PR-set nor as input-gated. They belong to a
 daily/manual `integration.yml`, with independently pinned public CRT host tools.
 Linux is already qualified; macOS wiring and its exact hosted acceptance are
-recorded [separately](../acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19). Windows expansion remains separate work.
+recorded [separately](../acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19).
+The [Windows/x64 record](../acceptance/ci_acceptance.md#windowsx64-hosted-port-integration-2026-11-19) qualifies the five hosted port suites;
+Windows redirect integration remains separate.
 
 Run the same driver on a native host with LLVM installed (it creates `--work`, which must be new or empty, and sets
 `HOME` inside it, so the default SDK store is untouched):
@@ -354,7 +356,8 @@ on the target host against those downloaded bytes. Record the results in
 
 `tools/ci_integration.py ports` owns the integration input and result policy.
 `tools/replay_port_linux.py` is the Linux Bubblewrap/strace adapter and
-`tools/replay_port_macos.py` is the macOS/arm64 Seatbelt adapter.
+`tools/replay_port_macos.py` is the macOS/arm64 Seatbelt adapter, and
+`tools/replay_port_windows_ci.py` is the Windows/x64 restricted-token adapter.
 Each builds a fresh copy of the CLI sources against the installed public SDK,
 then runs the five requested port suites. This tooling is a test-host
 orchestrator, not a Python dependency of the CLI or generated applications.
@@ -409,7 +412,7 @@ Native macOS invocation:
 python3 tools/ci_integration.py ports --host macos-arm64 --work /private/tmp/fresh-macos-integration --oracle-python /absolute/python3 --oracle-python-sha256 <selected-executable-sha256> --hide /absolute/producer-checkout
 ```
 
-`--llvm-bin` is for Linux. macOS selects the four Xcode tool paths and the OS
+`--llvm-bin` is for Linux and Windows. macOS selects the four Xcode tool paths and the OS
 SDK explicitly. Seatbelt permits the selected tool files and, when installed,
 their exact legacy linker helpers (`ld64`/`ld-classic`), not an entire Xcode
 directory; helper paths and SHA-256 values are recorded in the replay inputs.
@@ -417,17 +420,32 @@ Its adapter records the clean SDK selection and pinned oracle,
 rejects zero/duplicate/wrong-name reports and skips in either output stream,
 and preserves its existing `suites`/`suite_results` ledger. The common driver
 requires exactly the same five executed suites, matching input hashes and no
-dirty-SDK opt-in on either host; it does not accept an older local replay as a
+dirty-SDK opt-in on any host; it does not accept an older local replay as a
 new hosted result. Only the differential oracle may use the separately labeled
 host interpreter/SDK-tool exception. The native CLI and port jobs still use
 CRT libraries and the selected CRT host-tools bundle.
 
-`pins`, `redirect` and `ports` are independent host matrix jobs; integration
+Windows uses native LLVM 22.1.8, discovered Windows SDK `um/x64` import libraries and the separately pinned signed
+`20261119.windows-x86_64.1` CRT bundle. Its two producer test-host helper files are pinned by immutable revision, URL, size and SHA-256
+in `integration-pins.json` and verified before import. No sibling checkout is needed. Choose a short fresh work path outside the source:
+
+```text
+python tools/ci_integration.py ports --host win-x64 --work C:/Users/<user>/w/p --llvm-bin "C:/Program Files/LLVM/bin" --oracle-python <absolute-python.exe> --oracle-python-sha256 <selected-executable-sha256>
+```
+
+The source checkout and original inputs must be unreadable to the replay's unregistered SID. The hosted job creates a new private
+checkout directory before checkout; the driver protects only its newly created input directory. A visibility probe refuses an existing
+readable source tree rather than changing its ACL. The fresh native workspace copies the SDK/source/tools; a distinct bare SID proves the
+CLI runs without those copies. Actual CRT symlink creation is a prerequisite; a missing Developer Mode capability fails without enabling
+any system setting or substituting marker links. Every child image is accounted for, and unknown/undeclared images fail. This is not
+network/executable denial. Only the oracle may execute the copied, digest-checked Python and SDK reference tools.
+
+`pins`, `redirect` and `ports` have host-specific jobs; Windows adds `pins` and `ports`, with redirect still unconnected. Integration
 remains a read-only daily/manual workflow, not a required PR check or a release
 publisher. Uploads retain per-call commands, input identities, results and logs.
 See [macOS acceptance](../acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19)
-for local versus hosted results and pin adoption status; Windows jobs and the
-Windows/arm64 D1 timeout are not closed by this work.
+for local versus hosted results and pin adoption status, and [Windows acceptance](../acceptance/ci_acceptance.md#windowsx64-hosted-port-integration-2026-11-19)
+for its 270 checks, 29 gates and retained failure. Windows/arm64 D1 remains separate.
 
 ### Repository, Project and CI Pins
 

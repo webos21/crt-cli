@@ -40,14 +40,15 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
   - [x] Add and re-derive the Windows/x64 public host-tools archive, manifest and detached-signature pins;
     [common input preparation and native tool replay](docs/acceptance/ci_acceptance.md#windowsx64-public-host-tools-integration-pin-2026-11-19) pass.
     Windows hosted adapter/job wiring, its symlink prerequisite and five-suite qualification remain open.
-  - [ ] Connect the Windows/x64 common runner to a fresh restricted-token workspace and pinned public test helpers;
-    qualify `pins` and all five port suites on `windows-2022`, retaining prerequisite and failed-run receipts.
+  - [x] Connect the Windows/x64 common runner to a fresh restricted-token workspace and pinned public test helpers;
+    `windows-2022` passes `pins`, all five suites (270 checks) and 29 replay gates; the first fixture failure is retained
+    ([hosted evidence](docs/acceptance/ci_acceptance.md#windowsx64-hosted-port-integration-2026-11-19)). Main adoption remains separate.
   - [x] macOS/arm64 implementation and local preflight on `codex/macos-host-tools-integration`
-    ([candidate evidence](docs/acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19)); not adopted on main yet.
+    ([candidate evidence](docs/acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19)).
   - [x] macOS/arm64 hosted `pins`/`redirect`/`ports` verification on the PR branch
     ([results](docs/acceptance/ci_acceptance.md#hosted-qualification-on-the-pr-branch)).
-  - [ ] Reviewed macOS integration-pin adoption on main: [PR #30](https://github.com/webos21/crt-cli/pull/30) remains unmerged;
-    owner approval is separate from the passing branch verification. Windows hosted integration remains open.
+  - [x] macOS integration-pin adoption on main: the owner merged [PR #30](https://github.com/webos21/crt-cli/pull/30) as `b9168c5`;
+    [main CI](https://github.com/webos21/crt-cli/actions/runs/44482683748) passes. Windows hosted qualification remains separate.
 - [ ] Resolve the Windows/arm64 D1 `stdout-limit` timeout against the public CLI/SDK; retain the 31/32 and focused failure
   [receipts](docs/acceptance/host_environment_acceptance.md#windowsarm64-published-host-tools-consumer-replay-2026-11-19).
 - [ ] Windows/arm64 under that policy: the leg is added, pinned, hosted-qualified and its `release.yml` rehearsal passed (checked sub-items below); open: a

@@ -1533,7 +1533,7 @@ Windows/arm64 D1, private DLLs, SDK/bootstrap pins, root/project locks, release 
 
 ## Windows/x64 hosted port integration (2026-11-19)
 
-**Candidate on `codex/windows-hosted-integration`; hosted qualification pending.** The signed host-tools pin above is committed on main
+**Hosted Windows qualification passes on `codex/windows-hosted-integration`; main adoption pending.** The signed host-tools pin above is committed on main
 as `2473b545e2e7ecc6112a10cfff67e359cf60a3bc`. This increment connects its common input driver to a fresh Windows restricted-token
 adapter and a `windows-2022` job. Windows `pins` joins the shared pin matrix; the separate Windows port job checks out into a newly created,
 private directory so hosted `Users` grants do not make the original source visible through the restricted token. Existing directories and
@@ -1562,8 +1562,56 @@ Every result must execute positive checks, report no skip and match the prepared
 explicit symlink, original/bare input denial, PE and unchanged-inventory cases. Cold/warm build, SDK-hidden bare help/version/doctor,
 real `port build zlib`, static/shared consumers and a PE x64/OS-import audit are adapter gates. Results and failure logs are retained as artifacts.
 
-Local validation so far: focused tests **40/40**, Python syntax, `git diff --check` and actionlint 1.7.12 pass. Actionlint's obsolete built-in
+Local validation: focused tests **40/40**, Python syntax, `git diff --check` and actionlint 1.7.12 pass. Actionlint's obsolete built-in
 runner list needs the existing `ubuntu-26.04`/`ubuntu-26.04-arm` unknown-label warning excluded; no other warning is suppressed.
-The first native preflight is retained at `C:\Users\Lee\s13\p` (orchestration log in CLI ignored
-`out/win-host-tools-pin-20261119/local-hosted-adapter.log`); runtime/hosted results will be recorded separately after completion.
+The first native prototype preflight is retained at `C:\Users\Lee\s13\p` (orchestration log in CLI ignored
+`out/win-host-tools-pin-20261119/local-hosted-adapter.log`): all five suites pass **270 checks** (36/97/21/33/83), real `port build zlib`,
+PE audit and unchanged inventories pass, cold build 21 executed / 0 reused and warm 0 / 21. It predates the integrated separate-bare-SID
+gate; the matching CLI separately passes all four hidden-input/help/version/doctor checks at `C:\Users\Lee\s13\bare-evidence`.
+The committed driver's complete hosted result below is the qualification evidence. Local CLI SHA-256:
+`df8a608f630bb850d697cf38e357a5fd01afba663194d8fa2a5301c28e4eac11`; path/debug differences are not a reproducibility claim.
+
+### Retained first hosted failure and fixture correction
+
+[Integration 44489721254](https://github.com/webos21/crt-cli/actions/runs/44489721254), at `b4e21ea`, fails the Windows `pins` job:
+five signature-fixture cases cannot sign the archive at the Unicode path with the runner's `C:\Program Files\OpenSSL\bin\openssl.EXE`.
+The port jobs consequently do not run; this is not a passing or skipped-suite acceptance result. The original Windows job log is retained as
+`out/win-host-tools-pin-20261119/hosted-first-windows-pins.log`.
+`9a417fc` signs the same archive bytes through OpenSSL stdin/stdout; Python writes the detached signature into the original Unicode directory.
+The Unicode staging and verification checks remain, and no product, publisher key or signed input bytes change. All 40 tests then pass on
+each of the four hosted pin jobs, including Windows.
+
+### Hosted Windows/x64 qualification
+
+[Integration 44490048419](https://github.com/webos21/crt-cli/actions/runs/44490048419) runs exact commit
+`9a417fc52073b977dc8e36d7c8c978cd09dbb6f9`. The `windows-2022` port job passes in **14m37s**, with no setting change for Developer Mode
+or symlinks. Its private checkout and restricted-token visibility probe pass, real CRT symlink creation passes, and the five suites execute:
+
+| Suite | Checks | Result |
+| --- | ---: | --- |
+| `port-build-test` | 36 | passed, no skip |
+| `port-store-test` | 97 | passed, no skip |
+| `port-oracle-test` | 21 | passed, no skip |
+| `port-command-test` | 33 | passed, no skip |
+| `port-project-test` | 83 | passed, no skip |
+
+The complete replay passes **29/29 gates**, including static/shared consumers, original and separate-bare-SID input denial,
+SDK-hidden help/version/doctor, `port build zlib`, x64 PE with only declared OS DLL imports, unchanged original/copied SDK/tool inventories
+and source inputs. Cold build is 21 executed / 0 reused; warm is 0 / 21. All **4121 process records** have declared images, no unknown
+image or timeout. Host-tools download reports `signature_verified`; the source export, recipe inputs and compiler contract match the pins.
+The oracle alone admits its copied test-host Python: original `C:\hostedtoolcache\windows\Python\3.12.10\x64\python.exe`, SHA-256
+`4d6f5f81a4bca11191c4c7c6b43632694d0a4ce74e068619d8fdc161d469859a`; copied under the native workspace with the same digest.
+CLI SHA-256: `4c1e90ed5ec3cde8e59be9a800251da48b1de06db784db6570532ac100915579`.
+
+Downloaded Windows evidence passes an independent `check_hosted.py` review: common result judging, exact five-suite counts and native
+boundary cases, source export, pins, committed driver (LF/CRLF form), oracle identity, cold/warm cache and every process record.
+Evidence: CLI ignored `out/win-host-tools-pin-20261119/hosted-r2/`, plus `check_hosted.py` and `hosted-r2-artifacts.json`.
+Windows result SHA-256: `ecf758914ae6a4cfe90ca88e88270996071994fb39b7bd8a84c05485ff649219`.
+Artifact ID: `14513750774` (`ports-win-x64-9a417fc52073b977dc8e36d7c8c978cd09dbb6f9`), ZIP digest reported by GitHub:
+`e08dc07a44e6db571a208549be7b9ac88fe76c90b030016387b3b9da2fcdec7d`.
+All **11 integration jobs pass**. The other downloaded port results also pass the common judge: Linux/x64 **262 checks / 25 gates**,
+Linux/arm64 **262 / 25**, macOS/arm64 **300 / 26**, no skipped suite. `all-ports-verification.json` retains their result hashes.
+[CI 44490052761](https://github.com/webos21/crt-cli/actions/runs/44490052761) at the same commit passes all six native rows and `CI gate`.
+The first scheduled Windows run and main adoption are not yet claimed here. Windows redirect, Windows/arm64 D1 and private-DLL qualification
+remain separate; no release publication, root/project lock, SDK or STATUS changes.
 

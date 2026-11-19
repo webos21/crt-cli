@@ -11,6 +11,10 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-19
 
+### Qualify the Windows/x64 hosted port integration candidate
+
+On `codex/windows-hosted-integration`, add the `windows-2022` pin/port jobs, a fresh SDK-only restricted-token adapter and public producer test-helper pins. At `9a417fc`, all five Windows port suites execute 270 checks and the complete replay passes 29 gates, including real symlinks, original/bare input denial, static/shared consumers, a real port build, PE imports and unchanged inventories. All 11 integration jobs, the six-row native CI and `CI gate` pass. The first hosted attempt failed five OpenSSL Unicode-path signing fixtures; signing the same bytes over stdio fixes the test-host constraint while preserving Unicode staging/verification. Retain the failure and the independently checked successful artifact; main adoption and the first scheduled Windows run remain separate. Reconcile the already owner-merged macOS PR #30 (`b9168c5`) in TODO/compatibility without inventing a rerun. [Acceptance](docs/acceptance/ci_acceptance.md#windowsx64-hosted-port-integration-2026-11-19).
+
 ### Add the signed public Windows/x64 host-tools integration pin
 
 Add the existing `v0.1.0-hosttools.20261119.windows-x86_64.1` archive, manifest and detached-signature pins after re-downloading four public assets and checking the release record, clean producer provenance and SDK origin. The common driver recognizes `win-x64` for pin checks and input preparation; unwired native integration commands fail before downloads. Focused tests pass 36/36, six public-input refusal controls pass, and the prepared bundle passes the native producer tool replay 18/18. Preserve the first staging-rename `WinError 5` and the successful fresh-directory preparation separately; its cause is unconfirmed. Windows hosted jobs and the five-suite integration gate remain open. [Inputs, commands and receipts](docs/acceptance/ci_acceptance.md#windowsx64-public-host-tools-integration-pin-2026-11-19).

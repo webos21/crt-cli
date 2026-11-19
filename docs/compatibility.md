@@ -11,6 +11,17 @@ the [request/handoff record](crt_host_tools_publication_request.md#macoswindows-
 prerequisite from consumer adoption. The per-host records below retain their exact scope: closing the request neither promotes integration
 pins nor closes hosted jobs, Windows/arm64 D1 (31/32), or private-DLL qualification. No format or runtime contract changes here.
 
+## Windows/x64 hosted integration candidate (2026-11-19)
+
+`codex/windows-hosted-integration` extends the existing public-input CI driver with a fresh Windows restricted-token adapter and a
+`windows-2022` port job. The two producer test-host helpers are independently pinned at immutable CRT
+`bc195a1915b6ee21ff98957af9eb2003cf334e6e`; they are not product/SDK build inputs. No host-tools, SDK, recipe, lock or runtime contract changes.
+At consumer `9a417fc52073b977dc8e36d7c8c978cd09dbb6f9`, the signed public bundle below passes all five hosted port suites (270 checks)
+and 29 native gates, with actual symlink support, private original inputs, a distinct bare SID and declared process accounting.
+The [CI record](acceptance/ci_acceptance.md#windowsx64-hosted-port-integration-2026-11-19) owns identities, the OpenSSL fixture correction,
+retained first failure and native evidence. All six required native CI rows and `CI gate` pass at the same commit. Main adoption remains
+pending; this neither qualifies Windows redirect nor closes Windows/arm64 D1 (31/32), private DLLs, Full SDKs or official/default trust.
+
 ## Windows/x64 integration input pin (2026-11-19)
 
 The consumer adds the existing signed public `v0.1.0-hosttools.20261119.windows-x86_64.1` bundle to `integration-pins.json` after
@@ -32,6 +43,10 @@ public download/signature checks, redirect and the five port suites; [CI accepta
 owns the exact tests and input identities. Hosted macOS qualification now **passes on the PR branch**: all nine integration jobs and
 the six-row native CI succeed at `25591d8`; macOS executes the same five required suites with static/shared consumers. Reviewed adoption on
 main remains **pending in PR #30**; this is not an already adopted main CI combination or a Windows integration claim.
+
+Subsequent adoption: the owner merged [PR #30](https://github.com/webos21/crt-cli/pull/30) at `2026-11-19T07:50:14Z` as
+`b9168c514c3b7244458413467b8fa1c4312643fa`; [main CI](https://github.com/webos21/crt-cli/actions/runs/44482683748) succeeds.
+This supersedes the candidate's pending-merge status above without claiming a new macOS native replay or Windows qualification.
 
 ## Published Windows/arm64 Host-tools Qualification (2026-11-19)
 
