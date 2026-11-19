@@ -96,6 +96,13 @@ was built by the producer's Linux contract replay with the published SDK `v0.0.1
 GitHub delivery host. The exercised combination is this CLI, that SDK, Ubuntu 26.04 glibc 2.43 and LLVM 21.1.8. Native policy 1, install metadata 1, project lock 1 and recipe schema 1 are unchanged; no default/root lock migration;
 publisher authentication stays `not_verified`. The restricted-redirect replay (54/54) and a sandboxed package run (27/27) were added the same day. Record: [Linux/aarch64 CLI Preview](acceptance/preview_acceptance.md#linuxaarch64-cli-preview-release-2026-11-11).
 
+## Published Windows/x64 Host-tools Adoption (2026-11-19)
+
+The public, signed [Windows/x86_64 host-tools Preview](https://github.com/webos21/crt/releases/tag/v0.1.0-hosttools.20261119.windows-x86_64.1) (archive `bd65a2b8d1a5b7865110233bb47a1d13ea56724ad76593333cc349bb0980a210`, manifest pin
+`cd6cb75e91b8f9202cda82876de9898e19fb4aeb01be981ebcfde9eabb7b7e00`) is consumed natively: the published `crt-cli` Preview passes the D1 fail-closed controls 32/32 and verifies the archive signature with `fetch --publisher-key --signature`; a CLI built from `c79d57c` by the public Dev SDK
+passes the five port suites and a real `port build zlib` with the exact bundle ([record](acceptance/host_environment_acceptance.md#windowsx64-published-host-tools-consumer-replay-2026-11-19)). Host-tools format 1, `promotion: preview`, native policy 1, project lock 1 and recipe schema 1
+are unchanged. No private DLL is shipped, so that gate stays open; Windows/arm64, macOS and the CI pin are separate, and no default pin or STATUS changed.
+
 ## Published Windows Dev SDK Adoption (2026-11-10)
 
 The producer's public prerelease [v0.0.1-preview.20261110.windows.1](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.windows.1) (source

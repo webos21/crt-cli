@@ -493,3 +493,29 @@ consumer binding audits. Their exact records live in
 This closes the missing macOS/arm64 private-closure test slice only. Windows
 private-DLL/arm64, other future dynamic bundles, production trust/promotion and
 default/binary/root-lock adoption remain separate. STATUS is unchanged.
+
+## Windows/x64 published host-tools consumer replay (2026-11-19)
+
+Consumer acceptance of the public [Windows/x86_64 host-tools Preview](https://github.com/webos21/crt/releases/tag/v0.1.0-hosttools.20261119.windows-x86_64.1)
+(archive `bd65a2b8d1a5b7865110233bb47a1d13ea56724ad76593333cc349bb0980a210`, 784724 bytes, signed; manifest pin `cd6cb75e91b8f9202cda82876de9898e19fb4aeb01be981ebcfde9eabb7b7e00`, content
+`dc106db47ed8bcbb56bdd6da0415dce527653fcb42b0c54bdc1402dca74c35fe`). The producer record, signature verification (openssl 9/9; `crt-cli fetch --publisher-key --signature` 8/8, `signature_verified`) and the native 18/18 tool replay are in
+[CRT host-tools acceptance](https://github.com/webos21/crt/blob/main/docs/acceptance/host_tools_acceptance.md#windowsx86_64-host-tools-public-signature-and-native-replay-2026-11-19). The release notes said the CLI's fail-closed
+controls and port suites had not been run on this exact artifact; this record runs them. Host: Windows 11 Pro 10.0.26100 x64, LLVM 22.1.8, Windows SDK `10.0.28000.0`; CRT `84eec172`, `crt-cli` `c79d57c`.
+
+**1. D1 fail-closed controls with the published CLI, 32/32.** The executable of the public `crt-cli` Preview 20261117 (`feb97791...84df1`) and the unchanged public bundle run `replay_host_environment_windows.py`
+(restricted token per run, empty `PATH`, job-object process accounting, native probe that the CRT/CLI/producer trees are unreadable): self and environment doctor and report, the immutable payload refuses writes, the tools workflow,
+normal and timeout cleanup, child exit status, the stdout limit, job-directory reuse refusal, **wrong pin, a link in an immutable parent, a modified tool, an unexpected payload file, missing `make` with no host fallback and a wrong execution
+host are all refused**, and the resource-package controls (pin, signature, invalid signature, wrong key, missing signature, wrong host, unknown schema, tampered notice, missing notice, tampered binary, tampered CA, restored package). The
+first attempt stopped on a harness expectation that the resources package carry a CA file (the published CLI package trusts `explicit-at-fetch` and has none); a package assembled with the Windows root-store CA
+(`create_bootstrap_resources.py --ca-file`, 57 roots, SHA-256 `cc82d2bb87a60eebc7b8dd12b22efdc9eebd13ac44da2098b1f1945e4bd2562b`) passes 32/32. The first attempt is retained; neither the bundle nor the CLI changed.
+
+**2. The five port suites and the real `port build` on this exact artifact, 7/7.** A CLI built from the current sources by the public Dev SDK `v0.0.1-preview.20261110.windows.1` alone passes the producer contract replay: **21** sources, cold 21 executed / 0 reused,
+warm 0 / 21, native **992**, archive **214**, SDK-store **113** and recipe **142** checks, SDK-hidden help/version/doctor, only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll` imported, 727 recorded processes; executable
+`b8d588b8799bf5fc164929e1958fe180e821099ce807832591917954de94edb7` (45795328 bytes). `tools/replay_port_windows.py` then supplies the public bundle (copied into the restricted-token workspace, inventories compared before and after) and the pinned zlib source
+(`9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23`): `port-recipe-test` **142**, `port-build-test` **36**, `port-store-test` **97**, `port-project-test` **83**, `port-command-test` **33**, `port-oracle-test` **21** checks, and the actual
+`port build zlib` (static and shared recipe tests pass) all pass with no skipped suite, no undeclared process image in any call and an unchanged SDK and bundle; the bare SDK-hidden checks (visibility, help, version, doctor, imports) pass.
+This exercises the `promotion: preview` bundle label that earlier replays could not (the CLI accepts it since `4a8d48c`).
+
+Limits: Windows records process images but denies neither executables nor the network, so isolation is the restricted token, the empty environment and the relocated, inventory-checked copy. The bundle ships no private DLL, so
+the private-DLL search-path gate stays open. A job rootfs with real links still needs Developer Mode (the CLI diagnoses it). The CI pin, `integration.yml` Windows leg, Windows/arm64 and macOS consumer replays, and any STATUS change are separate; no default pin or
+lock was changed. Evidence (outside both repositories): `C:\Users\Lee\s12\` (`d1-public-r2/`, `contract/`, `d3b/`, the retained first attempts `d1-public/` and `d3/`).

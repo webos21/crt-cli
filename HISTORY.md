@@ -11,6 +11,11 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-19
 
+### Replay the CLI against the published Windows/x64 host tools
+
+With the public bundle and the published CLI Preview, the D1 fail-closed controls pass 32/32 (wrong pin, linked parent, modified tool, extra payload, no `make` fallback, wrong host, resource-package tampering), and the archive's publisher signature verifies through `fetch --publisher-key`. A CLI
+built from the current sources by the public Dev SDK passes native 992, archive 214, SDK-store 113, recipe 142 and, with this exact bundle, the five port suites (142/36/97/83/33/21) plus a real `port build zlib` under a restricted token. [Acceptance](docs/acceptance/host_environment_acceptance.md#windowsx64-published-host-tools-consumer-replay-2026-11-19).
+
 ### Rehearse `release.yml` for Windows/arm64 and request the macOS/Windows host-tools bundles
 
 The `CI Platform Expansion` section moved to In Progress. Its Windows/arm64 item was rehearsed with `dry_run: true` on `windows-11-arm`: `package`, `verify` (including a real GitHub `sdk acquire` and the C and C++ workflows) and an
