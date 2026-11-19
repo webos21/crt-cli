@@ -2,7 +2,26 @@
 
 **From** `webos21/crt-cli` **to** `webos21/crt` (producer). **Date** 2026-11-11. This is a request, not a change. **Answered 2026-11-16:** CRT published the Linux bundles
 ([crt#2](https://github.com/webos21/crt/issues/2#issuecomment-6909581567)); the CLI pins are recorded in
-[CI acceptance](acceptance/ci_acceptance.md#host-tools-pins-and-the-wired-ports-job-2026-11-16). The text below is the original request.
+[CI acceptance](acceptance/ci_acceptance.md#host-tools-pins-and-the-wired-ports-job-2026-11-16). The macOS/Windows producer follow-up is also
+answered below. The original request is preserved under its own heading; its missing-publication statements are historical, not current status.
+
+## macOS/Windows follow-up answered (2026-11-19)
+
+CRT [#9 is closed as completed](https://github.com/webos21/crt/issues/9#issuecomment-6998966548) for the requested macOS/arm64 and
+Windows/x64 producer handoff. Signed Previews `v0.1.0-hosttools.20261119.macos-aarch64.1` and
+`v0.1.0-hosttools.20261119.windows-x86_64.1` provide immutable public archives, detached signatures, checksums, six-field `consumer_pin`
+records, clean provenance and `promotion: preview`. Windows/arm64 was additionally published as `v0.1.0-hosttools.20261119.windows-aarch64.1`,
+outside #9's requested scope. The [producer acceptance](https://github.com/webos21/crt/blob/6ea7e34702f586e1a25f6a42f94359e7325536f6/docs/acceptance/host_tools_acceptance.md#macoswindows-host-tools-publication-signatures-and-macos-replay-2026-11-19)
+owns asset identities, signatures, native producer evidence and answers on closure/dependencies, runners, symlink prerequisites and release policy.
+
+Consumer results are separately recorded: [macOS D3](acceptance/sdk_install_acceptance.md#signed-public-host-tools-d3-replay-macosarm64-2026-11-19),
+[Windows/x64 D1/D3](acceptance/host_environment_acceptance.md#windowsx64-published-host-tools-consumer-replay-2026-11-19) and
+[Windows/arm64 D3 with incomplete D1](acceptance/host_environment_acceptance.md#windowsarm64-published-host-tools-consumer-replay-2026-11-19).
+The ARM64 D1 stdout-limit case remains failed (31/32), not waived by closing the producer request. Per-host integration-pin adoption and
+hosted jobs, including Windows job-rootfs symlink qualification, remain CLI-owned work in [TODO](../TODO.md#ci-platform-expansion).
+No CI/default pin, SDK, project lock or published executable changes as part of this handoff closure.
+
+## Original request (2026-11-11)
 
 ## Why
 

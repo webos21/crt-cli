@@ -26,13 +26,19 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
 
 ### CI Platform Expansion
 
+- [x] CRT producer prerequisite: signed public macOS/arm64 and Windows/x64 host-tools bundles and their release-record pins are available;
+  [crt#9 is closed](https://github.com/webos21/crt/issues/9#issuecomment-6998966548). [Producer handoff](docs/crt_host_tools_publication_request.md#macoswindows-follow-up-answered-2026-11-19).
 - [x] Replay the six D3 suites locally on macOS/arm64 with the signed public `20261119.macos-aarch64.1` host-tools bundle and pinned public SDK/CLI inputs
   ([acceptance](docs/acceptance/sdk_install_acceptance.md#signed-public-host-tools-d3-replay-macosarm64-2026-11-19)); hosted integration and CI pin adoption remain separate.
+- [x] Replay the public Windows/x64 host tools through D1 fail-closed controls and D3
+  ([acceptance](docs/acceptance/host_environment_acceptance.md#windowsx64-published-host-tools-consumer-replay-2026-11-19)).
+- [x] Replay the public Windows/arm64 host tools through D3; this is not a full D1 pass
+  ([acceptance](docs/acceptance/host_environment_acceptance.md#windowsarm64-published-host-tools-consumer-replay-2026-11-19)).
 - [ ] D2, cross-platform integration: add hosted macOS/arm64 and Windows/x64 jobs to `integration.yml` that run the native Port and
-  oracle suites with their own pinned host-tools bundles. The macOS/Windows bundles are now public and signed;
-  [Windows/arm64 local qualification](docs/acceptance/host_environment_acceptance.md#windowsarm64-published-host-tools-consumer-replay-2026-11-19)
-  leaves D1's large-output timeout open. Per-host pin adoption and hosted integration remain separate.
-- [ ] Resolve the Windows/arm64 D1 `stdout-limit` timeout against the public CLI/SDK; retain the 31/32 and focused failure receipts above.
+  oracle suites with reviewed integration pins and host-specific acceptance, including the hosted Windows symlink prerequisite.
+  Producer publication is complete; native receipts above do not substitute for these jobs.
+- [ ] Resolve the Windows/arm64 D1 `stdout-limit` timeout against the public CLI/SDK; retain the 31/32 and focused failure
+  [receipts](docs/acceptance/host_environment_acceptance.md#windowsarm64-published-host-tools-consumer-replay-2026-11-19).
 - [ ] Windows/arm64 under that policy: the leg is added, pinned, hosted-qualified and its `release.yml` rehearsal passed (checked sub-items below); open: a
   workflow-built, published and signed Preview.
   - [x] Wire `win-arm64` into `ci_bootstrap.py`, `ci_release.py`, `release.yml` and their tests; prepare and replay a local SDK and CLI candidate

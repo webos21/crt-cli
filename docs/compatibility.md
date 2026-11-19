@@ -6,6 +6,11 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+The producer publication request [crt#9 is completed](https://github.com/webos21/crt/issues/9#issuecomment-6998966548);
+the [request/handoff record](crt_host_tools_publication_request.md#macoswindows-follow-up-answered-2026-11-19) separates this available
+prerequisite from consumer adoption. The per-host records below retain their exact scope: closing the request neither promotes integration
+pins nor closes hosted jobs, Windows/arm64 D1 (31/32), or private-DLL qualification. No format or runtime contract changes here.
+
 ## Published Windows/arm64 Host-tools Qualification (2026-11-19)
 
 The public signed Windows/aarch64 host-tools Preview `v0.1.0-hosttools.20261119.windows-aarch64.1` is exercised natively with the

@@ -11,6 +11,14 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-19
 
+### Close the CRT host-tools publication handoff without closing consumer integration
+
+CRT [#9 is completed](https://github.com/webos21/crt/issues/9#issuecomment-6998966548) for public signed macOS/arm64 and Windows/x64
+bundles, metadata and native producer evidence. The [request record](docs/crt_host_tools_publication_request.md#macoswindows-follow-up-answered-2026-11-19)
+now marks that producer prerequisite answered while preserving the original request. TODO checks publication and the already-recorded
+macOS D3, Windows/x64 D1/D3 and Windows/arm64 D3 slices individually. Integration pins/hosted jobs and ARM64 D1 (31/32, large-output timeout)
+remain unchecked. No workflow, pin, product, default, SDK, lock or STATUS changed; this closes the request scope, not every host-tools behavior.
+
 ### Qualify the public Windows/arm64 host-tools bundle and preserve the D1 failure
 
 The published ARM64 CLI verifies the host-tools archive signature and passes three public-fetch refusal controls. With the same bundle,
