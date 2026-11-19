@@ -26,8 +26,9 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
 
 ### CI Platform Expansion
 
-- [ ] Connect Windows/x64 restricted-redirect replay to the hosted integration matrix; verify the native positive/negative cases,
-  exact public inputs and complete result reporting before main adoption.
+- [x] Connect Windows/x64 restricted-redirect replay to the hosted integration matrix; native and hosted 54/54 cases pass,
+  with all four hosted redirect/pin pairs qualified and adopted on main as `495840f`
+  ([evidence](docs/acceptance/ci_acceptance.md#windowsx64-hosted-redirect-expansion-2026-11-19)).
 - [x] CRT producer prerequisite: signed public macOS/arm64 and Windows/x64 host-tools bundles and their release-record pins are available;
   [crt#9 is closed](https://github.com/webos21/crt/issues/9#issuecomment-6998966548). [Producer handoff](docs/crt_host_tools_publication_request.md#macoswindows-follow-up-answered-2026-11-19).
 - [x] Replay the six D3 suites locally on macOS/arm64 with the signed public `20261119.macos-aarch64.1` host-tools bundle and pinned public SDK/CLI inputs

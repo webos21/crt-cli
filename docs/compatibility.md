@@ -21,6 +21,10 @@ No shared producer/consumer schema, ABI, SDK/publisher/host-tools pin or root/pr
 implemented public CLI commands. Main adoption remains pending at this branch-qualification stage. Producer handoff documentation is
 synchronized independently at CRT `dae4d141abe56d1f8fe5b298aff657df60cbdffd`; no producer runtime or SDK baseline is moved.
 
+Subsequent main adoption: consumer `495840f59dd6d58fc06bfbe30e51a405d5961274` contains the qualified code unchanged, with a four-file
+documentation-only delta from `c97d2a7`. [Main validation](acceptance/ci_acceptance.md#main-adoption-of-windows-redirect) records its CI.
+The first full scheduled execution of the expanded configuration remains a separate observation, not an inferred pass.
+
 ## Windows/x64 hosted integration candidate (2026-11-19)
 
 `codex/windows-hosted-integration` extends the existing public-input CI driver with a fresh Windows restricted-token adapter and a

@@ -1633,7 +1633,7 @@ setting change is needed for this adoption.
 
 ## Windows/x64 hosted redirect expansion (2026-11-19)
 
-**Hosted-qualified on `codex/windows-redirect-integration`; main adoption pending.** The existing common redirect replay already contains
+**Adopted on main after hosted qualification on `codex/windows-redirect-integration`.** The existing common redirect replay already contains
 Windows environment and hidden-process handling. Removing the Windows dispatch refusal enables its real native **54/54** cases with the
 pinned public Windows Preview and SDK; no CLI product, SDK, archive pin, publisher key, host-tools input or runtime contract changes.
 The historical `replay_redirect_linux.py` filename is retained for existing callers; its documented native scope now includes Windows.
@@ -1694,5 +1694,14 @@ The Windows result uses the same `feb97791...84df1` executable as both local run
 `f188ba330b09e1bb6a555bba6a3ee3f0f4cb64a7447a17707fa0c118fa6cb493`. Evidence is retained in CLI ignored
 `out/redirect-win-x64-20261119/`: `hosted/`, `hosted-run.json`, `hosted-artifacts.json`, `hosted-verification.json`, `check_hosted.py` and
 identity-only bootstrap downloads. Product/test C++ sources, manifests, bootstrap/SDK/host-tools pins and port execution are unchanged from
-adopted `858c04b`; the earlier qualified port artifacts remain their evidence. Main adoption is recorded separately after merging.
+adopted `858c04b`; the earlier qualified port artifacts remain their evidence.
+
+### Main adoption of Windows redirect
+
+Latest `origin/main` was merged into the validated branch without additional source changes; main fast-forwards and is pushed to
+`495840f59dd6d58fc06bfbe30e51a405d5961274`. Its delta from qualified `c97d2a7` is four documentation files only.
+[Main CI 44507080338](https://github.com/webos21/crt-cli/actions/runs/44507080338) passes all six native rows and `CI gate`.
+The full run metadata is retained in `out/redirect-win-x64-20261119/main-ci-run.json`.
+The default daily/manual configuration now has four pin, four redirect and four port legs. The scoped verification above proves only its
+requested eight jobs, while port inputs and their prior qualified source remain unchanged. First scheduled Windows observation is still open.
 

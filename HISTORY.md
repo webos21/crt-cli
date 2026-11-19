@@ -11,6 +11,10 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-19
 
+### Adopt the Windows redirect job on main
+
+Fast-forward and push CLI main to `495840f`, whose delta from hosted-qualified `c97d2a7` is documentation only. Main CI [44507080338](https://github.com/webos21/crt-cli/actions/runs/44507080338) passes all six native rows and `CI gate`. Check the Windows redirect item and record main adoption without treating the redirect-only run as a fresh port-suite pass. The default/scheduled configuration includes all twelve legs; its first expanded scheduled execution remains an open observation. CRT handoff documentation is already synchronized at `dae4d14`, documentation CI passing. No source, runtime, SDK/publisher pin, root/project lock or STATUS changes in this completion record. [Adoption and evidence](docs/acceptance/ci_acceptance.md#main-adoption-of-windows-redirect).
+
 ### Qualify Windows restricted-redirect hosted integration
 
 Enable the existing common redirect replay on Windows and add its `windows-2022` row. The new complete-result gate rejects partial/duplicate/skipped/failed cases, foreign CLI identities and crashes; timeout logs are retained. Local replay passes 54/54, focused fixtures 43/43. At `c97d2a7`, the hosted `scope=redirect` run passes pins and all 54 cases on each of four native hosts; downloaded results match freshly authenticated bootstrap packages. Port jobs are intentionally outside that manual scope and retain their unchanged prior evidence; default/scheduled runs keep the full matrices. CRT's stale handoff item is separately synchronized at `dae4d14`, documentation CI passing. [Evidence and scope](docs/acceptance/ci_acceptance.md#windowsx64-hosted-redirect-expansion-2026-11-19).
