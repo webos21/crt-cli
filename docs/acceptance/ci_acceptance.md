@@ -1397,6 +1397,15 @@ The full fresh work directories are `/private/tmp/crt-cli-integration-macos-2026
 The first ports attempt was intentionally stopped during development after review found an oracle variable-name collision; its logs and
 workspace remain, not counted as a pass. The corrected driver uses fresh `ports-r2` outputs and unchanged public assets.
 
+After the linker-helper correction, a fresh local workspace again passes **300 checks and 26/26 gates**, using the same authenticated
+public inputs (no new download or SDK mutation). The complete retained replay is `local-classic-fresh/`, result SHA-256
+`942672b35a6d7ca73236508de756df5559f22c5c60ecfe80f277e0e50e950f8e`; driver SHA-256
+`679e0264b949c06c33a87245fd6bc38612afe5d63aec3357c88a2a15f8be9b27`, CLI SHA-256
+`e64710033d39499751e07020552408dfa696ddf4ef6f73b10fd37a1bf5f7af42`. Xcode 27.2 needs no legacy helper; its helper inventory is empty.
+The focused regression set is now **93 tests** (one additional exact-helper fixture), no skips. An earlier retained-workspace retry
+passes the five suites but only 25/26 gates: its store already contains the item, so the fresh-publication assertion fails. It is not
+counted as a full pass or used as cold-publish evidence; the fresh replay above supplies that evidence.
+
 ### First hosted attempt and linker-dispatch correction
 
 Draft [PR #30](https://github.com/webos21/crt-cli/pull/30) at `cbba4792b6eb6506b4dc4ddcd7a9047fc3c61b5b` has a passing
@@ -1409,11 +1418,46 @@ The initial correction looked for a sibling named `ld64` only. In the second [ru
 at `2bf4dfd`, the helper inventory is empty and the same macOS link fails: that inferred filename was not the installed helper.
 Apple also names its legacy linker `ld-classic`; the corrected resolver checks both exact names. The second run's Linux/x64 job separately
 refuses a 12,103-byte zlib download against the unchanged 1,512,791-byte pin before any suite runs; no digest/size check is relaxed.
+After preserving both failures, that obsolete run was canceled while Linux/arm64 was still running, releasing the concurrency slot
+for the corrected run. Its canceled Linux/arm64 leg is not a pass.
 
 The correction permits only existing executable `ld64`/`ld-classic` files next to the selected canonical linker, not the Xcode directory. It records
 the helper path/digest in `inputs.json`; focused policy fixtures cover its absence, non-executable state and exact-file permission.
-The artifact now also retains individual step stdout/stderr and the CLI import audit for diagnosis. A hosted rerun is still required;
-the first failure is not erased or relabeled as a pass, and no pin is adopted on main. The PR remains unmerged.
-The Windows integration queue, Windows/arm64 D1 failure, release publication and STATUS are unchanged; unrelated CRT/GFX/Web stages
-are not gates for this build-host correction.
+The artifact now also retains individual step stdout/stderr and the CLI import audit for diagnosis. The passing fresh rerun below
+does not erase or relabel the earlier failures.
+
+### Hosted qualification on the PR branch
+
+Manual [integration run 44474145070](https://github.com/webos21/crt-cli/actions/runs/44474145070), commit
+`25591d8699a59b90e08acc1d7a72a054d8f09d4f`, passes **all nine jobs**: `pins`, `redirect` and `ports` on macOS/arm64,
+Linux/x86_64 and Linux/arm64. The macOS port job runs on macOS **15.8.2** (`24H232`), image `macos-15-arm64 20261112.0539.3`,
+Xcode **16.4**, SDK **15.5** and Python **3.12.10**. The explicit oracle executable SHA-256 is
+`d4f152f2a753c94e0e7935c8ebbe6b2609979e1df7898422b577d0076383d08b`.
+
+macOS reports **300 checks / 26 of 26 gates**, no skip: build 40, store 105, oracle 41, command 33, project 81. Fresh public-download
+inputs match the pins above; static/shared zlib and C/C++ consumers, oracle comparison, publication/reuse/verify, the import boundary,
+source-hidden probes and unchanged original/copied SDK/tool inventories all pass. Redirect is separately **54/54**.
+`external_linker_helpers` confirms the actual helper is
+`/Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld-classic`, SHA-256
+`d3077803de1f49624e93723a4102aec9ae4893e04f2fe1530ce7e5c74dd9fbb5`; no `ld64` file is present.
+The port driver digest matches the final local replay above. Hosted CLI SHA-256 is
+`921552ae20614ddcd800f8b150419fd158bdd2830bc0ce6de97e2716d7380fed` (no cross-path byte-reproducibility claim).
+
+Each Linux port job preserves its **262 checks / 25 of 25 gates** baseline (35/90/23/33/81), no skip. The transient wrong-size
+zlib response from the previous attempt is not accepted or substituted; this run authenticates the unchanged pinned source bytes.
+[PR CI 44474145670](https://github.com/webos21/crt-cli/actions/runs/44474145670) at the same commit passes all six native matrix rows
+and `CI gate`. The final follow-up changes only documentation and the host-neutral helper fixture (POSIX executable-bit semantics and
+the simulated Seatbelt prerequisite); the 93-test local set passes without skips. No CLI product or SDK input changes after this replay.
+
+Evidence is retained in CRT's ignored `out/macos-hosted-integration-20261119/hosted-44474145070/` plus the original macOS log.
+Hosted artifact IDs: macOS ports `14506132689`, redirect `14505354447`, Linux/x64 ports `14506626758`, Linux/arm64 ports `14505808312`.
+Result SHA-256 values: macOS ports `f1905bd238d129748e34c6d849e014862fda030e319d2fe16f73dff8a5547c36`,
+macOS redirect `6f3bd16abba36cdfe40d88b2198cbfae6683b0e942e7b233fd7796896c6d74cf`,
+Linux/x64 ports `4c94ef100b1d83b868993e432293f51558008fd036d5cd02e035d502552ccf1a`,
+Linux/arm64 ports `35d246e32704b8c6c7c5689b5d692b7b5ab9129d3d54959d2c63512dc8b2c9b9`.
+
+**Adoption remains pending.** PR #30 is unmerged; the owner authorized a branch/PR and hosted verification, not a main merge.
+The macOS row reaches the main daily schedule only after reviewed adoption. Windows integration, Windows/arm64 D1 (31/32),
+private-DLL qualification, release publication and STATUS are unchanged. Unrelated CRT/GFX/Web stages are not gates for this
+build-host change.
 

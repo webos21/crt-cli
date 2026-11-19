@@ -17,8 +17,9 @@ pins nor closes hosted jobs, Windows/arm64 D1 (31/32), or private-DLL qualificat
 `integration-pins.json`; it does not change the SDK/bootstrap pins, publisher key, host-tools format, recipe schema or project locks.
 Producer publication and native consumer evidence precede this candidate (records below). The common-driver local preflight passes
 public download/signature checks, redirect and the five port suites; [CI acceptance](acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19)
-owns its exact 92 focused tests, 54 redirects, 300 port checks and 26 adapter gates. Hosted macOS qualification and reviewed adoption on
-main are **pending**; this is an implemented/tested candidate, not an already adopted CI combination or Windows integration claim.
+owns the exact tests and input identities. Hosted macOS qualification now **passes on the PR branch**: all nine integration jobs and
+the six-row native CI succeed at `25591d8`; macOS executes the same five required suites with static/shared consumers. Reviewed adoption on
+main remains **pending in PR #30**; this is not an already adopted main CI combination or a Windows integration claim.
 
 ## Published Windows/arm64 Host-tools Qualification (2026-11-19)
 

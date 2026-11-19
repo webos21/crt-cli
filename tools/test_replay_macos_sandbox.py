@@ -42,7 +42,9 @@ class MacSandboxTests(unittest.TestCase):
         self.assertEqual({}, linker_helpers(linker))
         helper.write_bytes(b'Xcode linker fixture')
         helper.chmod(0o600)
-        self.assertEqual({}, linker_helpers(linker))
+        # Windows access(X_OK) does not model POSIX executable mode bits.
+        with patch('replay_macos_sandbox.os.access', return_value=False):
+            self.assertEqual({}, linker_helpers(linker))
         helper.chmod(0o700)
         self.assertEqual({'ld64': helper}, linker_helpers(linker))
         classic = linker.with_name('ld-classic')
@@ -51,7 +53,9 @@ class MacSandboxTests(unittest.TestCase):
         self.assertEqual({'ld64': helper, 'ld-classic': classic}, linker_helpers(linker))
         (self.work / 'tools/undeclared-helper').write_bytes(b'not allowed')
         (self.work / 'second').mkdir()
-        with patch('replay_macos_sandbox.sys.platform', 'darwin'), patch('replay_macos_sandbox.host_compile'):
+        is_file = Path.is_file
+        with patch('replay_macos_sandbox.sys.platform', 'darwin'), patch('replay_macos_sandbox.host_compile'), \
+                patch.object(Path, 'is_file', lambda path: path == Path('/usr/bin/sandbox-exec') or is_file(path)):
             another = MacSandbox()
             another.prepare(self.work / 'second', self.scratch, self.work / 'crt-cli',
                             {'cc': linker, 'ar': linker, 'linker': linker}, [])

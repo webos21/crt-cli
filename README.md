@@ -134,7 +134,7 @@ CI's six required jobs (Linux/x86_64 on two Ubuntu versions) pass on pull reques
 requires the `CI gate` check; [CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)
 distinguishes workflow configuration, hosted results, the integration workflow (the redirect replay and the port suites run on Linux/x86_64 and
 Linux/arm64, manually and daily), the [macOS integration candidate](docs/acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19)
-and its local/hosted adoption status, and the release workflow (published and signed through the workflow on every host except Windows/arm64,
+and its passing branch qualification/pending main adoption, and the release workflow (published and signed through the workflow on every host except Windows/arm64,
 whose first Preview was built by hand; its workflow dry-run passed, but real workflow publication remains pending).
 
 Preview qualification covers the actual packaged CLI, promoted SDK pin, trust,

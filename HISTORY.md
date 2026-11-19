@@ -11,14 +11,18 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-19
 
-### Implement and locally validate the macOS integration candidate
+### Implement and qualify the macOS integration candidate on a PR branch
 
 On `codex/macos-host-tools-integration`, add the published signed macOS host-tools pin and connect the common driver to Xcode/Seatbelt
 for `pins`, `redirect` and `ports`. Retain the Linux adapter and strict five-suite gate; make macOS suite reports and pinned-oracle metadata
 equally checkable. Local public-download preflight passes redirect 54/54 and port 300 checks/26 adapter gates, with static/shared consumers,
-publication/reuse/verify, source-hidden boundaries and unchanged SDK/tool inventories; 92 focused tests and workflow/Bash parsing pass.
-This completes implementation/local preflight only: no hosted acceptance, reviewed main pin adoption, Windows integration or runtime fix is claimed.
-[Candidate inputs, retained development attempt and results](docs/acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19).
+publication/reuse/verify, source-hidden boundaries and unchanged SDK/tool inventories; the final focused set passes 93 tests.
+Hosted integration at `25591d8` passes all nine Linux/macOS jobs, including macOS redirect 54/54 and ports 300 checks/26 gates; its PR CI
+passes all six native rows and `CI gate`. The first hosted failure exposed Xcode 16.4's legacy-linker dispatch: the Seatbelt allowlist now
+admits only exact installed `ld64`/`ld-classic` helpers and inventories their identities, not the Xcode directory. Both failed attempts and
+an unrelated refused zlib download are retained. [PR #30](https://github.com/webos21/crt-cli/pull/30) stays unmerged pending owner approval;
+no main adoption, Windows integration or runtime fix is claimed. STATUS is unchanged.
+[Inputs, failure analysis and local/hosted results](docs/acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19).
 
 ### Close the CRT host-tools publication handoff without closing consumer integration
 

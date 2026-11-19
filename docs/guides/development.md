@@ -410,7 +410,10 @@ python3 tools/ci_integration.py ports --host macos-arm64 --work /private/tmp/fre
 ```
 
 `--llvm-bin` is for Linux. macOS selects the four Xcode tool paths and the OS
-SDK explicitly. Its adapter records the clean SDK selection and pinned oracle,
+SDK explicitly. Seatbelt permits the selected tool files and, when installed,
+their exact legacy linker helpers (`ld64`/`ld-classic`), not an entire Xcode
+directory; helper paths and SHA-256 values are recorded in the replay inputs.
+Its adapter records the clean SDK selection and pinned oracle,
 rejects zero/duplicate/wrong-name reports and skips in either output stream,
 and preserves its existing `suites`/`suite_results` ledger. The common driver
 requires exactly the same five executed suites, matching input hashes and no
