@@ -10,6 +10,24 @@
   },
   "hosts": {
     "win-x64": {
+      "replay_harness": {
+        "revision": "bc195a1915b6ee21ff98957af9eb2003cf334e6e",
+        "note": "Public producer test-host helpers only, not SDK or product build inputs. Hashes re-derived from this immutable CRT commit.",
+        "files": [
+          {
+            "url": "https://raw.githubusercontent.com/webos21/crt/bc195a1915b6ee21ff98957af9eb2003cf334e6e/tools/crt_windows_external.py",
+            "name": "crt_windows_external.py",
+            "size": 11781,
+            "sha256": "f01379e0aaed7da3c1009b3eee286a8d705608f475a68209f3839837a64e9236"
+          },
+          {
+            "url": "https://raw.githubusercontent.com/webos21/crt/bc195a1915b6ee21ff98957af9eb2003cf334e6e/tools/crt_windows_trace.py",
+            "name": "crt_windows_trace.py",
+            "size": 10792,
+            "sha256": "35355c9e63b7abc69223655ea8cfe142981763b6c965e88ab13d408b93fb986a"
+          }
+        ]
+      },
       "host_tools": {
         "url": "https://github.com/webos21/crt/releases/download/v0.1.0-hosttools.20261119.windows-x86_64.1/crt-v0.1.0-hosttools.20261119.windows-x86_64.1.tar.xz",
         "name": "crt-v0.1.0-hosttools.20261119.windows-x86_64.1.tar.xz",

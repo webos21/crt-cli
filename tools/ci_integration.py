@@ -8,7 +8,7 @@ Subcommands:
   redirect  restricted-redirect replay: the pinned published CLI against the pinned public SDK bytes
   ports     the five input-gated port suites through the pinned host tools and zlib source (fails while unpinned)
 
-Windows/x64 currently supports pins and ports --prepare-only; native adapter/workflow wiring remains separate.
+Windows/x64 uses a restricted-token adapter with pinned public producer test-host helpers.
 """
 import argparse
 import hashlib
@@ -27,7 +27,7 @@ from pathlib import Path, PurePosixPath
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import publisher_signature  # noqa: E402
-from ci_bootstrap import CiError, macos_tool_paths  # noqa: E402
+from ci_bootstrap import CiError, macos_tool_paths, windows_sdk_path  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -193,7 +193,8 @@ def published_cli(host, work):
     target.mkdir()
     with tarfile.open(archive) as bundle:
         bundle.extractall(target, filter='data')
-    found = [p for p in target.rglob('crt-cli') if p.is_file()]
+    executable = 'crt-cli.exe' if host.startswith('win-') else 'crt-cli'
+    found = [p for p in target.rglob(executable) if p.is_file()]
     if len(found) != 1:
         raise IntegrationError('expected one crt-cli in the bootstrap archive, found %d' % len(found))
     found[0].chmod(found[0].stat().st_mode | 0o111)
@@ -223,7 +224,7 @@ def sdk_release_dir(sdk, work):
 
 def command_redirect(args, host):
     if host == 'win-x64':
-        raise IntegrationError('Windows redirect integration is not wired; only pins and ports --prepare-only are available')
+        raise IntegrationError('Windows redirect integration is not wired')
     work = Path(args.work).resolve()
     work.mkdir(parents=True, exist_ok=False)
     exe, sdk = published_cli(host, work)
@@ -239,7 +240,16 @@ def command_redirect(args, host):
 def port_adapter_command(host, llvm_bin):
     """Native tools and isolation adapter; input/signature/result gates stay common."""
     if host == 'win-x64':
-        raise IntegrationError('Windows port integration is not wired; use ports --prepare-only for input verification')
+        if not llvm_bin:
+            raise IntegrationError('native Windows ports requires --llvm-bin')
+        llvm = Path(llvm_bin).absolute()
+        try:
+            os_sdk = windows_sdk_path()
+        except CiError as error:
+            raise IntegrationError(str(error)) from error
+        return ROOT / 'tools/replay_port_windows_ci.py', {
+            '--cc': llvm / 'clang.exe', '--cxx': llvm / 'clang++.exe', '--linker': llvm / 'ld.lld.exe',
+            '--ar': llvm / 'llvm-ar.exe', '--os-sdk': os_sdk}
     if host == 'macos-arm64':
         try:
             paths = macos_tool_paths()
@@ -274,6 +284,15 @@ def command_ports(args, host):
         log('port inputs prepared only; no suite executed: %s' % (work / 'port-inputs.json'))
         return
 
+    harness = None
+    if host == 'win-x64':
+        harness = prepare_windows_harness(args.pins, work)
+        sys.path.insert(0, str(harness))
+        import crt_windows_trace
+        # This directory was just created by prepare_port_inputs. Original downloads/SDK inputs must be unreadable
+        # through the replay SID even on hosted runners whose TEMP normally grants Users read access.
+        crt_windows_trace.private_directory(work)
+
     exe, sdk = published_cli(host, work)
     release = sdk_release_dir(sdk, work)
     home = work / 'home'
@@ -307,14 +326,45 @@ def command_ports(args, host):
         argv += [flag, executable]
     for path in args.hide:
         argv += ['--hide', path]
+    if harness is not None:
+        argv += ['--windows-harness', harness]
     argv += ['--cases', *PORT_SUITES]
     (work / 'replay-command.json').write_text(json.dumps(list(map(str, argv)), indent=2) + '\n', encoding='utf-8')
     # Isolation stays in each native adapter; this common driver owns input and result policy.
-    done = subprocess.run(list(map(str, argv)), capture_output=True, text=True, timeout=6600)
+    done = subprocess.run(list(map(str, argv)), capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=6600)
     (work / 'replay.stdout').write_text(done.stdout, encoding='utf-8')
     (work / 'replay.stderr').write_text(done.stderr, encoding='utf-8')
     judge_port_result(work / 'replay/result.json', done.returncode, prepared)
     log('all five native port suites passed on %s' % host)
+
+
+def windows_harness_pins(path):
+    entry = json.loads(Path(path).read_text(encoding='utf-8')).get('hosts', {}).get('win-x64', {}).get('replay_harness', {})
+    if not isinstance(entry, dict):
+        raise IntegrationError('Windows replay harness pin is missing or is not an object')
+    revision, files = entry.get('revision'), entry.get('files')
+    if not isinstance(revision, str) or re.fullmatch(r'[0-9a-f]{40}', revision) is None:
+        raise IntegrationError('Windows replay harness requires an immutable producer revision')
+    if not isinstance(files, list) or len(files) != 2 or any(not isinstance(pin, dict) for pin in files):
+        raise IntegrationError('Windows replay harness requires exactly two pinned helpers')
+    if any(not isinstance(pin.get('name'), str) for pin in files) or {pin['name'] for pin in files} != {'crt_windows_external.py', 'crt_windows_trace.py'}:
+        raise IntegrationError('Windows replay harness helper names differ')
+    for pin in files:
+        _require_fields('Windows replay harness', pin, ZLIB_FIELDS)
+        expected = 'https://raw.githubusercontent.com/webos21/crt/%s/tools/%s' % (revision, pin['name'])
+        if pin['url'] != expected or pin['size'] > 65536:
+            raise IntegrationError('Windows replay harness must pin small helpers at the declared producer revision')
+    return files
+
+
+def prepare_windows_harness(pins, work):
+    files = windows_harness_pins(pins)
+    destination = Path(work) / 'windows-harness'
+    destination.mkdir()
+    for pin in files:
+        fetch_pinned('Windows replay harness ' + pin['name'], pin['url'], destination / pin['name'], pin)
+    (destination / 'pins.json').write_text(json.dumps(files, indent=2) + '\n', encoding='utf-8')
+    return destination
 
 
 def verify_oracle(path, pin):
@@ -420,6 +470,13 @@ def judge_port_result(path, returncode, prepared):
     cases = result.get('cases')
     if not isinstance(cases, list) or not cases or any(not isinstance(c, dict) or c.get('passed') is not True for c in cases):
         raise IntegrationError('port replay has missing or failed cases')
+    if prepared.get('host') == 'win-x64':
+        required = {'original-inputs-hidden', 'real-symlink-prerequisite', 'bare-original-and-build-inputs-hidden',
+                    'PE x64 and only declared OS imports', 'original and copied SDK/tool inventories unchanged',
+                    'source inputs unchanged'}
+        names = [case.get('case') for case in cases]
+        if any(names.count(name) != 1 for name in required):
+            raise IntegrationError('Windows replay lacks required boundary, symlink, PE or inventory evidence')
     if prepared.get('host') == 'macos-arm64':
         requested = result.get('suites')
         if (not isinstance(requested, list) or len(requested) != len(PORT_SUITES) or
@@ -460,6 +517,8 @@ def main():
             _, tools = load_pins(args.pins, host)
             load_publisher(args.pins)
             _require_fields('%s host_tools signature' % host, tools.get('signature'), SIGNATURE_FIELDS)
+            if host == 'win-x64':
+                windows_harness_pins(args.pins)
             log('integration pins complete for %s' % host)
         elif args.command == 'redirect':
             if not args.work:

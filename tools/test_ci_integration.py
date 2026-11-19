@@ -12,7 +12,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from ci_integration import (IntegrationError, PORT_SUITES, judge_port_result, load_pins, load_publisher, main,
-                            host_key, port_adapter_command,
+                            host_key, port_adapter_command, prepare_windows_harness, windows_harness_pins,
                             prepare_port_inputs, sha256_file, spki_sha256, verify_download, verify_oracle,
                             verify_publisher_signature)
 from replay_port_linux import suite_outcome
@@ -123,13 +123,20 @@ class NativeAdapterTest(unittest.TestCase):
         with patch('ci_integration.macos_tool_paths', side_effect=CiError('xcrun missing')):
             with self.assertRaisesRegex(IntegrationError, 'xcrun missing'):
                 port_adapter_command('macos-arm64', None)
-        with self.assertRaisesRegex(IntegrationError, 'not wired'):
+        with self.assertRaisesRegex(IntegrationError, '--llvm-bin'):
             port_adapter_command('win-x64', None)
 
-    def test_windows_unwired_replays_fail_before_download_or_work_creation(self):
+    def test_windows_tools_and_public_sdk_import_libraries_are_explicit(self):
+        with patch('ci_integration.windows_sdk_path', return_value='C:/Windows SDK/um/x64'):
+            adapter, tools = port_adapter_command('win-x64', 'C:/LLVM/bin')
+        self.assertEqual(adapter.name, 'replay_port_windows_ci.py')
+        self.assertEqual(tools['--cc'], Path('C:/LLVM/bin').absolute() / 'clang.exe')
+        self.assertEqual(tools['--os-sdk'], 'C:/Windows SDK/um/x64')
+
+    def test_windows_unwired_redirect_fails_before_download_or_work_creation(self):
         with tempfile.TemporaryDirectory() as directory:
             work = Path(directory) / 'unwired'
-            for command in ('redirect', 'ports'):
+            for command in ('redirect',):
                 with self.subTest(command=command), patch('ci_integration.host_key', return_value='win-x64'), \
                         patch('ci_integration.download') as get, patch('sys.argv',
                         ['ci_integration.py', command, '--host', 'win-x64', '--work', str(work)]):
@@ -150,6 +157,39 @@ class NativeAdapterTest(unittest.TestCase):
         self.assertIn('hashlib.file_digest', text)
         self.assertNotIn('sha256sum', text)
         self.assertIn('ports/replay/commands.json', text)
+        self.assertEqual(text.count('host: win-x64\n'), 1)
+        self.assertIn('name: ports (win-x64)', text)
+        self.assertIn('SetAccessRuleProtection($true, $false)', text)
+        self.assertIn('path: private-inputs', text)
+        self.assertIn('real symlinks required', text)
+        self.assertNotIn('AllowDevelopmentWithoutDevLicense', text)
+
+
+class WindowsHarnessTest(unittest.TestCase):
+    def test_helper_inputs_are_pinned_at_the_immutable_revision(self):
+        root = Path(__file__).resolve().parent.parent
+        path = root / '.github/ci/integration-pins.json'
+        files = windows_harness_pins(path)
+        self.assertEqual(len(files), 2)
+        with tempfile.TemporaryDirectory() as directory:
+            for label, change in [('no revision', {'revision': None}), ('mutable revision', {'revision': 'main'}),
+                                   ('no files', {'files': []}), ('duplicate file', {'files': [files[0], files[0]]}),
+                                   ('wrong url', {'files': [dict(files[0], url='https://example.invalid/tool.py'), files[1]]}),
+                                   ('oversized', {'files': [dict(files[0], size=65537), files[1]]})]:
+                document = json.loads(path.read_text())
+                document['hosts']['win-x64']['replay_harness'].update(change)
+                altered = Path(directory) / 'pins.json'; altered.write_text(json.dumps(document))
+                with self.subTest(label=label), self.assertRaises(IntegrationError):
+                    windows_harness_pins(altered)
+
+    def test_changed_download_never_publishes_a_ready_harness_receipt(self):
+        root = Path(__file__).resolve().parent.parent
+        with tempfile.TemporaryDirectory() as directory, patch('ci_integration.download',
+                side_effect=lambda url, path: Path(path).write_bytes(b'changed')):
+            work = Path(directory)
+            with self.assertRaisesRegex(IntegrationError, 'size'):
+                prepare_windows_harness(root / '.github/ci/integration-pins.json', work)
+            self.assertFalse((work / 'windows-harness/pins.json').exists())
 
 
 class PortDriverTest(unittest.TestCase):
@@ -405,6 +445,18 @@ class ResultGateTest(unittest.TestCase):
             bad = copy.deepcopy(result)
             bad['suite_results'][PORT_SUITES[0]] = outcome
             with self.subTest(outcome=outcome), self.assertRaisesRegex(IntegrationError, 'did not execute'):
+                self.judge(bad, prepared=prepared)
+
+    def test_windows_requires_native_boundary_symlink_and_inventory_cases(self):
+        required = ['original-inputs-hidden', 'real-symlink-prerequisite', 'bare-original-and-build-inputs-hidden',
+                    'PE x64 and only declared OS imports', 'original and copied SDK/tool inventories unchanged',
+                    'source inputs unchanged']
+        result = dict(self.good, cases=[{'case': name, 'passed': True} for name in required])
+        prepared = dict(self.inputs, host='win-x64')
+        self.assertEqual(self.judge(result, prepared=prepared), result)
+        for missing in required:
+            bad = dict(result, cases=[c for c in result['cases'] if c['case'] != missing])
+            with self.subTest(missing=missing), self.assertRaisesRegex(IntegrationError, 'Windows replay lacks'):
                 self.judge(bad, prepared=prepared)
         for key, value in (('allow_dirty_sdk', True), ('allow_dirty_sdk', None), ('contract_sha256', '0' * 64)):
             with self.subTest(key=key, value=value), self.assertRaises(IntegrationError):

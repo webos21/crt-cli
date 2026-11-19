@@ -1531,3 +1531,39 @@ Native tool receipt: `4ad149e9d3938b4697a54bd61069e9b9db9d7013641a1e46093f3cc22d
 Windows hosted adapter/job wiring, real-symlink prerequisite and five-suite result qualification remain separate D2 work;
 Windows/arm64 D1, private DLLs, SDK/bootstrap pins, root/project locks, release publication and STATUS are unchanged.
 
+## Windows/x64 hosted port integration (2026-11-19)
+
+**Candidate on `codex/windows-hosted-integration`; hosted qualification pending.** The signed host-tools pin above is committed on main
+as `2473b545e2e7ecc6112a10cfff67e359cf60a3bc`. This increment connects its common input driver to a fresh Windows restricted-token
+adapter and a `windows-2022` job. Windows `pins` joins the shared pin matrix; the separate Windows port job checks out into a newly created,
+private directory so hosted `Users` grants do not make the original source visible through the restricted token. Existing directories and
+global machine policy are not changed. Windows redirect integration remains separate.
+
+The only producer test-host helpers are downloaded from public immutable CRT commit `bc195a1915b6ee21ff98957af9eb2003cf334e6e`:
+
+| Helper | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `crt_windows_external.py` | 11781 | `f01379e0aaed7da3c1009b3eee286a8d705608f475a68209f3839837a64e9236` |
+| `crt_windows_trace.py` | 10792 | `35355c9e63b7abc69223655ea8cfe142981763b6c965e88ab13d408b93fb986a` |
+
+`integration-pins.json` pins their exact URLs, names, sizes and hashes; both the common driver and the adapter check them before import.
+These are build-host acceptance helpers, never SDK/product build inputs or a sibling checkout dependency. Their source trust is the reviewed
+immutable commit plus digest pins; there is no new signature claim for the helper files.
+
+`replay_port_windows_ci.py` copies the source export, public SDK, contract, bootstrap executable and signed host tools into a fresh per-SID
+workspace. It probes original input denial and real CRT symlink creation before building the current CLI. Missing symlink support is a
+failure with a Developer Mode diagnostic; the workflow never enables it. The selected LLVM/OS SDK remain explicitly declared host tools.
+The adapter inventories LLVM executables/helpers and pins a declared oracle Python, copied into the workspace and admitted only for
+`port-oracle-test`. It records every job-object process image; an unknown or undeclared image fails acceptance. This is selected file-read
+denial and process accounting, not network/executable denial.
+
+The five required suites are `port-build-test`, `port-store-test`, `port-oracle-test`, `port-command-test`, `port-project-test`.
+Every result must execute positive checks, report no skip and match the prepared archive/manifest/contract identities. Windows also requires
+explicit symlink, original/bare input denial, PE and unchanged-inventory cases. Cold/warm build, SDK-hidden bare help/version/doctor,
+real `port build zlib`, static/shared consumers and a PE x64/OS-import audit are adapter gates. Results and failure logs are retained as artifacts.
+
+Local validation so far: focused tests **40/40**, Python syntax, `git diff --check` and actionlint 1.7.12 pass. Actionlint's obsolete built-in
+runner list needs the existing `ubuntu-26.04`/`ubuntu-26.04-arm` unknown-label warning excluded; no other warning is suppressed.
+The first native preflight is retained at `C:\Users\Lee\s13\p` (orchestration log in CLI ignored
+`out/win-host-tools-pin-20261119/local-hosted-adapter.log`); runtime/hosted results will be recorded separately after completion.
+

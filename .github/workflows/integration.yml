@@ -3,7 +3,7 @@ name: Integration
 # Input-gated integration checks that are too slow or too external for the required pull-request gate in ci.yml.
 # Every input is pinned in .github/ci/integration-pins.json; an unpinned input fails the job instead of skipping it,
 # because a skipped suite looks like a pass. This workflow is not a required check and never publishes anything.
-# The independent host-tools bundles are pinned (Linux 20261116 and macOS/arm64 20261119 CRT Previews), so the daily trigger is
+# The independent host-tools bundles are pinned (Linux 20261116 and macOS/Windows x64 20261119 CRT Previews), so the daily trigger is
 # on: a red run now means a real regression or a changed external input, not a known gap. A scheduled run is not a required check.
 
 on:
@@ -33,6 +33,8 @@ jobs:
             runner: ubuntu-26.04-arm
           - host: macos-arm64
             runner: macos-15
+          - host: win-x64
+            runner: windows-2022
     steps:
       - name: Check out the sources under test
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -84,6 +86,82 @@ jobs:
         with:
           name: redirect-${{ matrix.host }}-${{ github.sha }}
           path: ${{ runner.temp }}/redirect/redirect-replay/redirect-replay.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  ports-windows:
+    name: ports (win-x64)
+    needs: pins
+    runs-on: windows-2022
+    timeout-minutes: 120
+    steps:
+      - name: Create a private checkout directory for the restricted-token boundary
+        shell: pwsh
+        run: |
+          $path = Join-Path $env:GITHUB_WORKSPACE 'private-inputs'
+          New-Item -ItemType Directory -Path $path -ErrorAction Stop | Out-Null
+          $acl = [System.Security.AccessControl.DirectorySecurity]::new()
+          $acl.SetAccessRuleProtection($true, $false)
+          $owner = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
+          foreach ($sid in @($owner, [System.Security.Principal.SecurityIdentifier]::new('S-1-5-18'), [System.Security.Principal.SecurityIdentifier]::new('S-1-5-32-544'))) {
+            $acl.AddAccessRule([System.Security.AccessControl.FileSystemAccessRule]::new($sid, 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
+          }
+          Set-Acl -LiteralPath $path -AclObject $acl
+
+      - name: Check out the sources under test
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: private-inputs
+          persist-credentials: false
+
+      - name: Set up Python for the driver and declared oracle
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+
+      - name: Install LLVM 22.1.8
+        shell: pwsh
+        run: |
+          choco install llvm --version 22.1.8 --allow-downgrade -y --no-progress
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & 'C:\Program Files\LLVM\bin\clang.exe' --version
+
+      - name: Select and record the oracle Python
+        id: oracle
+        shell: pwsh
+        run: |
+          $path = python -c 'import os,sys; print(os.path.realpath(sys.executable))'
+          $digest = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+          Write-Output "oracle python $path sha256 $digest"
+          "path=$path" >> $env:GITHUB_OUTPUT
+          "sha256=$digest" >> $env:GITHUB_OUTPUT
+
+      - name: Port suites (all five, real symlinks required, none skipped)
+        shell: pwsh
+        working-directory: private-inputs
+        env:
+          PYTHONUTF8: '1'
+        run: |
+          python tools/ci_integration.py ports --host win-x64 --work "$env:RUNNER_TEMP/p" --llvm-bin 'C:/Program Files/LLVM/bin' --oracle-python '${{ steps.oracle.outputs.path }}' --oracle-python-sha256 '${{ steps.oracle.outputs.sha256 }}'
+          exit $LASTEXITCODE
+
+      - name: Upload the Windows port replay result and failure logs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ports-win-x64-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/p/replay/*.json
+            ${{ runner.temp }}/p/replay/*.stdout
+            ${{ runner.temp }}/p/replay/*.stderr
+            ${{ runner.temp }}/p/replay/cli-pe.txt
+            ${{ runner.temp }}/p/port-inputs.json
+            ${{ runner.temp }}/p/replay-command.json
+            ${{ runner.temp }}/p/replay.stdout
+            ${{ runner.temp }}/p/replay.stderr
+            ${{ runner.temp }}/p/install-sdk.stdout
+            ${{ runner.temp }}/p/install-sdk.stderr
+            ${{ runner.temp }}/p/windows-harness/pins.json
           if-no-files-found: warn
           retention-days: 14
 
