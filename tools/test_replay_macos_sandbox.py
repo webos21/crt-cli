@@ -45,6 +45,10 @@ class MacSandboxTests(unittest.TestCase):
         self.assertEqual({}, linker_helpers(linker))
         helper.chmod(0o700)
         self.assertEqual({'ld64': helper}, linker_helpers(linker))
+        classic = linker.with_name('ld-classic')
+        classic.write_bytes(b'Xcode legacy linker fixture')
+        classic.chmod(0o700)
+        self.assertEqual({'ld64': helper, 'ld-classic': classic}, linker_helpers(linker))
         (self.work / 'tools/undeclared-helper').write_bytes(b'not allowed')
         (self.work / 'second').mkdir()
         with patch('replay_macos_sandbox.sys.platform', 'darwin'), patch('replay_macos_sandbox.host_compile'):
@@ -52,6 +56,7 @@ class MacSandboxTests(unittest.TestCase):
             another.prepare(self.work / 'second', self.scratch, self.work / 'crt-cli',
                             {'cc': linker, 'ar': linker, 'linker': linker}, [])
         self.assertIn(helper, another.allowed)
+        self.assertIn(classic, another.allowed)
         policy = Path(another.command([], self.scratch)[2]).read_text()
         self.assertIn('(literal ' + json.dumps(str(helper)) + ')', policy)
         self.assertNotIn('(subpath ' + json.dumps(str(helper.parent)) + ')', policy)

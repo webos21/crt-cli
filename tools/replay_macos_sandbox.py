@@ -13,9 +13,10 @@ def host_compile(compiler, source, output):
 
 
 def linker_helpers(linker):
-    # Xcode 16's ld dispatches to its sibling ld64; newer Xcode uses ld directly.
-    helper = Path(linker).resolve().parent / 'ld64'
-    return {'ld64': helper} if helper.is_file() and os.access(helper, os.X_OK) else {}
+    # Xcode's ld can dispatch to the legacy linker (also named ld-classic).
+    directory = Path(linker).resolve().parent
+    return {name: helper for name in ('ld64', 'ld-classic')
+            if (helper := directory / name).is_file() and os.access(helper, os.X_OK)}
 
 
 class MacSandbox:

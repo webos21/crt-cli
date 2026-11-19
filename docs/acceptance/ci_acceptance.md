@@ -1404,10 +1404,13 @@ Draft [PR #30](https://github.com/webos21/crt-cli/pull/30) at `cbba4792b6eb6506b
 The first manual [integration run](https://github.com/webos21/crt-cli/actions/runs/44463529315) passes all three hosts' `pins` and
 `redirect` jobs and both Linux `ports` jobs, but fails macOS `ports` before any port suite runs (2/4 replay gates, zero suites).
 Its retained artifact is `ports-macos-arm64-cbba4792b6eb6506b4dc4ddcd7a9047fc3c61b5b`, ID `14501171915`.
-The clean SDK configure succeeds; fresh CLI linking reports `can't exec ld64`. The hosted Xcode 16.4/macOS SDK 15.5 linker dispatches
-to the sibling `ld64`, unlike local Xcode 27.2. The exact-executable Seatbelt policy omitted that helper.
+The clean SDK configure succeeds; fresh CLI linking reports `can't exec ld64` after a legacy-option warning on Xcode 16.4/macOS SDK 15.5.
+The initial correction looked for a sibling named `ld64` only. In the second [run](https://github.com/webos21/crt-cli/actions/runs/44473654095)
+at `2bf4dfd`, the helper inventory is empty and the same macOS link fails: that inferred filename was not the installed helper.
+Apple also names its legacy linker `ld-classic`; the corrected resolver checks both exact names. The second run's Linux/x64 job separately
+refuses a 12,103-byte zlib download against the unchanged 1,512,791-byte pin before any suite runs; no digest/size check is relaxed.
 
-The correction permits only an existing executable `ld64` next to the selected canonical linker, not the Xcode directory. It records
+The correction permits only existing executable `ld64`/`ld-classic` files next to the selected canonical linker, not the Xcode directory. It records
 the helper path/digest in `inputs.json`; focused policy fixtures cover its absence, non-executable state and exact-file permission.
 The artifact now also retains individual step stdout/stderr and the CLI import audit for diagnosis. A hosted rerun is still required;
 the first failure is not erased or relabeled as a pass, and no pin is adopted on main. The PR remains unmerged.
