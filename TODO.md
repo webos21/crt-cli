@@ -27,8 +27,9 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
 ### CI Platform Expansion
 
 - [ ] D2, cross-platform integration: add hosted macOS/arm64 and Windows/x64 jobs to `integration.yml` that run the native Port and
-  oracle suites with their own pinned host-tools bundles. Blocked on CRT publishing those bundles ([crt#9](https://github.com/webos21/crt/issues/9), requested 2026-11-19;
-  only the two Linux bundles are published); each host needs its own acceptance record.
+  oracle suites with their own pinned host-tools bundles. CRT has built and hosted-verified the bundles ([crt pull request 10](https://github.com/webos21/crt/pull/10):
+  macOS/arm64, Windows/x64 and Windows/arm64 replays pass 18/18 each, in hosted runs `44427905842` and `44428128691`, read 2026-11-19) but the pull request was still open and nothing is
+  published; only the two Linux bundles are. Waiting on the merge and the Preview publication ([crt#9](https://github.com/webos21/crt/issues/9)); each host then needs its own pin and acceptance record.
 - [ ] Windows/arm64 under that policy: the leg is added, pinned, hosted-qualified and its `release.yml` rehearsal passed (checked sub-items below); open: a
   workflow-built, published and signed Preview.
   - [x] Wire `win-arm64` into `ci_bootstrap.py`, `ci_release.py`, `release.yml` and their tests; prepare and replay a local SDK and CLI candidate
