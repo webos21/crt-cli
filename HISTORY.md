@@ -16,6 +16,18 @@ inventing commits or test results. Older months may later be summarized under
 With the public bundle and the published CLI Preview, the D1 fail-closed controls pass 32/32 (wrong pin, linked parent, modified tool, extra payload, no `make` fallback, wrong host, resource-package tampering), and the archive's publisher signature verifies through `fetch --publisher-key`. A CLI
 built from the current sources by the public Dev SDK passes native 992, archive 214, SDK-store 113, recipe 142 and, with this exact bundle, the five port suites (142/36/97/83/33/21) plus a real `port build zlib` under a restricted token. [Acceptance](docs/acceptance/host_environment_acceptance.md#windowsx64-published-host-tools-consumer-replay-2026-11-19).
 
+### Replay D3 with the signed public macOS host-tools Preview
+
+Current CLI product/test source at `c79d57c` was freshly self-built from the pinned, signed macOS SDK and bootstrap Preview, then exercised
+with the signed independent host-tools Preview `v0.1.0-hosttools.20261119.macos-aarch64.1`. The six input-enabled D3 suites pass 442 checks
+and the complete replay passes 27/27 gates: static/shared zlib build and C/C++ consumption, oracle comparison, actual port publication/reuse/verify,
+cold 21/0 and warm 0/21 CLI builds, source-hidden Seatbelt boundaries and unchanged SDK/tool inventories. Nine Mach-O images pass the CRT
+binding/mixed-allocator audit. No product, SDK, upstream source, CI pin or workflow changed; full native/archive/SDK-store regressions were
+not repeated for this scoped host-tools replay. Hosted integration and Windows/arm64 consumer replay remain open; the separately merged
+Windows/x64 record above retains its own acceptance.
+[Exact inputs and receipts](docs/acceptance/sdk_install_acceptance.md#signed-public-host-tools-d3-replay-macosarm64-2026-11-19);
+[compatibility scope](docs/compatibility.md#signed-public-macos-host-tools-d3-combination-2026-11-19).
+
 ### Rehearse `release.yml` for Windows/arm64 and request the macOS/Windows host-tools bundles
 
 The `CI Platform Expansion` section moved to In Progress. Its Windows/arm64 item was rehearsed with `dry_run: true` on `windows-11-arm`: `package`, `verify` (including a real GitHub `sdk acquire` and the C and C++ workflows) and an

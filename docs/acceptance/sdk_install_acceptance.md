@@ -2026,3 +2026,84 @@ regression/oracle suites were not repeated for metadata-only adoption. Windows/
 arm64 D3, Linux's unendorsed C shared SDK-provider control, D4, Full installation,
 production locks, publisher trust and public release remain separate. Root locks,
 committed binaries and old SDK/provider bytes are preserved.
+
+## Signed public host-tools D3 replay (macOS/arm64, 2026-11-19)
+
+**Pass: all six input-enabled D3 suites (442 checks), 27/27 replay gates.** This qualifies the newly published independent macOS host-tools
+bundle with the pinned public macOS Dev SDK and current CLI source. It is not hosted integration or a CI input promotion.
+
+### Inputs and publisher authentication
+
+Host: macOS 27.2.1 (26B131), arm64, Xcode 27.2 (27B52). Producer checkout `84eec172a9268f58f1d61016f08d10b9cdb368bc`;
+CLI checkout `c79d57c4c049ec651076fd648ad0e7b3630a638f`. Only the TODO marker was dirty during execution; no product/test/driver code changed.
+Before committing, Windows/x64 documentation was synchronized from CRT `0d9d573` and CLI `2460919` and preserved alongside this result;
+those commits change documentation only. The tested CLI source fingerprint still matches after the merge, so no code/input revalidation is implied.
+The copied 46-file LF-normalized CLI source/header/manifest snapshot SHA-256 is
+`b54ea39ae1bc663dcea6da1a7b72c659998ce289fc621b155642182e4402ec33`.
+
+| Input | Identity |
+| --- | --- |
+| SDK | Public `v0.0.1-preview.20261110.macos.1`, producer `445f127dc2e1ef4ab538166aa2e374f25773a803`, clean provenance |
+| SDK release manifest | `0981110c84e5d24a903dbd3965dbe92eb2fe405edfa89804e3086dfeb75983de` |
+| SDK installed content | `e3dc7fb1810a3f78ab8ef33882225ccb562d21f6f5977a2037ab92819326bac8` |
+| Portable compiler contract | `d5a100fdd0d38f940fe1c398996f013d57ccc7c4743af2b9ab4988c42b8de464` |
+| Bootstrap CLI | Public, signed `v0.1.0-preview.20261117.macos-arm64.1`; executable `afcdf9b6a368e0c9c2efbfc9f2d8ac18945c310c361c627ac6e0c0d3e0df0073` |
+| Independent host tools | Public, signed `v0.1.0-hosttools.20261119.macos-aarch64.1`; manifest `27fac5efbb6f846041b471d8b0be8e8004608ef5839ce4a2ef23c62aae8e07b8` |
+| zlib 1.3.1 archive | `9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23` |
+| Recipe / round-trip source | `dde944984d799197c0af1553ac7cf38139edc7b2e4e673ef9b4c17dd8c1a349b` / `3d7460fb51e215424ef4fa36593cd7662bdcf83bbd1e986eb0ed746b07aebe62` |
+| SDK oracle script | `7b6811f8174474898d5c80cb9be46e5a7a6e275b3f88f0331e0c40bf241efc68` |
+
+The public SDK and CLI were freshly downloaded; sizes, digests and signatures agree with `.github/ci/pins.json` for `macos-arm64`.
+RSA-PSS SHA-256/MGF1 SHA-256/salt 32 verification uses the pinned publisher SPKI
+`59218576956e493476bc36f7385d8e01a03ff9b92946a531b013ad3937d43fa2`. The host-tools archive/signature were already downloaded and verified
+from their public release in [CRT's producer replay](https://github.com/webos21/crt/blob/84eec172a9268f58f1d61016f08d10b9cdb368bc/docs/acceptance/host_tools_acceptance.md#macoswindows-host-tools-publication-signatures-and-macos-replay-2026-11-19),
+not rebuilt here. The SDK's independent byte verifier passes the original six-asset set; its separately verified detached signature is
+kept outside that verifier's exact-set view. An initial attempt including `.sig` was correctly refused as an unexpected asset, not waived.
+
+### Native execution and results
+
+`tools/replay_port_macos.py` copies inputs into `/private/tmp/d3-macos-9eowrq1j`; both original repositories and original SDK/bundle roots
+are unreadable to children. Seatbelt denies network, writes outside scratch and undeclared executable paths; copied SDK/bundle inputs
+remain read-only. Native recipe jobs use the selected independent CRT shell/make/applets and explicit Xcode compiler/linker/ar/ranlib.
+The oracle alone receives its labeled wider host-Python/interpreter/SDK-tools policy. This is not a general execve trace or untrusted-code sandbox.
+
+| Suite | Passed checks |
+| --- | ---: |
+| port-recipe-test | 142 |
+| port-build-test | 40 |
+| port-store-test | 105 |
+| port-project-test | 81 |
+| port-command-test | 33 |
+| port-oracle-test | 41 |
+
+No suite was skipped. Static/shared configure/build/install, round trips and C/C++ port consumers pass. Header depfiles and link maps
+select the port item; the shared image-enumeration test asserts port libz is mapped and SDK libz is absent. Its SDK-provider control instead
+reports `/private/tmp/d3-macos-9eowrq1j/sdk/lib/libz.1.3.1.dylib`. The oracle agrees on eight installed paths, normalized pkg-config content,
+both round-trip outputs and **15/15** static member objects. Archive container/shared image bytes intentionally differ: the native install
+name is `@rpath/libz.1.dylib`; oracle LC_RPATH equals native LC_RPATH plus `@loader_path`. No difference was suppressed.
+
+The actual JSON port command publishes key `a52143b2082ac5d9aa564edd9a771946694faf5d340ba459dbfa16fa65cfc05e`, then reuses that exact key
+with `already_published: true`; `port verify` passes. Fresh CLI build executes 21 commands/reuses 0; warm build executes 0/reuses 21.
+The resulting CLI SHA-256 is `d9b822adcc7e463dd21eaf80b3b2f9d77b7727b68a068fa740526cc1966eecdd`. Bare version/doctor, actual denied-read/exec
+probes and unchanged original/copied SDK and host-tools inventories all pass. The CLI imports only `/usr/lib/libSystem.B.dylib`.
+An additional CRT binding/mixed-allocator audit passes on nine images: CLI, five port consumers, two SDK controls and the port dylib.
+No unexpected CRT-owned symbols bind to host libraries and no mixed allocator registry is reported.
+
+### Reproduction, receipts and limits
+
+Use the [macOS replay procedure](../guides/development.md#d3-common-change-closure-and-native-handoff) with these inputs and
+`--cases port-recipe-test port-build-test port-store-test port-project-test port-command-test port-oracle-test`, fresh output/work paths,
+and `--hide` pointing to the CRT checkout. Explicit Xcode tools and their hashes are in the input receipt; no dirty-SDK flag is used.
+
+Evidence is retained in CRT's ignored `out/d3-hosttools-macos-20261119/`: `public/`, `public-input-verification.log`, `sdk-verification.json`,
+`replay-r1/{inputs,commands,result}.json`, all per-call stdout/stderr, and `binding-audit.json`. The temporary workspace retains build jobs,
+installed items, consumers, link maps and depfiles. Result SHA-256 is `3f2f3d4bd3ef90c8d7856259096d606d56ff893d0cba89b80f59ef16626d3cd6`;
+binding-audit SHA-256 is `5b14c16161479e22cfdf1706a6d5deefe61f2924602850de1e4547c700b11727`. A slow project suite was sampled rather
+than weakened: `port-project-sample.txt` shows SDK inventory hashing in lock validation, not a deadlock; the unmodified run completed.
+
+No runtime, upstream, CLI product/test, SDK, root lock, default, binary, CI pin or workflow was modified. Full `native-test`, archive and
+SDK-store suites were not repeated for this bounded host-tools replay; their existing baselines remain separate. Hosted macOS integration,
+Windows/arm64 consumers/D3, private-DLL collision tests, other ports and production/default pin adoption are not closed by this result.
+Windows/x64's separate [public-bundle consumer record](host_environment_acceptance.md#windowsx64-published-host-tools-consumer-replay-2026-11-19)
+is preserved, not rerun or superseded by this Mac.
+STATUS is unchanged.

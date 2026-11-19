@@ -6,6 +6,23 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## Signed public macOS host-tools D3 combination (2026-11-19)
+
+Local native replay, not CI pin promotion: CLI product/test source `c79d57c4c049ec651076fd648ad0e7b3630a638f` was self-built using the signed
+public bootstrap `v0.1.0-preview.20261117.macos-arm64.1` and signed public SDK `v0.0.1-preview.20261110.macos.1`
+(content `e3dc7fb1810a3f78ab8ef33882225ccb562d21f6f5977a2037ab92819326bac8`, portable contract
+`d5a100fdd0d38f940fe1c398996f013d57ccc7c4743af2b9ab4988c42b8de464`). It consumes the signed independent host-tools Preview
+[`v0.1.0-hosttools.20261119.macos-aarch64.1`](https://github.com/webos21/crt/releases/tag/v0.1.0-hosttools.20261119.macos-aarch64.1)
+(manifest `27fac5efbb6f846041b471d8b0be8e8004608ef5839ce4a2ef23c62aae8e07b8`) on macOS 27.2.1/arm64 with Xcode 27.2.
+Producer publication and signature verification preceded this consumer test; producer evidence is in
+[CRT acceptance](https://github.com/webos21/crt/blob/84eec172a9268f58f1d61016f08d10b9cdb368bc/docs/acceptance/host_tools_acceptance.md#macoswindows-host-tools-publication-signatures-and-macos-replay-2026-11-19).
+
+The six D3 suites and static/shared zlib consumers pass, including actual port publication/reuse, loader mapping, oracle comparison and
+lock/store rejection cases. [CLI acceptance](acceptance/sdk_install_acceptance.md#signed-public-host-tools-d3-replay-macosarm64-2026-11-19)
+owns exact hashes, 442 checks, 27/27 replay gates, nine-image binding audit and limits. Manifest/native-policy/recipe/lock formats and the
+bounded adapter contract are unchanged; no default/project lock, integration pin or published executable is replaced. This qualifies only
+this local native combination. Hosted macOS integration, Windows consumer replays and broader ports remain separate.
+
 ## Windows/arm64 first Preview and Dev SDK adoption (2026-11-18)
 
 Producer publication and signing precede this CI pin change. Public Windows/arm64 Dev SDK
