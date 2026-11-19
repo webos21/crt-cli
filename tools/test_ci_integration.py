@@ -278,8 +278,11 @@ class PortDriverTest(unittest.TestCase):
         subprocess.run([openssl, 'genpkey', '-algorithm', 'RSA', '-pkeyopt', 'rsa_keygen_bits:2048', '-out', str(key)], check=True, capture_output=True)
         subprocess.run([openssl, 'pkey', '-in', str(key), '-pubout', '-out', str(pub)], check=True, capture_output=True)
         signature = self.inputs / 'tools.tar.xz.sig'
-        subprocess.run([openssl, 'dgst', '-sha256', '-sigopt', 'rsa_padding_mode:pss', '-sigopt', 'rsa_pss_saltlen:32', '-sigopt', 'rsa_mgf1_md:sha256',
-                        '-sign', str(key), '-out', str(signature), str(self.inputs / 'tools.tar.xz')], check=True, capture_output=True)
+        # Some test-host OpenSSL builds cannot open Unicode paths. Sign the same archive bytes over stdio;
+        # Python still writes/verifies the signature and stages the archive in the original Unicode directory.
+        signed = subprocess.run([openssl, 'dgst', '-sha256', '-sigopt', 'rsa_padding_mode:pss', '-sigopt', 'rsa_pss_saltlen:32', '-sigopt', 'rsa_mgf1_md:sha256',
+                                 '-sign', str(key)], input=(self.inputs / 'tools.tar.xz').read_bytes(), check=True, capture_output=True)
+        signature.write_bytes(signed.stdout)
         if tampered:
             data = bytearray(signature.read_bytes()); data[0] ^= 1; signature.write_bytes(bytes(data))
         pin = {'url': 'https://example.invalid/tools.tar.xz.sig', 'name': 'tools.tar.xz.sig', 'size': signature.stat().st_size,
