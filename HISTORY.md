@@ -11,6 +11,14 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-19
 
+### Rehearse `release.yml` for Windows/arm64 and request the macOS/Windows host-tools bundles
+
+The `CI Platform Expansion` section moved to In Progress. Its Windows/arm64 item was rehearsed with `dry_run: true` on `windows-11-arm`: `package`, `verify` (including a real GitHub `sdk acquire` and the C and C++ workflows) and an
+approved `publish` (`webos21`, comment `OK`) produced a draft whose archive equals the workflow artifact and whose executable is an ARM64 PE importing only the two allowed DLLs; the draft was deleted and no tag was created. The
+workflow has not yet published a Windows/arm64 Preview, so the hand-built first one remains pinned. The macOS/Windows integration jobs depend on host-tools bundles that CRT has published only for Linux; the request is
+[crt#9](https://github.com/webos21/crt/issues/9).
+[Acceptance](docs/acceptance/ci_acceptance.md#windowsarm64-releaseyml-rehearsal-2026-11-19).
+
 ### Retire the Preview preparation section and refresh STATUS
 
 At the owner's request the TODO section "Dev SDK / CLI Preview preparation" (20 checked items, 24 distinct evidence links, all resolving) was removed, and the D4 paragraph it carried

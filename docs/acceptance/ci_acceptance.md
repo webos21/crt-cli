@@ -1326,3 +1326,22 @@ damaged, `sdk repair` with the changed signature leaves the damaged contract and
 26.04, glibc 2.43 only); a bootstrap Preview built by `release.yml`. The CLI Preview used is the signed `20261116` one pinned in `pins.json`, not a newer one. Receipts are on this host under `/home/cmjo/GitLocal/crt-cli-sigreplay-20261119/`
 (`test-keys/result.json`, `real-key/result.json`, the logs, the verified release inputs and the extracted CLI).
 
+## Windows/arm64 `release.yml` rehearsal (2026-11-19)
+
+`dry_run: true` rehearsal of `release.yml` for `win-arm64` on the hosted `windows-11-arm` runner, the step that the [first Windows/arm64 Preview](#first-windowsarm64-preview-pins-and-the-ciyml-row-2026-11-18) could not take (a host's first Preview has no bootstrap pin for the workflow).
+[Run 44425099335](https://github.com/webos21/crt-cli/actions/runs/44425099335) on `main` at `d72a2a5` (the `CI gate` of that commit succeeded), date `20261119`, serial `92` (a test serial that no release uses), notes `.github/release/preview-notes.md`.
+Runner image `windows-11-vs2026-arm64 20261112.217`. `package` (23:57 to 00:10 UTC), `verify` (00:10 to 00:13) and `publish` all succeeded.
+
+**Inputs the workflow used.** Bootstrap `v0.1.0-preview.20261118.windows-arm64.1` and Dev SDK `v0.0.1-preview.20261118.windows.arm64.1` (content `3b251637...621f`), both from `pins.json`; this is the first time a Windows/arm64 archive was built by the workflow from those pins rather than by hand.
+
+**`package`.** `CI PASS (win-arm64)`; stage 1 and stage 2 differ byte-wise, as on the other hosts (functional equivalence is checked separately); the archive is 5,233,476 bytes, SHA-256 `2dc514a6...5f79`, package manifest `ea74bf9b...d918`, 30 files.
+**`verify`**, on a separate `windows-11-arm` runner and from the artifact only: `--version`, self `doctor` with the manifest pin, a wrong pin refused, a real GitHub `sdk acquire`, then C and C++ `new`, `build`, `test`, `run` and a warm build, all `exit=0`; cold 3 and warm 0 commands for both projects, project lock `2e3b7014...376c`.
+The executable (`6cafc190...fc34`) is a PE with machine `0xAA64` importing only `api-ms-win-core-synch-l1-2-0.dll` and `kernel32.dll`, equal to the `allowed_imports` pin.
+
+**Approval.** `publish` entered `waiting` on the `release` environment after `package` and `verify` had succeeded, and the approval is recorded as `approved` by `webos21` with the comment `OK`. The state before approval and the person who gave it are therefore both in the record, unlike the [2026-11-11 dry run](#release-workflow-2026-11-11), whose approval author is not known.
+
+**Draft.** The draft `v0.1.0-preview.20261119.windows-arm64.92` was a prerelease at `d72a2a5` with exactly the archive and `SHA256SUMS-windows-aarch64`. The downloaded archive and sums file are byte-identical to the `package` job's artifacts and the sums file verifies. The notes carry the real digest, size and commit with no leftover token. The archive was extracted and its `crt-cli.exe` equals the executable digest of `release.json`; the PE header read directly (not through `llvm-readobj`) gives `0xaa64`. No tag existed.
+The draft was then deleted; the nine published CLI Previews remain and no `windows-arm64.92` tag exists.
+
+**Not covered.** A real publication by the workflow (`dry_run: false`) for `win-arm64`, the owner's offline signature of such an archive and the signature replay on it, and replacing the hand-built Preview in `pins.json` and in crt's `sdk-pins.json` (each a reviewed change in both repositories). The rehearsal's archive was not executed outside the hosted `verify` job.
+
