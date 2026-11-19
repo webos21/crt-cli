@@ -27,9 +27,10 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
 ### CI Platform Expansion
 
 - [ ] D2, cross-platform integration: add hosted macOS/arm64 and Windows/x64 jobs to `integration.yml` that run the native Port and
-  oracle suites with their own pinned host-tools bundles. Resume after D1 and the per-host bundles; each host needs its own acceptance record.
-- [ ] Windows/arm64 under that policy: the leg is added, pinned and hosted-qualified (checked sub-items below); open: its `release.yml` rehearsal and a
-  workflow-built Preview.
+  oracle suites with their own pinned host-tools bundles. Blocked on CRT publishing those bundles ([crt#9](https://github.com/webos21/crt/issues/9), requested 2026-11-19;
+  only the two Linux bundles are published); each host needs its own acceptance record.
+- [ ] Windows/arm64 under that policy: the leg is added, pinned, hosted-qualified and its `release.yml` rehearsal passed (checked sub-items below); open: a
+  workflow-built, published and signed Preview.
   - [x] Wire `win-arm64` into `ci_bootstrap.py`, `ci_release.py`, `release.yml` and their tests; prepare and replay a local SDK and CLI candidate
     ([record](docs/acceptance/ci_acceptance.md#windowsarm64-host-wiring-and-local-candidate-preflight-2026-11-17)).
   - [x] CRT: Windows/arm64 rows in `sdk-integration.yml` and `sdk-release.yml`; Dev SDK `v0.0.1-preview.20261118.windows.arm64.1` published and signed.
@@ -38,9 +39,11 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
     ([record](docs/acceptance/ci_acceptance.md#hosted-windows-11-arm-result-of-the-win-arm64-pins-2026-11-18)).
   - [x] CRT: `windows-aarch64` pinned in `.github/ci/sdk-pins.json`, `cli_preview: none` and the `bootstrap` marker removed in one reviewed change (crt pull request 5); the consumer smoke by this
     Preview ran on `windows-11-arm` ([crt record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#hosted-windowsarm64-consumer-smoke-by-the-pinned-cli-s7-steps-4-5-2026-11-18)).
-  - [ ] `release.yml` for `win-arm64` (this repository owns it; crt only consumes the result): a `dry_run: true` rehearsal on `windows-11-arm`, then a Preview built, published and signed by the
-    workflow with its signature replay. Until then the pinned Preview is the hand-built first one. A later pin change to a workflow-built Preview is its own reviewed change in both repositories
-    (here `pins.json`, in crt `.github/ci/sdk-pins.json`). The leg itself needs no manual `ci.yml` dispatch: it passed as a pull request and as a push to `main`.
+  - [x] `release.yml` `dry_run: true` rehearsal for `win-arm64` on `windows-11-arm`: `package`, `verify` and an approved `publish` produced a verified draft whose archive equals the
+    workflow artifact and whose executable is an ARM64 PE ([record](docs/acceptance/ci_acceptance.md#windowsarm64-releaseyml-rehearsal-2026-11-19)); the draft was deleted.
+  - [ ] A Preview built, published and signed by the workflow for `win-arm64` (`dry_run: false`), with the owner's offline signature and its signature replay. Until then the pinned Preview is the hand-built
+    first one. A later pin change to a workflow-built Preview is its own reviewed change in both repositories (here `pins.json`, in crt `.github/ci/sdk-pins.json`). The leg itself needs no manual
+    `ci.yml` dispatch: it passed as a pull request and as a push to `main`.
 
 ## Planned
 
