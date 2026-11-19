@@ -12,10 +12,22 @@ import sys
 import tempfile
 
 from replay_macos_sandbox import MacSandbox
+from replay_port_linux import suite_outcome
 
 
 def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def oracle_input(path, pin):
+    """An explicitly selected interpreter is authenticated before any work or launch."""
+    if (path is None) != (pin is None):
+        raise ValueError('oracle Python requires both its path and SHA-256')
+    executable = Path(path) if path is not None else Path(sys.executable).resolve()
+    if (not executable.is_absolute() or not executable.is_file() or not os.access(executable, os.X_OK) or
+            (pin is not None and (re.fullmatch(r'[0-9a-f]{64}', pin) is None or digest(executable) != pin))):
+        raise ValueError('oracle Python executable does not match its explicit SHA-256')
+    return {'path': str(executable), 'sha256': digest(executable), 'scope': 'port-oracle-test only'}
 
 
 def inventory(root):
@@ -49,11 +61,18 @@ def main():
     parser.add_argument('--host-tools-sha256', required=True)
     parser.add_argument('--hide', type=Path, action='append', default=[])
     parser.add_argument('--resume-from', type=Path, help='reuse a retained workspace with identical product and SDK inputs')
+    parser.add_argument('--oracle-python', type=Path, help='explicit test-host interpreter for the packaged oracle only')
+    parser.add_argument('--oracle-python-sha256', help='required with --oracle-python')
     suites = ('port-recipe-test', 'archive-test', 'sdk-store-test', 'port-build-test', 'port-store-test',
               'port-project-test', 'port-command-test', 'port-oracle-test', 'native-test')
     parser.add_argument('--cases', nargs='+', choices=suites, help='run only these suites; omitted means all nine')
     args = parser.parse_args()
     assert sys.platform == 'darwin'
+    try:
+        oracle_python = oracle_input(args.oracle_python, args.oracle_python_sha256)
+    except ValueError as error:
+        parser.error(str(error))
+    oracle_prefix = Path(subprocess.check_output([oracle_python['path'], '-I', '-c', 'import sys; print(sys.prefix)'], text=True).strip())
     assert digest(args.contract) == args.contract_sha256
     assert digest(args.host_tools / 'manifest.json') == args.host_tools_sha256
     output = args.output.resolve(); output.mkdir(parents=True, exist_ok=False)
@@ -92,7 +111,7 @@ def main():
               'contract_sha256': digest(contract), 'archive_sha256': digest(archive), 'seed_sha256': digest(seed),
               'source': source_rows, 'source_sha256': hashlib.sha256(json.dumps(source_rows, separators=(',', ':')).encode()).hexdigest(),
               'external_tools': {name: {'path': str(path), 'sha256': digest(path)} for name, path in tools.items()},
-              'driver_sha256': digest(Path(__file__))}
+              'driver_sha256': digest(Path(__file__)), 'oracle_python': oracle_python}
     (output / 'inputs.json').write_text(json.dumps(inputs, ensure_ascii=False, indent=2) + '\n')
     home = scratch / 'home'; home.mkdir(exist_ok=True)
     setuid_item = scratch / 'setuid-item'
@@ -129,10 +148,10 @@ def main():
         if oracle:
             # The reference driver needs host Python/interpreters and SDK tools (including SDK make on macOS). Its result is a
             # differential oracle, not proof of the native executor's executable isolation.
-            extra = [Path('/bin'), Path('/usr/bin'), Path(sys.executable).resolve().parent,
+            extra = [Path('/bin'), Path('/usr/bin'), Path(oracle_python['path']).resolve().parent,
                      sdk / 'tools', sdk / 'bin', sdk / 'system/bin']
             # A framework Python's bin/python launcher posix_spawns this executable, outside the launcher's bin/.
-            framework_python = Path(sys.prefix) / 'Resources/Python.app/Contents/MacOS/Python'
+            framework_python = oracle_prefix / 'Resources/Python.app/Contents/MacOS/Python'
             if framework_python.is_file(): extra.append(framework_python.resolve().parent)
             text = policy.read_text()
             at = text.index('(deny process-exec')
@@ -162,6 +181,11 @@ def main():
         configured = run('configure', argv)
         record('configure against the copied public SDK', configured.returncode == 0, configured.stderr)
         assert configured.returncode == 0
+        selection = json.loads(configured.stdout)['data']['selection']
+        clean = (selection.get('allow_dirty_sdk') is False and
+                 selection.get('sdk_content_sha256') == json.loads(contract.read_bytes())['sdk_content_sha256'])
+        record('configuration selected the exact clean SDK without dirty opt-in', clean)
+        assert clean
         built = run('build', [seed, '--json', 'build', '--project', project], timeout=3600)
         record('SDK-only CLI build' if previous else 'fresh SDK-only CLI build', built.returncode == 0, built.stderr)
         assert built.returncode == 0
@@ -183,7 +207,7 @@ def main():
         record('CLI imports only the declared libSystem boundary', dependencies == ['/usr/lib/libSystem.B.dylib'], dependencies)
         env = {'CRT_CLI_TEST_PORT_PROJECT': str(project), 'CRT_CLI_TEST_PORT_HOST_TOOLS': str(bundle),
                'CRT_CLI_TEST_PORT_HOST_TOOLS_SHA256': args.host_tools_sha256,
-               'CRT_CLI_TEST_PORT_ARCHIVE': str(archive), 'CRT_CLI_TEST_PORT_PYTHON': str(Path(sys.executable).resolve()),
+               'CRT_CLI_TEST_PORT_ARCHIVE': str(archive), 'CRT_CLI_TEST_PORT_PYTHON': oracle_python['path'],
                'KEEP': '1', 'CRT_CLI_TEST_PORT_SETUID_ITEM': str(setuid_item)}
         for name in args.cases or suites:
             built_test = run('build-' + name, [cli, '--json', 'build', '--project', project, '--target', name], timeout=3600)
@@ -194,11 +218,11 @@ def main():
             if name == 'native-test': test_argv += [cli, project]
             proc = run(name, test_argv, environment=env,
                        oracle=name == 'port-oracle-test', timeout=3600)
-            matched = re.search(r'(\d+) checks passed', proc.stdout)
-            record(name, proc.returncode == 0 and matched is not None and 'skipped' not in proc.stdout,
+            outcome = suite_outcome(name, proc.returncode, proc.stdout, proc.stderr)
+            record(name, outcome['passed'],
                    proc.stdout[-2000:] + proc.stderr[-1000:])
-            outcomes[name] = {'passed': results[-1]['passed'], 'checks': int(matched.group(1)) if matched else None}
-            if proc.returncode != 0:
+            outcomes[name] = outcome
+            if not outcome['passed']:
                 break
         else:
             completed = True
@@ -228,10 +252,11 @@ def main():
     finally:
         summary = {'passed': completed and all(r['passed'] for r in results), 'cases': results, 'work': str(work),
                    'suites': args.cases or list(suites),
-                   'suite_results': outcomes, 'source_sha256': inputs['source_sha256'],
+                   'suite_results': outcomes, 'source_sha256': inputs['source_sha256'], 'allow_dirty_sdk': False,
                    'contract_sha256': digest(contract), 'host_tools_sha256': args.host_tools_sha256,
                    'archive_sha256': digest(archive), 'sdk_content_sha256': json.loads(contract.read_bytes())['sdk_content_sha256'],
-                   'isolation': sandbox.isolation, 'oracle_exception': 'host Python, shell, make and coreutils permitted only in differential test'}
+                   'isolation': sandbox.isolation, 'oracle_python': oracle_python,
+                   'oracle_exception': 'host Python, shell, make and coreutils permitted only in differential test'}
         if previous:
             summary['resumed_from'] = {'result_sha256': digest(args.resume_from), 'path': str(args.resume_from.resolve()),
                                       'product_inputs_verified_unchanged': True}

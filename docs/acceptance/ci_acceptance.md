@@ -1345,3 +1345,63 @@ The draft was then deleted; the nine published CLI Previews remain and no `windo
 
 **Not covered.** A real publication by the workflow (`dry_run: false`) for `win-arm64`, the owner's offline signature of such an archive and the signature replay on it, and replacing the hand-built Preview in `pins.json` and in crt's `sdk-pins.json` (each a reviewed change in both repositories). The rehearsal's archive was not executed outside the hosted `verify` job.
 
+## macOS/arm64 integration expansion (2026-11-19)
+
+**Candidate on `codex/macos-host-tools-integration`; not adopted on main yet.** The common integration driver and all three workflow
+matrices (`pins`, `redirect`, `ports`) now include macOS/arm64 on `macos-15`. This is build-host tooling only: no CLI product, public SDK,
+runtime ABI, recipe, root/project lock, publisher key, default or STATUS changes. Windows integration remains unimplemented.
+
+### Inputs and implementation
+
+The new `integration-pins.json` entry selects the published signed host-tools Preview `v0.1.0-hosttools.20261119.macos-aarch64.1`:
+archive 583176 bytes, SHA-256 `90c7585a92fc020e05ea69e7bcd752a4df67f060706c87f81822cb11b0c676a1`, manifest
+`27fac5efbb6f846041b471d8b0be8e8004608ef5839ce4a2ef23c62aae8e07b8`, detached signature 256 bytes, SHA-256
+`15c2af47b2de52ccf876a0d1c335ba187a92ff92de8b14c2fb52521b0ac3d451`. Producer evidence predates this pin:
+[CRT public replay](https://github.com/webos21/crt/blob/84eec172a9268f58f1d61016f08d10b9cdb368bc/docs/acceptance/host_tools_acceptance.md#macoswindows-host-tools-publication-signatures-and-macos-replay-2026-11-19).
+SDK/CLI pins are unchanged: `v0.0.1-preview.20261110.macos.1` (content `e3dc7fb1...bac8`, contract `d5a100fd...e464`) and signed bootstrap
+`v0.1.0-preview.20261117.macos-arm64.1`. The host-tools and bootstrap signatures are verified before extraction/execution; SDK archive,
+manifest, installed content and compiler contract are checked against their existing pins.
+
+macOS resolves Xcode tools via the existing CI bootstrap helper and uses Seatbelt, not Linux's LLVM/Bubblewrap/strace path. The oracle
+Python is explicitly selected and SHA-256-checked before launch, inventoried and permitted only for the differential test. macOS suite
+parsing now uses the same strict outcome helper as Linux: exactly one named positive check count, zero exit and no skip on stdout/stderr.
+The driver accepts the existing macOS ledger shape only with exactly five requested/reported passing suites, matching input pins,
+complete passing gates and `allow_dirty_sdk: false`. Earlier local receipts lacking these fields are not relabeled as integration passes.
+
+### Local verification
+
+Local macOS 27.2.1/arm64, Xcode 27.2, base CLI `2e4c4d1e8fa7df25bdebe1358587b469fce7752e` plus this tooling-only candidate:
+integration pin gate passes; 34 integration unit tests, four macOS parser/input tests, five Seatbelt policy tests, 17 bootstrap tests,
+11 pin-review tests and 21 release-driver tests pass (92 total). The workflow parses with Ruby/Psych and every run block parses with
+macOS `/bin/bash`. The public-download `redirect` entry point passes **54/54** cases with the pinned CLI and SDK.
+
+The complete public-download `ports` entry point exits 0: five input-enabled suites, **300 checks, 26/26 adapter gates**, no skip.
+Counts: build **40**, store **105**, oracle **41**, command **33**, project **81**. Both static/shared recipe tests and C/C++ consumers run.
+The real port command publishes once, reuses the exact key, then verifies the item. Cold self-build executes 21/reuses 0; warm executes 0/reuses 21.
+The CLI imports only libSystem; bare version/doctor, source/SDK/tool denial probes, no-undeclared-executable policy and unchanged original/copied
+SDK/bundle inventories pass. Only the differential oracle gets its labeled host-tool exception. The source fingerprint remains
+`b54ea39ae1bc663dcea6da1a7b72c659998ce289fc621b155642182e4402ec33`; native CLI SHA-256 is
+`eddb433570034bf169d91b7a5913201554757b0ac91c9fce8109c561e9a5d1aa`.
+
+Local oracle is Python 3.15.2 (workflow selects Python 3.12), executable SHA-256
+`6cc907e4a022fefc843bcd93954eaf5a2cbfc77a095640bfadeeed96154190c5`. Its digest is checked by both common driver and macOS adapter,
+recorded in the input/result ledgers and used for the oracle invocation. `port-inputs.json` records `input_mode: download` and
+`publisher_authentication: signature_verified` for the host-tools archive; staging's `native_validation: not_run` is not the final replay result.
+The SDK install directory, installed contract and content match the pinned public SDK; it is never rebuilt or patched by integration.
+
+Retained evidence in CRT's ignored `out/macos-hosted-integration-20261119/` includes local logs, `local-ports-r2/replay/{inputs,commands,result}.json`,
+the common `port-inputs.json`/`replay-command.json` and install logs, plus `local-redirect-r1/redirect-replay.json`.
+Port result SHA-256 `9bde4b7729386314297091df7e95bca844a7b345caa43c05329760129a9c5047`;
+redirect result SHA-256 `bd1e398e6dd30f2cf54fd50b82d6b23b26603b1f82084c542960823d9477a74d`.
+The full fresh work directories are `/private/tmp/crt-cli-integration-macos-20261119-ports-r2` and `...-redirect-r1`.
+The first ports attempt was intentionally stopped during development after review found an oracle variable-name collision; its logs and
+workspace remain, not counted as a pass. The corrected driver uses fresh `ports-r2` outputs and unchanged public assets.
+
+### Hosted qualification and adoption pending
+
+No hosted run for this candidate has been started and no pin is adopted on main yet. A reviewed branch/PR and manual `integration.yml`
+run must exercise `pins`, `redirect` and `ports` on `macos-15`; local success cannot substitute for that runner/Python/Xcode combination.
+Linux integration semantics are preserved and covered by focused regression fixtures; native Linux jobs for this candidate remain to be run.
+Full native CLI/archive/SDK-store suites and unrelated CRT/GFX/Web rebuilds were not repeated for this build-host-only change.
+The Windows integration queue, Windows/arm64 D1 failure, release publication and STATUS are unchanged.
+
