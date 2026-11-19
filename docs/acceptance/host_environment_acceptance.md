@@ -519,3 +519,73 @@ This exercises the `promotion: preview` bundle label that earlier replays could 
 Limits: Windows records process images but denies neither executables nor the network, so isolation is the restricted token, the empty environment and the relocated, inventory-checked copy. The bundle ships no private DLL, so
 the private-DLL search-path gate stays open. A job rootfs with real links still needs Developer Mode (the CLI diagnoses it). The CI pin, `integration.yml` Windows leg, Windows/arm64 and macOS consumer replays, and any STATUS change are separate; no default pin or
 lock was changed. Evidence (outside both repositories): `C:\Users\Lee\s12\` (`d1-public-r2/`, `contract/`, `d3b/`, the retained first attempts `d1-public/` and `d3/`).
+
+## Windows/arm64 published host-tools consumer replay (2026-11-19)
+
+Native Windows/ARM64 (`10.0.26300`), CRT verifier `0d9d573b93a7c9edb00af18f2d1351d9e774b6a8`, CLI source
+`2460919048c5f95211721c8d4ea4454098ffd54f`, LLVM/Clang/LLD 22.1.8. Input is the public signed
+[host-tools Preview](https://github.com/webos21/crt/releases/tag/v0.1.0-hosttools.20261119.windows-aarch64.1), archive
+`c74ad50ea5f5008d515e1aac3581fa5d73d7acba276ae990a9d3df84599706ee`, manifest
+`6f7225ac4ffafe4c5651bf025b47d7b58df0939c520dbf40b7a029aa2892b6f1`. Producer verification, public-download receipts,
+OpenSSL checks, PE audit and the 18/18 native producer replay are owned by
+[CRT acceptance](https://github.com/webos21/crt/blob/main/docs/acceptance/host_tools_acceptance.md#windowsaarch64-host-tools-public-signature-and-native-replay-2026-11-19).
+
+### Published CLI signature and D1: 31/32, qualification remains open
+
+The public [ARM64 CLI Preview](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261118.windows-arm64.1)
+archive SHA-256 is `c5ff710532c0ff9191ae373b48a8f8fe5ceb04bea70647989f9146e255e46e11`, signature
+`b72eb649d476673d784a6f4f84c090f73da9df505372cfc9005d19fa2a2da5e6`, executable
+`132c8b5ae15f66ed9dd82fcb5a425160e4d682c008ab218353b7eed30f6d3db8`. OpenSSL verifies the CLI archive with the pinned
+publisher key. This binary passes four real public-URL `fetch --publisher-key --signature --redirect-policy github-release` cases:
+the ARM64 host-tools signature reports `signature_verified`; the x64 archive's signature and a bit-changed signature fail with
+`publisher_signature_invalid`; a wrong digest fails with `digest_mismatch`. Refusals publish no output.
+
+`replay_host_environment_windows.py` completes **32 cases, 31 passed, overall failed** on that public CLI and bundle. Selection,
+immutable-write denial, shell/awk/make workflow, normal/timeout descendant cleanup, child exit, reused job, wrong pin,
+linked immutable parent, modified tool, extra payload, absent make with no host fallback, and a foreign execution host behave as expected.
+Resource pin/signature, invalid signature/key, missing signature/notice, wrong host/schema and changed notice/binary/CA checks pass.
+The local resource package was assembled with `create_bootstrap_resources.py --ca-file` from this CLI and the public Dev SDK;
+resource manifest `afc4c96bead65cd85345fe80ddefd06bf8ac9037a49e7ba2ca8bbf72105606e9`, Windows-store CA
+`3cb88031f066192761b84355b7a921d18592c1874146aab63ea355ca8fffd0a8`. Resource signatures use disposable test keys,
+separate from publisher verification. Only new fixture directories receive private/read-only ACLs.
+
+**Failed case: `stdout-limit`.** `dd if=/dev/zero bs=65536 count=160` exceeds the 90-second outer harness deadline. A focused
+restricted-token run with an outer budget of 900 seconds and the same inner 60-second limit finishes after **91.172 seconds**:
+exit **124**, inner `timed_out: true`, `output_truncated: true`, captured **8388608** bytes (SHA-256
+`2daeb1f36095b44b318410b3f4e8b5d989dcc7bb023d1426c492dab0a3053e74`). Thus the size cap is observed, but the required
+successful completion is not. Direct bundle `dd` and `dd.exe` each return 65536 bytes successfully; a small CLI shell job also
+captures exactly 65536 bytes. The CLI deliberately relays captured stdout to stderr, explaining the NUL-filled stderr log.
+No runtime fix or relaxed accepted timeout is claimed. CRT's harness now records an outer timeout as a failed case and continues
+to collect the remaining results; it also replaces x64-only host constants with the actual native host and a different-architecture rejection.
+
+### SDK-only contract reuse and D3: 7/7
+
+The initial new contract replay at `C:\w\s\contract` stops at `build-visibility`, exit 10: its original source/SDK copies under
+`C:\w\s` inherit `BUILTIN\Users` read access. The boundary probe correctly refuses to continue. Existing ACLs were not changed.
+The separately retained successful replay at `C:\Users\cmjo\w\contract` uses profile-private original inputs. Its complete source
+inventory (`aa3c462ed6e0e1b90c6c052a10254901528783f60ec1f93525f8acdc9f6ee679`) and SDK inventory
+(`7e4cb9cab5b60b2de11e8df805eead2928193237090f4a89353c50d7382c22b9`) equal the failed run's inputs. Every current `crt.json`,
+`include/` and `src/` file matches the retained export after CRLF normalization; SDK inventory and built executable are rechecked
+before reuse (`contract-reuse.json`). This is reuse of an identical successful replay, not a claim that the failed workspace passed.
+
+That replay uses only public Dev SDK `v0.0.1-preview.20261118.windows.arm64.1` (CRT `e7c763094d96ccba1b524077b24b04b876a91d5b`,
+content `3b251637845621ba28d6ba1d9c2f6a5e097f6b328f57054f7e7cb5c5eb52621f`). It builds 21 sources, cold 21 executed / 0 reused,
+warm 0 / 21, and passes native **1005**, archive **214**, SDK-store **113**, recipe **142** checks. Five environment-gated port suites
+are explicitly skipped in that aggregate; they are exercised separately below. SDK-hidden visibility/help/version/doctor pass; the binary
+imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`. Binary SHA-256:
+`b4a5c9505b3ba1706a938a1d136ce722c8bd9db3553ee05ae1e10c8b79d83532` (45767680 bytes); 596 process records, cold/warm cache receipts retained.
+
+Reproduction entry points (producer/test-host Python, never product prerequisites): `tools/replay_port_windows.py --contract-evidence
+<retained-contract> --source <cli> --crt-tools <crt-tools> --host-tools <public-extraction> --host-tools-sha256 <manifest-pin>
+--archive <zlib-1.3.1.tar.gz> --output <fresh-evidence> --sid <workspace-build-SID> --hide <original-input> ...`.
+The original workspace build SID is read from its ACL; no account or global security setting is created.
+With this exact public bundle and zlib source `9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23`, D3 passes **7/7**:
+`port-recipe-test` **142**, `port-build-test` **36**, `port-store-test` **97**, `port-project-test` **83**, `port-command-test` **33**, `port-oracle-test` **21**, plus the actual `port build zlib`. Static/shared recipe tests pass, there are no skipped D3 suites or undeclared process images,
+and SDK/bundle inventories remain unchanged. The five final bare visibility/help/version/doctor/import checks pass.
+
+Evidence is retained in CRT's ignored `out/host-tools-public-replay-20261119-winarm64/`: `d1/` (first aborted attempt), `d1-r2/`
+(completed 31/32), `stdout-limit-focused/`, `dd-probe.json`, `cli-fetch-signature.json`, `contract-reuse.json`, `d3/` and replay scripts.
+The original failed and successful contract directories named above are preserved. Windows isolation is restricted-token denial of selected
+original inputs, an empty environment, relocated inputs and job-object process accounting, not executable/network denial. Real job-rootfs links
+require Developer Mode. No private DLL is shipped; that qualification stays open. D1's large-output case, hosted integration/pin adoption and
+official/default trust remain open; no SDK bytes, public release asset, project lock, CI pin, executable in `bin/` or STATUS changed.

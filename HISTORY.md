@@ -11,6 +11,13 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-19
 
+### Qualify the public Windows/arm64 host-tools bundle and preserve the D1 failure
+
+The published ARM64 CLI verifies the host-tools archive signature and passes three public-fetch refusal controls. With the same bundle,
+D3 passes all six suites and the actual `port build zlib`, using a hash-reconciled retained SDK-only contract replay. D1 completes 31/32;
+the large-output job times out even when the outer harness budget is increased, so full D1 qualification remains open.
+[Evidence and limits](docs/acceptance/host_environment_acceptance.md#windowsarm64-published-host-tools-consumer-replay-2026-11-19).
+
 ### Replay the CLI against the published Windows/x64 host tools
 
 With the public bundle and the published CLI Preview, the D1 fail-closed controls pass 32/32 (wrong pin, linked parent, modified tool, extra payload, no `make` fallback, wrong host, resource-package tampering), and the archive's publisher signature verifies through `fetch --publisher-key`. A CLI

@@ -6,6 +6,17 @@ CLI behavior to [bootstrap acceptance](acceptance/bootstrap_acceptance.md);
 Studio GUI/editor/integration evidence to Studio acceptance. Architecture and
 work order remain in [the CLI design](design/crt_cli.md) and [TODO](../TODO.md).
 
+## Published Windows/arm64 Host-tools Qualification (2026-11-19)
+
+The public signed Windows/aarch64 host-tools Preview `v0.1.0-hosttools.20261119.windows-aarch64.1` is exercised natively with the
+published ARM64 CLI Preview and the public ARM64 Dev SDK. Publisher verification and D3's six suites plus `port build zlib` pass;
+**D1 remains unqualified (31/32)** because the 10 MiB stdout job times out. The
+[acceptance record](acceptance/host_environment_acceptance.md#windowsarm64-published-host-tools-consumer-replay-2026-11-19)
+owns exact identities, the failed isolation attempt, identical-input contract reuse and the focused timeout evidence; the
+[producer record](https://github.com/webos21/crt/blob/main/docs/acceptance/host_tools_acceptance.md#windowsaarch64-host-tools-public-signature-and-native-replay-2026-11-19)
+owns archive authentication/native validation. No format, CI/default pin, project lock or STATUS changes; this is a measured partial qualification,
+not acceptance of every D1 behavior or a promoted production combination.
+
 ## Signed public macOS host-tools D3 combination (2026-11-19)
 
 Local native replay, not CI pin promotion: CLI product/test source `c79d57c4c049ec651076fd648ad0e7b3630a638f` was self-built using the signed

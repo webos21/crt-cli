@@ -29,9 +29,10 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
 - [x] Replay the six D3 suites locally on macOS/arm64 with the signed public `20261119.macos-aarch64.1` host-tools bundle and pinned public SDK/CLI inputs
   ([acceptance](docs/acceptance/sdk_install_acceptance.md#signed-public-host-tools-d3-replay-macosarm64-2026-11-19)); hosted integration and CI pin adoption remain separate.
 - [ ] D2, cross-platform integration: add hosted macOS/arm64 and Windows/x64 jobs to `integration.yml` that run the native Port and
-  oracle suites with their own pinned host-tools bundles. CRT's macOS/arm64 and Windows/x64/arm64 Previews are published and signed
-  ([producer record](https://github.com/webos21/crt/blob/main/docs/acceptance/host_tools_acceptance.md#macoswindows-host-tools-publication-signatures-and-macos-replay-2026-11-19));
-  the local macOS D3 replay above passes. Remaining: per-host integration pins, hosted jobs and their own acceptance records, not bundle publication.
+  oracle suites with their own pinned host-tools bundles. The macOS/Windows bundles are now public and signed;
+  [Windows/arm64 local qualification](docs/acceptance/host_environment_acceptance.md#windowsarm64-published-host-tools-consumer-replay-2026-11-19)
+  leaves D1's large-output timeout open. Per-host pin adoption and hosted integration remain separate.
+- [ ] Resolve the Windows/arm64 D1 `stdout-limit` timeout against the public CLI/SDK; retain the 31/32 and focused failure receipts above.
 - [ ] Windows/arm64 under that policy: the leg is added, pinned, hosted-qualified and its `release.yml` rehearsal passed (checked sub-items below); open: a
   workflow-built, published and signed Preview.
   - [x] Wire `win-arm64` into `ci_bootstrap.py`, `ci_release.py`, `release.yml` and their tests; prepare and replay a local SDK and CLI candidate
