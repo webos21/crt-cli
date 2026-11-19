@@ -162,6 +162,9 @@ jobs:
             ${{ runner.temp }}/ports/replay/result.json
             ${{ runner.temp }}/ports/replay/inputs.json
             ${{ runner.temp }}/ports/replay/commands.json
+            ${{ runner.temp }}/ports/replay/*.stdout
+            ${{ runner.temp }}/ports/replay/*.stderr
+            ${{ runner.temp }}/ports/replay/cli-otool.txt
             ${{ runner.temp }}/ports/port-inputs.json
             ${{ runner.temp }}/ports/replay-command.json
             ${{ runner.temp }}/ports/replay.stdout

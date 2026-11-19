@@ -11,7 +11,7 @@ import subprocess
 import sys
 import tempfile
 
-from replay_macos_sandbox import MacSandbox
+from replay_macos_sandbox import MacSandbox, linker_helpers
 from replay_port_linux import suite_outcome
 
 
@@ -111,6 +111,8 @@ def main():
               'contract_sha256': digest(contract), 'archive_sha256': digest(archive), 'seed_sha256': digest(seed),
               'source': source_rows, 'source_sha256': hashlib.sha256(json.dumps(source_rows, separators=(',', ':')).encode()).hexdigest(),
               'external_tools': {name: {'path': str(path), 'sha256': digest(path)} for name, path in tools.items()},
+              'external_linker_helpers': {name: {'path': str(path), 'sha256': digest(path)}
+                                          for name, path in linker_helpers(tools['linker']).items()},
               'driver_sha256': digest(Path(__file__)), 'oracle_python': oracle_python}
     (output / 'inputs.json').write_text(json.dumps(inputs, ensure_ascii=False, indent=2) + '\n')
     home = scratch / 'home'; home.mkdir(exist_ok=True)

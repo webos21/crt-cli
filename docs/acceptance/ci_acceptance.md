@@ -1397,11 +1397,20 @@ The full fresh work directories are `/private/tmp/crt-cli-integration-macos-2026
 The first ports attempt was intentionally stopped during development after review found an oracle variable-name collision; its logs and
 workspace remain, not counted as a pass. The corrected driver uses fresh `ports-r2` outputs and unchanged public assets.
 
-### Hosted qualification and adoption pending
+### First hosted attempt and linker-dispatch correction
 
-No hosted run for this candidate has been started and no pin is adopted on main yet. A reviewed branch/PR and manual `integration.yml`
-run must exercise `pins`, `redirect` and `ports` on `macos-15`; local success cannot substitute for that runner/Python/Xcode combination.
-Linux integration semantics are preserved and covered by focused regression fixtures; native Linux jobs for this candidate remain to be run.
-Full native CLI/archive/SDK-store suites and unrelated CRT/GFX/Web rebuilds were not repeated for this build-host-only change.
-The Windows integration queue, Windows/arm64 D1 failure, release publication and STATUS are unchanged.
+Draft [PR #30](https://github.com/webos21/crt-cli/pull/30) at `cbba4792b6eb6506b4dc4ddcd7a9047fc3c61b5b` has a passing
+[native CI run](https://github.com/webos21/crt-cli/actions/runs/44463523022): all six native rows and `CI gate` succeed.
+The first manual [integration run](https://github.com/webos21/crt-cli/actions/runs/44463529315) passes all three hosts' `pins` and
+`redirect` jobs and both Linux `ports` jobs, but fails macOS `ports` before any port suite runs (2/4 replay gates, zero suites).
+Its retained artifact is `ports-macos-arm64-cbba4792b6eb6506b4dc4ddcd7a9047fc3c61b5b`, ID `14501171915`.
+The clean SDK configure succeeds; fresh CLI linking reports `can't exec ld64`. The hosted Xcode 16.4/macOS SDK 15.5 linker dispatches
+to the sibling `ld64`, unlike local Xcode 27.2. The exact-executable Seatbelt policy omitted that helper.
+
+The correction permits only an existing executable `ld64` next to the selected canonical linker, not the Xcode directory. It records
+the helper path/digest in `inputs.json`; focused policy fixtures cover its absence, non-executable state and exact-file permission.
+The artifact now also retains individual step stdout/stderr and the CLI import audit for diagnosis. A hosted rerun is still required;
+the first failure is not erased or relabeled as a pass, and no pin is adopted on main. The PR remains unmerged.
+The Windows integration queue, Windows/arm64 D1 failure, release publication and STATUS are unchanged; unrelated CRT/GFX/Web stages
+are not gates for this build-host correction.
 
