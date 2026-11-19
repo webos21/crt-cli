@@ -11,6 +11,16 @@ the [request/handoff record](crt_host_tools_publication_request.md#macoswindows-
 prerequisite from consumer adoption. The per-host records below retain their exact scope: closing the request neither promotes integration
 pins nor closes hosted jobs, Windows/arm64 D1 (31/32), or private-DLL qualification. No format or runtime contract changes here.
 
+## Windows/x64 hosted redirect qualification (2026-11-19)
+
+At CLI `c97d2a73ee25c98e9dda6df18e60c7e93b176098`, the existing signed Windows Preview/Dev SDK combination passes the shared restricted
+redirect replay natively and on `windows-2022`: 54/54 cases. Hosted Linux/x64, Linux/arm64 and macOS/arm64 also pass the same 54-case result
+gate. [Acceptance](acceptance/ci_acceptance.md#windowsx64-hosted-redirect-expansion-2026-11-19) owns exact public input identities, controlled
+origins, scope and artifact hashes. Manual `scope=redirect` checks only pins/redirects; default and scheduled port execution stay enabled.
+No shared producer/consumer schema, ABI, SDK/publisher/host-tools pin or root/project lock changes; this is CI wiring around already
+implemented public CLI commands. Main adoption remains pending at this branch-qualification stage. Producer handoff documentation is
+synchronized independently at CRT `dae4d141abe56d1f8fe5b298aff657df60cbdffd`; no producer runtime or SDK baseline is moved.
+
 ## Windows/x64 hosted integration candidate (2026-11-19)
 
 `codex/windows-hosted-integration` extends the existing public-input CI driver with a fresh Windows restricted-token adapter and a

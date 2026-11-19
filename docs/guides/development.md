@@ -286,7 +286,7 @@ daily/manual `integration.yml`, with independently pinned public CRT host tools.
 Linux is already qualified; macOS wiring and its exact hosted acceptance are
 recorded [separately](../acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19).
 The [Windows/x64 record](../acceptance/ci_acceptance.md#windowsx64-hosted-port-integration-2026-11-19) qualifies the five hosted port suites;
-Windows redirect integration remains separate.
+Its [Windows redirect replay](../acceptance/ci_acceptance.md#windowsx64-hosted-redirect-expansion-2026-11-19) separately qualifies the 54 controlled redirect cases.
 
 Run the same driver on a native host with LLVM installed (it creates `--work`, which must be new or empty, and sets
 `HOME` inside it, so the default SDK store is untouched):
@@ -440,12 +440,20 @@ CLI runs without those copies. Actual CRT symlink creation is a prerequisite; a 
 any system setting or substituting marker links. Every child image is accounted for, and unknown/undeclared images fail. This is not
 network/executable denial. Only the oracle may execute the copied, digest-checked Python and SDK reference tools.
 
-`pins`, `redirect` and `ports` have host-specific jobs; Windows adds `pins` and `ports`, with redirect still unconnected. Integration
+`pins`, `redirect` and `ports` have host-specific jobs on Linux/x64, Linux/arm64, macOS/arm64 and Windows/x64. Integration
 remains a read-only daily/manual workflow, not a required PR check or a release
 publisher. Uploads retain per-call commands, input identities, results and logs.
 See [macOS acceptance](../acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19)
 for local versus hosted results and pin adoption status, and [Windows acceptance](../acceptance/ci_acceptance.md#windowsx64-hosted-port-integration-2026-11-19)
 for its 270 checks, 29 gates and retained failure. Windows/arm64 D1 remains separate.
+
+For a redirect-only change, `gh workflow run integration.yml --ref <review-branch> -f scope=redirect` runs the four pin and four redirect
+jobs. Port jobs are intentionally outside that manual scope; a green scoped run does not mean those suites executed. The default
+`scope=all` and every scheduled event run the complete matrices. No schedule is added or changed by selecting a manual scope.
+The redirect driver accepts only 54 distinct passing cases, a matching selected CLI digest and normal CLI exit statuses (0/1/2).
+It records stdout/stderr, including partial logs on timeout; test PKI uses relative OpenSSL paths and an explicit local config so Unicode
+work paths and vendor configuration defaults do not change the cases. The controlled origins use exact pinned public SDK bytes with
+a cleared environment and private home; this is a separate boundary from the port adapter's restricted-token/Seatbelt/Bubblewrap policy.
 
 ### Repository, Project and CI Pins
 

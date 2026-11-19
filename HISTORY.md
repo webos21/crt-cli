@@ -11,6 +11,10 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-19
 
+### Qualify Windows restricted-redirect hosted integration
+
+Enable the existing common redirect replay on Windows and add its `windows-2022` row. The new complete-result gate rejects partial/duplicate/skipped/failed cases, foreign CLI identities and crashes; timeout logs are retained. Local replay passes 54/54, focused fixtures 43/43. At `c97d2a7`, the hosted `scope=redirect` run passes pins and all 54 cases on each of four native hosts; downloaded results match freshly authenticated bootstrap packages. Port jobs are intentionally outside that manual scope and retain their unchanged prior evidence; default/scheduled runs keep the full matrices. CRT's stale handoff item is separately synchronized at `dae4d14`, documentation CI passing. [Evidence and scope](docs/acceptance/ci_acceptance.md#windowsx64-hosted-redirect-expansion-2026-11-19).
+
 ### Adopt Windows/x64 hosted integration on main
 
 Merge the latest main into the validation branch without conflicts, then fast-forward and push main to `f06a036`. It differs from fully qualified `9a417fc` only in documentation. Main CI [44493533992](https://github.com/webos21/crt-cli/actions/runs/44493533992) passes all six native rows and `CI gate`, in addition to the previously verified 11-job integration. Check the D2 macOS/Windows hosted Port/oracle item, retain its checked sub-items, and keep the first scheduled Windows run as a separate open observation. Update the adoption ledger and documentation index; no runtime, pin, SDK, lock, release or STATUS changes in this completion record. [Adoption evidence](docs/acceptance/ci_acceptance.md#main-adoption-of-windows-integration).

@@ -6,9 +6,10 @@ procedure are in the [development guide](../guides/development.md#continuous-int
 
 ## Current Hosted Coverage (2026-11-11)
 
-Integration update 2026-11-19: the [Windows/x64 adoption record](#windowsx64-hosted-port-integration-2026-11-19) now covers 11 daily/manual
-jobs across Linux/x64, Linux/arm64, macOS/arm64 and Windows/x64, with five executed port suites on every host. Its main/first-scheduled-run
-status is tracked separately from the original required-CI evidence below; required native coverage remains six rows across five host pairs.
+Integration update 2026-11-19: the [Windows/x64 port adoption record](#windowsx64-hosted-port-integration-2026-11-19) qualifies the 11-job
+configuration across Linux/x64, Linux/arm64, macOS/arm64 and Windows/x64, with five executed port suites on every host. The subsequent
+[redirect expansion](#windowsx64-hosted-redirect-expansion-2026-11-19) adds the Windows redirect row and records its scoped verification.
+Main/first-scheduled-run status stays separate from the original required-CI evidence below; required native coverage remains six rows across five host pairs.
 
 Updated 2026-11-18: the checked-in workflow has six required jobs across five host/architecture pairs; the Windows/arm64 leg (`windows-11-arm`) was added that day and has
 [its own hosted record](#hosted-windows-11-arm-result-of-the-win-arm64-pins-2026-11-18). The rest of this section is the 2026-11-11 state of the other four pairs. The latest documented run,
@@ -1632,7 +1633,7 @@ setting change is needed for this adoption.
 
 ## Windows/x64 hosted redirect expansion (2026-11-19)
 
-**Candidate on `codex/windows-redirect-integration`; hosted verification pending.** The existing common redirect replay already contains
+**Hosted-qualified on `codex/windows-redirect-integration`; main adoption pending.** The existing common redirect replay already contains
 Windows environment and hidden-process handling. Removing the Windows dispatch refusal enables its real native **54/54** cases with the
 pinned public Windows Preview and SDK; no CLI product, SDK, archive pin, publisher key, host-tools input or runtime contract changes.
 The historical `replay_redirect_linux.py` filename is retained for existing callers; its documented native scope now includes Windows.
@@ -1671,4 +1672,27 @@ Reproduce: `python tools/ci_integration.py redirect --host win-x64 --work <fresh
 Producer documentation synchronization is separately committed as CRT `dae4d141abe56d1f8fe5b298aff657df60cbdffd`, with
 [its documentation CI](https://github.com/webos21/crt/actions/runs/44504270139) passing. It links the prior observed hosted handoff rather
 than claiming a new producer replay. The first scheduled Windows run, ARM64 D1 and private-DLL qualification remain separate.
+
+### Hosted redirect qualification
+
+[Integration 44505928361](https://github.com/webos21/crt-cli/actions/runs/44505928361), `scope=redirect`, runs exact consumer commit
+`c97d2a73ee25c98e9dda6df18e60c7e93b176098`. All four `pins` jobs pass the 43 focused tests and pin validation. All four native `redirect`
+jobs pass **54/54 cases** and record **48 CLI invocations** each. The two port job records (Windows plus the Linux/macOS matrix) are
+intentionally skipped by this requested scope; this is not a new full 12-job/port-suite acceptance run.
+
+Downloaded artifacts independently pass `judge_redirect_result` and match executable hashes re-derived from newly downloaded,
+signature-authenticated public bootstrap packages. Foreign-host executables are hashed, never run on this Windows reviewer machine.
+
+| Native hosted replay | Cases | Result SHA-256 |
+| --- | ---: | --- |
+| Linux/x64 | 54/54 | `5ad1691374fdfb60076128a2937e05455f3c3421a39c9351f19a5cc7cd25c3aa` |
+| Linux/arm64 | 54/54 | `266681c8da6718fc5b5e27c256b84f8b93e04e7fcada13acb73917bbee812ea6` |
+| macOS/arm64 | 54/54 | `0118de9ccbb19149d8c41599bb57b5c8ed41864a56cc49def707eea29eadadf6` |
+| Windows/x64 | 54/54 | `fe529b6a3801c262f6fcdf30eaf670bb48746e959a607e4e2b18a99c74d19196` |
+
+The Windows result uses the same `feb97791...84df1` executable as both local runs. Artifact ID `14518234349`, ZIP digest reported by GitHub
+`f188ba330b09e1bb6a555bba6a3ee3f0f4cb64a7447a17707fa0c118fa6cb493`. Evidence is retained in CLI ignored
+`out/redirect-win-x64-20261119/`: `hosted/`, `hosted-run.json`, `hosted-artifacts.json`, `hosted-verification.json`, `check_hosted.py` and
+identity-only bootstrap downloads. Product/test C++ sources, manifests, bootstrap/SDK/host-tools pins and port execution are unchanged from
+adopted `858c04b`; the earlier qualified port artifacts remain their evidence. Main adoption is recorded separately after merging.
 
