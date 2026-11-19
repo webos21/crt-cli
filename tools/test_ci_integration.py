@@ -85,7 +85,7 @@ class PinTest(unittest.TestCase):
         recipe = json.loads((Path(__file__).resolve().parent.parent / 'src/test/data/zlib.recipe.json').read_text())
         self.assertEqual(pins['zlib_source']['sha256'], recipe['source']['sha256'])
         for host, os_name, arch in (('linux-x64', 'linux', 'x86_64'), ('linux-arm64', 'linux', 'aarch64'),
-                                    ('macos-arm64', 'macos', 'aarch64')):
+                                    ('macos-arm64', 'macos', 'aarch64'), ('win-x64', 'windows', 'x86_64')):
             with self.subTest(host=host):
                 zlib, tools = load_pins(root, host)
                 self.assertTrue(tools['url'].startswith('https://github.com/webos21/crt/releases/download/' + tools['version'] + '/'))
@@ -96,9 +96,10 @@ class PinTest(unittest.TestCase):
 class NativeAdapterTest(unittest.TestCase):
     def test_native_host_detection_and_explicitly_unsupported_hosts(self):
         for system, machine, expected in (('linux', 'x86_64', 'linux-x64'), ('linux', 'aarch64', 'linux-arm64'),
-                                           ('darwin', 'arm64', 'macos-arm64'), ('darwin', 'aarch64', 'macos-arm64')):
+                                           ('darwin', 'arm64', 'macos-arm64'), ('darwin', 'aarch64', 'macos-arm64'),
+                                           ('win32', 'AMD64', 'win-x64'), ('win32', 'x86_64', 'win-x64')):
             self.assertEqual(host_key(system, machine), expected)
-        for system, machine in (('darwin', 'x86_64'), ('win32', 'AMD64'), ('linux', 'riscv64')):
+        for system, machine in (('darwin', 'x86_64'), ('win32', 'ARM64'), ('linux', 'riscv64')):
             with self.subTest(system=system, machine=machine), self.assertRaisesRegex(IntegrationError, 'unsupported'):
                 host_key(system, machine)
 
@@ -122,8 +123,19 @@ class NativeAdapterTest(unittest.TestCase):
         with patch('ci_integration.macos_tool_paths', side_effect=CiError('xcrun missing')):
             with self.assertRaisesRegex(IntegrationError, 'xcrun missing'):
                 port_adapter_command('macos-arm64', None)
-        with self.assertRaisesRegex(IntegrationError, 'unsupported'):
+        with self.assertRaisesRegex(IntegrationError, 'not wired'):
             port_adapter_command('win-x64', None)
+
+    def test_windows_unwired_replays_fail_before_download_or_work_creation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory) / 'unwired'
+            for command in ('redirect', 'ports'):
+                with self.subTest(command=command), patch('ci_integration.host_key', return_value='win-x64'), \
+                        patch('ci_integration.download') as get, patch('sys.argv',
+                        ['ci_integration.py', command, '--host', 'win-x64', '--work', str(work)]):
+                    self.assertEqual(main(), 1)
+                get.assert_not_called()
+                self.assertFalse(work.exists())
 
     def test_workflow_selects_all_three_hosts_and_keeps_native_prerequisites_separate(self):
         root = Path(__file__).resolve().parent.parent
@@ -263,6 +275,16 @@ class PortDriverTest(unittest.TestCase):
             result = prepare_port_inputs(self.dir / 'macos', 'macos-arm64', self.zlib, tools, publisher=publisher)
             with self.assertRaisesRegex(IntegrationError, 'host/version'):
                 prepare_port_inputs(self.dir / 'wrong-linux', 'linux-arm64', self.zlib, tools, publisher=publisher)
+        self.assertEqual(result['publisher_authentication'], 'signature_verified')
+        self.assertEqual(result['native_validation'], 'not_run')
+
+    def test_windows_preview_requires_its_own_manifest_host_and_signature(self):
+        self.tools = self.bundle(manifest=dict(self.manifest, promotion='preview', host={'os': 'windows', 'arch': 'x86_64'}))
+        publisher, tools = self.signed()
+        with patch('ci_integration.download', side_effect=lambda url, path: shutil.copyfile(self.inputs / Path(path).name, path)):
+            result = prepare_port_inputs(self.dir / 'windows', 'win-x64', self.zlib, tools, publisher=publisher)
+            with self.assertRaisesRegex(IntegrationError, 'host/version'):
+                prepare_port_inputs(self.dir / 'wrong-linux', 'linux-x64', self.zlib, tools, publisher=publisher)
         self.assertEqual(result['publisher_authentication'], 'signature_verified')
         self.assertEqual(result['native_validation'], 'not_run')
 

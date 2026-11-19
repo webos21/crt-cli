@@ -9,6 +9,23 @@
     "size": 1512791
   },
   "hosts": {
+    "win-x64": {
+      "host_tools": {
+        "url": "https://github.com/webos21/crt/releases/download/v0.1.0-hosttools.20261119.windows-x86_64.1/crt-v0.1.0-hosttools.20261119.windows-x86_64.1.tar.xz",
+        "name": "crt-v0.1.0-hosttools.20261119.windows-x86_64.1.tar.xz",
+        "size": 784724,
+        "sha256": "bd65a2b8d1a5b7865110233bb47a1d13ea56724ad76593333cc349bb0980a210",
+        "manifest_sha256": "cd6cb75e91b8f9202cda82876de9898e19fb4aeb01be981ebcfde9eabb7b7e00",
+        "version": "v0.1.0-hosttools.20261119.windows-x86_64.1",
+        "source": "webos21/crt release record (producer 56fc914ff4029a5ef0db8d7050418725a9dafc4b, clean tree, promotion preview); native public-byte replay recorded at CRT 0d9d573b",
+        "signature": {
+          "url": "https://github.com/webos21/crt/releases/download/v0.1.0-hosttools.20261119.windows-x86_64.1/crt-v0.1.0-hosttools.20261119.windows-x86_64.1.tar.xz.sig",
+          "name": "crt-v0.1.0-hosttools.20261119.windows-x86_64.1.tar.xz.sig",
+          "size": 256,
+          "sha256": "72f522291148d0e5fae696d2783eb32153b4513c8c45498d557ed60326896695"
+        }
+      }
+    },
     "linux-x64": {
       "host_tools": {
         "url": "https://github.com/webos21/crt/releases/download/v0.1.0-hosttools.20261116.linux-x86_64.1/crt-v0.1.0-hosttools.20261116.linux-x86_64.1.tar.xz",

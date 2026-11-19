@@ -37,6 +37,9 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
 - [ ] D2, cross-platform integration: add hosted macOS/arm64 and Windows/x64 jobs to `integration.yml` that run the native Port and
   oracle suites with reviewed integration pins and host-specific acceptance, including the hosted Windows symlink prerequisite.
   Producer publication is complete; native receipts above do not substitute for these jobs.
+  - [x] Add and re-derive the Windows/x64 public host-tools archive, manifest and detached-signature pins;
+    [common input preparation and native tool replay](docs/acceptance/ci_acceptance.md#windowsx64-public-host-tools-integration-pin-2026-11-19) pass.
+    Windows hosted adapter/job wiring, its symlink prerequisite and five-suite qualification remain open.
   - [x] macOS/arm64 implementation and local preflight on `codex/macos-host-tools-integration`
     ([candidate evidence](docs/acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19)); not adopted on main yet.
   - [x] macOS/arm64 hosted `pins`/`redirect`/`ports` verification on the PR branch

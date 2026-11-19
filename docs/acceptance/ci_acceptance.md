@@ -1461,3 +1461,73 @@ The macOS row reaches the main daily schedule only after reviewed adoption. Wind
 private-DLL qualification, release publication and STATUS are unchanged. Unrelated CRT/GFX/Web stages are not gates for this
 build-host change.
 
+## Windows/x64 public host-tools integration pin (2026-11-19)
+
+**Input pin and native preparation qualified; hosted Windows integration remains open.** Both checkouts were clean and equal to
+their fetched `origin/main` before this increment: CLI `b9168c514c3b7244458413467b8fa1c4312643fa`, CRT
+`bc195a1915b6ee21ff98957af9eb2003cf334e6e`. Host: native Windows/x64, OS build `10.0.26100`, test-host Python 3.11.9.
+The preceding [Windows public-byte D1/D3 record](host_environment_acceptance.md#windowsx64-published-host-tools-consumer-replay-2026-11-19)
+already qualifies this artifact's consumer behavior. No CLI product or SDK bytes changed here; those suites were not rebuilt or relabeled as new runs.
+
+The public [host-tools Preview](https://github.com/webos21/crt/releases/tag/v0.1.0-hosttools.20261119.windows-x86_64.1) is not a draft.
+Its annotated tag resolves to `56fc914ff4029a5ef0db8d7050418725a9dafc4b`, matching the record's clean packer and assembler.
+Four assets were downloaded afresh without credentials and agree with GitHub's asset digests, the checksum line and the record's `consumer_pin`:
+
+| Asset | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `crt-v0.1.0-hosttools.20261119.windows-x86_64.1.tar.xz` | 784724 | `bd65a2b8d1a5b7865110233bb47a1d13ea56724ad76593333cc349bb0980a210` |
+| Archive `.sig` | 256 | `72f522291148d0e5fae696d2783eb32153b4513c8c45498d557ed60326896695` |
+| `host-tools-release-record-windows-x86_64.json` | 3446 | `5f7b05861e9d0c2e2d7808a955224317d6a5c054f3123f7005546609bd6b4841` |
+| `SHA256SUMS-host-tools-windows-x86_64` | 121 | `f7aaceb3305b2d2d4c32b240178957ba4029ae54328fdd2d16ad36316c24cf9b` |
+
+The manifest SHA-256 is `cd6cb75e91b8f9202cda82876de9898e19fb4aeb01be981ebcfde9eabb7b7e00`, content
+`dc106db47ed8bcbb56bdd6da0415dce527653fcb42b0c54bdc1402dca74c35fe`, host `windows/x86_64`, promotion `preview`.
+The manifest and release record agree on assembler identity and source SDK: public Dev SDK `v0.0.1-preview.20261110.windows.1`,
+source `b31276a6acccf0a89731f7bb0aecbdcdc9b45cda`, content `5bb55372ec10e3cfa24c84de981a7130f56aeb57ef0d43d5da22a65036dec7ef`,
+release manifest `b0fca4c81d29b8eee28e0d9fb7d6e26950b094a8be4f2c091e43922366a46976`, matching the existing SDK pin.
+The [immutable producer record](https://github.com/webos21/crt/blob/0d9d573b93a7c9edb00af18f2d1351d9e774b6a8/docs/acceptance/host_tools_acceptance.md#windowsx86_64-host-tools-public-signature-and-native-replay-2026-11-19)
+owns the earlier independent signature/native-image audit.
+
+`integration-pins.json` now includes `win-x64`, including its detached-signature URL, size and digest. The existing pinned publisher key
+has SPKI SHA-256 `59218576956e493476bc36f7385d8e01a03ff9b92946a531b013ad3937d43fa2`; the stdlib RSA-PSS verifier authenticates
+the downloaded archive before extraction. The release record and checksum are unsigned supporting metadata; this is not Authenticode or
+a new independent key-distribution check. The existing signing-policy trust limit still applies.
+
+The common driver supports `pins --host win-x64` and `ports --host win-x64 --prepare-only`. Preparation downloads the unchanged pinned zlib,
+archive and signature, validates size/digest/signature, and checks manifest host/version, clean assembler and Preview promotion.
+Its receipt reports `publisher_authentication: signature_verified`, `native_validation: not_run` and no `passed` field.
+Without `--prepare-only`, Windows `ports` fails with `Windows port integration is not wired`; Windows `redirect` likewise fails before
+creating work or downloading inputs. No Windows row was added to `integration.yml`.
+
+Validation:
+
+- Focused `test_ci_integration.py`: **36 tests pass, no skips**, including Windows identity, signed preparation, wrong host and unwired-command refusal.
+- Six controls using the public input bytes pass: wrong archive digest, wrong signature digest, a bit-changed signature with a matching digest
+  (cryptographic refusal), missing signature, wrong manifest digest and wrong host. None publishes a prepared receipt or final bundle.
+- The exact prepared bundle passes `replay_host_tools_windows.py` **18/18**, including full inventory/native-image validation and execution of
+  every declared executable/alias, shell, awk, GNU make and basic applets from a relocated space/Hangul path with empty `PATH`.
+  This producer-style replay does not deny reads of original sources or network access and is separate from hosted port-suite acceptance.
+
+The first online preparation failed at `host-tools.extracting` -> `host-tools` rename with `WinError 5` (access denied), after extraction.
+Its staging is retained without a success receipt. A later diagnostic could rename that staging and restore its original name without
+changing attributes or ACLs. A fresh `online-prepare-r2` succeeds with identical pins; the cause of the first failure is unconfirmed.
+No retry or security-setting change was added to hide it.
+
+Reproduction (Python is a test-host dependency; substitute fresh output paths):
+
+```text
+python -m unittest discover -s tools -p test_ci_integration.py
+python tools/ci_integration.py pins --host win-x64
+python tools/ci_integration.py ports --host win-x64 --prepare-only --work <fresh-work>
+python <crt-checkout>/tools/replay_host_tools_windows.py --bundle <fresh-work>/host-tools/crt-host-tools-windows-x86_64 --output <fresh-native-evidence>
+```
+
+Retained evidence: CLI ignored `out/win-host-tools-pin-20261119/`, including `review_public.py`, `release-downloads/`, `pin-review.json`,
+`online-prepare/` (failed staging), `online-prepare-r2/port-inputs.json`, `native-replay/host-tools-replay.json` and logs.
+`pin-review.json` SHA-256: `cbdc805ec4cbd09a4289a94dbf8879d12d262fa057a41de72a7737548b029df0`;
+prepared receipt: `5818c95f5681ec947cc1e90de1f94f1024fb3055127427b3d820306e7e40ce6d`.
+Native tool receipt: `4ad149e9d3938b4697a54bd61069e9b9db9d7013641a1e46093f3cc22d6a3913`;
+`preparation-attempts.json` records the failed and successful preparation attempts separately.
+Windows hosted adapter/job wiring, real-symlink prerequisite and five-suite result qualification remain separate D2 work;
+Windows/arm64 D1, private DLLs, SDK/bootstrap pins, root/project locks, release publication and STATUS are unchanged.
+

@@ -7,6 +7,8 @@ Subcommands:
   pins      check the pin file only (what a scheduled run needs to know before spending runner time)
   redirect  restricted-redirect replay: the pinned published CLI against the pinned public SDK bytes
   ports     the five input-gated port suites through the pinned host tools and zlib source (fails while unpinned)
+
+Windows/x64 currently supports pins and ports --prepare-only; native adapter/workflow wiring remains separate.
 """
 import argparse
 import hashlib
@@ -39,7 +41,8 @@ ZLIB_FIELDS = ('url', 'name', 'sha256', 'size')
 PORT_SUITES = ('port-build-test', 'port-store-test', 'port-oracle-test', 'port-command-test', 'port-project-test')
 HOST_TARGETS = {'linux-x64': {'os': 'linux', 'arch': 'x86_64'},
                 'linux-arm64': {'os': 'linux', 'arch': 'aarch64'},
-                'macos-arm64': {'os': 'macos', 'arch': 'aarch64'}}
+                'macos-arm64': {'os': 'macos', 'arch': 'aarch64'},
+                'win-x64': {'os': 'windows', 'arch': 'x86_64'}}
 SIGNATURE_FIELDS = ('url', 'name', 'sha256', 'size')
 MAX_SIGNATURE_BYTES = 1024
 MAX_HOST_TOOL_BYTES = 512 * 1024 * 1024
@@ -135,6 +138,8 @@ def host_key(system=None, machine=None):
         return 'linux-arm64'
     if system == 'darwin' and machine in ('aarch64', 'arm64'):
         return 'macos-arm64'
+    if system == 'win32' and machine in ('x86_64', 'amd64'):
+        return 'win-x64'
     raise IntegrationError('unsupported integration host: %s/%s' % (system, machine))
 
 
@@ -217,6 +222,8 @@ def sdk_release_dir(sdk, work):
 
 
 def command_redirect(args, host):
+    if host == 'win-x64':
+        raise IntegrationError('Windows redirect integration is not wired; only pins and ports --prepare-only are available')
     work = Path(args.work).resolve()
     work.mkdir(parents=True, exist_ok=False)
     exe, sdk = published_cli(host, work)
@@ -231,6 +238,8 @@ def command_redirect(args, host):
 
 def port_adapter_command(host, llvm_bin):
     """Native tools and isolation adapter; input/signature/result gates stay common."""
+    if host == 'win-x64':
+        raise IntegrationError('Windows port integration is not wired; use ports --prepare-only for input verification')
     if host == 'macos-arm64':
         try:
             paths = macos_tool_paths()

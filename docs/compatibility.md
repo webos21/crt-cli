@@ -11,6 +11,18 @@ the [request/handoff record](crt_host_tools_publication_request.md#macoswindows-
 prerequisite from consumer adoption. The per-host records below retain their exact scope: closing the request neither promotes integration
 pins nor closes hosted jobs, Windows/arm64 D1 (31/32), or private-DLL qualification. No format or runtime contract changes here.
 
+## Windows/x64 integration input pin (2026-11-19)
+
+The consumer adds the existing signed public `v0.1.0-hosttools.20261119.windows-x86_64.1` bundle to `integration-pins.json` after
+producer publication and the [native D1/D3 consumer qualification](acceptance/host_environment_acceptance.md#windowsx64-published-host-tools-consumer-replay-2026-11-19).
+At consumer base `b9168c514c3b7244458413467b8fa1c4312643fa` and producer checkout `bc195a1915b6ee21ff98957af9eb2003cf334e6e`,
+the public record and annotated tag identify clean packer/assembler `56fc914ff4029a5ef0db8d7050418725a9dafc4b`.
+The existing publisher key authenticates the exact archive before extraction. Host-tools format 1, Preview promotion, SDK/bootstrap pins,
+publisher key, recipe schema and project locks stay unchanged. This increment qualifies pin checking and input preparation plus a native
+tool replay; Windows adapter/workflow wiring and hosted five-suite acceptance remain open. The
+[CI acceptance record](acceptance/ci_acceptance.md#windowsx64-public-host-tools-integration-pin-2026-11-19) owns input hashes,
+refusal controls, the retained first preparation failure and reproduction commands. No new producer interface or runtime change is adopted.
+
 ## macOS integration pin candidate (2026-11-19)
 
 `codex/macos-host-tools-integration` adds the existing published signed `v0.1.0-hosttools.20261119.macos-aarch64.1` bundle to
