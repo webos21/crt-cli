@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Native replay (Linux and macOS) of the restricted HTTPS redirect policy (fetch and sdk acquire).
+"""Native replay (Linux, macOS and Windows) of the restricted HTTPS redirect policy (fetch and sdk acquire).
 
 Two loopback TLS origins stand in for github.com (the named origin) and release storage (the redirect target); the
 real promoted SDK bytes from --release-dir are served behind redirects. No product code is stubbed.
@@ -24,7 +24,7 @@ def main():
     (pki / 'openssl.cnf').write_text('[req]\ndistinguished_name=dn\n[dn]\n', encoding='ascii')
     openssl = shutil.which('openssl'); assert openssl
     def run_ssl(*argv):
-        subprocess.run([openssl, *argv], cwd=pki, check=True, capture_output=True,
+        subprocess.run([openssl, *argv], cwd=pki, check=True, capture_output=True, timeout=60,
                        env=dict(os.environ, OPENSSL_CONF='openssl.cnf'),
                        creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
     run_ssl('req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', 'ca.key', '-out', 'ca.pem', '-days', '2',
@@ -135,7 +135,7 @@ def main():
 
     def record(label, passed, detail=''):
         results.append({'case': label, 'passed': bool(passed), 'detail': detail})
-        print(('PASS ' if passed else 'FAIL ') + label + (' -- ' + detail if detail and not passed else ''))
+        print(('PASS ' if passed else 'FAIL ') + label + (' -- ' + detail if detail and not passed else ''), flush=True)
 
     small = blobs['/blob-small']
     def fetch(label, path, policy=('--redirect-hosts', 'localhost:%d' % ports['B']), expect_ok=True, code=None, extra=(), body=small):

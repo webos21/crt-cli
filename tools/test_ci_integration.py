@@ -11,7 +11,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from ci_integration import (IntegrationError, PORT_SUITES, judge_port_result, load_pins, load_publisher, main,
+from ci_integration import (IntegrationError, PORT_SUITES, REDIRECT_CASE_COUNT, command_redirect, judge_redirect_result,
+                            judge_port_result, load_pins, load_publisher, main,
                             host_key, port_adapter_command, prepare_windows_harness, windows_harness_pins,
                             prepare_port_inputs, sha256_file, spki_sha256, verify_download, verify_oracle,
                             verify_publisher_signature)
@@ -20,6 +21,12 @@ from replay_port_linux import suite_outcome
 GOOD_ZLIB = {'url': 'https://example.invalid/zlib.tar.gz', 'name': 'zlib.tar.gz', 'sha256': 'a' * 64, 'size': 10}
 GOOD_TOOLS = {'url': 'https://example.invalid/tools.tar.xz', 'name': 'tools.tar.xz', 'sha256': 'b' * 64, 'size': 20,
               'manifest_sha256': 'c' * 64, 'version': 'v0'}
+
+
+def redirect_result(cli_sha256='a' * 64):
+    return {'passed': True, 'cli_sha256': cli_sha256,
+            'cases': [{'case': 'fixture-%d' % i, 'passed': True} for i in range(REDIRECT_CASE_COUNT)],
+            'commands': [{'exit': 0, 'stdout': '{}', 'stderr': ''}]}
 
 
 def write(directory, zlib=None, tools=None, schema='crt-cli.ci-integration-pins'):
@@ -133,16 +140,51 @@ class NativeAdapterTest(unittest.TestCase):
         self.assertEqual(tools['--cc'], Path('C:/LLVM/bin').absolute() / 'clang.exe')
         self.assertEqual(tools['--os-sdk'], 'C:/Windows SDK/um/x64')
 
-    def test_windows_unwired_redirect_fails_before_download_or_work_creation(self):
+    def test_windows_redirect_stages_the_pinned_cli_and_runs_the_shared_native_cases(self):
+        from types import SimpleNamespace
         with tempfile.TemporaryDirectory() as directory:
-            work = Path(directory) / 'unwired'
-            for command in ('redirect',):
-                with self.subTest(command=command), patch('ci_integration.host_key', return_value='win-x64'), \
-                        patch('ci_integration.download') as get, patch('sys.argv',
-                        ['ci_integration.py', command, '--host', 'win-x64', '--work', str(work)]):
-                    self.assertEqual(main(), 1)
-                get.assert_not_called()
-                self.assertFalse(work.exists())
+            work = Path(directory) / 'fresh'
+            exe = Path(directory) / 'crt-cli.exe'; exe.write_bytes(b'fixture only, never executed')
+            release = Path(directory) / 'release'
+            def replay(argv, **kwargs):
+                self.assertEqual(Path(argv[1]).name, 'replay_redirect_linux.py')
+                self.assertEqual(argv[argv.index('--cli') + 1], str(exe))
+                output = Path(argv[argv.index('--output') + 1]); output.mkdir()
+                (output / 'redirect-replay.json').write_text(json.dumps(redirect_result(sha256_file(exe))))
+                return subprocess.CompletedProcess(argv, 0, 'fixture stdout', 'fixture stderr')
+            with patch('ci_integration.host_key', return_value='win-x64'), \
+                    patch('ci_integration.published_cli', return_value=(exe, {})) as bootstrap, \
+                    patch('ci_integration.sdk_release_dir', return_value=release), \
+                    patch('ci_integration.subprocess.run', side_effect=replay):
+                command_redirect(SimpleNamespace(work=str(work)), 'win-x64')
+            bootstrap.assert_called_once_with('win-x64', work.resolve())
+            self.assertEqual((work / 'redirect.stdout').read_text(), 'fixture stdout')
+            self.assertEqual((work / 'redirect.stderr').read_text(), 'fixture stderr')
+
+    def test_redirect_rejects_cross_host_before_download_or_work_creation(self):
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory) / 'cross-host'
+            with patch('ci_integration.host_key', return_value='linux-x64'), patch('ci_integration.download') as get:
+                with self.assertRaisesRegex(IntegrationError, 'native execution host'):
+                    command_redirect(SimpleNamespace(work=str(work)), 'win-x64')
+            get.assert_not_called()
+            self.assertFalse(work.exists())
+
+    def test_redirect_timeout_retains_partial_logs_without_success(self):
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory) / 'timeout'
+            error = subprocess.TimeoutExpired(['fixture'], 1500, output=b'partial stdout', stderr=b'partial stderr')
+            with patch('ci_integration.host_key', return_value='win-x64'), \
+                    patch('ci_integration.published_cli', return_value=(Path(directory) / 'crt-cli.exe', {})), \
+                    patch('ci_integration.sdk_release_dir', return_value=Path(directory)), \
+                    patch('ci_integration.subprocess.run', side_effect=error):
+                with self.assertRaises(subprocess.TimeoutExpired):
+                    command_redirect(SimpleNamespace(work=str(work)), 'win-x64')
+            self.assertEqual((work / 'redirect.stdout').read_text(), 'partial stdout')
+            self.assertEqual((work / 'redirect.stderr').read_text(), 'partial stderr')
+            self.assertFalse((work / 'redirect-replay/redirect-replay.json').exists())
 
     def test_workflow_selects_all_three_hosts_and_keeps_native_prerequisites_separate(self):
         root = Path(__file__).resolve().parent.parent
@@ -157,12 +199,41 @@ class NativeAdapterTest(unittest.TestCase):
         self.assertIn('hashlib.file_digest', text)
         self.assertNotIn('sha256sum', text)
         self.assertIn('ports/replay/commands.json', text)
-        self.assertEqual(text.count('host: win-x64\n'), 1)
+        self.assertEqual(text.count('host: win-x64\n'), 2)
+        self.assertIn("os.environ['RUNNER_TEMP']", text)
+        self.assertIn('redirect/redirect.stderr', text)
+        self.assertIn('options: [all, redirect]', text)
+        self.assertEqual(text.count("if: github.event_name != 'workflow_dispatch' || inputs.scope != 'redirect'"), 2)
         self.assertIn('name: ports (win-x64)', text)
         self.assertIn('SetAccessRuleProtection($true, $false)', text)
         self.assertIn('path: private-inputs', text)
         self.assertIn('real symlinks required', text)
         self.assertNotIn('AllowDevelopmentWithoutDevLicense', text)
+
+
+class RedirectResultGateTest(unittest.TestCase):
+    def test_complete_native_result_only(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'result.json'
+            good = redirect_result()
+            path.write_text(json.dumps(good))
+            self.assertEqual(judge_redirect_result(path, 0, 'a' * 64), good)
+            variants = [dict(good, passed=False), dict(good, cli_sha256='b' * 64), dict(good, cases=[]),
+                        dict(good, cases=good['cases'][:-1]), dict(good, cases=good['cases'] + [good['cases'][0]]),
+                        dict(good, cases=[good['cases'][0]] * REDIRECT_CASE_COUNT), dict(good, commands=[]),
+                        dict(good, commands=[{'exit': 0xC0000005}]), dict(good, commands=[{'exit': True}])]
+            for replacement in ({'case': 'bad', 'passed': False}, {'case': 'bad', 'passed': True, 'skipped': True},
+                                {'case': '', 'passed': True}, {'case': 'bad', 'passed': 1}):
+                variants.append(dict(good, cases=[replacement, *good['cases'][1:]]))
+            for index, result in enumerate(variants):
+                path.write_text(json.dumps(result))
+                with self.subTest(index=index), self.assertRaises(IntegrationError):
+                    judge_redirect_result(path, 0, 'a' * 64)
+            path.write_text(json.dumps(good))
+            with self.assertRaisesRegex(IntegrationError, 'exit 1'):
+                judge_redirect_result(path, 1, 'a' * 64)
+            with self.assertRaises(FileNotFoundError):
+                judge_redirect_result(path.parent / 'absent.json', 0, 'a' * 64)
 
 
 class WindowsHarnessTest(unittest.TestCase):

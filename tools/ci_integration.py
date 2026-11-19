@@ -39,6 +39,7 @@ class IntegrationError(Exception):
 HOST_TOOL_FIELDS = ('url', 'name', 'sha256', 'size', 'manifest_sha256', 'version')
 ZLIB_FIELDS = ('url', 'name', 'sha256', 'size')
 PORT_SUITES = ('port-build-test', 'port-store-test', 'port-oracle-test', 'port-command-test', 'port-project-test')
+REDIRECT_CASE_COUNT = 54
 HOST_TARGETS = {'linux-x64': {'os': 'linux', 'arch': 'x86_64'},
                 'linux-arm64': {'os': 'linux', 'arch': 'aarch64'},
                 'macos-arm64': {'os': 'macos', 'arch': 'aarch64'},
@@ -223,18 +224,54 @@ def sdk_release_dir(sdk, work):
 
 
 def command_redirect(args, host):
-    if host == 'win-x64':
-        raise IntegrationError('Windows redirect integration is not wired')
+    if host != host_key():
+        raise IntegrationError('redirect replay host must match the native execution host')
     work = Path(args.work).resolve()
     work.mkdir(parents=True, exist_ok=False)
     exe, sdk = published_cli(host, work)
     release = sdk_release_dir(sdk, work)
     output = work / 'redirect-replay'
-    run('redirect-replay', [sys.executable, ROOT / 'tools/replay_redirect_linux.py', '--cli', exe, '--release-dir', release, '--output', output])
-    result = json.loads((output / 'redirect-replay.json').read_text(encoding='utf-8'))
-    if result.get('passed') is not True or not result.get('cases'):
-        raise IntegrationError('redirect replay did not report a complete pass')
+    try:
+        done = subprocess.run([sys.executable, str(ROOT / 'tools/replay_redirect_linux.py'), '--cli', str(exe),
+                               '--release-dir', str(release), '--output', str(output)], capture_output=True, text=True,
+                              encoding='utf-8', errors='replace', timeout=1500,
+                              creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
+    except subprocess.TimeoutExpired as error:
+        for stream in ('stdout', 'stderr'):
+            payload = getattr(error, stream, None) or ''
+            if isinstance(payload, bytes):
+                payload = payload.decode('utf-8', 'replace')
+            (work / ('redirect.' + stream)).write_text(payload, encoding='utf-8')
+        raise
+    (work / 'redirect.stdout').write_text(done.stdout, encoding='utf-8')
+    (work / 'redirect.stderr').write_text(done.stderr, encoding='utf-8')
+    result = judge_redirect_result(output / 'redirect-replay.json', done.returncode, sha256_file(exe))
     log('redirect replay passed: %d cases' % len(result['cases']))
+
+
+def judge_redirect_result(path, returncode, cli_sha256):
+    if returncode != 0:
+        raise IntegrationError('redirect replay failed with exit %s' % returncode)
+    result = json.loads(Path(path).read_text(encoding='utf-8'))
+    if not isinstance(result, dict) or result.get('passed') is not True or result.get('cli_sha256') != cli_sha256:
+        raise IntegrationError('redirect replay did not report a complete pass for the pinned CLI')
+    cases = result.get('cases')
+    if not isinstance(cases, list) or len(cases) != REDIRECT_CASE_COUNT:
+        raise IntegrationError('redirect replay must report all %d cases' % REDIRECT_CASE_COUNT)
+    names = []
+    for case in cases:
+        if (not isinstance(case, dict) or case.get('passed') is not True or case.get('skipped', False) is not False or
+                not isinstance(case.get('case'), str) or not case['case']):
+            raise IntegrationError('redirect replay has failed, skipped or unnamed cases')
+        names.append(case['case'])
+    if len(set(names)) != REDIRECT_CASE_COUNT:
+        raise IntegrationError('redirect replay has duplicate cases')
+    commands = result.get('commands')
+    if not isinstance(commands, list) or not commands or any(
+            not isinstance(command, dict) or type(command.get('exit')) is not int or command['exit'] not in (0, 1, 2)
+            for command in commands):
+        raise IntegrationError('redirect replay has missing commands or an unexpected process status')
+    return result
 
 
 def port_adapter_command(host, llvm_bin):

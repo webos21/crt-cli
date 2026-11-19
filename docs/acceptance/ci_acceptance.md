@@ -1630,3 +1630,45 @@ The existing daily `23 3 * * *` schedule now includes Windows `pins` and `ports`
 the first scheduled Windows run remains unobserved and is retained as an open TODO. No additional schedule, release dispatch or security
 setting change is needed for this adoption.
 
+## Windows/x64 hosted redirect expansion (2026-11-19)
+
+**Candidate on `codex/windows-redirect-integration`; hosted verification pending.** The existing common redirect replay already contains
+Windows environment and hidden-process handling. Removing the Windows dispatch refusal enables its real native **54/54** cases with the
+pinned public Windows Preview and SDK; no CLI product, SDK, archive pin, publisher key, host-tools input or runtime contract changes.
+The historical `replay_redirect_linux.py` filename is retained for existing callers; its documented native scope now includes Windows.
+
+`redirect` gains a `win-x64`/`windows-2022` matrix row. The workflow resolves the temporary work path through Python's environment rather
+than shell-specific `$RUNNER_TEMP` syntax, and retains the result plus runner stdout/stderr. The common driver checks native host matching,
+exactly 54 distinct named passing cases, no skip, the selected CLI executable hash and recorded command exits limited to 0/1/2. Missing,
+partial, duplicate, failed, skipped, foreign-CLI or crashed-process reports fail. OpenSSL key/certificate commands have a 60-second bound;
+the outer replay has a 1500-second bound and retains partial logs on timeout. Processes remain hidden and non-interactive on Windows.
+
+The replay downloads the selected public release bytes with their existing pins, authenticates the bootstrap signature, then serves the
+exact SDK manifest/contract/archive behind controlled loopback TLS origins. It checks allowed redirects and acquisitions, denied authorities,
+ports, suffix look-alikes, credentials, fragments, HTTP downgrade, invalid/missing/duplicate Location, loops/hop limits, wrong-certificate TLS,
+404/oversize/interrupted bodies, digest mismatch, argument refusals, query/header redaction, provenance and installed-cache reuse.
+This uses a cleared environment and private home/store; it is not restricted-token source denial or network/executable sandboxing.
+Real GitHub CLI acquisition has its own earlier acceptance; these 54 controlled cases are not relabeled as real remote redirect origins.
+
+Native inputs are unchanged from `.github/ci/pins.json`: bootstrap `v0.1.0-preview.20261117.windows-x86_64.1`, archive
+`02396e04cd4775cb7cfd65bd5c0e2c8975c4fa5b4ad18cfa039f65bf5cdd706f`, executable
+`feb9779109892cf73235307617398e8dfe70bdadcc86d3dff22ba04642c84df1`; Dev SDK `v0.0.1-preview.20261110.windows.1`, manifest
+`b0fca4c81d29b8eee28e0d9fb7d6e26950b094a8be4f2c091e43922366a46976`, archive
+`c71bb91e9f2c623d44e8154c7798a446b850781bdc1cf515eb9675dc04137be1`, contract
+`7762f572b4614b3068e1ea99694ce19360e213d31c5bd01019e4ad6ce005b726`.
+
+Local evidence: `C:\Users\Lee\s14\r` (initial native run) and `C:\Users\Lee\s14\r2` (new common result gate and log capture), each **54/54**;
+second result SHA-256 `0f734f50a1bb0e1573c926cee3577860a49b8a596cfe498cbae0805617ff24f8`. CLI ignored
+`out/redirect-win-x64-20261119/` holds logs; focused fixtures pass **43/43**, Python syntax and actionlint 1.7.12 pass (excluding only its
+obsolete Ubuntu 26.04 label warnings). These fixtures do not substitute for the real native cases.
+
+Manual `scope=redirect` selects the four pin jobs and four redirect jobs; port jobs are intentionally outside that verification scope.
+Omitted/default `scope=all`, unknown scopes and scheduled events keep the complete port matrices. The schedule stays `23 3 * * *`.
+Scoped success does not qualify unexecuted port suites; their unchanged source/pin evidence remains the preceding adopted integration.
+Reproduce: `python tools/ci_integration.py redirect --host win-x64 --work <fresh-short-work>`; hosted:
+`gh workflow run integration.yml --ref <review-branch> -f scope=redirect`.
+
+Producer documentation synchronization is separately committed as CRT `dae4d141abe56d1f8fe5b298aff657df60cbdffd`, with
+[its documentation CI](https://github.com/webos21/crt/actions/runs/44504270139) passing. It links the prior observed hosted handoff rather
+than claiming a new producer replay. The first scheduled Windows run, ARM64 D1 and private-DLL qualification remain separate.
+
