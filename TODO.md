@@ -37,6 +37,12 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
 - [ ] D2, cross-platform integration: add hosted macOS/arm64 and Windows/x64 jobs to `integration.yml` that run the native Port and
   oracle suites with reviewed integration pins and host-specific acceptance, including the hosted Windows symlink prerequisite.
   Producer publication is complete; native receipts above do not substitute for these jobs.
+  - [x] macOS/arm64 implementation and local preflight on `codex/macos-host-tools-integration`
+    ([candidate evidence](docs/acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19)); not adopted on main yet.
+  - [x] macOS/arm64 hosted `pins`/`redirect`/`ports` verification on the PR branch
+    ([results](docs/acceptance/ci_acceptance.md#hosted-qualification-on-the-pr-branch)).
+  - [ ] Reviewed macOS integration-pin adoption on main: [PR #30](https://github.com/webos21/crt-cli/pull/30) remains unmerged;
+    owner approval is separate from the passing branch verification. Windows hosted integration remains open.
 - [ ] Resolve the Windows/arm64 D1 `stdout-limit` timeout against the public CLI/SDK; retain the 31/32 and focused failure
   [receipts](docs/acceptance/host_environment_acceptance.md#windowsarm64-published-host-tools-consumer-replay-2026-11-19).
 - [ ] Windows/arm64 under that policy: the leg is added, pinned, hosted-qualified and its `release.yml` rehearsal passed (checked sub-items below); open: a

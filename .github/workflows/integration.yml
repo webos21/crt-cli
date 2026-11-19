@@ -3,7 +3,7 @@ name: Integration
 # Input-gated integration checks that are too slow or too external for the required pull-request gate in ci.yml.
 # Every input is pinned in .github/ci/integration-pins.json; an unpinned input fails the job instead of skipping it,
 # because a skipped suite looks like a pass. This workflow is not a required check and never publishes anything.
-# The independent host-tools bundles are pinned (CRT Previews `v0.1.0-hosttools.20261116.linux-*.1`), so the daily trigger is
+# The independent host-tools bundles are pinned (Linux 20261116 and macOS/arm64 20261119 CRT Previews), so the daily trigger is
 # on: a red run now means a real regression or a changed external input, not a known gap. A scheduled run is not a required check.
 
 on:
@@ -31,6 +31,8 @@ jobs:
             runner: ubuntu-26.04
           - host: linux-arm64
             runner: ubuntu-26.04-arm
+          - host: macos-arm64
+            runner: macos-15
     steps:
       - name: Check out the sources under test
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -60,6 +62,8 @@ jobs:
             runner: ubuntu-26.04
           - host: linux-arm64
             runner: ubuntu-26.04-arm
+          - host: macos-arm64
+            runner: macos-15
     steps:
       - name: Check out the sources under test
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -96,6 +100,8 @@ jobs:
             runner: ubuntu-26.04
           - host: linux-arm64
             runner: ubuntu-26.04-arm
+          - host: macos-arm64
+            runner: macos-15
     steps:
       - name: Check out the sources under test
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -108,6 +114,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install LLVM 21, Bubblewrap and strace
+        if: runner.os == 'Linux'
         run: |
           set -euo pipefail
           sudo apt-get update -q
@@ -118,22 +125,33 @@ jobs:
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
           bwrap --unshare-all --ro-bind / / true
 
+      - name: Check the declared Xcode tools and Seatbelt
+        if: runner.os == 'macOS'
+        run: |
+          set -euo pipefail
+          for tool in clang clang++ ld ar ranlib; do xcrun -f "$tool"; done
+          xcrun --sdk macosx --show-sdk-path
+          /usr/bin/sandbox-exec -p '(version 1)(allow default)' /usr/bin/true
+
       - name: Select and record the oracle Python
         id: oracle
         run: |
           set -euo pipefail
           path="$(python -c 'import os, sys; print(os.path.realpath(sys.executable))')"
-          digest="$(sha256sum "$path" | cut -d' ' -f1)"
+          digest="$(python -c 'import hashlib, sys; print(hashlib.file_digest(open(sys.argv[1], "rb"), "sha256").hexdigest())' "$path")"
           echo "oracle python $path sha256 $digest"
           echo "path=$path" >> "$GITHUB_OUTPUT"
           echo "sha256=$digest" >> "$GITHUB_OUTPUT"
 
       - name: Port suites (all five, none skipped)
-        run: >
-          python tools/ci_integration.py ports --host "${{ matrix.host }}"
-          --work "$RUNNER_TEMP/ports" --llvm-bin /usr/lib/llvm-21/bin
-          --oracle-python "${{ steps.oracle.outputs.path }}"
-          --oracle-python-sha256 "${{ steps.oracle.outputs.sha256 }}"
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(--host "${{ matrix.host }}" --work "$RUNNER_TEMP/ports" \
+            --oracle-python "${{ steps.oracle.outputs.path }}" \
+            --oracle-python-sha256 "${{ steps.oracle.outputs.sha256 }}")
+          if [ "$RUNNER_OS" = Linux ]; then args+=(--llvm-bin /usr/lib/llvm-21/bin); fi
+          python tools/ci_integration.py ports "${args[@]}"
 
       - name: Upload the port replay result
         if: always()
@@ -142,6 +160,11 @@ jobs:
           name: ports-${{ matrix.host }}-${{ github.sha }}
           path: |
             ${{ runner.temp }}/ports/replay/result.json
+            ${{ runner.temp }}/ports/replay/inputs.json
+            ${{ runner.temp }}/ports/replay/commands.json
+            ${{ runner.temp }}/ports/replay/*.stdout
+            ${{ runner.temp }}/ports/replay/*.stderr
+            ${{ runner.temp }}/ports/replay/cli-otool.txt
             ${{ runner.temp }}/ports/port-inputs.json
             ${{ runner.temp }}/ports/replay-command.json
             ${{ runner.temp }}/ports/replay.stdout

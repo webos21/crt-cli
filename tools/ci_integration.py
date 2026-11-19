@@ -25,6 +25,7 @@ from pathlib import Path, PurePosixPath
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import publisher_signature  # noqa: E402
+from ci_bootstrap import CiError, macos_tool_paths  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -37,7 +38,8 @@ HOST_TOOL_FIELDS = ('url', 'name', 'sha256', 'size', 'manifest_sha256', 'version
 ZLIB_FIELDS = ('url', 'name', 'sha256', 'size')
 PORT_SUITES = ('port-build-test', 'port-store-test', 'port-oracle-test', 'port-command-test', 'port-project-test')
 HOST_TARGETS = {'linux-x64': {'os': 'linux', 'arch': 'x86_64'},
-                'linux-arm64': {'os': 'linux', 'arch': 'aarch64'}}
+                'linux-arm64': {'os': 'linux', 'arch': 'aarch64'},
+                'macos-arm64': {'os': 'macos', 'arch': 'aarch64'}}
 SIGNATURE_FIELDS = ('url', 'name', 'sha256', 'size')
 MAX_SIGNATURE_BYTES = 1024
 MAX_HOST_TOOL_BYTES = 512 * 1024 * 1024
@@ -131,7 +133,9 @@ def host_key(system=None, machine=None):
         return 'linux-x64'
     if system.startswith('linux') and machine in ('aarch64', 'arm64'):
         return 'linux-arm64'
-    raise IntegrationError('integration runs support Linux/x86_64 and Linux/aarch64 only: %s/%s' % (system, machine))
+    if system == 'darwin' and machine in ('aarch64', 'arm64'):
+        return 'macos-arm64'
+    raise IntegrationError('unsupported integration host: %s/%s' % (system, machine))
 
 
 def download(url, destination, attempts=3):
@@ -225,6 +229,23 @@ def command_redirect(args, host):
     log('redirect replay passed: %d cases' % len(result['cases']))
 
 
+def port_adapter_command(host, llvm_bin):
+    """Native tools and isolation adapter; input/signature/result gates stay common."""
+    if host == 'macos-arm64':
+        try:
+            paths = macos_tool_paths()
+        except CiError as error:
+            raise IntegrationError(str(error)) from error
+        return ROOT / 'tools/replay_port_macos.py', paths
+    if host not in HOST_TARGETS or not host.startswith('linux-'):
+        raise IntegrationError('unsupported port host')
+    if not llvm_bin:
+        raise IntegrationError('native Linux ports requires --llvm-bin')
+    llvm = Path(llvm_bin).absolute()
+    return ROOT / 'tools/replay_port_linux.py', {
+        '--cc': llvm / 'clang', '--cxx': llvm / 'clang++', '--linker': llvm / 'ld.lld', '--ar': llvm / 'llvm-ar'}
+
+
 def command_ports(args, host):
     # Preparation can use a local fixture; it never reports native acceptance.
     zlib, tools = load_pins(args.pins, host)
@@ -234,10 +255,9 @@ def command_ports(args, host):
     if not args.prepare_only:
         if host != host_key():
             raise IntegrationError('port replay host must match the native execution host')
-        if work.is_relative_to(ROOT) or work.is_relative_to('/tmp'):
+        if work.is_relative_to(ROOT) or (host.startswith('linux-') and work.is_relative_to('/tmp')):
             raise IntegrationError('native work must be outside the source checkout and /tmp')
-        if not args.llvm_bin:
-            raise IntegrationError('native ports requires --llvm-bin')
+        adapter, native_tools = port_adapter_command(host, args.llvm_bin)
         verify_oracle(args.oracle_python, args.oracle_python_sha256)
     publisher = load_publisher(args.pins) if args.input_dir is None else None
     prepared = prepare_port_inputs(work, host, zlib, tools, input_dir=args.input_dir, publisher=publisher)
@@ -268,19 +288,19 @@ def command_ports(args, host):
     if sha256_file(contract) != sdk['contract_sha256']:
         raise IntegrationError('stored SDK contract does not match the pin')
     prepared['contract_sha256'] = sdk['contract_sha256']
-    llvm = Path(args.llvm_bin).absolute()
-    argv = [sys.executable, ROOT / 'tools/replay_port_linux.py', '--source', ROOT,
+    argv = [sys.executable, adapter, '--source', ROOT,
             '--sdk-root', store / directory, '--contract', contract, '--contract-sha256', sdk['contract_sha256'],
             '--host-tools', prepared['host_tools_root'], '--host-tools-sha256', tools['manifest_sha256'],
             '--archive', prepared['source_archive'], '--seed', exe, '--output', work / 'replay',
             '--work-parent', work / 'native-work', '--oracle-python', args.oracle_python,
-            '--oracle-python-sha256', args.oracle_python_sha256,
-            '--cc', llvm / 'clang', '--cxx', llvm / 'clang++', '--linker', llvm / 'ld.lld', '--ar', llvm / 'llvm-ar']
+            '--oracle-python-sha256', args.oracle_python_sha256]
+    for flag, executable in native_tools.items():
+        argv += [flag, executable]
     for path in args.hide:
         argv += ['--hide', path]
     argv += ['--cases', *PORT_SUITES]
     (work / 'replay-command.json').write_text(json.dumps(list(map(str, argv)), indent=2) + '\n', encoding='utf-8')
-    # Isolation stays in the Linux adapter; this common driver owns input and result policy.
+    # Isolation stays in each native adapter; this common driver owns input and result policy.
     done = subprocess.run(list(map(str, argv)), capture_output=True, text=True, timeout=6600)
     (work / 'replay.stdout').write_text(done.stdout, encoding='utf-8')
     (work / 'replay.stderr').write_text(done.stderr, encoding='utf-8')
@@ -384,14 +404,21 @@ def prepare_port_inputs(work, host, zlib, tools, *, input_dir=None, publisher=No
 
 def judge_port_result(path, returncode, prepared):
     if returncode != 0:
-        raise IntegrationError('Linux port adapter failed with exit %s' % returncode)
+        raise IntegrationError('native port adapter failed with exit %s' % returncode)
     result = json.loads(Path(path).read_text(encoding='utf-8'))
     if not isinstance(result, dict) or result.get('passed') is not True or result.get('allow_dirty_sdk') is not False:
         raise IntegrationError('port replay did not report a clean complete pass')
     cases = result.get('cases')
     if not isinstance(cases, list) or not cases or any(not isinstance(c, dict) or c.get('passed') is not True for c in cases):
         raise IntegrationError('port replay has missing or failed cases')
-    suites = result.get('suites')
+    if prepared.get('host') == 'macos-arm64':
+        requested = result.get('suites')
+        if (not isinstance(requested, list) or len(requested) != len(PORT_SUITES) or
+                any(not isinstance(name, str) for name in requested) or set(requested) != set(PORT_SUITES)):
+            raise IntegrationError('port replay must request exactly the five required suites')
+        suites = result.get('suite_results')
+    else:
+        suites = result.get('suites')
     if not isinstance(suites, dict) or set(suites) != set(PORT_SUITES):
         raise IntegrationError('port replay must report exactly the five required suites')
     for name, outcome in suites.items():
@@ -408,15 +435,15 @@ def judge_port_result(path, returncode, prepared):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('command', choices=['pins', 'redirect', 'ports'])
-    parser.add_argument('--host', choices=['linux-x64', 'linux-arm64'], help='default: detect')
+    parser.add_argument('--host', choices=sorted(HOST_TARGETS), help='default: detect')
     parser.add_argument('--work', help='new directory for downloads and results')
     parser.add_argument('--pins', default=str(ROOT / '.github/ci/integration-pins.json'))
     parser.add_argument('--prepare-only', action='store_true', help='ports: verify/stage inputs without running native suites')
     parser.add_argument('--input-dir', type=Path, help='ports: use local files, verifying the same pins (also for test fixtures)')
-    parser.add_argument('--llvm-bin', help='ports: declared native LLVM directory')
+    parser.add_argument('--llvm-bin', help='ports: declared native LLVM directory on Linux; macOS selects Xcode tools with xcrun')
     parser.add_argument('--oracle-python', help='ports: absolute test-host Python for the SDK oracle only')
     parser.add_argument('--oracle-python-sha256', help='ports: independently selected oracle Python executable digest')
-    parser.add_argument('--hide', action='append', default=[], help='ports: additional original input tree hidden by the Linux adapter')
+    parser.add_argument('--hide', action='append', default=[], help='ports: additional original input tree hidden by the native adapter')
     args = parser.parse_args()
     try:
         host = args.host or host_key()

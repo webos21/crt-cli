@@ -127,13 +127,15 @@ also exercise this workflow at their recorded baselines.
 [The active plan](TODO.md) continues the Dev SDK + CLI preview: the Linux/x86_64, Linux/aarch64, macOS/arm64, Windows/x64 and Windows/arm64
 packages are out and default/project pin adoption is done; CI covers Linux/x86_64, Linux/arm64, macOS/arm64, Windows/x64 and Windows/arm64. The D3 zlib contract is
 [approved and adopted](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09) for the three exercised host pairs;
-Windows/arm64 D3 remains a separate qualification target.
+Windows/arm64 now has [bounded public-bundle D3 evidence](docs/acceptance/host_environment_acceptance.md#windowsarm64-published-host-tools-consumer-replay-2026-11-19);
+its D1 large-output timeout remains separate.
 
 CI's six required jobs (Linux/x86_64 on two Ubuntu versions) pass on pull requests and pushes to `main`, and `main`
 requires the `CI gate` check; [CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)
 distinguishes workflow configuration, hosted results, the integration workflow (the redirect replay and the port suites run on Linux/x86_64 and
-Linux/arm64, manually and daily) and the release workflow (published and signed through the workflow on every host except Windows/arm64, whose first
-Preview was built by hand and whose workflow rehearsal is still open).
+Linux/arm64, manually and daily), the [macOS integration candidate](docs/acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19)
+and its passing branch qualification/pending main adoption, and the release workflow (published and signed through the workflow on every host except Windows/arm64,
+whose first Preview was built by hand; its workflow dry-run passed, but real workflow publication remains pending).
 
 Preview qualification covers the actual packaged CLI, promoted SDK pin, trust,
 notices/resources, external LLVM setup and a source-hidden user flow. Full SDK

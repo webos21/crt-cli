@@ -1,13 +1,34 @@
 """Fast host-only fixtures for the D3 replay ledger and denial policy."""
 import json
+import hashlib
+import sys
 from pathlib import Path
 import tempfile
 import unittest
 
-from replay_port_macos import deny_inputs, source_inputs
+from replay_port_macos import deny_inputs, oracle_input, source_inputs, suite_outcome
 
 
 class ReplayInputsTest(unittest.TestCase):
+    def test_oracle_requires_a_matching_executable_and_explicit_digest_pair(self):
+        executable = Path(sys.executable).resolve()
+        pin = hashlib.sha256(executable.read_bytes()).hexdigest()
+        self.assertEqual(oracle_input(executable, pin)['sha256'], pin)
+        self.assertEqual(oracle_input(None, None)['path'], str(executable))
+        for path, digest in ((executable, None), (None, pin), (executable, '0' * 64),
+                             (executable, 'A' * 64), (Path('relative'), pin)):
+            with self.subTest(path=path, digest=digest), self.assertRaises(ValueError):
+                oracle_input(path, digest)
+
+    def test_suite_outcomes_reject_skips_wrong_names_and_ambiguous_reports(self):
+        name = 'port-build-test'
+        good = name + ': 40 checks passed\n'
+        self.assertEqual(suite_outcome(name, 0, good, ''), {'passed': True, 'checks': 40, 'skipped': False})
+        for code, out, err in ((1, good, ''), (0, good, 'SKIPPED prerequisite'), (0, good + good, ''),
+                               (0, 'other: 40 checks passed\n', ''), (0, name + ': 0 checks passed\n', '')):
+            with self.subTest(code=code, out=out, err=err):
+                self.assertFalse(suite_outcome(name, code, out, err)['passed'])
+
     def test_source_scope_and_lf_normalization(self):
         with tempfile.TemporaryDirectory() as location:
             root = Path(location)

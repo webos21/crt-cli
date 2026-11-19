@@ -11,6 +11,16 @@ the [request/handoff record](crt_host_tools_publication_request.md#macoswindows-
 prerequisite from consumer adoption. The per-host records below retain their exact scope: closing the request neither promotes integration
 pins nor closes hosted jobs, Windows/arm64 D1 (31/32), or private-DLL qualification. No format or runtime contract changes here.
 
+## macOS integration pin candidate (2026-11-19)
+
+`codex/macos-host-tools-integration` adds the existing published signed `v0.1.0-hosttools.20261119.macos-aarch64.1` bundle to
+`integration-pins.json`; it does not change the SDK/bootstrap pins, publisher key, host-tools format, recipe schema or project locks.
+Producer publication and native consumer evidence precede this candidate (records below). The common-driver local preflight passes
+public download/signature checks, redirect and the five port suites; [CI acceptance](acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19)
+owns the exact tests and input identities. Hosted macOS qualification now **passes on the PR branch**: all nine integration jobs and
+the six-row native CI succeed at `25591d8`; macOS executes the same five required suites with static/shared consumers. Reviewed adoption on
+main remains **pending in PR #30**; this is not an already adopted main CI combination or a Windows integration claim.
+
 ## Published Windows/arm64 Host-tools Qualification (2026-11-19)
 
 The public signed Windows/aarch64 host-tools Preview `v0.1.0-hosttools.20261119.windows-aarch64.1` is exercised natively with the

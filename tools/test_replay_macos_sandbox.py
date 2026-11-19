@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from replay_macos_sandbox import MacSandbox
+from replay_macos_sandbox import MacSandbox, linker_helpers
 
 
 class MacSandboxTests(unittest.TestCase):
@@ -35,6 +35,36 @@ class MacSandboxTests(unittest.TestCase):
 
     def test_declares_canonical_ranlib_helper(self):
         self.assertIn(self.work / 'tools/libtool', self.sandbox.allowed)
+
+    def test_linker_dispatcher_helper_is_optional_and_exact(self):
+        linker = self.work / 'tools/ld'
+        helper = linker.with_name('ld64')
+        self.assertEqual({}, linker_helpers(linker))
+        helper.write_bytes(b'Xcode linker fixture')
+        helper.chmod(0o600)
+        # Windows access(X_OK) does not model POSIX executable mode bits.
+        with patch('replay_macos_sandbox.os.access', return_value=False):
+            self.assertEqual({}, linker_helpers(linker))
+        helper.chmod(0o700)
+        self.assertEqual({'ld64': helper}, linker_helpers(linker))
+        classic = linker.with_name('ld-classic')
+        classic.write_bytes(b'Xcode legacy linker fixture')
+        classic.chmod(0o700)
+        self.assertEqual({'ld64': helper, 'ld-classic': classic}, linker_helpers(linker))
+        (self.work / 'tools/undeclared-helper').write_bytes(b'not allowed')
+        (self.work / 'second').mkdir()
+        is_file = Path.is_file
+        with patch('replay_macos_sandbox.sys.platform', 'darwin'), patch('replay_macos_sandbox.host_compile'), \
+                patch.object(Path, 'is_file', lambda path: path == Path('/usr/bin/sandbox-exec') or is_file(path)):
+            another = MacSandbox()
+            another.prepare(self.work / 'second', self.scratch, self.work / 'crt-cli',
+                            {'cc': linker, 'ar': linker, 'linker': linker}, [])
+        self.assertIn(helper, another.allowed)
+        self.assertIn(classic, another.allowed)
+        policy = Path(another.command([], self.scratch)[2]).read_text()
+        self.assertIn('(literal ' + json.dumps(str(helper)) + ')', policy)
+        self.assertNotIn('(subpath ' + json.dumps(str(helper.parent)) + ')', policy)
+        self.assertNotIn('undeclared-helper', policy)
 
     def test_network_opt_in_does_not_remove_other_boundaries(self):
         self.sandbox.network = True

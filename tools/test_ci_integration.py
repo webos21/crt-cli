@@ -12,6 +12,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from ci_integration import (IntegrationError, PORT_SUITES, judge_port_result, load_pins, load_publisher, main,
+                            host_key, port_adapter_command,
                             prepare_port_inputs, sha256_file, spki_sha256, verify_download, verify_oracle,
                             verify_publisher_signature)
 from replay_port_linux import suite_outcome
@@ -83,12 +84,60 @@ class PinTest(unittest.TestCase):
         pins = json.loads(root.read_text())
         recipe = json.loads((Path(__file__).resolve().parent.parent / 'src/test/data/zlib.recipe.json').read_text())
         self.assertEqual(pins['zlib_source']['sha256'], recipe['source']['sha256'])
-        for host, arch in (('linux-x64', 'x86_64'), ('linux-arm64', 'aarch64')):
+        for host, os_name, arch in (('linux-x64', 'linux', 'x86_64'), ('linux-arm64', 'linux', 'aarch64'),
+                                    ('macos-arm64', 'macos', 'aarch64')):
             with self.subTest(host=host):
                 zlib, tools = load_pins(root, host)
                 self.assertTrue(tools['url'].startswith('https://github.com/webos21/crt/releases/download/' + tools['version'] + '/'))
-                self.assertIn('linux-' + arch, tools['version'])
+                self.assertIn(os_name + '-' + arch, tools['version'])
                 self.assertEqual(tools['name'], 'crt-' + tools['version'] + '.tar.xz')
+
+
+class NativeAdapterTest(unittest.TestCase):
+    def test_native_host_detection_and_explicitly_unsupported_hosts(self):
+        for system, machine, expected in (('linux', 'x86_64', 'linux-x64'), ('linux', 'aarch64', 'linux-arm64'),
+                                           ('darwin', 'arm64', 'macos-arm64'), ('darwin', 'aarch64', 'macos-arm64')):
+            self.assertEqual(host_key(system, machine), expected)
+        for system, machine in (('darwin', 'x86_64'), ('win32', 'AMD64'), ('linux', 'riscv64')):
+            with self.subTest(system=system, machine=machine), self.assertRaisesRegex(IntegrationError, 'unsupported'):
+                host_key(system, machine)
+
+    def test_linux_adapter_keeps_explicit_llvm_tools(self):
+        adapter, tools = port_adapter_command('linux-arm64', '/declared/llvm/bin')
+        self.assertEqual(adapter.name, 'replay_port_linux.py')
+        self.assertEqual(tools, {flag: Path('/declared/llvm/bin').absolute() / name for flag, name in
+                                 (('--cc', 'clang'), ('--cxx', 'clang++'), ('--linker', 'ld.lld'), ('--ar', 'llvm-ar'))})
+        with self.assertRaisesRegex(IntegrationError, '--llvm-bin'):
+            port_adapter_command('linux-x64', None)
+
+    def test_macos_uses_only_declared_xcode_tools_and_its_adapter(self):
+        paths = {flag: Path('/Xcode/usr/bin') / name for flag, name in
+                 (('--cc', 'clang'), ('--cxx', 'clang++'), ('--linker', 'ld'), ('--ar', 'ar'))}
+        with patch('ci_integration.macos_tool_paths', return_value=paths) as select:
+            adapter, tools = port_adapter_command('macos-arm64', None)
+        select.assert_called_once_with()
+        self.assertEqual(adapter.name, 'replay_port_macos.py')
+        self.assertEqual(tools, paths)
+        from ci_bootstrap import CiError
+        with patch('ci_integration.macos_tool_paths', side_effect=CiError('xcrun missing')):
+            with self.assertRaisesRegex(IntegrationError, 'xcrun missing'):
+                port_adapter_command('macos-arm64', None)
+        with self.assertRaisesRegex(IntegrationError, 'unsupported'):
+            port_adapter_command('win-x64', None)
+
+    def test_workflow_selects_all_three_hosts_and_keeps_native_prerequisites_separate(self):
+        root = Path(__file__).resolve().parent.parent
+        text = (root / '.github/workflows/integration.yml').read_text()
+        for host in ('linux-x64', 'linux-arm64', 'macos-arm64'):
+            self.assertEqual(text.count('host: ' + host + '\n'), 3)
+            load_pins(root / '.github/ci/integration-pins.json', host)
+        self.assertIn("if: runner.os == 'Linux'", text)
+        self.assertIn("if: runner.os == 'macOS'", text)
+        self.assertIn('runner: macos-15', text)
+        self.assertIn('sandbox-exec', text)
+        self.assertIn('hashlib.file_digest', text)
+        self.assertNotIn('sha256sum', text)
+        self.assertIn('ports/replay/commands.json', text)
 
 
 class PortDriverTest(unittest.TestCase):
@@ -156,6 +205,18 @@ class PortDriverTest(unittest.TestCase):
             self.assertEqual(main(), 1)
         self.assertFalse(work.exists())
 
+    def test_native_execution_rejects_macos_cross_host_before_download(self):
+        pins = write(self.dir, zlib=self.zlib, tools=self.tools)
+        data = json.loads(pins.read_text())
+        data['hosts']['macos-arm64'] = data['hosts']['linux-x64']
+        pins.write_text(json.dumps(data))
+        work = self.dir / 'cross-macos'
+        with patch('ci_integration.host_key', return_value='linux-x64'), patch('ci_integration.download') as get, patch('sys.argv',
+                ['ci_integration.py', 'ports', '--host', 'macos-arm64', '--pins', str(pins), '--work', str(work)]):
+            self.assertEqual(main(), 1)
+        get.assert_not_called()
+        self.assertFalse(work.exists())
+
     def signed(self, tampered=False):
         """Throw-away key; returns (publisher, tools pin with a signature pin) for the archive currently in self.inputs."""
         openssl = shutil.which('openssl')
@@ -194,6 +255,16 @@ class PortDriverTest(unittest.TestCase):
         with patch('ci_integration.download', side_effect=lambda url, path: Path(path).write_bytes(b'bad')):
             with self.assertRaisesRegex(IntegrationError, 'size'):
                 prepare_port_inputs(self.dir / 'bad-online', 'linux-x64', self.zlib, tools, publisher=publisher)
+
+    def test_macos_preview_requires_its_own_manifest_host_and_signature(self):
+        self.tools = self.bundle(manifest=dict(self.manifest, promotion='preview', host={'os': 'macos', 'arch': 'aarch64'}))
+        publisher, tools = self.signed()
+        with patch('ci_integration.download', side_effect=lambda url, path: shutil.copyfile(self.inputs / Path(path).name, path)):
+            result = prepare_port_inputs(self.dir / 'macos', 'macos-arm64', self.zlib, tools, publisher=publisher)
+            with self.assertRaisesRegex(IntegrationError, 'host/version'):
+                prepare_port_inputs(self.dir / 'wrong-linux', 'linux-arm64', self.zlib, tools, publisher=publisher)
+        self.assertEqual(result['publisher_authentication'], 'signature_verified')
+        self.assertEqual(result['native_validation'], 'not_run')
 
     def test_online_interface_refuses_unsigned_or_wrongly_signed_bundles_before_extraction(self):
         def download(url, destination):
@@ -296,9 +367,26 @@ class ResultGateTest(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def judge(self, result, code=0):
+    def judge(self, result, code=0, prepared=None):
         self.path.write_text(json.dumps(result))
-        return judge_port_result(self.path, code, self.inputs)
+        return judge_port_result(self.path, code, self.inputs if prepared is None else prepared)
+
+    def test_macos_requires_the_same_five_suite_and_input_gates(self):
+        prepared = dict(self.inputs, host='macos-arm64')
+        result = dict(self.good, suites=list(PORT_SUITES), suite_results=copy.deepcopy(self.good['suites']))
+        self.assertEqual(self.judge(result, prepared=prepared), result)
+        for requested in (None, {}, list(PORT_SUITES[:-1]), [*PORT_SUITES, PORT_SUITES[0]], [1, *PORT_SUITES[1:]]):
+            with self.subTest(requested=requested), self.assertRaisesRegex(IntegrationError, 'five required'):
+                self.judge(dict(result, suites=requested), prepared=prepared)
+        for outcome in ({'passed': True, 'checks': 0}, {'passed': True, 'checks': True},
+                        {'passed': True, 'checks': 2, 'skipped': True}, {'passed': False, 'checks': 2}):
+            bad = copy.deepcopy(result)
+            bad['suite_results'][PORT_SUITES[0]] = outcome
+            with self.subTest(outcome=outcome), self.assertRaisesRegex(IntegrationError, 'did not execute'):
+                self.judge(bad, prepared=prepared)
+        for key, value in (('allow_dirty_sdk', True), ('allow_dirty_sdk', None), ('contract_sha256', '0' * 64)):
+            with self.subTest(key=key, value=value), self.assertRaises(IntegrationError):
+                self.judge(dict(result, **{key: value}), prepared=prepared)
 
     def test_complete_five_suite_report_is_required(self):
         self.assertEqual(self.judge(self.good), self.good)
@@ -408,7 +496,7 @@ class PublisherSignatureTest(unittest.TestCase):
         root = Path(__file__).resolve().parent.parent / '.github/ci/integration-pins.json'
         publisher = load_publisher(root)
         self.assertEqual(publisher['key_spki_sha256'], '59218576956e493476bc36f7385d8e01a03ff9b92946a531b013ad3937d43fa2')
-        for host in ('linux-x64', 'linux-arm64'):
+        for host in ('linux-x64', 'linux-arm64', 'macos-arm64'):
             with self.subTest(host=host):
                 _, tools = load_pins(root, host)
                 self.assertEqual(tools['signature']['url'], tools['url'] + '.sig')

@@ -12,6 +12,13 @@ def host_compile(compiler, source, output):
     subprocess.run([str(compiler), '-isysroot', sdk, str(source), '-o', str(output)], capture_output=True, check=True)
 
 
+def linker_helpers(linker):
+    # Xcode's ld can dispatch to the legacy linker (also named ld-classic).
+    directory = Path(linker).resolve().parent
+    return {name: helper for name in ('ld64', 'ld-classic')
+            if (helper := directory / name).is_file() and os.access(helper, os.X_OK)}
+
+
 class MacSandbox:
     os_kind = 'macos'
     isolation = ('Seatbelt: hidden sources/inputs/private PKI, cleared environment, private writable scratch/temp, '
@@ -63,6 +70,7 @@ int main(int argc, char **argv) {
                    Path('/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild')]
         allowed += [Path(p) for p in tools.values()]
         allowed += [Path(tools['ar']).resolve().parent / 'ranlib']
+        allowed += list(linker_helpers(tools['linker']).values())
         self.allowed = sorted({p.absolute() for p in allowed} | {p.resolve() for p in allowed})
 
     def command(self, tail, user_home, index=None, readonly_paths=()):

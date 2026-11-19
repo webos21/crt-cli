@@ -1345,3 +1345,119 @@ The draft was then deleted; the nine published CLI Previews remain and no `windo
 
 **Not covered.** A real publication by the workflow (`dry_run: false`) for `win-arm64`, the owner's offline signature of such an archive and the signature replay on it, and replacing the hand-built Preview in `pins.json` and in crt's `sdk-pins.json` (each a reviewed change in both repositories). The rehearsal's archive was not executed outside the hosted `verify` job.
 
+## macOS/arm64 integration expansion (2026-11-19)
+
+**Candidate on `codex/macos-host-tools-integration`; not adopted on main yet.** The common integration driver and all three workflow
+matrices (`pins`, `redirect`, `ports`) now include macOS/arm64 on `macos-15`. This is build-host tooling only: no CLI product, public SDK,
+runtime ABI, recipe, root/project lock, publisher key, default or STATUS changes. Windows integration remains unimplemented.
+
+### Inputs and implementation
+
+The new `integration-pins.json` entry selects the published signed host-tools Preview `v0.1.0-hosttools.20261119.macos-aarch64.1`:
+archive 583176 bytes, SHA-256 `90c7585a92fc020e05ea69e7bcd752a4df67f060706c87f81822cb11b0c676a1`, manifest
+`27fac5efbb6f846041b471d8b0be8e8004608ef5839ce4a2ef23c62aae8e07b8`, detached signature 256 bytes, SHA-256
+`15c2af47b2de52ccf876a0d1c335ba187a92ff92de8b14c2fb52521b0ac3d451`. Producer evidence predates this pin:
+[CRT public replay](https://github.com/webos21/crt/blob/84eec172a9268f58f1d61016f08d10b9cdb368bc/docs/acceptance/host_tools_acceptance.md#macoswindows-host-tools-publication-signatures-and-macos-replay-2026-11-19).
+SDK/CLI pins are unchanged: `v0.0.1-preview.20261110.macos.1` (content `e3dc7fb1...bac8`, contract `d5a100fd...e464`) and signed bootstrap
+`v0.1.0-preview.20261117.macos-arm64.1`. The host-tools and bootstrap signatures are verified before extraction/execution; SDK archive,
+manifest, installed content and compiler contract are checked against their existing pins.
+
+macOS resolves Xcode tools via the existing CI bootstrap helper and uses Seatbelt, not Linux's LLVM/Bubblewrap/strace path. The oracle
+Python is explicitly selected and SHA-256-checked before launch, inventoried and permitted only for the differential test. macOS suite
+parsing now uses the same strict outcome helper as Linux: exactly one named positive check count, zero exit and no skip on stdout/stderr.
+The driver accepts the existing macOS ledger shape only with exactly five requested/reported passing suites, matching input pins,
+complete passing gates and `allow_dirty_sdk: false`. Earlier local receipts lacking these fields are not relabeled as integration passes.
+
+### Local verification
+
+Local macOS 27.2.1/arm64, Xcode 27.2, base CLI `2e4c4d1e8fa7df25bdebe1358587b469fce7752e` plus this tooling-only candidate:
+integration pin gate passes; 34 integration unit tests, four macOS parser/input tests, five Seatbelt policy tests, 17 bootstrap tests,
+11 pin-review tests and 21 release-driver tests pass (92 total). The workflow parses with Ruby/Psych and every run block parses with
+macOS `/bin/bash`. The public-download `redirect` entry point passes **54/54** cases with the pinned CLI and SDK.
+
+The complete public-download `ports` entry point exits 0: five input-enabled suites, **300 checks, 26/26 adapter gates**, no skip.
+Counts: build **40**, store **105**, oracle **41**, command **33**, project **81**. Both static/shared recipe tests and C/C++ consumers run.
+The real port command publishes once, reuses the exact key, then verifies the item. Cold self-build executes 21/reuses 0; warm executes 0/reuses 21.
+The CLI imports only libSystem; bare version/doctor, source/SDK/tool denial probes, no-undeclared-executable policy and unchanged original/copied
+SDK/bundle inventories pass. Only the differential oracle gets its labeled host-tool exception. The source fingerprint remains
+`b54ea39ae1bc663dcea6da1a7b72c659998ce289fc621b155642182e4402ec33`; native CLI SHA-256 is
+`eddb433570034bf169d91b7a5913201554757b0ac91c9fce8109c561e9a5d1aa`.
+
+Local oracle is Python 3.15.2 (workflow selects Python 3.12), executable SHA-256
+`6cc907e4a022fefc843bcd93954eaf5a2cbfc77a095640bfadeeed96154190c5`. Its digest is checked by both common driver and macOS adapter,
+recorded in the input/result ledgers and used for the oracle invocation. `port-inputs.json` records `input_mode: download` and
+`publisher_authentication: signature_verified` for the host-tools archive; staging's `native_validation: not_run` is not the final replay result.
+The SDK install directory, installed contract and content match the pinned public SDK; it is never rebuilt or patched by integration.
+
+Retained evidence in CRT's ignored `out/macos-hosted-integration-20261119/` includes local logs, `local-ports-r2/replay/{inputs,commands,result}.json`,
+the common `port-inputs.json`/`replay-command.json` and install logs, plus `local-redirect-r1/redirect-replay.json`.
+Port result SHA-256 `9bde4b7729386314297091df7e95bca844a7b345caa43c05329760129a9c5047`;
+redirect result SHA-256 `bd1e398e6dd30f2cf54fd50b82d6b23b26603b1f82084c542960823d9477a74d`.
+The full fresh work directories are `/private/tmp/crt-cli-integration-macos-20261119-ports-r2` and `...-redirect-r1`.
+The first ports attempt was intentionally stopped during development after review found an oracle variable-name collision; its logs and
+workspace remain, not counted as a pass. The corrected driver uses fresh `ports-r2` outputs and unchanged public assets.
+
+After the linker-helper correction, a fresh local workspace again passes **300 checks and 26/26 gates**, using the same authenticated
+public inputs (no new download or SDK mutation). The complete retained replay is `local-classic-fresh/`, result SHA-256
+`942672b35a6d7ca73236508de756df5559f22c5c60ecfe80f277e0e50e950f8e`; driver SHA-256
+`679e0264b949c06c33a87245fd6bc38612afe5d63aec3357c88a2a15f8be9b27`, CLI SHA-256
+`e64710033d39499751e07020552408dfa696ddf4ef6f73b10fd37a1bf5f7af42`. Xcode 27.2 needs no legacy helper; its helper inventory is empty.
+The focused regression set is now **93 tests** (one additional exact-helper fixture), no skips. An earlier retained-workspace retry
+passes the five suites but only 25/26 gates: its store already contains the item, so the fresh-publication assertion fails. It is not
+counted as a full pass or used as cold-publish evidence; the fresh replay above supplies that evidence.
+
+### First hosted attempt and linker-dispatch correction
+
+Draft [PR #30](https://github.com/webos21/crt-cli/pull/30) at `cbba4792b6eb6506b4dc4ddcd7a9047fc3c61b5b` has a passing
+[native CI run](https://github.com/webos21/crt-cli/actions/runs/44463523022): all six native rows and `CI gate` succeed.
+The first manual [integration run](https://github.com/webos21/crt-cli/actions/runs/44463529315) passes all three hosts' `pins` and
+`redirect` jobs and both Linux `ports` jobs, but fails macOS `ports` before any port suite runs (2/4 replay gates, zero suites).
+Its retained artifact is `ports-macos-arm64-cbba4792b6eb6506b4dc4ddcd7a9047fc3c61b5b`, ID `14501171915`.
+The clean SDK configure succeeds; fresh CLI linking reports `can't exec ld64` after a legacy-option warning on Xcode 16.4/macOS SDK 15.5.
+The initial correction looked for a sibling named `ld64` only. In the second [run](https://github.com/webos21/crt-cli/actions/runs/44473654095)
+at `2bf4dfd`, the helper inventory is empty and the same macOS link fails: that inferred filename was not the installed helper.
+Apple also names its legacy linker `ld-classic`; the corrected resolver checks both exact names. The second run's Linux/x64 job separately
+refuses a 12,103-byte zlib download against the unchanged 1,512,791-byte pin before any suite runs; no digest/size check is relaxed.
+After preserving both failures, that obsolete run was canceled while Linux/arm64 was still running, releasing the concurrency slot
+for the corrected run. Its canceled Linux/arm64 leg is not a pass.
+
+The correction permits only existing executable `ld64`/`ld-classic` files next to the selected canonical linker, not the Xcode directory. It records
+the helper path/digest in `inputs.json`; focused policy fixtures cover its absence, non-executable state and exact-file permission.
+The artifact now also retains individual step stdout/stderr and the CLI import audit for diagnosis. The passing fresh rerun below
+does not erase or relabel the earlier failures.
+
+### Hosted qualification on the PR branch
+
+Manual [integration run 44474145070](https://github.com/webos21/crt-cli/actions/runs/44474145070), commit
+`25591d8699a59b90e08acc1d7a72a054d8f09d4f`, passes **all nine jobs**: `pins`, `redirect` and `ports` on macOS/arm64,
+Linux/x86_64 and Linux/arm64. The macOS port job runs on macOS **15.8.2** (`24H232`), image `macos-15-arm64 20261112.0539.3`,
+Xcode **16.4**, SDK **15.5** and Python **3.12.10**. The explicit oracle executable SHA-256 is
+`d4f152f2a753c94e0e7935c8ebbe6b2609979e1df7898422b577d0076383d08b`.
+
+macOS reports **300 checks / 26 of 26 gates**, no skip: build 40, store 105, oracle 41, command 33, project 81. Fresh public-download
+inputs match the pins above; static/shared zlib and C/C++ consumers, oracle comparison, publication/reuse/verify, the import boundary,
+source-hidden probes and unchanged original/copied SDK/tool inventories all pass. Redirect is separately **54/54**.
+`external_linker_helpers` confirms the actual helper is
+`/Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld-classic`, SHA-256
+`d3077803de1f49624e93723a4102aec9ae4893e04f2fe1530ce7e5c74dd9fbb5`; no `ld64` file is present.
+The port driver digest matches the final local replay above. Hosted CLI SHA-256 is
+`921552ae20614ddcd800f8b150419fd158bdd2830bc0ce6de97e2716d7380fed` (no cross-path byte-reproducibility claim).
+
+Each Linux port job preserves its **262 checks / 25 of 25 gates** baseline (35/90/23/33/81), no skip. The transient wrong-size
+zlib response from the previous attempt is not accepted or substituted; this run authenticates the unchanged pinned source bytes.
+[PR CI 44474145670](https://github.com/webos21/crt-cli/actions/runs/44474145670) at the same commit passes all six native matrix rows
+and `CI gate`. The final follow-up changes only documentation and the host-neutral helper fixture (POSIX executable-bit semantics and
+the simulated Seatbelt prerequisite); the 93-test local set passes without skips. No CLI product or SDK input changes after this replay.
+
+Evidence is retained in CRT's ignored `out/macos-hosted-integration-20261119/hosted-44474145070/` plus the original macOS log.
+Hosted artifact IDs: macOS ports `14506132689`, redirect `14505354447`, Linux/x64 ports `14506626758`, Linux/arm64 ports `14505808312`.
+Result SHA-256 values: macOS ports `f1905bd238d129748e34c6d849e014862fda030e319d2fe16f73dff8a5547c36`,
+macOS redirect `6f3bd16abba36cdfe40d88b2198cbfae6683b0e942e7b233fd7796896c6d74cf`,
+Linux/x64 ports `4c94ef100b1d83b868993e432293f51558008fd036d5cd02e035d502552ccf1a`,
+Linux/arm64 ports `35d246e32704b8c6c7c5689b5d692b7b5ab9129d3d54959d2c63512dc8b2c9b9`.
+
+**Adoption remains pending.** PR #30 is unmerged; the owner authorized a branch/PR and hosted verification, not a main merge.
+The macOS row reaches the main daily schedule only after reviewed adoption. Windows integration, Windows/arm64 D1 (31/32),
+private-DLL qualification, release publication and STATUS are unchanged. Unrelated CRT/GFX/Web stages are not gates for this
+build-host change.
+

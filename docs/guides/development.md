@@ -282,8 +282,9 @@ records the complete counts, failed thread prototypes and measured timing limits
 The five `port-*` suites (except `port-recipe-test`) print `skipped` and exit 0 without the machine-local
 `CRT_CLI_TEST_PORT_*` inputs, so they are **not** in the PR set: the driver fails if a suite prints `skipped`, and also
 if `crt.json` declares a test that `pins.json` classifies neither as PR-set nor as input-gated. They belong to a
-manual `integration.yml`; its port jobs remain blocked until independent host
-tools are publicly pinned and the hosted invocation is enabled.
+daily/manual `integration.yml`, with independently pinned public CRT host tools.
+Linux is already qualified; macOS wiring and its exact hosted acceptance are
+recorded [separately](../acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19). Windows expansion remains separate work.
 
 Run the same driver on a native host with LLVM installed (it creates `--work`, which must be new or empty, and sets
 `HOME` inside it, so the default SDK store is untouched):
@@ -347,11 +348,14 @@ on the target host against those downloaded bytes. Record the results in
 [CI acceptance](../acceptance/ci_acceptance.md) and
 [Preview acceptance](../acceptance/preview_acceptance.md).
 
-### Linux Integration Driver
+<a id="linux-integration-driver"></a>
+
+### Native Integration Driver
 
 `tools/ci_integration.py ports` owns the integration input and result policy.
-`tools/replay_port_linux.py` remains the Linux-only Bubblewrap/strace adapter;
-it builds a fresh copy of the CLI sources against the installed public SDK,
+`tools/replay_port_linux.py` is the Linux Bubblewrap/strace adapter and
+`tools/replay_port_macos.py` is the macOS/arm64 Seatbelt adapter.
+Each builds a fresh copy of the CLI sources against the installed public SDK,
 then runs the five requested port suites. This tooling is a test-host
 orchestrator, not a Python dependency of the CLI or generated applications.
 
@@ -360,7 +364,8 @@ fails before work starts. `--pins` selects an explicit alternate file, useful
 for local fixtures; `--input-dir` consumes local archives instead of downloading
 them and still checks their pinned sizes and hashes. Neither option promotes
 a bundle or changes the committed pins. Native execution must match `--host`;
-the work directory must be fresh, outside the source checkout and `/tmp`.
+the work directory must be fresh and outside the source checkout. Linux also
+rejects `/tmp`; macOS may use a fresh `/private/tmp` directory.
 
 Preparation without execution:
 
@@ -383,18 +388,46 @@ python3 tools/ci_integration.py ports --host linux-x64 --pins /absolute/test-pin
 
 The driver separately downloads the published bootstrap CLI and pinned public
 SDK, installs into a private HOME/store, then delegates native execution to
-the Linux adapter. The oracle interpreter is an explicit test-host tool with
+the host's native adapter. The oracle interpreter is an explicit test-host tool with
 a verified executable digest; only `port-oracle-test` may use it. Missing or
 tampered inputs, unsafe extraction, adapter failure, missing/failed cases,
 different input identities, a missing suite, a skipped suite or a zero-check
 suite all fail. `port-inputs.json`, adapter argv, stdout/stderr, inventories,
 traces and `replay/result.json` retain the evidence.
 
-The committed workflow still lacks the published host-tools pins, native
-invocation arguments and `schedule:`. Activate those together after producer
-publication and reviewed pinning; then run all five suites on both hosted
-Linux architectures. Local preparation/replay does not close that gate or
-macOS/Windows D2. See [driver preparation evidence](../acceptance/ci_acceptance.md#linux-integration-driver-preparation-2026-11-16).
+The Linux pins, native invocation and daily schedule are already enabled
+([acceptance](../acceptance/ci_acceptance.md#host-tools-pins-and-the-wired-ports-job-2026-11-16)).
+The macOS row uses `macos-15`, Python 3.12 and Xcode tools selected with `xcrun`,
+not Linux's LLVM directory or Bubblewrap. It pins the signed public host-tools
+Preview `v0.1.0-hosttools.20261119.macos-aarch64.1`; SDK and CLI inputs stay in
+`.github/ci/pins.json`. The workflow records the real oracle Python executable's
+SHA-256 with Python's stdlib (no GNU `sha256sum` prerequisite).
+
+Native macOS invocation:
+
+```text
+python3 tools/ci_integration.py ports --host macos-arm64 --work /private/tmp/fresh-macos-integration --oracle-python /absolute/python3 --oracle-python-sha256 <selected-executable-sha256> --hide /absolute/producer-checkout
+```
+
+`--llvm-bin` is for Linux. macOS selects the four Xcode tool paths and the OS
+SDK explicitly. Seatbelt permits the selected tool files and, when installed,
+their exact legacy linker helpers (`ld64`/`ld-classic`), not an entire Xcode
+directory; helper paths and SHA-256 values are recorded in the replay inputs.
+Its adapter records the clean SDK selection and pinned oracle,
+rejects zero/duplicate/wrong-name reports and skips in either output stream,
+and preserves its existing `suites`/`suite_results` ledger. The common driver
+requires exactly the same five executed suites, matching input hashes and no
+dirty-SDK opt-in on either host; it does not accept an older local replay as a
+new hosted result. Only the differential oracle may use the separately labeled
+host interpreter/SDK-tool exception. The native CLI and port jobs still use
+CRT libraries and the selected CRT host-tools bundle.
+
+`pins`, `redirect` and `ports` are independent host matrix jobs; integration
+remains a read-only daily/manual workflow, not a required PR check or a release
+publisher. Uploads retain per-call commands, input identities, results and logs.
+See [macOS acceptance](../acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19)
+for local versus hosted results and pin adoption status; Windows jobs and the
+Windows/arm64 D1 timeout are not closed by this work.
 
 ### Repository, Project and CI Pins
 
