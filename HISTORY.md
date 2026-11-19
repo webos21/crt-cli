@@ -11,6 +11,10 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-19
 
+### Adopt Windows/x64 hosted integration on main
+
+Merge the latest main into the validation branch without conflicts, then fast-forward and push main to `f06a036`. It differs from fully qualified `9a417fc` only in documentation. Main CI [44493533992](https://github.com/webos21/crt-cli/actions/runs/44493533992) passes all six native rows and `CI gate`, in addition to the previously verified 11-job integration. Check the D2 macOS/Windows hosted Port/oracle item, retain its checked sub-items, and keep the first scheduled Windows run as a separate open observation. Update the adoption ledger and documentation index; no runtime, pin, SDK, lock, release or STATUS changes in this completion record. [Adoption evidence](docs/acceptance/ci_acceptance.md#main-adoption-of-windows-integration).
+
 ### Qualify the Windows/x64 hosted port integration candidate
 
 On `codex/windows-hosted-integration`, add the `windows-2022` pin/port jobs, a fresh SDK-only restricted-token adapter and public producer test-helper pins. At `9a417fc`, all five Windows port suites execute 270 checks and the complete replay passes 29 gates, including real symlinks, original/bare input denial, static/shared consumers, a real port build, PE imports and unchanged inventories. All 11 integration jobs, the six-row native CI and `CI gate` pass. The first hosted attempt failed five OpenSSL Unicode-path signing fixtures; signing the same bytes over stdio fixes the test-host constraint while preserving Unicode staging/verification. Retain the failure and the independently checked successful artifact; main adoption and the first scheduled Windows run remain separate. Reconcile the already owner-merged macOS PR #30 (`b9168c5`) in TODO/compatibility without inventing a rerun. [Acceptance](docs/acceptance/ci_acceptance.md#windowsx64-hosted-port-integration-2026-11-19).

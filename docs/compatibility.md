@@ -20,7 +20,12 @@ At consumer `9a417fc52073b977dc8e36d7c8c978cd09dbb6f9`, the signed public bundle
 and 29 native gates, with actual symlink support, private original inputs, a distinct bare SID and declared process accounting.
 The [CI record](acceptance/ci_acceptance.md#windowsx64-hosted-port-integration-2026-11-19) owns identities, the OpenSSL fixture correction,
 retained first failure and native evidence. All six required native CI rows and `CI gate` pass at the same commit. Main adoption remains
-pending; this neither qualifies Windows redirect nor closes Windows/arm64 D1 (31/32), private DLLs, Full SDKs or official/default trust.
+pending at the branch-qualification stage; this neither qualifies Windows redirect nor closes Windows/arm64 D1 (31/32), private DLLs, Full SDKs or official/default trust.
+
+Subsequent adoption: the owner requested main integration and push, and main fast-forwards to
+`f06a036c01c1e71d14df87c1f082b1df816c33c6`. The delta from validated `9a417fc` is documentation only; the adapters, workflow and pins
+are unchanged. The [adoption record](acceptance/ci_acceptance.md#main-adoption-of-windows-integration) tracks main CI and distinguishes
+the enabled daily job from its not-yet-observed first scheduled execution. The original input-pin and branch records retain their scope.
 
 ## Windows/x64 integration input pin (2026-11-19)
 

@@ -6,6 +6,10 @@ procedure are in the [development guide](../guides/development.md#continuous-int
 
 ## Current Hosted Coverage (2026-11-11)
 
+Integration update 2026-11-19: the [Windows/x64 adoption record](#windowsx64-hosted-port-integration-2026-11-19) now covers 11 daily/manual
+jobs across Linux/x64, Linux/arm64, macOS/arm64 and Windows/x64, with five executed port suites on every host. Its main/first-scheduled-run
+status is tracked separately from the original required-CI evidence below; required native coverage remains six rows across five host pairs.
+
 Updated 2026-11-18: the checked-in workflow has six required jobs across five host/architecture pairs; the Windows/arm64 leg (`windows-11-arm`) was added that day and has
 [its own hosted record](#hosted-windows-11-arm-result-of-the-win-arm64-pins-2026-11-18). The rest of this section is the 2026-11-11 state of the other four pairs. The latest documented run,
 [`42931003805`](https://github.com/webos21/crt-cli/actions/runs/42931003805),
@@ -1533,7 +1537,7 @@ Windows/arm64 D1, private DLLs, SDK/bootstrap pins, root/project locks, release 
 
 ## Windows/x64 hosted port integration (2026-11-19)
 
-**Hosted Windows qualification passes on `codex/windows-hosted-integration`; main adoption pending.** The signed host-tools pin above is committed on main
+**Adopted on main after hosted qualification on `codex/windows-hosted-integration`.** The signed host-tools pin above is committed on main
 as `2473b545e2e7ecc6112a10cfff67e359cf60a3bc`. This increment connects its common input driver to a fresh Windows restricted-token
 adapter and a `windows-2022` job. Windows `pins` joins the shared pin matrix; the separate Windows port job checks out into a newly created,
 private directory so hosted `Users` grants do not make the original source visible through the restricted token. Existing directories and
@@ -1612,6 +1616,17 @@ Artifact ID: `14513750774` (`ports-win-x64-9a417fc52073b977dc8e36d7c8c978cd09dbb
 All **11 integration jobs pass**. The other downloaded port results also pass the common judge: Linux/x64 **262 checks / 25 gates**,
 Linux/arm64 **262 / 25**, macOS/arm64 **300 / 26**, no skipped suite. `all-ports-verification.json` retains their result hashes.
 [CI 44490052761](https://github.com/webos21/crt-cli/actions/runs/44490052761) at the same commit passes all six native rows and `CI gate`.
-The first scheduled Windows run and main adoption are not yet claimed here. Windows redirect, Windows/arm64 D1 and private-DLL qualification
+The first scheduled Windows run is not yet claimed here. Windows redirect, Windows/arm64 D1 and private-DLL qualification
 remain separate; no release publication, root/project lock, SDK or STATUS changes.
+
+### Main adoption of Windows integration
+
+After the owner's instruction to merge and push, latest `origin/main` (`2473b54`) was merged into the validation branch without conflicts
+or additional changes. Main fast-forwards to `f06a036c01c1e71d14df87c1f082b1df816c33c6`, which differs from fully qualified `9a417fc`
+only in five documentation files. Both branches are pushed; the runtime, workflow, adapter and pin inputs are identical to the passing
+11-job integration and six-row native CI. The main push's [CI 44493533992](https://github.com/webos21/crt-cli/actions/runs/44493533992)
+passes all six native rows and `CI gate`; its full run metadata is retained as `out/win-host-tools-pin-20261119/main-ci-run.json`.
+The existing daily `23 3 * * *` schedule now includes Windows `pins` and `ports`;
+the first scheduled Windows run remains unobserved and is retained as an open TODO. No additional schedule, release dispatch or security
+setting change is needed for this adoption.
 

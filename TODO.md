@@ -34,21 +34,23 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
   ([acceptance](docs/acceptance/host_environment_acceptance.md#windowsx64-published-host-tools-consumer-replay-2026-11-19)).
 - [x] Replay the public Windows/arm64 host tools through D3; this is not a full D1 pass
   ([acceptance](docs/acceptance/host_environment_acceptance.md#windowsarm64-published-host-tools-consumer-replay-2026-11-19)).
-- [ ] D2, cross-platform integration: add hosted macOS/arm64 and Windows/x64 jobs to `integration.yml` that run the native Port and
+- [x] D2, cross-platform integration: add hosted macOS/arm64 and Windows/x64 jobs to `integration.yml` that run the native Port and
   oracle suites with reviewed integration pins and host-specific acceptance, including the hosted Windows symlink prerequisite.
   Producer publication is complete; native receipts above do not substitute for these jobs.
   - [x] Add and re-derive the Windows/x64 public host-tools archive, manifest and detached-signature pins;
     [common input preparation and native tool replay](docs/acceptance/ci_acceptance.md#windowsx64-public-host-tools-integration-pin-2026-11-19) pass.
-    Windows hosted adapter/job wiring, its symlink prerequisite and five-suite qualification remain open.
+    Hosted execution, symlinks and five-suite qualification are recorded separately below.
   - [x] Connect the Windows/x64 common runner to a fresh restricted-token workspace and pinned public test helpers;
     `windows-2022` passes `pins`, all five suites (270 checks) and 29 replay gates; the first fixture failure is retained
-    ([hosted evidence](docs/acceptance/ci_acceptance.md#windowsx64-hosted-port-integration-2026-11-19)). Main adoption remains separate.
+    ([hosted evidence](docs/acceptance/ci_acceptance.md#windowsx64-hosted-port-integration-2026-11-19)); adopted on main as `f06a036`.
   - [x] macOS/arm64 implementation and local preflight on `codex/macos-host-tools-integration`
     ([candidate evidence](docs/acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19)).
   - [x] macOS/arm64 hosted `pins`/`redirect`/`ports` verification on the PR branch
     ([results](docs/acceptance/ci_acceptance.md#hosted-qualification-on-the-pr-branch)).
   - [x] macOS integration-pin adoption on main: the owner merged [PR #30](https://github.com/webos21/crt-cli/pull/30) as `b9168c5`;
-    [main CI](https://github.com/webos21/crt-cli/actions/runs/44482683748) passes. Windows hosted qualification remains separate.
+    [main CI](https://github.com/webos21/crt-cli/actions/runs/44482683748) passes. Windows has its separate evidence above.
+- [ ] Record the first scheduled Windows/x64 integration run after main adoption; manual hosted qualification is complete
+  ([adoption record](docs/acceptance/ci_acceptance.md#main-adoption-of-windows-integration)).
 - [ ] Resolve the Windows/arm64 D1 `stdout-limit` timeout against the public CLI/SDK; retain the 31/32 and focused failure
   [receipts](docs/acceptance/host_environment_acceptance.md#windowsarm64-published-host-tools-consumer-replay-2026-11-19).
 - [ ] Windows/arm64 under that policy: the leg is added, pinned, hosted-qualified and its `release.yml` rehearsal passed (checked sub-items below); open: a
