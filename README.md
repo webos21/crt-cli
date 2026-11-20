@@ -44,7 +44,7 @@ Current CLI builds also accept a caller-pinned key and detached signature for
 SDK acquisition, install and repair. Official default-download trust and channels remain pending.
 
 The experimental D3 source-port path implements `port build|list|verify|recover|lock` for the pinned zlib recipe on Linux,
-macOS and Windows/x64 and ARM64. It builds both static/shared forms through explicitly selected CRT host tools into a separate port store,
+macOS, Windows/x64 and Windows/arm64. It builds both static/shared forms through explicitly selected CRT host tools into a separate port store,
 never into the SDK. Projects choose provider `sdk` or `port`; optional lock pins bind the latter's exact manifest.
 See the [adapter policy](docs/design/source_port_adapter.md) and
 [macOS replay](docs/acceptance/sdk_install_acceptance.md#source-port-d3-replay-macosarm64-2026-11-09) and

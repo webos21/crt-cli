@@ -1809,5 +1809,27 @@ port and redirect result SHA-256 values `7d111e4983cfcebb4da04eb67869b313b839af1
 `9c331a5e6490b3aaec3615da3ffb7412ed5cf801ede101ee7d2f0420270ef679`.
 
 All six required native CI jobs and `CI gate` passed for the same commit. [PR CI 44662121328](https://github.com/webos21/crt-cli/actions/runs/44662121328).
-The tested commit entered `main` through [PR #34](https://github.com/webos21/crt-cli/pull/34) as merge `aa06fb3`.
+The tested commit entered `main` through [PR #34](https://github.com/webos21/crt-cli/pull/34) as merge `aa06fb3`, whose
+[main CI 44664407453](https://github.com/webos21/crt-cli/actions/runs/44664407453) also passed.
+
+## Windows/arm64 workflow Preview candidate (2026-11-20)
+
+[Release run 44664411493](https://github.com/webos21/crt-cli/actions/runs/44664411493) was dispatched from `main` with `host: win-arm64`,
+`dry_run: false`, date `20261120`, serial `1`, `.github/release/preview-notes.md` and tested source `e6dc40acddfaee43e67b9691a813f0aa3cd3dc3e`.
+Native `package` and `verify` passed on separate `windows-11-arm` runners. The package and verify receipts agree on the archive digest.
+
+| Input or candidate | Exact identity |
+| --- | --- |
+| Bootstrap CLI | Signed `v0.1.0-preview.20261118.windows-arm64.1` |
+| Dev SDK | `v0.0.1-preview.20261118.windows.arm64.1`, content `3b251637845621ba28d6ba1d9c2f6a5e097f6b328f57054f7e7cb5c5eb52621f` |
+| Tag | `v0.1.0-preview.20261120.windows-arm64.1` |
+| `crt-cli-0.1.0-dev-windows-aarch64-preview.20261120.1.tar.xz` | 5,234,232 bytes, SHA-256 `de7efa11662833bf3790a23ffa4b24ef4dfe503de2de4cf6e53f87562709d8a0` |
+| Package manifest | `53d91b8e62bf3eda43a086a72cec531ead57eda7c41f278f97038cba236b6725` |
+| `crt-cli.exe` | `e15efbb25b3ea9e4b0ccdb8327ed58b23c6b85c7e5a6b7b068ac16cadeae394b`, PE `0xAA64`, imports `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll` |
+
+The hosted package verifier exercised version, self doctor, incorrect manifest-pin refusal, real HTTPS SDK acquisition, and C and C++
+creation, build, test, run and byte-identical lock reuse (3 cold commands, 0 warm for each language). The workflow archive and verify
+receipts are retained at `C:\Users\cmjo\w\ar20\pack\` and `C:\Users\cmjo\w\ar20\verify\`. The workflow moved to the protected
+`release` environment review after those jobs passed. Publisher signing follows the owner's offline procedure.
+[Package artifact](https://github.com/webos21/crt-cli/actions/runs/44664411493/artifacts/14597532662).
 
