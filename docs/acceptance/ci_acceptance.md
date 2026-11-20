@@ -1793,3 +1793,21 @@ It requires both workers to finish, one to create the item, the other to reuse i
 pass the existing checks. This exercises the competition between actual CLI processes, including distinct owner PIDs. The isolated
 producer thread reproducer remains failing on the SDK in use.
 
+The initial [hosted run 44660444614](https://github.com/webos21/crt-cli/actions/runs/44660444614) reproduced the in-process failure
+on `windows-11-arm` and `windows-2022`, both in `port-store-test`. The ARM64 artifact `14596012931` records read failures while
+hashing libc++ headers. Both failed Windows artifacts are retained under `out/gha-44660444614-arm/` and `out/gha-44660444614-x64/`.
+
+The fresh native ARM64 rerun at `C:\Users\cmjo\w\ia64q\replay\` passed all five suites and 29 gates. Its `result.json` SHA-256 is
+`1dce728cdf93eba3bf52199288f9d4f841452443811c5e3719eaea55fe998056`.
+[Hosted integration 44662115742](https://github.com/webos21/crt-cli/actions/runs/44662115742) at
+`e6dc40acddfaee43e67b9691a813f0aa3cd3dc3e` passed all 15 jobs. The ARM64 redirect artifact matches the pinned public executable
+and records **54/54**. The ARM64 port artifact reports **270** checks (build 36, store 97, oracle 21, command 33, project 83),
+**29** replay gates and **5,023** declared process records. The cold self-build executed 21 actions and the warm self-build reused
+all 21. The driver checked real symlinks, the hidden-input boundary, the ARM64 PE machine, the OS import allowlist, and unchanged
+source, SDK and host-tool inventories. The independent artifact review in `out/gha-44662115742-arm/verification.json` records ARM64
+port and redirect result SHA-256 values `7d111e4983cfcebb4da04eb67869b313b839af15028b9e94957b79b8dc00011a` and
+`9c331a5e6490b3aaec3615da3ffb7412ed5cf801ede101ee7d2f0420270ef679`.
+
+All six required native CI jobs and `CI gate` passed for the same commit. [PR CI 44662121328](https://github.com/webos21/crt-cli/actions/runs/44662121328).
+The tested commit entered `main` through [PR #34](https://github.com/webos21/crt-cli/pull/34) as merge `aa06fb3`.
+

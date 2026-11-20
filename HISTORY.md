@@ -11,6 +11,14 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-20
 
+### Qualify hosted Windows/arm64 integration
+
+Add the signed ARM64 host-tools pins and `windows-11-arm` pins, redirect and five-suite port jobs. Local and hosted ARM64
+redirect replays pass 54/54. Port replays pass 270 checks and 29 native gates. The shared store fixture runs two independent
+publishers against one key. The first failed Windows runs and the standalone CRT thread reproducer are retained.
+The 15-job integration and six required CI legs passed before PR #34 entered `main`.
+[Integration evidence](docs/acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20).
+
 ### Fix large stdout relay in the Windows/arm64 D1 candidate
 
 Relay captured child stdout to stderr in blocks through the CRT descriptor API. On native Windows/arm64, the candidate built with

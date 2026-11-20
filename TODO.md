@@ -63,7 +63,8 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
   [receipts](docs/acceptance/host_environment_acceptance.md#windowsarm64-published-host-tools-consumer-replay-2026-11-19).
   - [x] Fix the CLI relay and replay all 32 cases with a native build from the public SDK and signed host-tools bundle
     ([candidate record](docs/acceptance/host_environment_acceptance.md#windowsarm64-d1-block-relay-candidate-2026-11-20)).
-- [ ] Qualify the Windows/arm64 `integration.yml` jobs on `windows-11-arm`: signed host-tools pins, restricted redirects and all five port suites.
+- [x] Qualify the Windows/arm64 `integration.yml` jobs on `windows-11-arm`: signed host-tools pins, restricted redirects (54/54)
+  and all five port suites (270 checks). [Hosted evidence](docs/acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20).
 - [ ] Windows/arm64 under that policy: the leg is added, pinned, hosted-qualified and its `release.yml` rehearsal passed (checked sub-items below); open: a
   workflow-built, published and signed Preview.
   - [x] Wire `win-arm64` into `ci_bootstrap.py`, `ci_release.py`, `release.yml` and their tests; prepare and replay a local SDK and CLI candidate
