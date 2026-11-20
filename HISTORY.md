@@ -11,6 +11,14 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-20
 
+### Publish, sign and replay the workflow-built Windows/arm64 Preview
+
+Release run `44664411493` published `v0.1.0-preview.20261120.windows-arm64.1` from the tested commit. The unauthenticated archive and
+checksum downloads match the workflow artifacts byte for byte. The public package passed native C and C++ build, test and run, warm lock reuse,
+and D1 **32/32** with the original deadlines. Attach the owner's offline signature after verification, download it from the public release,
+and independently verify it and the native CLI's `signature_verified` result. The native CLI rejected a modified signature without publishing output.
+[Publication evidence](docs/acceptance/preview_acceptance.md#windowsarm64-workflow-preview-release-2026-11-20).
+
 ### Qualify hosted Windows/arm64 integration
 
 Add the signed ARM64 host-tools pins and `windows-11-arm` pins, redirect and five-suite port jobs. Local and hosted ARM64

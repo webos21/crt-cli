@@ -686,3 +686,13 @@ The ARM64 executable extracted from the [workflow candidate](ci_acceptance.md#wi
 also passes **32/32** with the same public SDK, signed host-tools bundle, restrictions and deadlines. Its SHA-256 is
 `e15efbb25b3ea9e4b0ccdb8327ed58b23c6b85c7e5a6b7b068ac16cadeae394b`. The exact-candidate replay receipt
 `C:\Users\cmjo\w\ar20\d1\result.json` has SHA-256 `6f07c494045f16d8df5418040cc5371b5e85f49a338e51c456161ef7ca46d094`.
+
+## Windows/arm64 D1 public Preview replay (2026-11-20)
+
+The executable extracted from a fresh unauthenticated download of the [workflow Preview](preview_acceptance.md#windowsarm64-workflow-preview-release-2026-11-20)
+matches the candidate executable SHA-256 `e15efbb25b3ea9e4b0ccdb8327ed58b23c6b85c7e5a6b7b068ac16cadeae394b`. The full native
+`replay_host_environment_windows.py` passed **32/32** with the public SDK, signed host-tools bundle, restricted token and 60/90-second
+deadlines used above. `stdout-limit` exited 0, set `output_truncated: true` and `timed_out: false`, and captured exactly 8,388,608 bytes.
+The public replay receipt `C:\Users\cmjo\w\ar20\pd1\result.json` has SHA-256
+`4b0167d45df5acdbcfed939a480befb54aba34e1da5bb45bf5aa7023cf99ab9c`. The [original failed public replay](#published-cli-signature-and-d1-3132-qualification-remains-open)
+retains the 31/32 result and the focused failure.

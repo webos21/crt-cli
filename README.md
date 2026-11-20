@@ -69,7 +69,9 @@ Each host needs its LLVM-compatible tools and a CA bundle you choose, and instal
 
 The Release column lists each host's first published Preview. Later Previews built by `release.yml` (Linux/x86_64 and Linux/arm64
 `20261116`, macOS/arm64 `20261117`, Windows/x64 `20261117`) are the CI bootstrap pins in `.github/ci/pins.json`
-([records](docs/acceptance/ci_acceptance.md)); the Windows/arm64 Preview is both its first and its CI bootstrap, and was built by hand.
+([records](docs/acceptance/ci_acceptance.md)). Windows/arm64 CI uses the signed, hand-built 20261118 Preview as its bootstrap.
+The signed, workflow-built 20261120 Windows/arm64 Preview includes the large-output fix.
+[Workflow-built Windows/arm64 Preview](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261120.windows-arm64.1).
 
 SDK acquisition uses the caller's pinned source file; the table does not set a
 default channel or migrate project locks. Linux/x86_64's published executable
@@ -127,9 +129,9 @@ also exercise this workflow at their recorded baselines.
 [The active plan](TODO.md) continues the Dev SDK + CLI preview: the Linux/x86_64, Linux/aarch64, macOS/arm64, Windows/x64 and Windows/arm64
 packages are out and default/project pin adoption is done; CI covers Linux/x86_64, Linux/arm64, macOS/arm64, Windows/x64 and Windows/arm64. The D3 zlib contract is
 [approved and adopted](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09). Windows/arm64 passes the hosted zlib suites
-against the signed public bundle and the local D1 replay against a fresh build with the large-output fix.
+against the signed public bundle and the D1 replay against the workflow-built Preview downloaded from GitHub.
 [ARM64 integration](docs/acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20) ·
-[D1 replay](docs/acceptance/host_environment_acceptance.md#windowsarm64-d1-block-relay-candidate-2026-11-20).
+[D1 replay](docs/acceptance/host_environment_acceptance.md#windowsarm64-d1-public-preview-replay-2026-11-20).
 
 CI's six required jobs (Linux/x86_64 on two Ubuntu versions) pass on pull requests and pushes to `main`, and `main`
 requires the `CI gate` check; [CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)
