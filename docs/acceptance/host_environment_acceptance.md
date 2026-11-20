@@ -494,6 +494,61 @@ This closes the missing macOS/arm64 private-closure test slice only. Windows
 private-DLL/arm64, other future dynamic bundles, production trust/promotion and
 default/binary/root-lock adoption remain separate. STATUS is unchanged.
 
+## Windows/x64 private-DLL host-tools replay (2026-11-20)
+
+**Pass for the bounded local native fixture, 27/27.** The previously published static Windows bundle cannot exercise this gate.
+Clean producer `1e489d6c90ad5695ebf8caf3aee63b7d5b8738e1` assembles a separately identified test bundle containing actual,
+unmodified imported AWK linked to CRT `libc.dll` and `libm.dll`; mksh/toybox/make retain their original static bytes.
+The [producer acceptance](https://github.com/webos21/crt/blob/e8724b85587342ac67ff6361ef08217eaec7ca69/docs/acceptance/host_tools_acceptance.md#windowsx64-private-dll-closure-replay-2026-11-20)
+owns exact SDK/source/compiler/runtime identities, replay commands and raw evidence. Host: native Windows 11/x64 `10.0.26100`,
+LLVM 22.1.8, Windows SDK `10.0.28000.0`.
+
+Actual consumer: unchanged published `v0.1.0-preview.20261117.windows-x86_64.1` executable,
+SHA-256 `feb9779109892cf73235307617398e8dfe70bdadcc86d3dff22ba04642c84df1`.
+CLI source baseline `a1db91a91421a1fa738b1be3f47ae7d71ed8621e` receives documentation only; no fresh source build or current-source matrix pass
+is inferred. Original public Dev SDK `v0.0.1-preview.20261110.windows.1`, source `b31276a6acccf0a89731f7bb0aecbdcdc9b45cda`,
+content `5bb55372ec10e3cfa24c84de981a7130f56aeb57ef0d43d5da22a65036dec7ef` is unchanged. The fixture compiles C sources with its declared
+shared C compile policy and links those objects with the declared shared **C++** link policy; pure-C shared link policy remains separate.
+
+| Local fixture / receipt | SHA-256 |
+| --- | --- |
+| Host-tools manifest pin | `6e1e70f96cc71e2e5c3f179dbc2031d60ab9949e23765c4c64e430a0dd7568e7` |
+| Payload | `c61c5b5b15db9d544c46fd2dbff787d5d3338ad4b518ea49edf172689d335af8` |
+| Accepted `replay-r2/result.json` | `c03a5af4f5f1e526f0bb1e3aff23bd769409e0a7971b392da59ce0bccf093ba2` |
+| Actual mapped-module snapshots | `0e73b7b2dee19aa46a065a806452f657e5c04338d57d63e729387cd9a2ec30fc` |
+
+The producer fixes the initial-load gap by placing byte-identical private DLLs beside each copied executable alias, covered by the existing
+format-1 inventory. It verifies the actual PE import graph, native DLL flags/machine, OS shadows and adjacent closure before publication.
+No new CLI command, schema, permanent launcher or late DLL-search hook is needed. The CLI already pins and validates the whole inventory.
+
+- Two independently relocated space/Hangul copies retain the same pin; actual AWK/math output is `42` and `9`.
+  Canonical AWK starts with empty PATH. Physical `bin/awk.exe` and `usr/bin/awk` aliases and CLI shell jobs survive hostile cwd/PATH.
+- Eight Toolhelp snapshots record both CRT DLLs beside the actual running AWK image (16 private mappings total), with hashes equal to the
+  pinned canonical closure. The selected bundle is read-only to the consumer. All 18 restricted calls record only declared images (45 processes).
+- A working test-only poisoned libm writes a marker and exits 97 in separate cwd and PATH positive controls when the adjacent copy is removed.
+  With the verified adjacent copies restored, the aliases and CLI job succeed without loading poison. The trap uses only declared OS imports
+  and is never an accepted runtime dependency or a host C/C++ runtime fallback.
+- Missing alias DLLs are refused before shell-job creation; changed DLL bytes and a missing canonical DLL fail CLI validation.
+  Direct canonical execution with libm absent fails at initial load (`0xC0000135`) while original SDK DLL access is denied.
+  Restoring bytes/modes makes the same manifest pin run again; both relocated payloads remain unchanged afterward.
+- The original SDK and all imported AWK source bytes remain unchanged. Fresh assembly reproduces the entire public static payload
+  `dc106db47ed8bcbb56bdd6da0415dce527653fcb42b0c54bdc1402dca74c35fe`.
+
+Isolation is a restricted token, selected original-input denial and owned job-object process accounting. Native probes deny access to the original
+SDK manifest/DLLs, policy, CRT build/source entry points, producer AWK, original CLI and CLI manifest. This does not deny arbitrary execution/network.
+Python/LLVM/Toolhelp and the hostile DLL builder are producer/test-host inputs, not bundle-consumer prerequisites. Only disposable fixture ACLs change;
+no global PATH, registry, security setting, SDK or STATUS changes. The test suppresses expected missing-DLL dialogs per process and restores that mode.
+
+Evidence: `C:/Users/Lee/s15/replay-r2/` with isolated work `C:/Users/Lee/s15/r2/`, retained in CRT ignored
+`out/host-private-windows-20261120/`. Dirty preliminary `replay-r1` also passes 27/27 and remains identified separately.
+Focused producer tests: 51 cases (50 pass, one Windows-inapplicable POSIX permission skip), including nine new synthetic PE policy cases;
+the actual runtime proof is the separate native replay above. Reproduction uses the committed producer driver and fresh output/work directories.
+
+This closes the specific CRT/CLI Windows/x64 private-DLL initial-load/collision test gate and the linked
+[CLI TODO](../../TODO.md#windowsx64-private-dll-host-tools). It does not publish an all-shared host-tools release, change public static assets/signatures,
+SDK/CI/default/root/project pins, qualify Windows/arm64 private DLLs or fix its D1 output timeout. Existing historical static-bundle limitations retain
+their original scope; the [compatibility ledger](../compatibility.md#windowsx64-private-dll-local-host-tools-qualification-2026-11-20) records this later adoption.
+
 ## Windows/x64 published host-tools consumer replay (2026-11-19)
 
 Consumer acceptance of the public [Windows/x86_64 host-tools Preview](https://github.com/webos21/crt/releases/tag/v0.1.0-hosttools.20261119.windows-x86_64.1)

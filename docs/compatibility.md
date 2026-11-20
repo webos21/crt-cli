@@ -11,6 +11,24 @@ the [request/handoff record](crt_host_tools_publication_request.md#macoswindows-
 prerequisite from consumer adoption. The per-host records below retain their exact scope: closing the request neither promotes integration
 pins nor closes hosted jobs, Windows/arm64 D1 (31/32), or private-DLL qualification. No format or runtime contract changes here.
 
+## Windows/x64 private-DLL local host-tools qualification (2026-11-20)
+
+Producer-owned assembly/PE validation at immutable CRT
+[`1e489d6c90ad5695ebf8caf3aee63b7d5b8738e1`](https://github.com/webos21/crt/commit/1e489d6c90ad5695ebf8caf3aee63b7d5b8738e1)
+fixes adjacent runtime closure for copied aliases. Producer
+[acceptance at `e8724b8`](https://github.com/webos21/crt/blob/e8724b85587342ac67ff6361ef08217eaec7ca69/docs/acceptance/host_tools_acceptance.md#windowsx64-private-dll-closure-replay-2026-11-20)
+owns SDK/source/policy/build identities and the clean 27-case native replay. CLI baseline `a1db91a91421a1fa738b1be3f47ae7d71ed8621e`
+receives documentation only; actual execution uses unchanged published CLI `v0.1.0-preview.20261117.windows-x86_64.1`,
+SHA-256 `feb9779109892cf73235307617398e8dfe70bdadcc86d3dff22ba04642c84df1`.
+The consumer [native record](acceptance/host_environment_acceptance.md#windowsx64-private-dll-host-tools-replay-2026-11-20)
+links both owning TODO gates and the exact local fixture pin. No new ownership, command, schema, ABI, lifetime or lock format is introduced.
+
+Existing host-tools format 1 pins every adjacent DLL copy. The CLI's implemented doctor/shell inventory validation refuses missing/changed
+files before job creation, and restoration works with the original pin. Real AWK and its transitive private libc/libm load beside each running
+executable, ahead of working hostile cwd/PATH controls. Fresh assembly reproduces the prior public static payload exactly; previous accepted
+combinations remain intact. This is a local native gate, not an official all-shared release or a promoted SDK/CI/default/root/project lock.
+SDK pure-C shared link policy and Windows/arm64 remain separate. No Studio interface or consumer product source changes.
+
 ## Windows/x64 hosted redirect qualification (2026-11-19)
 
 At CLI `c97d2a73ee25c98e9dda6df18e60c7e93b176098`, the existing signed Windows Preview/Dev SDK combination passes the shared restricted

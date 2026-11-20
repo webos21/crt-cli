@@ -24,6 +24,11 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
 
 ## In Progress
 
+### Windows/x64 private-DLL host tools
+
+- [x] Qualify the independently relocated local bundle with actual shared-CRT AWK, app-local initial loading, cwd/PATH collisions
+  and CLI refusal/restoration ([27-case native evidence](docs/acceptance/host_environment_acceptance.md#windowsx64-private-dll-host-tools-replay-2026-11-20)); public static pins and SDKs are unchanged.
+
 ### CI Platform Expansion
 
 - [x] Connect Windows/x64 restricted-redirect replay to the hosted integration matrix; native and hosted 54/54 cases pass,

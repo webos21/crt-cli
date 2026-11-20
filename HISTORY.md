@@ -9,6 +9,18 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-20
+
+### Qualify the Windows/x64 private-DLL host-tools boundary
+
+The unchanged published Windows CLI consumes a separately pinned local bundle containing actual shared-CRT AWK and private libc/libm.
+CRT implementation `1e489d6` fixes copied aliases by placing byte-identical DLL closure beside them; acceptance `e8724b8` records clean native
+27/27, eight mapped-module snapshots, working cwd/PATH poison controls, missing/changed DLL rejection and same-pin restoration. Original SDK,
+upstream AWK and the complete public static payload remain unchanged. Record the producer/consumer compatibility and close the local native
+gate without a new CLI implementation, SDK/default/CI pin, release or STATUS change. The actual consumer is the public Preview executable,
+not a fresh build of documentation baseline `a1db91a`.
+[Inputs, evidence and limits](docs/acceptance/host_environment_acceptance.md#windowsx64-private-dll-host-tools-replay-2026-11-20).
+
 ## 2026-11-19
 
 ### Adopt the Windows redirect job on main
