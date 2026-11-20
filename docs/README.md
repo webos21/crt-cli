@@ -42,8 +42,7 @@ from the SDK build baseline:
 ## Acceptance Contracts and Evidence
 
 - [GitHub CI](acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11):
-  six required hosted jobs across five host/architecture pairs, the retained
-  local and failed-run evidence, the `main` ruleset, and outstanding integration/release gates.
+  six required hosted jobs, full integration across five host pairs, release workflows and retained failed runs.
 - [Dev SDK / CLI Preview](acceptance/preview_acceptance.md): bounded local candidate,
   published Linux/x86_64, Linux/aarch64, macOS/arm64, Windows/x64 and Windows/arm64 packages,
   actual SDK/CLI/resource identities, isolated workflows and publication limits.
@@ -59,8 +58,7 @@ from the SDK build baseline:
   project-generation/self-build evidence is linked to native D0 acceptance.
 - [D1 Host Environment and Bootstrap Resources](acceptance/host_environment_acceptance.md):
   independently pinned CRT tools, scoped doctor, non-interactive shell, resource
-  pin/signature negatives and SDK-free Linux/macOS/Windows-x64 HTTPS at recorded
-  combinations; private-import and other-host limits remain in that record.
+  pin/signature negatives, the Windows/x64 private-DLL replay and the Windows/arm64 public D1 replay.
 - [D2 Local SDK Installer](acceptance/sdk_install_acceptance.md):
   Local install/verify/recover and stored-contract/project-selection evidence
   on all five native pairs; the later Linux verify increment has its own scope.

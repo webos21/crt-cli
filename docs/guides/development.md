@@ -309,8 +309,8 @@ stop later stages, so one run reports everything that is broken.
 [The loader-repair record](../acceptance/ci_acceptance.md#linux-loader-repair-sdk-adoption-2026-11-10)
 distinguishes producer/local/public-byte evidence from completed hosted replay.
 The original `.3` failure remains historical evidence; the producer's TLSDESC
-fix is shipped in `.4`, rather than hidden by a runner upgrade. [TODO](../../TODO.md#ci-platform-expansion)
-owns integration/release work and any still-pending hosted qualification.
+fix is shipped in `.4`. [CI acceptance](../acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20)
+records five-host integration. [CI Operations](../../TODO.md#ci-operations) tracks operational follow-ups.
 
 ### Publish a CLI Preview
 
@@ -425,13 +425,15 @@ new hosted result. Only the differential oracle may use the separately labeled
 host interpreter/SDK-tool exception. The native CLI and port jobs still use
 CRT libraries and the selected CRT host-tools bundle.
 
-Windows uses native LLVM 22.1.8, discovered Windows SDK `um/x64` import libraries and the separately pinned signed
-`20261119.windows-x86_64.1` CRT bundle. Its two producer test-host helper files are pinned by immutable revision, URL, size and SHA-256
+Windows uses native LLVM 22.1.8, the matching Windows SDK `um/x64` or `um/arm64` import libraries and the corresponding signed
+20261119 CRT host-tools bundle. The two producer test-host helper files are pinned by immutable revision, URL, size and SHA-256
 in `integration-pins.json` and verified before import. No sibling checkout is needed. Choose a short fresh work path outside the source:
 
 ```text
 python tools/ci_integration.py ports --host win-x64 --work C:/Users/<user>/w/p --llvm-bin "C:/Program Files/LLVM/bin" --oracle-python <absolute-python.exe> --oracle-python-sha256 <selected-executable-sha256>
 ```
+
+On Windows/arm64 use `--host win-arm64`, native ARM64 LLVM and a native ARM64 oracle Python.
 
 The source checkout and original inputs must be unreadable to the replay's unregistered SID. The hosted job creates a new private
 checkout directory before checkout; the driver protects only its newly created input directory. A visibility probe refuses an existing
@@ -440,14 +442,15 @@ CLI runs without those copies. Actual CRT symlink creation is a prerequisite; a 
 any system setting or substituting marker links. Every child image is accounted for, and unknown/undeclared images fail. This is not
 network/executable denial. Only the oracle may execute the copied, digest-checked Python and SDK reference tools.
 
-`pins`, `redirect` and `ports` have host-specific jobs on Linux/x64, Linux/arm64, macOS/arm64 and Windows/x64. Integration
+`pins`, `redirect` and `ports` have host-specific jobs on Linux/x64, Linux/arm64, macOS/arm64, Windows/x64 and Windows/arm64. Integration
 remains a read-only daily/manual workflow, not a required PR check or a release
 publisher. Uploads retain per-call commands, input identities, results and logs.
 See [macOS acceptance](../acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19)
 for local versus hosted results and pin adoption status, and [Windows acceptance](../acceptance/ci_acceptance.md#windowsx64-hosted-port-integration-2026-11-19)
-for its 270 checks, 29 gates and retained failure. Windows/arm64 D1 remains separate.
+for its 270 checks, 29 gates and retained failure. The [ARM64 expansion record](../acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20)
+covers the full matrix and links the public D1 replay via the release record.
 
-For a redirect-only change, `gh workflow run integration.yml --ref <review-branch> -f scope=redirect` runs the four pin and four redirect
+For a redirect-only change, `gh workflow run integration.yml --ref <review-branch> -f scope=redirect` runs the five pin and five redirect
 jobs. Port jobs are intentionally outside that manual scope; a green scoped run does not mean those suites executed. The default
 `scope=all` and every scheduled event run the complete matrices. No schedule is added or changed by selecting a manual scope.
 The redirect driver accepts only 54 distinct passing cases, a matching selected CLI digest and normal CLI exit statuses (0/1/2).
@@ -799,7 +802,8 @@ the adapter or requalify the SDK. The user runs Linux here and macOS on a native
 macOS host. Those deltas and the [bounded approval/adoption](../compatibility.md#d3-bounded-adapter-adoption-2026-11-09)
 are now recorded; `crt_review` is `approved` for new items and retained pending
 items must not be rewritten. Windows/x64's final native record remains the baseline
-unless a changed policy/product input affects it. Windows/arm64 D3 is separate.
+unless a changed policy/product input affects it. The later [Windows/arm64 D3 replay](../acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20)
+qualifies the public pinned bundle on that host.
 
 1. Reuse an identified public Dev SDK/provider and independent CRT host-tools
    bundle outside original checkouts. Verify recipe/test/source digests, tools,

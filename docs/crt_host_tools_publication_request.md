@@ -17,9 +17,9 @@ owns asset identities, signatures, native producer evidence and answers on closu
 Consumer results are separately recorded: [macOS D3](acceptance/sdk_install_acceptance.md#signed-public-host-tools-d3-replay-macosarm64-2026-11-19),
 [Windows/x64 D1/D3](acceptance/host_environment_acceptance.md#windowsx64-published-host-tools-consumer-replay-2026-11-19) and
 [Windows/arm64 D3 with incomplete D1](acceptance/host_environment_acceptance.md#windowsarm64-published-host-tools-consumer-replay-2026-11-19).
-The ARM64 D1 stdout-limit case remains failed (31/32), not waived by closing the producer request. Per-host integration-pin adoption and
-hosted jobs, including Windows job-rootfs symlink qualification, remain CLI-owned work in [TODO](../TODO.md#ci-platform-expansion).
-No CI/default pin, SDK, project lock or published executable changes as part of this handoff closure.
+The original Windows/arm64 D1 replay ended at 31/32. The later [public D1 replay](acceptance/host_environment_acceptance.md#windowsarm64-d1-public-preview-replay-2026-11-20)
+passed 32/32, and [hosted integration](acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20) qualified all five hosts,
+including real Windows job-rootfs symlinks.
 
 ## Original request (2026-11-11)
 
