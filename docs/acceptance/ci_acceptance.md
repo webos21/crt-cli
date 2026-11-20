@@ -2,9 +2,13 @@
 
 This record owns what the CI driver and workflow have actually been run against. The design and the
 procedure are in the [development guide](../guides/development.md#continuous-integration); open work is in
-[TODO](../../TODO.md#ci-platform-expansion). A passing local rehearsal is not a GitHub-hosted run.
+[CI Operations](../../TODO.md#ci-operations). A passing local rehearsal is not a GitHub-hosted run.
 
 ## Current Hosted Coverage (2026-11-11)
+
+As of 2026-11-20, all five host pairs have passing pins, redirect and port jobs in the
+[15-job integration run](#windowsarm64-hosted-integration-expansion-2026-11-20). The Windows/arm64 workflow Preview is
+[published and signed](preview_acceptance.md#windowsarm64-workflow-preview-release-2026-11-20).
 
 Integration update 2026-11-19: the [Windows/x64 port adoption record](#windowsx64-hosted-port-integration-2026-11-19) qualifies the 11-job
 configuration across Linux/x64, Linux/arm64, macOS/arm64 and Windows/x64, with five executed port suites on every host. The subsequent
@@ -1070,7 +1074,8 @@ fetch cases and no Preview-notes text for this host. The package replay and cons
 4. Dispatch `release.yml` with `host: win-arm64` and `dry_run: true`, then publish and sign a Preview built by the workflow.
 
 Status 2026-11-18: steps 1 to 3 are done ([first Preview, pins and row](#first-windowsarm64-preview-pins-and-the-ciyml-row-2026-11-18) and its
-[hosted result](#hosted-windows-11-arm-result-of-the-win-arm64-pins-2026-11-18)); step 4 is still open in [TODO](../../TODO.md#ci-platform-expansion).
+[hosted result](#hosted-windows-11-arm-result-of-the-win-arm64-pins-2026-11-18)). Step 4 was completed by the
+[rehearsal](#windowsarm64-releaseyml-rehearsal-2026-11-19) and [signed publication](preview_acceptance.md#windowsarm64-workflow-preview-release-2026-11-20).
 
 ## Linux/x86_64 SDK pin moved to the first automated Preview (2026-11-18)
 

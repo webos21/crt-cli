@@ -544,10 +544,10 @@ Evidence: `C:/Users/Lee/s15/replay-r2/` with isolated work `C:/Users/Lee/s15/r2/
 Focused producer tests: 51 cases (50 pass, one Windows-inapplicable POSIX permission skip), including nine new synthetic PE policy cases;
 the actual runtime proof is the separate native replay above. Reproduction uses the committed producer driver and fresh output/work directories.
 
-This closes the specific CRT/CLI Windows/x64 private-DLL initial-load/collision test gate and the linked
-[CLI TODO](../../TODO.md#windowsx64-private-dll-host-tools). It does not publish an all-shared host-tools release, change public static assets/signatures,
-SDK/CI/default/root/project pins, qualify Windows/arm64 private DLLs or fix its D1 output timeout. Existing historical static-bundle limitations retain
-their original scope; the [compatibility ledger](../compatibility.md#windowsx64-private-dll-local-host-tools-qualification-2026-11-20) records this later adoption.
+This closes the specific CRT/CLI Windows/x64 private-DLL initial-load and collision test gate for the local bundle. The
+[compatibility ledger](../compatibility.md#windowsx64-private-dll-local-host-tools-qualification-2026-11-20) records its scope and the
+[history](../../HISTORY.md#retire-the-completed-ci-expansion-and-windowsx64-private-dll-queues) records closure of the work item.
+The later [Windows/arm64 public replay](#windowsarm64-d1-public-preview-replay-2026-11-20) closes the D1 output timeout there.
 
 ### Main adoption and hosted regression
 

@@ -39,7 +39,8 @@ is implemented with Linux, macOS and Windows replay evidence: `sdk acquire --sou
 `build --sdk-source <file>` verifies a caller-pinned source and reuses an exact
 installed identity. Public GitHub release assets need the opt-in
 [restricted redirect policy](docs/reference/bootstrap_contract.md#restricted-https-redirects-experimental-cli-owned)
-(`"redirect_policy": "github-release"`; default is refusal), exercised on Linux/x86_64, Linux/aarch64, macOS/arm64 and Windows/x64 ([Windows record](docs/acceptance/preview_acceptance.md#windowsx64-cli-preview-release-2026-11-10)). `fetch` also supports explicit-key RSA-PSS verification.
+(`"redirect_policy": "github-release"`; default is refusal), exercised on all five host pairs. `fetch` also supports explicit-key RSA-PSS verification.
+[Hosted redirect evidence](docs/acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20).
 Current CLI builds also accept a caller-pinned key and detached signature for
 SDK acquisition, install and repair. Official default-download trust and channels remain pending.
 
@@ -55,28 +56,21 @@ Other recipes and general dependency resolution remain planned.
 ## Download the Previews
 
 Each host prerelease carries one CLI executable with statically linked CRT libraries, notices and a pinned inventory.
-Verify the archive using an independently trusted digest and, where provided, its detached `.sig` and the
+Verify the archive using an independently trusted digest, its detached `.sig` and the
 independently verified [publisher key](https://github.com/webos21/crt/blob/main/docs/security/publisher_signing.md).
 Each host needs its LLVM-compatible tools and a CA bundle you choose, and installs the Dev SDK separately.
 
-| Host | Release | Explicit SDK input |
+| Host | Signed CLI Preview | Explicit SDK input |
 | --- | --- | --- |
-| Linux/x86_64 | [`v0.1.0-preview.20261110.linux-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.linux-x86_64.1) ([record](docs/acceptance/preview_acceptance.md#linuxx86_64-cli-preview-release-2026-11-10)) | [`v0.0.1-preview.20261118.linux.x64.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261118.linux.x64.1); needs LLVM 21 |
-| Linux/aarch64 | [`v0.1.0-preview.20261111.linux-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261111.linux-arm64.1) ([record](docs/acceptance/preview_acceptance.md#linuxaarch64-cli-preview-release-2026-11-11)) | [`v0.0.1-preview.20261110.linux.arm64.2`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.linux.arm64.2); needs LLVM 21 |
-| macOS/arm64 | [`v0.1.0-preview.20261110.macos-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.macos-arm64.1) ([record](docs/acceptance/preview_acceptance.md#macos-cli-preview-release-2026-11-10)) | [`v0.0.1-preview.20261110.macos.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.macos.1); needs macOS 15.0 or later and Xcode's command-line tools |
-| Windows/x64 | [`v0.1.0-preview.20261110.windows-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261110.windows-x86_64.1) ([guide](docs/guides/windows_preview.md), [record](docs/acceptance/preview_acceptance.md#windowsx64-cli-preview-release-2026-11-10)) | [`v0.0.1-preview.20261110.windows.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.windows.1); needs LLVM and Windows SDK |
-| Windows/arm64 | [`v0.1.0-preview.20261118.windows-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261118.windows-arm64.1) ([record](docs/acceptance/preview_acceptance.md#windowsarm64-cli-preview-release-2026-11-18)) | [`v0.0.1-preview.20261118.windows.arm64.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261118.windows.arm64.1); needs native ARM64 LLVM and Windows SDK |
+| Linux/x86_64 | [`v0.1.0-preview.20261116.linux-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261116.linux-x86_64.1) | [`v0.0.1-preview.20261118.linux.x64.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261118.linux.x64.1), LLVM 21 |
+| Linux/aarch64 | [`v0.1.0-preview.20261116.linux-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261116.linux-arm64.1) | [`v0.0.1-preview.20261110.linux.arm64.2`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.linux.arm64.2), LLVM 21 |
+| macOS/arm64 | [`v0.1.0-preview.20261117.macos-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261117.macos-arm64.1) | [`v0.0.1-preview.20261110.macos.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.macos.1), macOS 15.0 or later and Xcode command-line tools |
+| Windows/x64 | [`v0.1.0-preview.20261117.windows-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261117.windows-x86_64.1) | [`v0.0.1-preview.20261110.windows.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.windows.1), LLVM and Windows SDK |
+| Windows/arm64 | [`v0.1.0-preview.20261120.windows-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261120.windows-arm64.1) | [`v0.0.1-preview.20261118.windows.arm64.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261118.windows.arm64.1), native ARM64 LLVM and Windows SDK |
 
-The Release column lists each host's first published Preview. Later Previews built by `release.yml` (Linux/x86_64 and Linux/arm64
-`20261116`, macOS/arm64 `20261117`, Windows/x64 `20261117`) are the CI bootstrap pins in `.github/ci/pins.json`
-([records](docs/acceptance/ci_acceptance.md)). Windows/arm64 CI uses the signed, hand-built 20261118 Preview as its bootstrap.
-The signed, workflow-built 20261120 Windows/arm64 Preview includes the large-output fix.
-[Workflow-built Windows/arm64 Preview](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261120.windows-arm64.1).
-
-SDK acquisition uses the caller's pinned source file; the table does not set a
-default channel or migrate project locks. Linux/x86_64's published executable
-was built with SDK `.3`; the repaired `.4` above is the later qualified consumer
-and CI input ([adoption](docs/compatibility.md#linux-loader-repair-sdk-adoption-2026-11-10)).
+SDK acquisition uses the caller's pinned source file and preserves existing project locks. The Windows/arm64 release above includes
+the large-output fix. See [STATUS](STATUS.md#implemented-and-exercised-scope) for CI bootstrap pins and the [release records](docs/acceptance/preview_acceptance.md)
+for exact build and replay inputs.
 Linux/aarch64 is qualified on Ubuntu 26.04 / glibc 2.43 with LLVM 21.1.8;
 other distributions and loader versions retain their own validation gates.
 
@@ -126,25 +120,14 @@ also exercise this workflow at their recorded baselines.
 
 ## Next User Workflow
 
-[The active plan](TODO.md) continues the Dev SDK + CLI preview: the Linux/x86_64, Linux/aarch64, macOS/arm64, Windows/x64 and Windows/arm64
-packages are out and default/project pin adoption is done; CI covers Linux/x86_64, Linux/arm64, macOS/arm64, Windows/x64 and Windows/arm64. The D3 zlib contract is
-[approved and adopted](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09). Windows/arm64 passes the hosted zlib suites
-against the signed public bundle and the D1 replay against the workflow-built Preview downloaded from GitHub.
-[ARM64 integration](docs/acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20) ·
-[D1 replay](docs/acceptance/host_environment_acceptance.md#windowsarm64-d1-public-preview-replay-2026-11-20).
+The next source-port work builds on the D3 zlib baseline with SQLite, libpng and dependency resolution.
+Full SDK installation, general updates, self-upgrade and Studio have separate gates.
+[Work queue](TODO.md#d4---dependencies-variants-locks-and-local-cache) ·
+[Approved D3 adapter](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09).
 
-CI's six required jobs (Linux/x86_64 on two Ubuntu versions) pass on pull requests and pushes to `main`, and `main`
-requires the `CI gate` check; [CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)
-records hosted results. The integration workflow runs the pin checks, redirect replay and five port suites across all five hosts
-on manual or scheduled runs. See the [release records](docs/acceptance/preview_acceptance.md) for the published and signed Previews.
-
-Preview qualification covers the actual packaged CLI, promoted SDK pin, trust,
-notices/resources, external LLVM setup and a source-hidden user flow. Full SDK
-assembly and its source/license/security checks remain separate; generic Full
-installation is not currently a CLI capability. Existing Full approval evidence
-is preserved and rechecked for the final candidate's changes and validity.
-D4 SQLite/libpng work can proceed against fixed contracts without blocking that
-first preview. General updates, self-upgrade and Studio remain later work.
+The required CI and the scheduled or manual integration workflow cover five host pairs. The Windows/arm64 Preview also passed
+its public D1 replay. [Hosted integration](docs/acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20) ·
+[Public D1 replay](docs/acceptance/host_environment_acceptance.md#windowsarm64-d1-public-preview-replay-2026-11-20).
 
 ## Platforms and Requirements
 
