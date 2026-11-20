@@ -92,7 +92,8 @@ class PinTest(unittest.TestCase):
         recipe = json.loads((Path(__file__).resolve().parent.parent / 'src/test/data/zlib.recipe.json').read_text())
         self.assertEqual(pins['zlib_source']['sha256'], recipe['source']['sha256'])
         for host, os_name, arch in (('linux-x64', 'linux', 'x86_64'), ('linux-arm64', 'linux', 'aarch64'),
-                                    ('macos-arm64', 'macos', 'aarch64'), ('win-x64', 'windows', 'x86_64')):
+                                    ('macos-arm64', 'macos', 'aarch64'), ('win-x64', 'windows', 'x86_64'),
+                                    ('win-arm64', 'windows', 'aarch64')):
             with self.subTest(host=host):
                 zlib, tools = load_pins(root, host)
                 self.assertTrue(tools['url'].startswith('https://github.com/webos21/crt/releases/download/' + tools['version'] + '/'))
@@ -104,9 +105,10 @@ class NativeAdapterTest(unittest.TestCase):
     def test_native_host_detection_and_explicitly_unsupported_hosts(self):
         for system, machine, expected in (('linux', 'x86_64', 'linux-x64'), ('linux', 'aarch64', 'linux-arm64'),
                                            ('darwin', 'arm64', 'macos-arm64'), ('darwin', 'aarch64', 'macos-arm64'),
-                                           ('win32', 'AMD64', 'win-x64'), ('win32', 'x86_64', 'win-x64')):
+                                           ('win32', 'AMD64', 'win-x64'), ('win32', 'x86_64', 'win-x64'),
+                                           ('win32', 'ARM64', 'win-arm64'), ('win32', 'aarch64', 'win-arm64')):
             self.assertEqual(host_key(system, machine), expected)
-        for system, machine in (('darwin', 'x86_64'), ('win32', 'ARM64'), ('linux', 'riscv64')):
+        for system, machine in (('darwin', 'x86_64'), ('win32', 'x86'), ('linux', 'riscv64')):
             with self.subTest(system=system, machine=machine), self.assertRaisesRegex(IntegrationError, 'unsupported'):
                 host_key(system, machine)
 
@@ -134,11 +136,14 @@ class NativeAdapterTest(unittest.TestCase):
             port_adapter_command('win-x64', None)
 
     def test_windows_tools_and_public_sdk_import_libraries_are_explicit(self):
-        with patch('ci_integration.windows_sdk_path', return_value='C:/Windows SDK/um/x64'):
-            adapter, tools = port_adapter_command('win-x64', 'C:/LLVM/bin')
-        self.assertEqual(adapter.name, 'replay_port_windows_ci.py')
-        self.assertEqual(tools['--cc'], Path('C:/LLVM/bin').absolute() / 'clang.exe')
-        self.assertEqual(tools['--os-sdk'], 'C:/Windows SDK/um/x64')
+        for arch in ('x64', 'arm64'):
+            sdk = 'C:/Windows SDK/um/' + arch
+            with self.subTest(arch=arch), patch('ci_integration.windows_sdk_path', return_value=sdk) as select:
+                adapter, tools = port_adapter_command('win-' + arch, 'C:/LLVM/bin')
+                select.assert_called_once_with(arch)
+                self.assertEqual(adapter.name, 'replay_port_windows_ci.py')
+                self.assertEqual(tools['--cc'], Path('C:/LLVM/bin').absolute() / 'clang.exe')
+                self.assertEqual(tools['--os-sdk'], sdk)
 
     def test_windows_redirect_stages_the_pinned_cli_and_runs_the_shared_native_cases(self):
         from types import SimpleNamespace
@@ -186,10 +191,10 @@ class NativeAdapterTest(unittest.TestCase):
             self.assertEqual((work / 'redirect.stderr').read_text(), 'partial stderr')
             self.assertFalse((work / 'redirect-replay/redirect-replay.json').exists())
 
-    def test_workflow_selects_all_three_hosts_and_keeps_native_prerequisites_separate(self):
+    def test_workflow_selects_all_five_hosts_and_keeps_native_prerequisites_separate(self):
         root = Path(__file__).resolve().parent.parent
         text = (root / '.github/workflows/integration.yml').read_text()
-        for host in ('linux-x64', 'linux-arm64', 'macos-arm64'):
+        for host in ('linux-x64', 'linux-arm64', 'macos-arm64', 'win-x64', 'win-arm64'):
             self.assertEqual(text.count('host: ' + host + '\n'), 3)
             load_pins(root / '.github/ci/integration-pins.json', host)
         self.assertIn("if: runner.os == 'Linux'", text)
@@ -199,12 +204,14 @@ class NativeAdapterTest(unittest.TestCase):
         self.assertIn('hashlib.file_digest', text)
         self.assertNotIn('sha256sum', text)
         self.assertIn('ports/replay/commands.json', text)
-        self.assertEqual(text.count('host: win-x64\n'), 2)
+        self.assertEqual(text.count('runner: windows-11-arm\n'), 3)
+        self.assertEqual(text.count("architecture: ${{ matrix.host == 'win-arm64' && 'arm64' || '' }}"), 3)
+        self.assertIn('LLVM-22.1.8-woa64.exe', text)
         self.assertIn("os.environ['RUNNER_TEMP']", text)
         self.assertIn('redirect/redirect.stderr', text)
         self.assertIn('options: [all, redirect]', text)
         self.assertEqual(text.count("if: github.event_name != 'workflow_dispatch' || inputs.scope != 'redirect'"), 2)
-        self.assertIn('name: ports (win-x64)', text)
+        self.assertIn('name: ports-${{ matrix.host }}-${{ github.sha }}', text)
         self.assertIn('SetAccessRuleProtection($true, $false)', text)
         self.assertIn('path: private-inputs', text)
         self.assertIn('real symlinks required', text)
@@ -248,7 +255,7 @@ class WindowsHarnessTest(unittest.TestCase):
                                    ('wrong url', {'files': [dict(files[0], url='https://example.invalid/tool.py'), files[1]]}),
                                    ('oversized', {'files': [dict(files[0], size=65537), files[1]]})]:
                 document = json.loads(path.read_text())
-                document['hosts']['win-x64']['replay_harness'].update(change)
+                document['windows_replay_harness'].update(change)
                 altered = Path(directory) / 'pins.json'; altered.write_text(json.dumps(document))
                 with self.subTest(label=label), self.assertRaises(IntegrationError):
                     windows_harness_pins(altered)
@@ -525,7 +532,7 @@ class ResultGateTest(unittest.TestCase):
         required = ['original-inputs-hidden', 'real-symlink-prerequisite', 'bare-original-and-build-inputs-hidden',
                     'PE x64 and only declared OS imports', 'original and copied SDK/tool inventories unchanged',
                     'source inputs unchanged']
-        result = dict(self.good, cases=[{'case': name, 'passed': True} for name in required])
+        result = dict(self.good, host='win-x64', cases=[{'case': name, 'passed': True} for name in required])
         prepared = dict(self.inputs, host='win-x64')
         self.assertEqual(self.judge(result, prepared=prepared), result)
         for missing in required:
@@ -535,6 +542,15 @@ class ResultGateTest(unittest.TestCase):
         for key, value in (('allow_dirty_sdk', True), ('allow_dirty_sdk', None), ('contract_sha256', '0' * 64)):
             with self.subTest(key=key, value=value), self.assertRaises(IntegrationError):
                 self.judge(dict(result, **{key: value}), prepared=prepared)
+
+        arm64 = dict(prepared, host='win-arm64')
+        with self.assertRaisesRegex(IntegrationError, 'host differs'):
+            self.judge(result, prepared=arm64)
+        arm64_result = dict(result, host='win-arm64')
+        with self.assertRaisesRegex(IntegrationError, 'Windows replay lacks'):
+            self.judge(arm64_result, prepared=arm64)
+        arm64_result['cases'] = [dict(case, case=case['case'].replace('PE x64', 'PE arm64')) for case in result['cases']]
+        self.assertEqual(self.judge(arm64_result, prepared=arm64), arm64_result)
 
     def test_complete_five_suite_report_is_required(self):
         self.assertEqual(self.judge(self.good), self.good)

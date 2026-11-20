@@ -61,6 +61,9 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
   redirect and all five port suites ([scheduled evidence](docs/acceptance/ci_acceptance.md#first-scheduled-windowsx64-integration-run-2026-11-19)).
 - [ ] Resolve the Windows/arm64 D1 `stdout-limit` timeout against the public CLI/SDK; retain the 31/32 and focused failure
   [receipts](docs/acceptance/host_environment_acceptance.md#windowsarm64-published-host-tools-consumer-replay-2026-11-19).
+  - [x] Fix the CLI relay and replay all 32 cases with a native build from the public SDK and signed host-tools bundle
+    ([candidate record](docs/acceptance/host_environment_acceptance.md#windowsarm64-d1-block-relay-candidate-2026-11-20)).
+- [ ] Qualify the Windows/arm64 `integration.yml` jobs on `windows-11-arm`: signed host-tools pins, restricted redirects and all five port suites.
 - [ ] Windows/arm64 under that policy: the leg is added, pinned, hosted-qualified and its `release.yml` rehearsal passed (checked sub-items below); open: a
   workflow-built, published and signed Preview.
   - [x] Wire `win-arm64` into `ci_bootstrap.py`, `ci_release.py`, `release.yml` and their tests; prepare and replay a local SDK and CLI candidate

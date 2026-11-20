@@ -8,13 +8,12 @@ Subcommands:
   redirect  restricted-redirect replay: the pinned published CLI against the pinned public SDK bytes
   ports     the five input-gated port suites through the pinned host tools and zlib source (fails while unpinned)
 
-Windows/x64 uses a restricted-token adapter with pinned public producer test-host helpers.
+Windows uses a restricted-token adapter with pinned public producer test-host helpers.
 """
 import argparse
 import hashlib
 import json
 import os
-import platform
 import re
 import shutil
 import ssl
@@ -27,7 +26,7 @@ from pathlib import Path, PurePosixPath
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import publisher_signature  # noqa: E402
-from ci_bootstrap import CiError, macos_tool_paths, windows_sdk_path  # noqa: E402
+from ci_bootstrap import CiError, WINDOWS_IMPORT_ARCH, host_key as bootstrap_host_key, macos_tool_paths, windows_sdk_path  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -43,7 +42,8 @@ REDIRECT_CASE_COUNT = 54
 HOST_TARGETS = {'linux-x64': {'os': 'linux', 'arch': 'x86_64'},
                 'linux-arm64': {'os': 'linux', 'arch': 'aarch64'},
                 'macos-arm64': {'os': 'macos', 'arch': 'aarch64'},
-                'win-x64': {'os': 'windows', 'arch': 'x86_64'}}
+                'win-x64': {'os': 'windows', 'arch': 'x86_64'},
+                'win-arm64': {'os': 'windows', 'arch': 'aarch64'}}
 SIGNATURE_FIELDS = ('url', 'name', 'sha256', 'size')
 MAX_SIGNATURE_BYTES = 1024
 MAX_HOST_TOOL_BYTES = 512 * 1024 * 1024
@@ -131,17 +131,10 @@ def log(message):
 
 
 def host_key(system=None, machine=None):
-    system = system if system is not None else sys.platform
-    machine = (machine if machine is not None else platform.machine()).lower()
-    if system.startswith('linux') and machine in ('x86_64', 'amd64'):
-        return 'linux-x64'
-    if system.startswith('linux') and machine in ('aarch64', 'arm64'):
-        return 'linux-arm64'
-    if system == 'darwin' and machine in ('aarch64', 'arm64'):
-        return 'macos-arm64'
-    if system == 'win32' and machine in ('x86_64', 'amd64'):
-        return 'win-x64'
-    raise IntegrationError('unsupported integration host: %s/%s' % (system, machine))
+    try:
+        return bootstrap_host_key(system, machine)
+    except CiError as error:
+        raise IntegrationError(str(error)) from error
 
 
 def download(url, destination, attempts=3):
@@ -276,12 +269,12 @@ def judge_redirect_result(path, returncode, cli_sha256):
 
 def port_adapter_command(host, llvm_bin):
     """Native tools and isolation adapter; input/signature/result gates stay common."""
-    if host == 'win-x64':
+    if host in WINDOWS_IMPORT_ARCH:
         if not llvm_bin:
             raise IntegrationError('native Windows ports requires --llvm-bin')
         llvm = Path(llvm_bin).absolute()
         try:
-            os_sdk = windows_sdk_path()
+            os_sdk = windows_sdk_path(WINDOWS_IMPORT_ARCH[host])
         except CiError as error:
             raise IntegrationError(str(error)) from error
         return ROOT / 'tools/replay_port_windows_ci.py', {
@@ -322,7 +315,7 @@ def command_ports(args, host):
         return
 
     harness = None
-    if host == 'win-x64':
+    if host in WINDOWS_IMPORT_ARCH:
         harness = prepare_windows_harness(args.pins, work)
         sys.path.insert(0, str(harness))
         import crt_windows_trace
@@ -376,7 +369,7 @@ def command_ports(args, host):
 
 
 def windows_harness_pins(path):
-    entry = json.loads(Path(path).read_text(encoding='utf-8')).get('hosts', {}).get('win-x64', {}).get('replay_harness', {})
+    entry = json.loads(Path(path).read_text(encoding='utf-8')).get('windows_replay_harness', {})
     if not isinstance(entry, dict):
         raise IntegrationError('Windows replay harness pin is missing or is not an object')
     revision, files = entry.get('revision'), entry.get('files')
@@ -507,9 +500,12 @@ def judge_port_result(path, returncode, prepared):
     cases = result.get('cases')
     if not isinstance(cases, list) or not cases or any(not isinstance(c, dict) or c.get('passed') is not True for c in cases):
         raise IntegrationError('port replay has missing or failed cases')
-    if prepared.get('host') == 'win-x64':
+    host = prepared.get('host')
+    if host in WINDOWS_IMPORT_ARCH:
+        if result.get('host') != host:
+            raise IntegrationError('Windows replay host differs from the prepared pin')
         required = {'original-inputs-hidden', 'real-symlink-prerequisite', 'bare-original-and-build-inputs-hidden',
-                    'PE x64 and only declared OS imports', 'original and copied SDK/tool inventories unchanged',
+                    'PE %s and only declared OS imports' % WINDOWS_IMPORT_ARCH[host], 'original and copied SDK/tool inventories unchanged',
                     'source inputs unchanged'}
         names = [case.get('case') for case in cases]
         if any(names.count(name) != 1 for name in required):
@@ -543,7 +539,7 @@ def main():
     parser.add_argument('--pins', default=str(ROOT / '.github/ci/integration-pins.json'))
     parser.add_argument('--prepare-only', action='store_true', help='ports: verify/stage inputs without running native suites')
     parser.add_argument('--input-dir', type=Path, help='ports: use local files, verifying the same pins (also for test fixtures)')
-    parser.add_argument('--llvm-bin', help='ports: declared native LLVM directory on Linux; macOS selects Xcode tools with xcrun')
+    parser.add_argument('--llvm-bin', help='ports: declared native LLVM directory on Linux or Windows; macOS selects Xcode tools with xcrun')
     parser.add_argument('--oracle-python', help='ports: absolute test-host Python for the SDK oracle only')
     parser.add_argument('--oracle-python-sha256', help='ports: independently selected oracle Python executable digest')
     parser.add_argument('--hide', action='append', default=[], help='ports: additional original input tree hidden by the native adapter')
@@ -554,7 +550,7 @@ def main():
             _, tools = load_pins(args.pins, host)
             load_publisher(args.pins)
             _require_fields('%s host_tools signature' % host, tools.get('signature'), SIGNATURE_FIELDS)
-            if host == 'win-x64':
+            if host in WINDOWS_IMPORT_ARCH:
                 windows_harness_pins(args.pins)
             log('integration pins complete for %s' % host)
         elif args.command == 'redirect':

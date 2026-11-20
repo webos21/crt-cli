@@ -13,7 +13,8 @@ import shutil
 import subprocess
 import sys
 
-from ci_integration import verify_download, verify_oracle, windows_harness_pins
+from ci_bootstrap import WINDOWS_IMPORT_ARCH
+from ci_integration import host_key, verify_download, verify_oracle, windows_harness_pins
 from replay_port_linux import digest, inventory, source_inputs, suite_outcome
 
 
@@ -72,6 +73,9 @@ def main():
     args = parser.parse_args()
     if sys.platform != 'win32':
         parser.error('native Windows is required')
+    host = host_key()
+    arch = WINDOWS_IMPORT_ARCH[host]
+    pe_machine = {'x64': 'IMAGE_FILE_MACHINE_AMD64', 'arm64': 'IMAGE_FILE_MACHINE_ARM64'}[arch]
     verify_oracle(str(args.oracle_python), args.oracle_python_sha256)
     if digest(args.contract) != args.contract_sha256 or digest(args.host_tools / 'manifest.json') != args.host_tools_sha256:
         parser.error('contract or host-tools manifest differs from its pin')
@@ -120,7 +124,7 @@ def main():
            'SystemRoot': os.environ['SystemRoot'], 'LC_ALL': 'C'}
     commands, cases, suites = [], [], {}
     bare, bare_sid = None, None
-    result = {'passed': False, 'allow_dirty_sdk': False, 'host': 'win-x64', 'cases': cases, 'suites': suites,
+    result = {'passed': False, 'allow_dirty_sdk': False, 'host': host, 'cases': cases, 'suites': suites,
               'host_tools_sha256': args.host_tools_sha256, 'archive_sha256': digest(archive),
               'contract_sha256': args.contract_sha256, 'work': str(work),
               'isolation': 'restricted token, empty PATH, job-object process accounting; no network/exec denial'}
@@ -212,7 +216,7 @@ def main():
         (output / 'cli-pe.txt').write_text(audit.stdout, encoding='utf-8')
         import re
         imports = re.findall(r'^\s*Name: (\S+\.dll)\s*$', audit.stdout, re.M | re.I)
-        record('PE x64 and only declared OS imports', 'IMAGE_FILE_MACHINE_AMD64' in audit.stdout and bool(imports) and
+        record('PE %s and only declared OS imports' % arch, pe_machine in audit.stdout and bool(imports) and
                set(name.lower() for name in imports) <= {'kernel32.dll', 'api-ms-win-core-synch-l1-2-0.dll'}, imports)
         result['cache'] = {'cold': cold['data']['cache'], 'warm': warm['data']['cache']}
         result['cli_sha256'] = digest(cli)

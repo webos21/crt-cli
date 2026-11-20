@@ -11,6 +11,13 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-20
 
+### Fix large stdout relay in the Windows/arm64 D1 candidate
+
+Relay captured child stdout to stderr in blocks through the CRT descriptor API. On native Windows/arm64, the candidate built with
+the public Dev SDK passes all 32 D1 gates, including the 10 MiB stdout producer, the 8 MiB capture cap and the original deadlines.
+A focused comparison took 60.08 seconds on the pinned Preview and 7.27 seconds on the candidate. Retain the prior 31/32 receipt.
+[Candidate evidence](docs/acceptance/host_environment_acceptance.md#windowsarm64-d1-block-relay-candidate-2026-11-20).
+
 ### Record the first scheduled Windows/x64 integration run
 
 Retrospectively verify scheduled Integration `44518672154` at main `495840f`: created 2026-11-19 11:52:24 UTC, all twelve jobs pass.

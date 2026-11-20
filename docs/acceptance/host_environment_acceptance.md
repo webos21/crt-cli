@@ -659,3 +659,25 @@ The original failed and successful contract directories named above are preserve
 original inputs, an empty environment, relocated inputs and job-object process accounting, not executable/network denial. Real job-rootfs links
 require Developer Mode. No private DLL is shipped; that qualification stays open. D1's large-output case, hosted integration/pin adoption and
 official/default trust remain open; no SDK bytes, public release asset, project lock, CI pin, executable in `bin/` or STATUS changed.
+
+## Windows/arm64 D1 block relay candidate (2026-11-20)
+
+The signed 20261118 CLI Preview and signed 20261119 host-tools bundle were replayed again on native Windows/arm64.
+The bundle's `dd` wrote all 10,485,760 bytes to a file in 0.61 seconds. The pinned Preview needed 60.08 seconds end to end
+for the same `dd` invocation through `shell --json`, including JSON serialization. That run exited 0. The earlier run's exit 124 and
+31/32 result remain recorded above. CRT's `fwrite` sends one byte per write on unbuffered `stderr`. The CLI now relays each captured
+block through the CRT descriptor API and handles short writes and interruption. The existing 8 MiB cap, JSON result and timeout
+semantics still apply.
+
+The patched CLI was freshly built using the signed public Dev SDK `v0.0.1-preview.20261118.windows.arm64.1` (content
+`3b251637845621ba28d6ba1d9c2f6a5e097f6b328f57054f7e7cb5c5eb52621f`), native LLVM 22.1.8 and Windows SDK
+`10.0.28000.0/um/arm64`. The seed was the signed 20261118 CLI Preview. CRT's unchanged `replay_host_environment_windows.py`
+returned **32/32**, using the 60-second inner and 90-second outer deadlines, restricted-token visibility and process accounting,
+and the signed public host-tools bundle identified above. `stdout-limit` exited 0 with `output_truncated: true`, `timed_out: false`
+and exactly 8,388,608 captured bytes. A focused repeat under the same deadline took 7.27 seconds end to end. The replay also
+checked normal and timed-out descendant cleanup and resource refusals.
+
+The candidate executable SHA-256 is `f0ea3b6592b032f488c3a58212d34f24a395aaf3e9086578c900e40f7aca10b8`. The local D1
+receipt `C:\Users\cmjo\w\d1a64-evidence\replay\result.json` has SHA-256
+`57806e03f7bac36bc09c0550d6e1a2443ce50a6497e0e0b30805d0fab6e4bdb7`. The replay directory holds the command ledger and
+the full streams. The fix has native evidence on this candidate. Replay of the new public package is a release gate.

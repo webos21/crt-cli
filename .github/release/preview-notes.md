@@ -6,8 +6,8 @@
 ## What this Preview adds
 
 Pinned publisher-key and signature options for `sdk acquire` (source `publisher` object) and `sdk install`/`sdk repair`
-(`--publisher-key`, `--signature`, `--publisher-key-spki-sha256`); they fail closed and are off unless given. The CLI's `fetch` redirect policy and
-host-tools support of the earlier Previews are unchanged. The workflow does not exercise the new options on the packaged executable; the CLI
+(`--publisher-key`, `--signature`, `--publisher-key-spki-sha256`); they fail closed and are off unless given. The host-tools shell relays
+captured stdout in blocks so large output can complete within the configured timeout. The workflow does not exercise the publisher options on the packaged executable; the CLI
 repository's replay records do (`docs/acceptance/ci_acceptance.md`).
 
 ## Asset
