@@ -1034,3 +1034,32 @@ replay under the restricted token 12/12 and the consumer replay of the published
 
 Not claimed: a workflow-built Preview or a `release.yml` rehearsal for this host, a real HTTPS `sdk acquire` by the packaged executable on Windows/arm64 (the consumer replay used a local download
 directory), Authenticode signing, and any Windows/arm64 D3 or port qualification.
+
+## Windows/arm64 workflow Preview release (2026-11-20)
+
+[`v0.1.0-preview.20261120.windows-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261120.windows-arm64.1)
+was published as a non-latest prerelease at `2026-11-20T03:53:52Z` by `release.yml`, `dry_run: false`. The tag points to
+`e6dc40acddfaee43e67b9691a813f0aa3cd3dc3e`. `package`, `verify` and `publish` passed. The authenticated `webos21` reviewer
+account approved the protected `release` deployment for the requested publication after the package and verify digests agreed.
+[Workflow run](https://github.com/webos21/crt-cli/actions/runs/44664411493) ·
+[Candidate and hosted verification](ci_acceptance.md#windowsarm64-workflow-preview-candidate-2026-11-20).
+
+Unauthenticated HTTPS downloads of the archive and checksum match the retained workflow artifact byte for byte. The archive
+is 5,234,232 bytes with SHA-256 `de7efa11662833bf3790a23ffa4b24ef4dfe503de2de4cf6e53f87562709d8a0`.
+`SHA256SUMS-windows-aarch64` has SHA-256 `058b2d831ec036de5b93289be763b8b9346f379bed91085093bbbd2480e064ba`.
+`C:\Users\cmjo\w\ar20\public\download.json` records the comparison.
+
+On native Windows/arm64, `ci_release.py verify` on those public bytes checked the ARM64 PE imports and package manifest, version,
+self doctor, incorrect manifest-pin refusal, real HTTPS acquisition of the pinned Dev SDK, and C and C++ creation, build, test,
+run and warm reuse (3 cold and 0 warm commands for each). The receipt `C:\Users\cmjo\w\ar20\public-verify\verify.json`
+has SHA-256 `6a7fdf24c8dba88c5f1f78a8520a2feebacb54e3f7434c6d8a6a2c0935f0fe99`. The public executable also passed
+[D1 32/32](host_environment_acceptance.md#windowsarm64-d1-public-preview-replay-2026-11-20).
+
+The owner supplied a detached RSA-PSS/SHA-256 signature. The 256-byte signature has SHA-256
+`b4b5eab4a7ac9f0315099a8c17091fd331d0958067b319f30f5a397118c80c63`. Before attaching it, the verifier checked the exact archive
+against the pinned publisher key with SPKI SHA-256 `59218576956e493476bc36f7385d8e01a03ff9b92946a531b013ad3937d43fa2`.
+A fresh unauthenticated download of all three assets also verified against the same key. The native ARM64 CLI's
+`fetch --publisher-key --signature --redirect-policy github-release` reported `signature_verified` after one redirect. A one-bit
+change to the signature produced `publisher_signature_invalid` and published no output. Receipts are in
+`C:\Users\cmjo\w\ar20\signed-public\download.json` and `C:\Users\cmjo\w\ar20\signed-public\native-fetch.json`.
+The full native package verifier passed again in `C:\Users\cmjo\w\ar20\signed-verify\`, with an identical `verify.json` receipt.

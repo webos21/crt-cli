@@ -1833,3 +1833,8 @@ receipts are retained at `C:\Users\cmjo\w\ar20\pack\` and `C:\Users\cmjo\w\ar20\
 `release` environment review after those jobs passed. Publisher signing follows the owner's offline procedure.
 [Package artifact](https://github.com/webos21/crt-cli/actions/runs/44664411493/artifacts/14597532662).
 
+The authenticated `webos21` reviewer account approved `release` for the requested publication after comparing the package and verifier
+digests. The `publish` job passed and the prerelease tag resolves to the tested source commit. The owner's offline detached signature
+was verified and attached to the published archive. The native CLI verified it against a fresh public download.
+[Public-byte verification](preview_acceptance.md#windowsarm64-workflow-preview-release-2026-11-20).
+

@@ -59,14 +59,13 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
     [main CI](https://github.com/webos21/crt-cli/actions/runs/44482683748) passes. Windows has its separate evidence above.
 - [x] Record the first scheduled Windows/x64 integration run after main adoption: all twelve jobs pass, including Windows pins,
   redirect and all five port suites ([scheduled evidence](docs/acceptance/ci_acceptance.md#first-scheduled-windowsx64-integration-run-2026-11-19)).
-- [ ] Resolve the Windows/arm64 D1 `stdout-limit` timeout against the public CLI/SDK; retain the 31/32 and focused failure
-  [receipts](docs/acceptance/host_environment_acceptance.md#windowsarm64-published-host-tools-consumer-replay-2026-11-19).
+- [x] Resolve the Windows/arm64 D1 `stdout-limit` timeout against the public CLI/SDK. The workflow Preview passes 32/32 from the public download.
+  [Public replay and retained failure receipts](docs/acceptance/host_environment_acceptance.md#windowsarm64-d1-public-preview-replay-2026-11-20).
   - [x] Fix the CLI relay and replay all 32 cases with a native build from the public SDK and signed host-tools bundle
     ([candidate record](docs/acceptance/host_environment_acceptance.md#windowsarm64-d1-block-relay-candidate-2026-11-20)).
 - [x] Qualify the Windows/arm64 `integration.yml` jobs on `windows-11-arm`: signed host-tools pins, restricted redirects (54/54)
   and all five port suites (270 checks). [Hosted evidence](docs/acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20).
-- [ ] Windows/arm64 under that policy: the leg is added, pinned, hosted-qualified and its `release.yml` rehearsal passed (checked sub-items below); open: a
-  workflow-built, published and signed Preview.
+- [x] Complete the Windows/arm64 Preview release with the owner's detached signature and a signed public download replay.
   - [x] Wire `win-arm64` into `ci_bootstrap.py`, `ci_release.py`, `release.yml` and their tests; prepare and replay a local SDK and CLI candidate
     ([record](docs/acceptance/ci_acceptance.md#windowsarm64-host-wiring-and-local-candidate-preflight-2026-11-17)).
   - [x] CRT: Windows/arm64 rows in `sdk-integration.yml` and `sdk-release.yml`; Dev SDK `v0.0.1-preview.20261118.windows.arm64.1` published and signed.
@@ -79,9 +78,12 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
     workflow artifact and whose executable is an ARM64 PE ([record](docs/acceptance/ci_acceptance.md#windowsarm64-releaseyml-rehearsal-2026-11-19)); the draft was deleted.
   - [x] Run `release.yml` with `dry_run: false`. The `package` and `verify` jobs passed, and the exact packaged executable passed native D1 32/32.
     [Package evidence](docs/acceptance/ci_acceptance.md#windowsarm64-workflow-preview-candidate-2026-11-20).
-  - [ ] Publish the workflow-built Preview for `win-arm64`, attach the owner's offline signature and replay the public signed package. The pinned Preview is the hand-built
-    first one. A later pin change to a workflow-built Preview is its own reviewed change in both repositories (here `pins.json`, in crt `.github/ci/sdk-pins.json`). The leg itself needs no manual
-    `ci.yml` dispatch: it passed as a pull request and as a push to `main`.
+  - [x] Publish the workflow-built `win-arm64` Preview and check the unauthenticated archive and checksum downloads against the workflow artifacts.
+    [Publication evidence](docs/acceptance/preview_acceptance.md#windowsarm64-workflow-preview-release-2026-11-20).
+  - [x] Verify and attach the owner's offline signature. The public signed package passes native C/C++ replay and reports `signature_verified`.
+    [Signed replay evidence](docs/acceptance/preview_acceptance.md#windowsarm64-workflow-preview-release-2026-11-20).
+    The 20261118 Preview remains the bootstrap pin. A later pin change requires a reviewed change in both repositories (`pins.json` here
+    and `.github/ci/sdk-pins.json` in CRT).
 
 ## Planned
 
