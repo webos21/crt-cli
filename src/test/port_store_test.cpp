@@ -4,13 +4,16 @@
 //   CRT_CLI_TEST_PORT_PROJECT, CRT_CLI_TEST_PORT_HOST_TOOLS, CRT_CLI_TEST_PORT_HOST_TOOLS_SHA256, CRT_CLI_TEST_PORT_ARCHIVE
 #include <crtcli/archive.h>
 #include <crtcli/port_store.h>
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
-#include <thread>
+#include <spawn.h>
+#include <sys/wait.h>
 #include <unistd.h>
 using namespace crtcli;
 namespace {
 size_t checks = 0;
+constexpr int already_published_exit = 3;
 void check(bool condition, const std::string& message) { require(condition, "test failed: " + message); ++checks; }
 std::string getenv_or_empty(const char* name) { const char* v = std::getenv(name); return v ? v : ""; }
 std::string error_of(const std::function<void()>& action) { try { action(); } catch (const Error& e) { return e.what(); } return {}; }
@@ -58,7 +61,7 @@ void patch_bytes(const fs::path& file, size_t offset, const std::string& replace
 }
 }  // namespace
 
-int main() {
+int main(int argc, char** argv) {
     const auto project = getenv_or_empty("CRT_CLI_TEST_PORT_PROJECT"), bundle = getenv_or_empty("CRT_CLI_TEST_PORT_HOST_TOOLS"),
                pin = getenv_or_empty("CRT_CLI_TEST_PORT_HOST_TOOLS_SHA256"), archive = getenv_or_empty("CRT_CLI_TEST_PORT_ARCHIVE");
     if (project.empty() || bundle.empty() || pin.empty() || archive.empty()) {
@@ -67,14 +70,32 @@ int main() {
     }
     std::string here = __FILE__;
     auto recipe = parse_port_recipe(read_text(fs::path(here).parent_path() / "data" / "zlib.recipe.json"), host_os);
+    auto toolchain = Toolchain::load(project);
+    auto tools = HostTools::load(bundle, pin);
+    if (argc == 3 && std::string(argv[1]) == "--publish-worker") {
+        try {
+            const fs::path fixture = argv[2];
+            const auto data = read_json(fixture);
+            PortStore store(fixture.parent_path() / "concurrent" / "ports");
+            store.lock_wait_seconds = 120;
+            PortBuildRequest request;
+            request.recipe = recipe;
+            request.toolchain = &toolchain;
+            request.tools = &tools;
+            PortBuildResult build{data.at("prefix").get<std::string>(), data.at("logs").get<std::string>(), data.at("record")};
+            return store.publish(request, build, data.at("inputs")).already_published ? already_published_exit : 0;
+        } catch (const std::exception& error) {
+            std::fprintf(stderr, "concurrent port publication failed: %s\n", error.what());
+            return 1;
+        }
+    }
+    require(argc == 1, "unexpected port-store-test arguments");
     const char* temporary = std::getenv("TMPDIR") ? std::getenv("TMPDIR") : "/tmp";
     std::string pattern = std::string(temporary) + "/crt-port-store-XXXXXX";
     std::vector<char> buffer(pattern.begin(), pattern.end());
     buffer.push_back('\0');
     require(mkdtemp(buffer.data()) != nullptr, "cannot create a scratch directory");
     fs::path scratch = buffer.data();
-    auto toolchain = Toolchain::load(project);
-    auto tools = HostTools::load(bundle, pin);
     auto library = toolchain.sdk / (darwin ? "lib/libz.1.3.1.dylib" : "lib/libz.so.1.3.1");
     check(fs::is_regular_file(library), "the SDK ships its libz shared object (the audit fixture)");
     const std::string main_library = darwin ? "lib/libz.1.3.1.dylib" : "lib/libz.so.1.3.1";
@@ -639,14 +660,28 @@ int main() {
     // ---- concurrent publication of one key ----------------------------------------------------------------------------
     {
         PortStore other(scratch / "concurrent" / "ports");
-        other.lock_wait_seconds = 120;
-        PortPublishResult first, second;
-        std::string failure_one, failure_two;
-        std::thread one([&] { try { first = other.publish(request, result, inputs); } catch (const std::exception& e) { failure_one = e.what(); } });
-        std::thread two([&] { try { second = other.publish(request, result, inputs); } catch (const std::exception& e) { failure_two = e.what(); } });
-        one.join(); two.join();
-        check(failure_one.empty() && failure_two.empty(), "both concurrent publications finish (" + failure_one + failure_two + ")");
-        check(first.already_published != second.already_published, "exactly one of two concurrent publications created the item");
+        auto fixture = (scratch / "publish.json").string();
+        write_text(fixture, Json{{"prefix", result.prefix.string()}, {"logs", result.logs.string()},
+                                 {"record", result.record}, {"inputs", inputs}}.dump());
+        auto self = fs::canonical(argv[0]).string();
+        std::string mode = "--publish-worker";
+        char* worker_argv[] = {self.data(), mode.data(), fixture.data(), nullptr};
+        // Each CLI invocation publishes in its own process and competes for the same filesystem lock.
+        pid_t workers[] = {-1, -1};
+        int launch_errors[] = {posix_spawn(&workers[0], self.c_str(), nullptr, nullptr, worker_argv, environ),
+                               posix_spawn(&workers[1], self.c_str(), nullptr, nullptr, worker_argv, environ)};
+        int codes[] = {-1, -1};
+        for (int i = 0; i < 2; ++i) {
+            if (launch_errors[i] != 0) continue;
+            int status;
+            pid_t waited;
+            do { waited = waitpid(workers[i], &status, 0); } while (waited < 0 && errno == EINTR);
+            if (waited == workers[i] && WIFEXITED(status)) codes[i] = WEXITSTATUS(status);
+        }
+        check((codes[0] == 0 || codes[0] == already_published_exit) && (codes[1] == 0 || codes[1] == already_published_exit),
+              "both concurrent publications finish (spawn " + std::to_string(launch_errors[0]) + "/" + std::to_string(launch_errors[1]) +
+              ", exit " + std::to_string(codes[0]) + "/" + std::to_string(codes[1]) + ")");
+        check(codes[0] != codes[1], "exactly one of two concurrent publications created the item");
         check(other.list() == std::vector<std::string>{key} && other.verify(key, toolchain.sdk) > 0, "the concurrently published item verifies");
         check(fs::is_empty(other.root() / ".staging") && fs::is_empty(other.root() / ".locks"), "no staging or lock is left behind");
     }

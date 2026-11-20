@@ -1763,3 +1763,33 @@ but does not establish why the start differs from cron or guarantee future daily
 The first Windows observation TODO is checked; the separate cadence item stays unchecked. No source, workflow, pin, release, schedule,
 global/security setting or STATUS change is made.
 
+## Windows/arm64 hosted integration expansion (2026-11-20)
+
+`integration.yml` selects `windows-11-arm` for `pins`, `redirect` and `ports`. The signed public host-tools archive is
+`v0.1.0-hosttools.20261119.windows-aarch64.1` (697,220 bytes, archive SHA-256
+`c74ad50ea5f5008d515e1aac3581fa5d73d7acba276ae990a9d3df84599706ee`, manifest SHA-256
+`6f7225ac4ffafe4c5651bf025b47d7b58df0939c520dbf40b7a029aa2892b6f1`, signature SHA-256
+`2956f38c0621feae16a0c6f02ca8346cc77423c33f8adcc108d92f7d8d46443f`). The port driver re-downloads and authenticates it,
+checks the signed 20261118 CLI seed and ARM64 Dev SDK pins, and checks the build against the native PE machine and declared OS imports.
+The x64 and ARM64 jobs share the authenticated test-host helpers at producer revision `bc195a1915b6ee21ff98957af9eb2003cf334e6e`.
+ARM64 uses native Python, hash-checked LLVM 22.1.8 and Windows SDK `um/arm64`.
+[Producer's public-byte replay](https://github.com/webos21/crt/blob/9867851515950749e83a3c2c59759a23f8bcf444/docs/acceptance/host_tools_acceptance.md#windowsaarch64-host-tools-public-signature-and-native-replay-2026-11-19).
+
+Local Windows/arm64 pin checks and all 43 integration driver tests passed. `ci_integration.py redirect --host win-arm64`
+passed **54/54** with the pinned public CLI (`132c8b5a...3db8`) and SDK. Its receipt in
+`C:\Users\cmjo\w\ia64r\redirect-replay\redirect-replay.json` has SHA-256
+`4e82d2ebbaa369eef397fe5107af3cc239b8af2de2a947ad3e429b7b1fba61bc`.
+
+The first local `ports --host win-arm64` run failed in `port-store-test` while two threads in one process published a single key.
+`file_sha256` reported a read error on the copied SDK's `LICENSE.md`. A separate C++17 program built against the same public SDK,
+without any port or CLI code, ran two threads opening, reading and closing distinct read-only one-byte files (20,000 iterations each).
+It exited 1. The two readers reported 1/1 read errors, 3/2 wrong bytes and 1/1 close errors. Its source is retained in
+`out/arm64-fd-concurrency.cpp` (SHA-256 `3a6a84738390f8aa376e5e1d4b2f26133d354c43f4cbc112849c71047bd6c5ff`), and the first
+suite streams and command ledger are under `C:\Users\cmjo\w\ia64p\replay\`. The pinned producer's descriptor allocator is a starting
+point for the remaining CRT investigation. [Pinned CRT source](https://github.com/webos21/crt/blob/e7c763094d96ccba1b524077b24b04b876a91d5b/libc/src/arch/windows/common/syscall.c#L3533).
+
+The CLI's publication test now spawns two independent processes against one fresh shared store and the same completed build and key.
+It requires both workers to finish, one to create the item, the other to reuse it, and the resulting item, staging area and locks to
+pass the existing checks. This exercises the competition between actual CLI processes, including distinct owner PIDs. The isolated
+producer thread reproducer remains failing on the SDK in use.
+

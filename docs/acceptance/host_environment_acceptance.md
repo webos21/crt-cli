@@ -674,7 +674,8 @@ The patched CLI was freshly built using the signed public Dev SDK `v0.0.1-previe
 `10.0.28000.0/um/arm64`. The seed was the signed 20261118 CLI Preview. CRT's unchanged `replay_host_environment_windows.py`
 returned **32/32**, using the 60-second inner and 90-second outer deadlines, restricted-token visibility and process accounting,
 and the signed public host-tools bundle identified above. `stdout-limit` exited 0 with `output_truncated: true`, `timed_out: false`
-and exactly 8,388,608 captured bytes. The replay also checked normal and timed-out descendant cleanup and resource refusals.
+and exactly 8,388,608 captured bytes. A focused repeat under the same deadline took 7.27 seconds end to end. The replay also
+checked normal and timed-out descendant cleanup and resource refusals.
 
 The candidate executable SHA-256 is `f0ea3b6592b032f488c3a58212d34f24a395aaf3e9086578c900e40f7aca10b8`. The local D1
 receipt `C:\Users\cmjo\w\d1a64-evidence\replay\result.json` has SHA-256
