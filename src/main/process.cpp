@@ -37,6 +37,7 @@ ProcessResult execute_child(const std::vector<std::string>& argv, const ChildEnv
                     posix_spawnattr_setflags(&attributes, POSIX_SPAWN_SETPGROUP) == 0 && posix_spawnattr_setpgroup(&attributes, 0) == 0;
     if (!directory.empty()) prepared = prepared && posix_spawn_file_actions_addchdir_np(&actions, directory.string().c_str()) == 0;
     pid_t pid = -1;
+    if (relay) std::fflush(stderr);
     int launch = prepared ? posix_spawn(&pid, raw[0], &actions, &attributes, raw.data(), environment.data()) : EINVAL;
     posix_spawn_file_actions_destroy(&actions);
     posix_spawnattr_destroy(&attributes);
@@ -55,7 +56,17 @@ ProcessResult execute_child(const std::vector<std::string>& argv, const ChildEnv
             size_t remaining = 8 * 1024 * 1024 - output.size();
             size_t kept = static_cast<size_t>(count) < remaining ? static_cast<size_t>(count) : remaining;
             truncated |= kept < static_cast<size_t>(count);
-            if (relay && kept) std::fwrite(buffer, 1, kept, stderr);
+            // CRT's unbuffered stderr can issue one write per byte through fwrite.
+            // Relay in blocks so a large capture does not stall the child's stdout pipe.
+            if (relay) {
+                size_t sent = 0;
+                while (sent < kept) {
+                    ssize_t written = write(STDERR_FILENO, buffer + sent, kept - sent);
+                    if (written < 0 && errno == EINTR) continue;
+                    if (written <= 0) break;
+                    sent += static_cast<size_t>(written);
+                }
+            }
             output.append(buffer, kept);
             total += static_cast<size_t>(count);
         }

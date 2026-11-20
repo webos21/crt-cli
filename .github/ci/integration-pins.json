@@ -8,26 +8,26 @@
     "sha256": "9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23",
     "size": 1512791
   },
+  "windows_replay_harness": {
+    "revision": "bc195a1915b6ee21ff98957af9eb2003cf334e6e",
+    "note": "Public producer test-host helpers shared by the native Windows jobs. Hashes re-derived from this immutable CRT commit.",
+    "files": [
+      {
+        "url": "https://raw.githubusercontent.com/webos21/crt/bc195a1915b6ee21ff98957af9eb2003cf334e6e/tools/crt_windows_external.py",
+        "name": "crt_windows_external.py",
+        "size": 11781,
+        "sha256": "f01379e0aaed7da3c1009b3eee286a8d705608f475a68209f3839837a64e9236"
+      },
+      {
+        "url": "https://raw.githubusercontent.com/webos21/crt/bc195a1915b6ee21ff98957af9eb2003cf334e6e/tools/crt_windows_trace.py",
+        "name": "crt_windows_trace.py",
+        "size": 10792,
+        "sha256": "35355c9e63b7abc69223655ea8cfe142981763b6c965e88ab13d408b93fb986a"
+      }
+    ]
+  },
   "hosts": {
     "win-x64": {
-      "replay_harness": {
-        "revision": "bc195a1915b6ee21ff98957af9eb2003cf334e6e",
-        "note": "Public producer test-host helpers only, not SDK or product build inputs. Hashes re-derived from this immutable CRT commit.",
-        "files": [
-          {
-            "url": "https://raw.githubusercontent.com/webos21/crt/bc195a1915b6ee21ff98957af9eb2003cf334e6e/tools/crt_windows_external.py",
-            "name": "crt_windows_external.py",
-            "size": 11781,
-            "sha256": "f01379e0aaed7da3c1009b3eee286a8d705608f475a68209f3839837a64e9236"
-          },
-          {
-            "url": "https://raw.githubusercontent.com/webos21/crt/bc195a1915b6ee21ff98957af9eb2003cf334e6e/tools/crt_windows_trace.py",
-            "name": "crt_windows_trace.py",
-            "size": 10792,
-            "sha256": "35355c9e63b7abc69223655ea8cfe142981763b6c965e88ab13d408b93fb986a"
-          }
-        ]
-      },
       "host_tools": {
         "url": "https://github.com/webos21/crt/releases/download/v0.1.0-hosttools.20261119.windows-x86_64.1/crt-v0.1.0-hosttools.20261119.windows-x86_64.1.tar.xz",
         "name": "crt-v0.1.0-hosttools.20261119.windows-x86_64.1.tar.xz",
@@ -41,6 +41,23 @@
           "name": "crt-v0.1.0-hosttools.20261119.windows-x86_64.1.tar.xz.sig",
           "size": 256,
           "sha256": "72f522291148d0e5fae696d2783eb32153b4513c8c45498d557ed60326896695"
+        }
+      }
+    },
+    "win-arm64": {
+      "host_tools": {
+        "url": "https://github.com/webos21/crt/releases/download/v0.1.0-hosttools.20261119.windows-aarch64.1/crt-v0.1.0-hosttools.20261119.windows-aarch64.1.tar.xz",
+        "name": "crt-v0.1.0-hosttools.20261119.windows-aarch64.1.tar.xz",
+        "size": 697220,
+        "sha256": "c74ad50ea5f5008d515e1aac3581fa5d73d7acba276ae990a9d3df84599706ee",
+        "manifest_sha256": "6f7225ac4ffafe4c5651bf025b47d7b58df0939c520dbf40b7a029aa2892b6f1",
+        "version": "v0.1.0-hosttools.20261119.windows-aarch64.1",
+        "source": "webos21/crt release record (producer 56fc914ff4029a5ef0db8d7050418725a9dafc4b, clean tree, promotion preview); native public-byte replay recorded at CRT 0d9d573b",
+        "signature": {
+          "url": "https://github.com/webos21/crt/releases/download/v0.1.0-hosttools.20261119.windows-aarch64.1/crt-v0.1.0-hosttools.20261119.windows-aarch64.1.tar.xz.sig",
+          "name": "crt-v0.1.0-hosttools.20261119.windows-aarch64.1.tar.xz.sig",
+          "size": 256,
+          "sha256": "2956f38c0621feae16a0c6f02ca8346cc77423c33f8adcc108d92f7d8d46443f"
         }
       }
     },
