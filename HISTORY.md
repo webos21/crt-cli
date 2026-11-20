@@ -18,7 +18,8 @@ CRT implementation `1e489d6` fixes copied aliases by placing byte-identical DLL 
 27/27, eight mapped-module snapshots, working cwd/PATH poison controls, missing/changed DLL rejection and same-pin restoration. Original SDK,
 upstream AWK and the complete public static payload remain unchanged. Record the producer/consumer compatibility and close the local native
 gate without a new CLI implementation, SDK/default/CI pin, release or STATUS change. The actual consumer is the public Preview executable,
-not a fresh build of documentation baseline `a1db91a`.
+not a fresh build of documentation baseline `a1db91a`. Producer/consumer main adopt `e8724b8` / `8af434b` in that order; producer PR/main
+CI passes all five native rows and gate, consumer documentation checks pass. Hosted Windows host-tools regression passes 44 cases (one skip) and 18/18 static replay.
 [Inputs, evidence and limits](docs/acceptance/host_environment_acceptance.md#windowsx64-private-dll-host-tools-replay-2026-11-20).
 
 ## 2026-11-19

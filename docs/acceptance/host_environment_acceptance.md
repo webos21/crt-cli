@@ -549,6 +549,21 @@ This closes the specific CRT/CLI Windows/x64 private-DLL initial-load/collision 
 SDK/CI/default/root/project pins, qualify Windows/arm64 private DLLs or fix its D1 output timeout. Existing historical static-bundle limitations retain
 their original scope; the [compatibility ledger](../compatibility.md#windowsx64-private-dll-local-host-tools-qualification-2026-11-20) records this later adoption.
 
+### Main adoption and hosted regression
+
+CRT [PR #11](https://github.com/webos21/crt/pull/11) first adopts `e8724b85587342ac67ff6361ef08217eaec7ca69` on main;
+[PR CI](https://github.com/webos21/crt/actions/runs/44650715305) and [main CI](https://github.com/webos21/crt/actions/runs/44651984434)
+both pass all five native rows and `CI gate`. CLI [PR #31](https://github.com/webos21/crt-cli/pull/31) then adopts
+`8af434b603b32b8e5772aa7af07bb2d6c639d5a0` on main. Its [PR CI](https://github.com/webos21/crt-cli/actions/runs/44651799516)
+and [main CI](https://github.com/webos21/crt-cli/actions/runs/44652039718) pass the documentation changes/gate checks;
+the native matrix is intentionally skipped because no CLI product code changes.
+
+CRT's changed [Windows hosted host-tools workflow](https://github.com/webos21/crt/actions/runs/44651665457) passes 44 cases
+(43 pass, one POSIX permission skip), packs/verifies the original static SDK tools and passes native replay 18/18.
+Its complete payload equals the existing public static payload above. This hosted static regression is distinct from local private-DLL 27/27;
+it uploads an unpublished rehearsal artifact only. [Producer main-adoption record](https://github.com/webos21/crt/blob/9867851515950749e83a3c2c59759a23f8bcf444/docs/acceptance/host_tools_acceptance.md#main-adoption-and-hosted-regression)
+owns candidate and artifact hashes. Subsequent closure commits change documentation only; tested implementation/artifact identities are preserved.
+
 ## Windows/x64 published host-tools consumer replay (2026-11-19)
 
 Consumer acceptance of the public [Windows/x86_64 host-tools Preview](https://github.com/webos21/crt/releases/tag/v0.1.0-hosttools.20261119.windows-x86_64.1)
