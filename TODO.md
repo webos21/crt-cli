@@ -57,8 +57,8 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
     ([results](docs/acceptance/ci_acceptance.md#hosted-qualification-on-the-pr-branch)).
   - [x] macOS integration-pin adoption on main: the owner merged [PR #30](https://github.com/webos21/crt-cli/pull/30) as `b9168c5`;
     [main CI](https://github.com/webos21/crt-cli/actions/runs/44482683748) passes. Windows has its separate evidence above.
-- [ ] Record the first scheduled Windows/x64 integration run after main adoption; manual hosted qualification is complete
-  ([adoption record](docs/acceptance/ci_acceptance.md#main-adoption-of-windows-integration)).
+- [x] Record the first scheduled Windows/x64 integration run after main adoption: all twelve jobs pass, including Windows pins,
+  redirect and all five port suites ([scheduled evidence](docs/acceptance/ci_acceptance.md#first-scheduled-windowsx64-integration-run-2026-11-19)).
 - [ ] Resolve the Windows/arm64 D1 `stdout-limit` timeout against the public CLI/SDK; retain the 31/32 and focused failure
   [receipts](docs/acceptance/host_environment_acceptance.md#windowsarm64-published-host-tools-consumer-replay-2026-11-19).
 - [ ] Windows/arm64 under that policy: the leg is added, pinned, hosted-qualified and its `release.yml` rehearsal passed (checked sub-items below); open: a
@@ -94,9 +94,9 @@ Producer readiness and CLI support have different owners and neither blocks the 
   checks the signature inside the workflow; it needs the same change in `crt`'s `sdk-release.yml`. Open choices before building it: where the `release` approval sits (stage,
   finalize or both), whether a `dry_run` draft may be finalized (default no), and whether the signature also covers the `SHA256SUMS-*` file. GitHub artifact attestations are a
   separate, optional addition.
-- [ ] Observe the daily cadence of the scheduled `integration.yml`: its first scheduled run happened and passed
-  ([record](docs/acceptance/ci_acceptance.md#first-scheduled-integrationyml-run-2026-11-18)), but the 2026-11-18 03:23 UTC slot had no run at 09:44 UTC.
-  Determine over several days whether runs are late, skipped or missing; a red run is a regression or a changed external input, not a known gap.
+- [ ] Observe the daily cadence of scheduled `integration.yml`: recorded runs pass, including the first Windows run,
+  but observed start times differ from the configured cron ([observations](docs/acceptance/ci_acceptance.md#first-scheduled-windowsx64-integration-run-2026-11-19)).
+  Continue tracking late, skipped or missing runs; timing causes remain unverified and a red run is a regression or a changed external input.
 - [ ] Observe the ruleset rejecting a non-administrator's direct push or failing-check merge: administrator bypass is `always`, so a
   rejection was not seen. This needs a second account; tighten the bypass when a second maintainer exists. The ruleset setting and the
   passing and `BLOCKED` pull-request states are accepted; this is a recorded verification limit, not a verified enforcement.

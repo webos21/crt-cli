@@ -11,6 +11,15 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-20
 
+### Record the first scheduled Windows/x64 integration run
+
+Retrospectively verify scheduled Integration `44518672154` at main `495840f`: created 2026-11-19 11:52:24 UTC, all twelve jobs pass.
+Downloaded Windows artifacts independently satisfy the existing result judges: five port suites/270 checks, 29 native gates, 3710 declared
+processes and cold/warm cache reuse; redirect passes 54/54 with the published Preview executable. Check the first-observation TODO and
+retain the separate cadence investigation because observed run creation times differ from the configured 03:23 UTC cron. This is an existing
+scheduled run, not a new dispatch, source replay, workflow/pin change or STATUS update.
+[Run, artifact identities and timing observations](docs/acceptance/ci_acceptance.md#first-scheduled-windowsx64-integration-run-2026-11-19).
+
 ### Qualify the Windows/x64 private-DLL host-tools boundary
 
 The unchanged published Windows CLI consumes a separately pinned local bundle containing actual shared-CRT AWK and private libc/libm.

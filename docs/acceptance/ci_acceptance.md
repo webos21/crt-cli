@@ -1628,7 +1628,8 @@ only in five documentation files. Both branches are pushed; the runtime, workflo
 11-job integration and six-row native CI. The main push's [CI 44493533992](https://github.com/webos21/crt-cli/actions/runs/44493533992)
 passes all six native rows and `CI gate`; its full run metadata is retained as `out/win-host-tools-pin-20261119/main-ci-run.json`.
 The existing daily `23 3 * * *` schedule now includes Windows `pins` and `ports`;
-the first scheduled Windows run remains unobserved and is retained as an open TODO. No additional schedule, release dispatch or security
+at adoption the first scheduled Windows run was unobserved. The later
+[scheduled-run observation](#first-scheduled-windowsx64-integration-run-2026-11-19) closes that TODO. No additional schedule, release dispatch or security
 setting change is needed for this adoption.
 
 ## Windows/x64 hosted redirect expansion (2026-11-19)
@@ -1703,5 +1704,62 @@ Latest `origin/main` was merged into the validated branch without additional sou
 [Main CI 44507080338](https://github.com/webos21/crt-cli/actions/runs/44507080338) passes all six native rows and `CI gate`.
 The full run metadata is retained in `out/redirect-win-x64-20261119/main-ci-run.json`.
 The default daily/manual configuration now has four pin, four redirect and four port legs. The scoped verification above proves only its
-requested eight jobs, while port inputs and their prior qualified source remain unchanged. First scheduled Windows observation is still open.
+requested eight jobs, while port inputs and their prior qualified source remain unchanged. First scheduled Windows observation was still open
+at this adoption; the [later review](#first-scheduled-windowsx64-integration-run-2026-11-19) records the actual scheduled result.
+
+## First scheduled Windows/x64 integration run (2026-11-19)
+
+**Pass, observed retrospectively on 2026-11-20.** GitHub API identifies
+[Integration 44518672154](https://github.com/webos21/crt-cli/actions/runs/44518672154) as `event: schedule`, attempt 1,
+branch `main`, exact source `495840f59dd6d58fc06bfbe30e51a405d5961274`. Its commit ancestry includes Windows integration adoption
+`f06a036c01c1e71d14df87c1f082b1df816c33c6` and Windows redirect adoption. It is the earliest scheduled run after that adoption in the
+complete returned schedule history (three runs). Created/started **2026-11-19 11:52:24 UTC (20:52:24 KST)**,
+completed and updated **12:08:44 UTC (21:08:44 KST)**. This is an existing scheduled run, not a new manual dispatch.
+
+All **twelve jobs pass**: `pins`, `redirect` and `ports` on Linux/x64, Linux/arm64, macOS/arm64 and Windows/x64. No job is skipped.
+Windows uses `windows-2022`; pins pass, redirect completes at 11:53:18 UTC, and ports run from 11:52:45 through 12:08:43 UTC.
+Downloaded Windows artifacts are independently checked with the existing `judge_port_result` and `judge_redirect_result`, in addition to
+the workflow conclusion. The ports review also checks signed public host-tools/download provenance, exact SDK/source/driver inputs,
+oracle-Python scope, command exit/timeout/undeclared-image records and cache reuse.
+
+| Windows port suite | Passed checks |
+| --- | ---: |
+| `port-build-test` | 36 |
+| `port-store-test` | 97 |
+| `port-oracle-test` | 21 |
+| `port-command-test` | 33 |
+| `port-project-test` | 83 |
+
+The five suites total **270 checks**, alongside **29 native replay gates**, with **3710 declared owned processes**, no timeout or undeclared
+image. Cold self-build executes 21 sources/reuses zero; warm self-build executes zero/reuses 21. Its source-built CLI is
+`9246a6346fc34224a9eab6fe42a266325e56d1bf52021ce051eb96565de1c6f9`.
+Oracle Python is `C:/hostedtoolcache/windows/Python/3.12.10/x64/python.exe`, SHA-256
+`4d6f5f81a4bca11191c4c7c6b43632694d0a4ce74e068619d8fdc161d469859a`, copied into the isolated oracle view for `port-oracle-test` only.
+Windows redirect separately passes **54/54 cases**, 48 CLI invocations, with the unchanged published executable
+`feb9779109892cf73235307617398e8dfe70bdadcc86d3dff22ba04642c84df1`; its digest is independently compared to the retained public Preview copy.
+These are different CLI build identities and are not relabeled as one artifact.
+
+Artifact ZIP digests below are reported by GitHub metadata; extracted result files are independently hashed and judged.
+
+| Downloaded Windows evidence | Identity |
+| --- | --- |
+| Ports result SHA-256 | `5d3dbfddb7595d323336546ebbe4fc7da1ae5a32d8a3b7e569a5ad7d3cc5357f` |
+| Redirect result SHA-256 | `7d464a5b24d9c8e3f6fd871f3c12b7899c26339594eb200eeef6e6ea215f4a57` |
+| Ports artifact ID / ZIP bytes | `14527553680` / `176076` |
+| Ports artifact ZIP digest | `43a7c711e4d442c4f5557ff81e7222fa8828a077561317cf9b9cc3c642ad7787` |
+| Redirect artifact ID / ZIP bytes | `14527006101` / `5300` |
+| Redirect artifact ZIP digest | `bf892703e139b72ebdd9b4ea1575a4b56ede01c7e87c39172a1eb283e21667c7` |
+
+Original API metadata, downloaded artifacts, result-judge receipts and reviewer script are retained in ignored
+`out/scheduled-win-x64-20261120/`: `run.json`, `schedules.json`, `artifacts.json`, `hosted/`, `verification.json` and `verify_schedule.py`.
+The existing Windows port-artifact reviewer is `out/win-host-tools-pin-20261119/check_hosted.py`; invocation supplies the retained artifact
+directory and exact `495840f` source revision. Source/driver/workflow and integration/bootstrap pin files are unchanged between that run
+and review baseline `04ec435`. This observation does not constitute a fresh current-source native matrix run.
+
+**Cadence remains open.** Configured cron is `23 3 * * *` (03:23 UTC / 12:23 KST). API creation times for the three recorded schedule
+events are 2026-11-17 12:04:01 UTC, 2026-11-18 11:55:40 UTC and 2026-11-19 11:52:24 UTC; all three runs succeeded.
+The Windows run was created 8h29m24s after the nominal daily clock time. The event metadata proves actual scheduling and execution,
+but does not establish why the start differs from cron or guarantee future daily delivery. No timing cause or service outage is inferred.
+The first Windows observation TODO is checked; the separate cadence item stays unchecked. No source, workflow, pin, release, schedule,
+global/security setting or STATUS change is made.
 
