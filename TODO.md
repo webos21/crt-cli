@@ -77,7 +77,9 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
     Preview ran on `windows-11-arm` ([crt record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#hosted-windowsarm64-consumer-smoke-by-the-pinned-cli-s7-steps-4-5-2026-11-18)).
   - [x] `release.yml` `dry_run: true` rehearsal for `win-arm64` on `windows-11-arm`: `package`, `verify` and an approved `publish` produced a verified draft whose archive equals the
     workflow artifact and whose executable is an ARM64 PE ([record](docs/acceptance/ci_acceptance.md#windowsarm64-releaseyml-rehearsal-2026-11-19)); the draft was deleted.
-  - [ ] A Preview built, published and signed by the workflow for `win-arm64` (`dry_run: false`), with the owner's offline signature and its signature replay. Until then the pinned Preview is the hand-built
+  - [x] Run `release.yml` with `dry_run: false`. The `package` and `verify` jobs passed, and the exact packaged executable passed native D1 32/32.
+    [Package evidence](docs/acceptance/ci_acceptance.md#windowsarm64-workflow-preview-candidate-2026-11-20).
+  - [ ] Publish the workflow-built Preview for `win-arm64`, attach the owner's offline signature and replay the public signed package. The pinned Preview is the hand-built
     first one. A later pin change to a workflow-built Preview is its own reviewed change in both repositories (here `pins.json`, in crt `.github/ci/sdk-pins.json`). The leg itself needs no manual
     `ci.yml` dispatch: it passed as a pull request and as a push to `main`.
 

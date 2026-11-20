@@ -681,3 +681,8 @@ The candidate executable SHA-256 is `f0ea3b6592b032f488c3a58212d34f24a395aaf3e90
 receipt `C:\Users\cmjo\w\d1a64-evidence\replay\result.json` has SHA-256
 `57806e03f7bac36bc09c0550d6e1a2443ce50a6497e0e0b30805d0fab6e4bdb7`. The replay directory holds the command ledger and
 the full streams. The fix has native evidence on this candidate. Replay of the new public package is a release gate.
+
+The ARM64 executable extracted from the [workflow candidate](ci_acceptance.md#windowsarm64-workflow-preview-candidate-2026-11-20)
+also passes **32/32** with the same public SDK, signed host-tools bundle, restrictions and deadlines. Its SHA-256 is
+`e15efbb25b3ea9e4b0ccdb8327ed58b23c6b85c7e5a6b7b068ac16cadeae394b`. The exact-candidate replay receipt
+`C:\Users\cmjo\w\ar20\d1\result.json` has SHA-256 `6f07c494045f16d8df5418040cc5371b5e85f49a338e51c456161ef7ca46d094`.
