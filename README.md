@@ -44,13 +44,13 @@ Current CLI builds also accept a caller-pinned key and detached signature for
 SDK acquisition, install and repair. Official default-download trust and channels remain pending.
 
 The experimental D3 source-port path implements `port build|list|verify|recover|lock` for the pinned zlib recipe on Linux,
-macOS and Windows/x64. It builds both static/shared forms through explicitly selected CRT host tools into a separate port store,
+macOS and Windows/x64 and ARM64. It builds both static/shared forms through explicitly selected CRT host tools into a separate port store,
 never into the SDK. Projects choose provider `sdk` or `port`; optional lock pins bind the latter's exact manifest.
 See the [adapter policy](docs/design/source_port_adapter.md) and
 [macOS replay](docs/acceptance/sdk_install_acceptance.md#source-port-d3-replay-macosarm64-2026-11-09) and
 [Windows/x64 implementation evidence](docs/acceptance/sdk_install_acceptance.md#source-port-d3-windowsx64-implementation-and-replay-2026-11-09).
 The bounded adapter contract is [approved and adopted](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09).
-Other recipes, general dependency resolution and Windows/arm64 replay remain separate work.
+Other recipes and general dependency resolution remain planned.
 
 ## Download the Previews
 
@@ -126,16 +126,15 @@ also exercise this workflow at their recorded baselines.
 
 [The active plan](TODO.md) continues the Dev SDK + CLI preview: the Linux/x86_64, Linux/aarch64, macOS/arm64, Windows/x64 and Windows/arm64
 packages are out and default/project pin adoption is done; CI covers Linux/x86_64, Linux/arm64, macOS/arm64, Windows/x64 and Windows/arm64. The D3 zlib contract is
-[approved and adopted](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09) for the three exercised host pairs;
-Windows/arm64 now has [bounded public-bundle D3 evidence](docs/acceptance/host_environment_acceptance.md#windowsarm64-published-host-tools-consumer-replay-2026-11-19);
-its D1 large-output timeout remains separate.
+[approved and adopted](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09). Windows/arm64 passes the hosted zlib suites
+against the signed public bundle and the local D1 replay against a fresh build with the large-output fix.
+[ARM64 integration](docs/acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20) ·
+[D1 replay](docs/acceptance/host_environment_acceptance.md#windowsarm64-d1-block-relay-candidate-2026-11-20).
 
 CI's six required jobs (Linux/x86_64 on two Ubuntu versions) pass on pull requests and pushes to `main`, and `main`
 requires the `CI gate` check; [CI acceptance](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11)
-distinguishes workflow configuration, hosted results, the integration workflow (the redirect replay and the port suites run on Linux/x86_64 and
-Linux/arm64, manually and daily), the [macOS integration candidate](docs/acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19)
-and its passing branch qualification/pending main adoption, and the release workflow (published and signed through the workflow on every host except Windows/arm64,
-whose first Preview was built by hand; its workflow dry-run passed, but real workflow publication remains pending).
+records hosted results. The integration workflow runs the pin checks, redirect replay and five port suites across all five hosts
+on manual or scheduled runs. See the [release records](docs/acceptance/preview_acceptance.md) for the published and signed Previews.
 
 Preview qualification covers the actual packaged CLI, promoted SDK pin, trust,
 notices/resources, external LLVM setup and a source-hidden user flow. Full SDK
