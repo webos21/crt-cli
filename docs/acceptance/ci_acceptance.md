@@ -2,7 +2,7 @@
 
 This record owns what the CI driver and workflow have actually been run against. The design and the
 procedure are in the [development guide](../guides/development.md#continuous-integration); open work is in
-[CI Operations](../../TODO.md#ci-operations). A passing local rehearsal is not a GitHub-hosted run.
+[CI monitoring](../../TODO.md#ci---monitoring-and-pin-promotion) and [release signing](../../TODO.md#p1---sign-before-publishing). A passing local rehearsal is not a GitHub-hosted run.
 
 ## Current Hosted Coverage (2026-11-11)
 
@@ -1159,7 +1159,7 @@ The daily trigger (`cron: '23 3 * * *'`) has run once. [Run 44079658878](https:/
 `redirect`, `pins` and `ports`, each on `linux-x64` and `linux-arm64`. The workflow is `active` (id 414171448). This is a record of one hosted scheduled run, not of a daily cadence.
 
 **Open observation.** At 2026-11-18 09:44 UTC the workflow's run list holds no scheduled run for the 2026-11-18 03:23 UTC slot. Whether it is late, skipped or missing was not diagnosed. It is tracked in
-[TODO](../../TODO.md#ci-operations) rather than treated as a failure of the first run. A red scheduled run remains a regression or a changed external input, not a known gap.
+[CI-03](../../TODO.md#ci---monitoring-and-pin-promotion) rather than treated as a failure of the first run. A red scheduled run remains a regression or a changed external input, not a known gap.
 
 ## Windows/arm64 SDK publisher signature replay (2026-11-18)
 

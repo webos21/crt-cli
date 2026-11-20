@@ -1,17 +1,17 @@
 # Project Status
 
-SDK and CLI evidence snapshot refreshed **2026-11-20** at the owner's request,
-reviewing CLI `ec498ce` and CRT `9867851`. This refresh reviews the recorded
-native results and the public release inventory. Each result retains its own
-source revision, SDK pin and host scope.
-[TODO](TODO.md) owns current work, [HISTORY](HISTORY.md) completed work and
-[acceptance](docs/acceptance/sdk_install_acceptance.md) exact combinations.
+Reviewed on **2026-11-20** against CLI `e362a51`, CRT `278c5d9` and the
+editor scaffold `b547406`. The snapshot includes the recorded public releases,
+CI pins, completed work and current work queue. Each native result retains its
+original source revision, SDK pin and host scope.
+[TODO](TODO.md) · [HISTORY](HISTORY.md) · [Acceptance](docs/acceptance/sdk_install_acceptance.md).
 
 ## Implemented and exercised scope
 
 | Surface | Evidence boundary |
 | --- | --- |
 | Native CLI/project builder | CRT-native C++17, crt.json -> direct LLVM argv; C/C++ source-only new, first build/configure/build/test/run; external LLVM/OS SDKs required |
+| Command JSON | Global `--json` emits one final `crt-cli.bootstrap-result` envelope, format 1. It covers `build`, `sdk list` and `port list`. [Implemented contract](docs/reference/bootstrap_contract.md#commands-and-results). |
 | SDK install/receipts/selection | Immutable native Dev store, exact contracts, explicit repair/recovery and format-1 project pins; five-pair records retain their original baselines |
 | First-build/HTTPS acquisition | Explicit pinned SDK source, CA/size/digest checks, installed-identity reuse and lock-preserving failure; Linux/macOS/Windows records are [per-host](docs/acceptance/sdk_install_acceptance.md) |
 | Independent host tools | Pinned CRT shell/make/applets for port workflows; control/app paths need no host Python, shell or CMake; [host environment](docs/acceptance/host_environment_acceptance.md) owns loader/OS limits |
@@ -32,7 +32,7 @@ source revision, SDK pin and host scope.
 
 The required `CI gate` covers six native jobs across five host pairs, with Ubuntu 24.04 and 26.04 on Linux/x86_64. Signed public
 host-tools bundles feed pins, redirects and five port suites in the 15-job daily/manual integration workflow. The full workflow passed
-on the Windows/arm64 expansion branch and the adoption passed main CI. Scheduled cadence is tracked in [CI Operations](TODO.md#ci-operations).
+on the Windows/arm64 expansion branch and the adoption passed main CI. Scheduled cadence is tracked under [CI-03](TODO.md#ci---monitoring-and-pin-promotion).
 [Integration and CI evidence](docs/acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20).
 
 The signed Windows/arm64 workflow Preview `v0.1.0-preview.20261120.windows-arm64.1` passes the native C/C++ public package replay
@@ -49,24 +49,36 @@ The Windows port-store publication test uses independent CLI processes. The CRT 
 
 ## Limits and ordered follow-up
 
-- CLI SDK installation/selection currently supports native `dev` at `02-cxx`;
-  general profiles and Full `06-web` installation are separate work.
-- The retained Linux SDK's C shared SDK-provider control resolves host libz;
-  this is [unendorsed diagnostic evidence](docs/acceptance/sdk_install_acceptance.md#linux-d3-common-change-replay-and-macos-handoff-2026-11-09),
-  not SDK shared qualification. Producer 6.4 retains policy/runtime-search review.
-- The earlier Linux/x86_64 SDK `.3` C++ shared-runtime loader failure is closed
-  for the repaired SDK `.4` on the two recorded Ubuntu hosts
-  ([hosted qualification](docs/acceptance/ci_acceptance.md#completed-linux-hosted-qualification)).
-  This does not qualify the separate pure-C shared SDK mode or other loaders.
-- D4 requires a new SQLite amalgamation adapter plus libpng -> zlib dependency,
-  variant/key/lock/cache handling; existing configure-only D3 is not that resolver.
-- The owner's detached signature is attached after publication. Sign-before-publish is tracked in [CI Operations](TODO.md#ci-operations).
-  Official default trust and URLs, key rotation and revocation, Authenticode, and macOS Developer ID signing and notarization remain open.
-  A user project's `crt.lock` pins its own SDK explicitly. The repository root `crt.lock` is `unresolved` so one source tree builds on every host.
-- General updates/self-upgrade, GC, wider profiles/cross targets and Studio retain
-  their later queues. No new runtime/SDK build or default pin is adopted here.
-- Pins move under the [promotion policy](docs/guides/development.md#ci-pin-promotion). Linux/arm64 CI and publisher-signature replay
-  cover Ubuntu 26.04 / glibc 2.43. [CI acceptance](docs/acceptance/ci_acceptance.md).
+- **P0 editor API.** Compilation database export, `project info --json` and
+  structured capability discovery are proposed. The existing final JSON
+  envelope is the starting point. Streaming job events need a separate opt-in
+  D6 protocol. `crt-vscode` is the first editor consumer. Record exercised
+  SDK/CLI/editor combinations through D7.
+  [Editor API queue](TODO.md#p0---minimal-public-editor-api-d7-slice-coordinated-with-d5d6) ·
+  [Adoption evidence](docs/compatibility.md#adoption-and-exercised-combinations).
+- **P1 producer handoff and first-user setup.** The retained Linux pure C shared
+  SDK-provider control resolves host libz and remains unqualified. The Linux
+  C++ shared loader repair has its own Ubuntu 24.04 and 26.04 results. Replay
+  CRT's C shared and Windows `<filesystem>` corrections with the exact new SDK
+  candidates. First-user work covers clearer SDK, LLVM and OS SDK guidance.
+  [Linux C control](docs/acceptance/sdk_install_acceptance.md#linux-d3-common-change-replay-and-macos-handoff-2026-11-09) ·
+  [C++ loader evidence](docs/acceptance/ci_acceptance.md#completed-linux-hosted-qualification) ·
+  [Consumer handoff](TODO.md#p1---producer-correctness-handoff-and-first-user-workflow-d5).
+- **P1 release signing.** The current Preview flow attaches the owner's offline
+  signature after publication. Sign-before-publish, official default trust and
+  URLs, key lifecycle and platform code signing have separate gates.
+  [Sign Before Publishing](TODO.md#p1---sign-before-publishing).
+- **CI Operations.** CI pins move under the reviewed promotion policy.
+  Linux/arm64 CI and native signature replay cover Ubuntu 26.04 with glibc 2.43.
+  Raspberry Pi, additional loader versions, schedule cadence and non-admin
+  ruleset enforcement have open verification work.
+  [CI follow-up](TODO.md#ci---monitoring-and-pin-promotion).
+- **Planned expansion.** SDK installation and selection currently cover native
+  `dev` at `02-cxx`. Broader profiles, Full SDK installation, SQLite/libpng
+  dependency resolution, SDK updates, garbage collection and self-upgrade
+  remain planned. Each project keeps its own exact `crt.lock` pins. The
+  repository lock is `unresolved` so its source builds on multiple hosts.
+  [Planned work](TODO.md#planned).
 
-Native evidence and limits belong to [compatibility](docs/compatibility.md) and
-acceptance. Future STATUS refreshes remain explicit owner requests.
+[Compatibility](docs/compatibility.md) and the owning acceptance records
+preserve exact inputs and native evidence.

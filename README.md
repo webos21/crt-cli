@@ -14,7 +14,9 @@ The CRT-native C++ CLI reads `crt.json` and invokes LLVM directly. `new`
 creates C/C++ sources under `src/main/` and `src/test/`, with headers in
 `include/`. Explicit configure/build/test/run, scoped doctor, environment
 reports and a bounded non-interactive CRT shell are implemented. Native app
-builds and CLI self-build require no CMake, Python or shell.
+builds and CLI self-build invoke LLVM directly. Global `--json` returns one
+final result for commands such as `build`, `sdk list` and `port list`.
+[Implemented command contract](docs/reference/bootstrap_contract.md#commands-and-results).
 
 Local SDK management is implemented: `sdk install` accepts pinned local
 `tar.xz`/`zip` release assets, `sdk list|verify|recover` manage a shared immutable
@@ -58,7 +60,8 @@ Other recipes and general dependency resolution remain planned.
 Each host prerelease carries one CLI executable with statically linked CRT libraries, notices and a pinned inventory.
 Verify the archive using an independently trusted digest, its detached `.sig` and the
 independently verified [publisher key](https://github.com/webos21/crt/blob/main/docs/security/publisher_signing.md).
-Each host needs its LLVM-compatible tools and a CA bundle you choose, and installs the Dev SDK separately.
+Install the Dev SDK and LLVM-compatible tools separately. Supply a CA bundle
+when using HTTPS acquisition.
 
 | Host | Signed CLI Preview | Explicit SDK input |
 | --- | --- | --- |
@@ -94,8 +97,7 @@ The first build selects the only compatible installed SDK and records exact
 pins after the build succeeds. LLVM declarations may also live in ignored
 `.sdk.json`; subsequent builds need no tool flags. Use `configure` explicitly
 to change an existing binding. If several SDKs fit, select one on the first build explicitly with `--sdk <directory-or-identity-prefix>`; there is no moving
-default. On hosts awaiting first-build replay, retain the explicit `configure`
-step before build/test/run from their recorded baseline. Windows also needs its OS SDK import-library location through
+default. Windows also needs its OS SDK import-library location through
 `CRT_WINDOWS_SDK_LIBPATH` or `--os-sdk`; macOS uses `xcrun` or an explicit
 `--os-sdk`. Tool locations remain local state; the project lock pins SDK,
 contract and tool identities. See the [implemented contract](docs/reference/bootstrap_contract.md#sdk-store-and-exact-inputs).
@@ -106,6 +108,8 @@ project's lock. `new` creates sources only. The local example installs an archiv
 before first build; network acquisition requires an explicit pinned source.
 The native builder supports executables, static/shared project libraries and
 static/shared runtime linkage using SDK-owned startup/link/ABI policy.
+The Linux pure C shared SDK-provider path still needs qualification.
+[Mode and host limits](STATUS.md#limits-and-ordered-follow-up).
 
 For explicit HTTPS acquisition, supply a trusted format-0 source file with
 CA/metadata/SDK/contract pins, then use `--sdk-source /absolute/source.json` on
@@ -120,14 +124,16 @@ also exercise this workflow at their recorded baselines.
 
 ## Next User Workflow
 
-The next source-port work builds on the D3 zlib baseline with SQLite, libpng and dependency resolution.
-Full SDK installation, general updates, self-upgrade and Studio have separate gates.
-[Work queue](TODO.md#d4---dependencies-variants-locks-and-local-cache) ·
-[Approved D3 adapter](docs/compatibility.md#d3-bounded-adapter-adoption-2026-11-09).
+The next editor workflow connects [crt-vscode](https://github.com/webos21/crt-vscode)
+to the CLI's actual build plan and resolved project state. The proposed
+`export compile-commands` and `project info --json` commands and structured
+capability discovery are in the editor API queue.
+[Editor API work](TODO.md#p0---minimal-public-editor-api-d7-slice-coordinated-with-d5d6).
 
-The required CI and the scheduled or manual integration workflow cover five host pairs. The Windows/arm64 Preview also passed
-its public D1 replay. [Hosted integration](docs/acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20) ·
-[Public D1 replay](docs/acceptance/host_environment_acceptance.md#windowsarm64-d1-public-preview-replay-2026-11-20).
+The current queue also covers the first-user SDK and LLVM setup experience,
+replay of CRT's SDK corrections and publisher verification before release
+finalization. SQLite/libpng, broader SDK profiles and self-upgrade are later
+work. [Active work](TODO.md#in-progress) · [Planned work](TODO.md#planned).
 
 ## Platforms and Requirements
 
@@ -141,7 +147,8 @@ from a pinned release.
 The independent CRT host-tools profile supplies mksh, toybox, awk and make for
 explicit shell/port workflows. It is separate from native app builds and target
 SDKs. Windows workflows using real symlinks require Developer Mode; settings
-are not changed automatically. Studio remains a separate future GUI consumer.
+are not changed automatically. The standalone CRT Studio remains a future
+GUI consumer of the same CLI contracts.
 
 ## Learn More and Contribute
 

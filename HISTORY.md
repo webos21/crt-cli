@@ -14,7 +14,7 @@ inventing commits or test results. Older months may later be summarized under
 ### Retire the completed CI expansion and Windows/x64 private-DLL queues
 
 Remove both completed TODO sections. The five-host hosted integration, signed Windows/arm64 Preview and bounded Windows/x64
-private-DLL replay retain their dated acceptance records. Future operational work is tracked in [CI Operations](TODO.md#ci-operations).
+private-DLL replay retain their dated acceptance records. Follow-ups are tracked under [CI monitoring](TODO.md#ci---monitoring-and-pin-promotion) and [release signing](TODO.md#p1---sign-before-publishing).
 [Hosted integration](docs/acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20) ·
 [Private-DLL evidence](docs/acceptance/host_environment_acceptance.md#windowsx64-private-dll-host-tools-replay-2026-11-20).
 

@@ -548,7 +548,7 @@ enough that the manual step is affordable.
 Consequences: an asset is `not_verified` until its `.sig` is attached, and no pin may reference an asset before then. The unsigned window between publication and signature is a known
 limit of this design. Reconsider (key in a KMS reached through OIDC, or workflow signing) when releases become frequent or a second maintainer exists; that is a new decision and a key
 rotation, not a configuration change. Sigstore/cosign signatures are a different verification model and are not part of the CLI contract. Possible narrowing without moving the key
-(sign-before-publish, GitHub artifact attestations) is tracked in [TODO](../../TODO.md#ci-operations).
+(sign-before-publish, GitHub artifact attestations) is tracked in [release signing](../../TODO.md#p1---sign-before-publishing).
 
 ## 9. Joint Development Sequence
 
