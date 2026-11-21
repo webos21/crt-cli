@@ -37,7 +37,7 @@ int main() {
 
     // ---- the reviewed recipe ---------------------------------------------------------------------------------------
     check(sha256(bytes) == port_adapter_for(sha256(bytes)).recipe_sha256, "fixture digest is in the reviewed table");
-    check(port_adapters().size() == 1 && port_adapters()[0].crt_review == "approved", "adapter table contains the CRT-approved bounded zlib entry");
+    check(port_adapters()[0].crt_review == "approved", "adapter table contains the CRT-approved bounded zlib entry");
     const auto& adapter = port_adapters()[0];
     check(port_layout(adapter, "linux").shared_library == "lib/libz.so", "the Linux layout is unchanged");
     check(port_layout(adapter, "macos").shared_library == "lib/libz.dylib" &&
@@ -50,6 +50,17 @@ int main() {
     check(linux_recipe.source.sha256 == "9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23" && linux_recipe.source.archive == "zlib-1.3.1.tar.gz"
           && linux_recipe.source.source_dir == "zlib-1.3.1" && linux_recipe.source.url == "https://zlib.net/fossils/zlib-1.3.1.tar.gz", "source");
     check(linux_recipe.source.sha1.size() == 40 && linux_recipe.source.md5.size() == 32, "informational digests kept");
+    auto mirrored = bytes;
+    const auto archive_at = mirrored.find("    \"archive\":");
+    require(archive_at != std::string::npos, "zlib fixture is missing the archive field");
+    mirrored.insert(archive_at, "    \"mirrors\": [\n"
+        "      \"https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz\"\n"
+        "    ],\n");
+    const auto mirrored_recipe = parse_port_recipe(mirrored, "linux");
+    check(mirrored_recipe.recipe_sha256 != linux_recipe.recipe_sha256 &&
+          mirrored_recipe.source.sha256 == linux_recipe.source.sha256 &&
+          mirrored_recipe.source.url == linux_recipe.source.url,
+          "the reviewed mirror-only recipe retains the original source pin");
     check(linux_recipe.dependencies == std::vector<std::string>{"make"}, "make is a dependency name; its role comes from the table");
     check(port_adapter_for(linux_recipe.recipe_sha256).host_tools == std::vector<std::string>{"make"} && port_adapter_for(linux_recipe.recipe_sha256).target_ports.empty(), "make is a host tool, no target ports");
     check(linux_recipe.configure_args.empty() && linux_recipe.make_args.empty(), "no extra arguments");
@@ -122,6 +133,8 @@ int main() {
     { auto r = base; r["name"] = "../zlib"; rejects("path-like name", r, "simple package name"); }
     { auto r = base; r["name"] = "zlib2"; rejects("name differs from the entry", r, "differ from the reviewed"); }
     { auto r = base; r["source"]["mirror"] = "x"; rejects("unknown source key", r, "key 'mirror'"); }
+    { auto r = base; r["source"]["mirrors"] = "https://zlib.net/x"; rejects("mirrors must be an array", r, "must be an array"); }
+    { auto r = base; r["source"]["mirrors"] = Json::array({"http://zlib.net/x"}); rejects("plain HTTP mirror", r, "https"); }
     { auto r = base; r["source"]["url"] = "http://zlib.net/x.tar.gz"; rejects("plain http source", r, "https://"); }
     { auto r = base; r["source"]["url"] = "https://user:pw@zlib.net/x.tar.gz"; rejects("credentials in the URL", r, "https://"); }
     { auto r = base; r["source"]["archive"] = "../x.tar.gz"; rejects("archive with a path", r, "plain file name"); }

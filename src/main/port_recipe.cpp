@@ -40,6 +40,11 @@ std::vector<std::string> strings_of(const Json& value, const std::string& where)
     for (size_t i = 0; i < value.size(); ++i) out.push_back(text_of(value[i], where + "[" + std::to_string(i) + "]"));
     return out;
 }
+void check_https_url(const std::string& url, const std::string& where) {
+    if (url.rfind("https://", 0) != 0 || url.find('@') != std::string::npos || url.find_first_of(" \\") != std::string::npos)
+        refuse(where, "must be a plain https:// URL without credentials");
+}
+
 void only_keys(const Json& object, const std::set<std::string>& allowed, const std::string& where) {
     if (!object.is_object()) refuse(where, "must be an object");
     for (auto it = object.begin(); it != object.end(); ++it)
@@ -107,27 +112,34 @@ std::vector<PortEnvOp> env_ops(const Json& env, bool append, const std::string& 
 const std::vector<PortAdapter>& port_adapters() {
     // Seed of the later registry index, not a new recipe format. Entries are reviewed by CRT (the recipe owner);
     // CRT accepted this bounded entry on 2026-11-09; see the producer acceptance and CLI compatibility ledger.
-    static const std::vector<PortAdapter> table = {
-        {"dde944984d799197c0af1553ac7cf38139edc7b2e4e673ef9b4c17dd8c1a349b", "zlib", "1.3.1",
-         /*host_tools*/ {"make"}, /*target_ports*/ {}, /*variants*/ {"static", "shared"}, /*sdk_stage*/ "01-c",
-         {{"porting/tests/zlib_roundtrip.c", "3d7460fb51e215424ef4fa36593cd7662bdcf83bbd1e986eb0ed746b07aebe62"}}, "approved",
-         /*expected_files*/ {"include/zlib.h", "include/zconf.h", "lib/libz.a", "lib/libz.so", "lib/libz.so.1", "lib/pkgconfig/zlib.pc"},
-         /*expected_sonames*/ {"libz.so.1"},
-         /*sdk_library*/ "z", /*include_dir*/ "include", /*static_library*/ "lib/libz.a", /*shared_library*/ "lib/libz.so",
-         // macOS: zlib's own Darwin configure names the shared object by its absolute install directory, which stops existing
-         // when the job directory is published. The executor therefore passes LDSHARED with a relocatable install name
-         // (@rpath/libz.1.dylib, the Mach-O counterpart of SONAME libz.so.1); the rest of the line is configure's Darwin default.
-         /*layouts*/ {{"macos", {{"include/zlib.h", "include/zconf.h", "lib/libz.a", "lib/libz.dylib", "lib/libz.1.dylib", "lib/libz.1.3.1.dylib",
-                                 "lib/pkgconfig/zlib.pc"},
-                                {"@rpath/libz.1.dylib"}, "lib/libz.a", "lib/libz.dylib"}},
-                     // Windows: the recipe keeps zlib's POSIX spelling, so the PE DLL is lib/libz.so.1.3.1 with libz.so.1 and libz.so
-                     // as the links its own Makefile makes. The audit reads PE, not the extension.
-                     {"windows", {{"include/zlib.h", "include/zconf.h", "lib/libz.a", "lib/libz.so", "lib/libz.so.1", "lib/libz.so.1.3.1",
-                                   "lib/pkgconfig/zlib.pc"},
-                                  {"libz.so.1.3.1"}, "lib/libz.a", "lib/libz.so"}}},
-         /*executor_env*/ {{"macos", {{"LDSHARED", "@CC@ -dynamiclib -install_name @rpath/libz.1.dylib -compatibility_version 1 -current_version 1.3.1", false}}}},
-         /*executor_make_args*/ {{"macos", {"AR=@AR@", "ARFLAGS=rc"}}}},
-    };
+    static const std::vector<PortAdapter> table = [] {
+        std::vector<PortAdapter> entries = {
+            {"dde944984d799197c0af1553ac7cf38139edc7b2e4e673ef9b4c17dd8c1a349b", "zlib", "1.3.1",
+             /*host_tools*/ {"make"}, /*target_ports*/ {}, /*variants*/ {"static", "shared"}, /*sdk_stage*/ "01-c",
+             {{"porting/tests/zlib_roundtrip.c", "3d7460fb51e215424ef4fa36593cd7662bdcf83bbd1e986eb0ed746b07aebe62"}}, "approved",
+             /*expected_files*/ {"include/zlib.h", "include/zconf.h", "lib/libz.a", "lib/libz.so", "lib/libz.so.1", "lib/pkgconfig/zlib.pc"},
+             /*expected_sonames*/ {"libz.so.1"},
+             /*sdk_library*/ "z", /*include_dir*/ "include", /*static_library*/ "lib/libz.a", /*shared_library*/ "lib/libz.so",
+             // macOS: zlib's own Darwin configure names the shared object by its absolute install directory, which stops existing
+             // when the job directory is published. The executor therefore passes LDSHARED with a relocatable install name
+             // (@rpath/libz.1.dylib, the Mach-O counterpart of SONAME libz.so.1); the rest of the line is configure's Darwin default.
+             /*layouts*/ {{"macos", {{"include/zlib.h", "include/zconf.h", "lib/libz.a", "lib/libz.dylib", "lib/libz.1.dylib", "lib/libz.1.3.1.dylib",
+                                     "lib/pkgconfig/zlib.pc"},
+                                    {"@rpath/libz.1.dylib"}, "lib/libz.a", "lib/libz.dylib"}},
+                         // Windows: the recipe keeps zlib's POSIX spelling, so the PE DLL is lib/libz.so.1.3.1 with libz.so.1 and libz.so
+                         // as the links its own Makefile makes. The audit reads PE, not the extension.
+                         {"windows", {{"include/zlib.h", "include/zconf.h", "lib/libz.a", "lib/libz.so", "lib/libz.so.1", "lib/libz.so.1.3.1",
+                                       "lib/pkgconfig/zlib.pc"},
+                                      {"libz.so.1.3.1"}, "lib/libz.a", "lib/libz.so"}}},
+             /*executor_env*/ {{"macos", {{"LDSHARED", "@CC@ -dynamiclib -install_name @rpath/libz.1.dylib -compatibility_version 1 -current_version 1.3.1", false}}}},
+             /*executor_make_args*/ {{"macos", {"AR=@AR@", "ARFLAGS=rc"}}}},
+        };
+        // CRT 7b84c9d added source.mirrors. Source bytes, build policy and layouts are identical.
+        auto with_mirror = entries.front();
+        with_mirror.recipe_sha256 = "23deb244c9fa1943316803d40f00b89417412b1e709d76a2f56c33a236d0bf5f";
+        entries.push_back(std::move(with_mirror));
+        return entries;
+    }();
     return table;
 }
 
@@ -180,10 +192,13 @@ PortRecipe parse_port_recipe_with(const std::string& bytes, const std::string& t
     if (recipe.name != adapter.name || recipe.version != adapter.version) refuse("name/version", "differ from the reviewed adapter entry");
 
     const auto& source = get(root, "source", "(top level)");
-    only_keys(source, {"url", "archive", "source_dir", "sha256", "sha1", "md5"}, "source");
+    only_keys(source, {"url", "mirrors", "archive", "source_dir", "sha256", "sha1", "md5"}, "source");
     recipe.source.url = text_of(get(source, "url", "source"), "source.url");
-    if (recipe.source.url.rfind("https://", 0) != 0 || recipe.source.url.find('@') != std::string::npos || recipe.source.url.find_first_of(" \\") != std::string::npos)
-        refuse("source.url", "must be a plain https:// URL without credentials");
+    check_https_url(recipe.source.url, "source.url");
+    // The CLI builds from an explicit local archive. Mirrors are producer fetch metadata.
+    if (source.contains("mirrors"))
+        for (const auto& mirror : strings_of(source.at("mirrors"), "source.mirrors"))
+            check_https_url(mirror, "source.mirrors");
     recipe.source.archive = text_of(get(source, "archive", "source"), "source.archive");
     recipe.source.source_dir = text_of(get(source, "source_dir", "source"), "source.source_dir");
     if (!simple_name(recipe.source.archive)) refuse("source.archive", "must be one plain file name");
