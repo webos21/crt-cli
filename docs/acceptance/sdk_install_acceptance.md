@@ -2186,3 +2186,57 @@ Remaining: clean producer artifact/contract qualification, affected native
 Linux/aarch64/macOS/Windows replay of provider policy and generic closure
 refusals, then explicit producer promotion and consumer adoption. Windows C++
 compile-option correctness remains a separate prerequisite for P1-01 closure.
+
+
+## Clean Linux C shared candidate replay (2026-11-21)
+
+Use the verified archive and policy from the
+[clean producer build](https://github.com/webos21/crt/blob/391ce0a2ec5fff74386a3f709472b9babcd1f532/docs/acceptance/sdk_split_acceptance.md#clean-linuxx86_64-c-shared-sdk-candidate-2026-11-21).
+[Compatibility](../compatibility.md#clean-linuxx86_64-c-shared-sdk-candidate-2026-11-21)
+records the exact clean SDK, policy, CLI and LLVM inputs. The consumer source
+comes from a fresh Git archive of the implementation commit. Configure with
+the extracted SDK, the portable contract and its SHA-256, and explicit LLVM
+tools. Build the CLI using the pinned seed, then use the rebuilt executable.
+
+The isolated 22-check consumer replay passed without the dirty-SDK opt-in.
+It uses the same four C applications and six C/C++ refusals as the
+[November 20 replay](#linux-c-shared-candidate-consumer-replay-2026-11-20).
+The archive extraction and consumer paths include spaces and Hangul. Producer
+and CLI source trees are hidden, SDK/root are read-only, and the network is
+denied. Static/shared link maps and actual loaded images agree under the 2.43
+and pinned 2.39 loaders on this host. CLI run and zero-command warm builds
+preserve the lock. The six mixed-runtime refusals leave no output or binding
+and preserve the initial unresolved lock.
+
+The separate CLI `test --target native-test` run against the clean candidate
+passes 949 checks. Its subprocesses cover native C/C++ project builds, test
+jobs, runtime modes and selection failures.
+
+The first isolated port replay passed the 82-check port-project suite. Its
+subsequent public `port build` command refused the SDK's installed recipe
+digest `23deb244c9fa1943316803d40f00b89417412b1e709d76a2f56c33a236d0bf5f`.
+CRT [`7b84c9d`](https://github.com/webos21/crt/commit/7b84c9dde218b3cb2481221904ce8e4a875d80cf)
+added only `source.mirrors` to the existing recipe. The adapter reported 14 of
+16 gates passing and then failed while reading the missing success build key.
+
+CLI `d729d29cdedc3cd3cce483af1a4d6f9855fae366` adds the exact mirror-only digest
+alongside the previous digest and accepts bounded plain HTTPS mirror metadata.
+Both recipes keep the same source archive SHA-256 and build policies. The CLI
+build continues to require an explicit local archive and verify its bytes.
+Per-recipe identity remains part of the immutable port build key.
+
+Repeat the isolated replay with `--cases port-recipe-test port-project-test`
+and a fresh evidence and work root. Use the same signed November 16 host-tools
+bundle and pinned upstream zlib archive as the November 20 replay. The
+147-check recipe suite, 82-check port-project suite and 19/19 adapter gates
+pass. The SDK control maps SDK libz and the source-port consumer maps the
+selected port. The command publishes
+`5521d4b412cf369943a6597429901a081e07d236b557ec9da8cab886c4222cde`,
+reuses it on the second call and verifies all 16 inventory entries. SDK and
+host-tool inventories match before and after the replay.
+
+Local evidence in `/home/syszone/GitLocal/crt-p0-clean-20261121` includes
+`cli-build.json`, `native-test.stderr` and `cli-consumer-result.json` for the
+initial CLI commit. `port-project-report` retains the first refusal.
+`port-project-report-r2` retains the corrected CLI's inputs, exact argv,
+runtime output, traces and result. Both runs use the same clean SDK artifact.

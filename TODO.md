@@ -97,9 +97,9 @@ and
   qualification, consume an immutable SDK candidate, replay external C/C++
   build/run and provider/load checks, then adopt exact pins. Preserve failed
   identities; do not compensate with CLI/extension compiler-policy overrides.
-- [x] Linux local C-provider handoff and early mixed-runtime refusal
-  ([candidate evidence](docs/acceptance/sdk_install_acceptance.md#linux-c-shared-candidate-consumer-replay-2026-11-20));
-  clean SDK adoption, affected native hosts and Windows C++ remain open under P1-01.
+- [x] Linux/x86_64 clean C-provider candidate replay and early mixed-runtime refusal
+  ([evidence](docs/acceptance/sdk_install_acceptance.md#clean-linux-c-shared-candidate-replay-2026-11-21)).
+  SDK promotion and pin adoption, affected native hosts and Windows C++ remain open.
 - [ ] **P1-02** Improve the documented new/install/build/run path with scoped SDK/LLVM/OS
   SDK diagnosis and concrete missing-input guidance. Reuse explicit pinned SDK
   acquisition and declared tool paths; official defaults/trust/channels require

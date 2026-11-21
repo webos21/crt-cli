@@ -9,6 +9,17 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-21
+
+### Replay the clean Linux C shared SDK and its updated zlib recipe
+
+Consume clean `v0.0.1-cshared.20261121.1`. Native 949 and isolated consumer
+22 checks pass. The SDK's mirror-only zlib recipe initially triggers the
+digest gate. Add the exact producer revision to the adapter and keep the
+previous recipe supported. The repeated replay passes 147 recipe checks,
+82 port-project checks and 19 adapter gates, including actual build, reuse
+and verification. [Replay and limitations](docs/acceptance/sdk_install_acceptance.md#clean-linux-c-shared-candidate-replay-2026-11-21).
+
 ## 2026-11-20
 
 ### Validate the corrected Linux C provider and reject mixed runtime closures

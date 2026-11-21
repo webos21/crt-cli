@@ -47,6 +47,7 @@ the field, instead of ignoring it:
 | `schema_version` | must be `1` |
 | `name`, `version` | identity; recorded in the store manifest |
 | `source.url/archive/source_dir/sha256` | `sha256` is the only trust anchor and is mandatory; `sha1`/`md5` are informational and, when present, must also match |
+| `source.mirrors` | Optional array of plain HTTPS URLs in a digest-reviewed recipe. The CLI validates the metadata and builds from the explicit local archive. |
 | `dependencies` | classified by role (D3-3), never by name |
 | `build.system` | only `configure`; anything else is refused |
 | `build.configure_args`, `build.make_args` | argv elements, substituted (placeholders below) |

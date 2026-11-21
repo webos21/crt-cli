@@ -11,6 +11,37 @@ the [request/handoff record](crt_host_tools_publication_request.md#macoswindows-
 prerequisite from consumer adoption. The per-host records below retain their exact scope: closing the request neither promotes integration
 pins nor closes hosted jobs, Windows/arm64 D1 (31/32), or private-DLL qualification. No format or runtime contract changes here.
 
+## Clean Linux/x86_64 C shared SDK candidate (2026-11-21)
+
+CRT `19bdf3670549b2ac222ba43d632056e364fbec5c` produced the clean Dev SDK
+`v0.0.1-cshared.20261121.1`. Content SHA-256 is
+`2c6739386f477a662ee5493fc0c3e5c0533e29a3b04f2939eac01aeb01f5ec18` and
+portable contract SHA-256 is
+`058c5aeab08afc0cecfff5c8787d8ef1de26f663020f230159252d415191ea35`.
+The [producer acceptance](https://github.com/webos21/crt/blob/42b8f7a6043a2a03aac710a5c081bc133fb9fdc5/docs/acceptance/sdk_split_acceptance.md#clean-linuxx86_64-c-shared-sdk-candidate-2026-11-21)
+owns archive and source-asset identities, clean compile provenance and producer
+replay. Selection uses the extracted archive with the exact portable contract
+pin and normal clean provenance checks.
+
+A fresh source export of CLI `f1977a2d481cd59acfc3c5d81b45c8a8a8b65f6b`
+self-built with 21 steps executed and zero reused using Clang/LLD/LLVM ar 21.1.8.
+The seed executable SHA-256 is
+`a6b33cbd6a3ffbd4ecfdefb96f5f85b227d057e03c22b74bf9757b3cce456039`.
+The rebuilt executable SHA-256 is
+`ab573298e10edc7fc5215d5ac48a5e504fdfee64e6c4c5e293ea4ca05a8d778b`.
+The native suite passes 949 checks and the isolated C consumer replay passes
+22 checks. The actual port command initially refused the new recipe digest.
+CLI `d729d29cdedc3cd3cce483af1a4d6f9855fae366` adds the reviewed mirror-only
+revision and retains the prior digest. On the same clean SDK, the fresh port
+replay rebuilds CLI executable SHA-256
+`4d336138c8ad0b164b267ce8d16f725d584797f5f95fd715e3f77c379c1cdd20`.
+The replay source SHA-256 is
+`7c1ced149ca5a9c8ff01a32b08420efe89e9b37e7b843d28f02ffe6889d901cd`.
+Its 147 recipe checks, 82 port-project checks and 19 adapter gates pass with
+the existing signed November 16 host tools. This local Linux/x86_64 handoff
+keeps exact artifact selection. Producer promotion precedes public or CI pin
+adoption. [Execution evidence](acceptance/sdk_install_acceptance.md#clean-linux-c-shared-candidate-replay-2026-11-21).
+
 ## Linux C shared local candidate handoff (2026-11-20)
 
 CRT review baseline `6a0f2dea2f62b1819a4a0fcec17d376942d1ca67` and CLI baseline
