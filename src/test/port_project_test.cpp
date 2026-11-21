@@ -4,6 +4,7 @@
 //   CRT_CLI_TEST_PORT_PROJECT, CRT_CLI_TEST_PORT_HOST_TOOLS, CRT_CLI_TEST_PORT_HOST_TOOLS_SHA256, CRT_CLI_TEST_PORT_ARCHIVE
 #include <crtcli/archive.h>
 #include <crtcli/port_store.h>
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>
@@ -272,12 +273,19 @@ int main() {
         auto text = read_text(windows ? scratch / "control.reproduce.tar" : map);
         check(mentions(text, toolchain.sdk / "lib/libz.a") && !mentions(text, item / "lib"),
               "the control's map names the SDK's libz.a: the evidence discriminates between the providers");
-        // Observed, not endorsed: a consumer linked to the SDK's *shared* libz carries only `$ORIGIN` as its runpath, so on this
-        // Linux host the loader resolves libz.so.1 through the host's cache (/usr/lib...), i.e. not the SDK's. The control only
-        // needs to show that the process maps no libz from the item.
+        // Preserve the older unqualified Linux C-provider control. A corrected
+        // shared policy must prove the actual SDK image as well as exclude the port.
         auto maps = run_output(control / "out/native" / exe("shared-maps"), toolchain.sdk);
         check(maps.find("zlib_maps: ok") != std::string::npos && !mentions(maps, item),
               "the control's process maps no libz from the item: " + maps);
+        if (!windows && !darwin) {
+            const auto& c_link = toolchain.contract.at("modes").at("executable-shared").at("link_c");
+            const bool shared_c = std::find(c_link.begin(), c_link.end(), Json("@SDK@/lib/libc.so")) != c_link.end();
+            if (shared_c)
+                check(mentions(maps, fs::canonical(toolchain.sdk / "lib/libz.so")),
+                      "the corrected C shared policy maps the SDK's libz: " + maps);
+            else std::fputs("legacy C shared SDK policy remains unqualified\n", stderr);
+        }
         std::printf("port-project-test: SDK-provider shared control resolved: %s", maps.c_str());
     }
 

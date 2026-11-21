@@ -84,6 +84,15 @@ C++ link requirements. SDK library names use `sdk_libraries`; optional
 defaulting to target runtime linkage. Static archives do not embed dependency
 libraries: executable/shared consumers resolve their transitive dependencies.
 
+Shared SDK/port selections, including an explicit `sdk_library_linkage: "shared"`
+on a transitive static-library dependency, require the final executable's
+`runtime_linkage: "shared"`. The complete closure is checked before configure
+writes a local binding or build creates outputs; rejection preserves an unresolved
+lock. A shared runtime may consume static SDK/port libraries. The SDK owns C
+startup/runtime/search argv; CLI validation does not compensate for an incorrect
+producer policy. [Linux candidate evidence](../acceptance/sdk_install_acceptance.md#linux-c-shared-candidate-consumer-replay-2026-11-20)
+retains the legacy public SDK's unqualified shared control separately.
+
 `ports` (experimental, CLI-owned, per target): `[{"name":"zlib","provider":"sdk"}]` or
 `[{"name":"zlib","provider":"port","build_key":"<64 hex>"}]`. The provider is always explicit,
 one per port per project; provider `port` consumes the verified item `CRT_HOME/ports/store/<key>/`

@@ -2107,3 +2107,82 @@ Windows/arm64 consumers/D3, private-DLL collision tests, other ports and product
 Windows/x64's separate [public-bundle consumer record](host_environment_acceptance.md#windowsx64-published-host-tools-consumer-replay-2026-11-19)
 is preserved, not rerun or superseded by this Mac.
 STATUS is unchanged.
+
+## Linux C shared candidate consumer replay (2026-11-20)
+
+This is the local Linux C portion of correctness P1-01, consuming CRT Tranche
+6.4 / P0-01. [Compatibility](../compatibility.md#linux-c-shared-local-candidate-handoff-2026-11-20)
+records both source/diff and executable identities. The
+[producer record](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#linux-pure-c-shared-provider-correction-2026-11-20)
+records original signed Nov18 inputs, host-libz failure, candidate inventory,
+wrapper patch and clean-artifact limits. The November 9 host-libz observation
+above is preserved as a failure of that policy, not qualification of SDK shared
+libraries. No SDK/CI/default/root/project lock is promoted in this pass.
+
+### Native consumers and early refusal
+
+Fresh CLI source is exported outside both repositories and built with only the
+installed candidate and declared LLVM 21.1.8 tools. Static CLI self-build is
+21 executed / 0 reused; native suite passes **949 checks**. A separate replay
+uses bubblewrap with no network, read-only root/SDK, hidden producer/CLI source,
+private HOME/tmp, cleared environment and empty PATH. SDK and consumer paths
+include spaces and Hangul. The CLI runs directly from its copied executable;
+no wrapper, CMake, Python or shell is required for native application builds.
+The Python replay driver orchestrates these tests outside the product.
+
+The **23-check** result covers four pure-C application combinations: static
+runtime/SDK static zlib, shared runtime/SDK static zlib, shared runtime/SDK shared
+zlib, and shared runtime/project DSO/SDK shared zlib. Actual CLI-reported link
+argv is repeated with only a link-map output option added. Link maps and ELF
+`DT_NEEDED` agree with loaded images; shared consumers map the exact selected
+SDK libc/libz, and static controls have no dynamic C/zlib dependency. Project
+DSO constructors, one errno address and cross-boundary allocation/free pass.
+The same binaries execute with host loader 2.43 and pinned loader 2.39, without
+`LD_LIBRARY_PATH`. CLI `run`, zero-command warm rebuilds and stable locks pass.
+These loader probes do not substitute for native Ubuntu 24.04 host acceptance.
+
+C and C++ static-runtime executables requesting shared SDK libraries directly,
+through static-library dependencies, or via port providers are refused before
+configure creates its binding or build creates output. All six manifest cases
+retain their original unresolved locks and leave no `out/` or local binding;
+focused native assertions cover the same condition. Existing project-DSO
+runtime restrictions now run at that early boundary too. Omitting the explicit
+dirty-SDK opt-in refuses the local candidate. No corrective compiler flags
+are added to CLI or extension policy.
+
+### Actual same-SONAME source-port regression
+
+Run existing `tools/replay_port_linux.py --cases port-project-test` with the
+candidate's exact SDK/contract pin, fresh output/source export and explicitly
+verified public host-tools bundle. Host-tools input:
+`v0.1.0-hosttools.20261116.linux-x86_64.1`, archive SHA-256
+`811748496ed027339916609fceaee1a78c806d9dbdbb3aaa8b3a035095972155`, manifest
+SHA-256 `9bd3ddf18176c5a875e137846edc4f7e62dc2f178e1f1afcc97533a4cc5f192a`.
+Its pinned publisher RSA-PSS signature is independently verified. Pristine zlib
+1.3.1 archive SHA-256 is
+`9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23`.
+
+The fresh port-project suite passes **82 checks**; adapter **17/17**. Both static
+and shared upstream builds/smokes pass and publish one immutable port key,
+`0f1d5c5caa2adeed75090f0292c64635b365cd5bef9ddba0465ffca926b96afd`;
+reuse verifies the same item. Selected-port link maps and process maps name that
+item. The SDK shared control now additionally requires the actual SDK libz
+image when the provider declares shared C. Thus the SDK fallback correction
+preserves explicit port priority even with the same `libz.so.1` SONAME.
+The older provider's control remains explicitly unqualified. SDK and host-tools
+inventories remain unchanged, original inputs are denied, warm build executes
+zero commands, and execve traces show no host shell/interpreter in native jobs.
+This selected suite is not a rerun of every D1/D3 suite or new host qualification.
+
+Local evidence: `/home/syszone/GitLocal/crt-p0-c-shared-20261120/`, including
+`cli-build.json`, `native-test.stdout`, `cli-consumer-result.json`,
+`cli-replay-evidence/`, `port-project-argv.json`, `port-inputs.json`, and
+`port-project-report/{inputs,commands,result}.json` plus stdout/stderr/traces in
+the retained work directory. The recorded argv supplies explicit SDK/contract,
+host-tools manifest digest, source archive, seed executable, LLVM tools,
+`--allow-dirty-sdk`, `--cases port-project-test` and fresh evidence/work paths.
+
+Remaining: clean producer artifact/contract qualification, affected native
+Linux/aarch64/macOS/Windows replay of provider policy and generic closure
+refusals, then explicit producer promotion and consumer adoption. Windows C++
+compile-option correctness remains a separate prerequisite for P1-01 closure.

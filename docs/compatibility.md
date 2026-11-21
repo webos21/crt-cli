@@ -11,6 +11,46 @@ the [request/handoff record](crt_host_tools_publication_request.md#macoswindows-
 prerequisite from consumer adoption. The per-host records below retain their exact scope: closing the request neither promotes integration
 pins nor closes hosted jobs, Windows/arm64 D1 (31/32), or private-DLL qualification. No format or runtime contract changes here.
 
+## Linux C shared local candidate handoff (2026-11-20)
+
+CRT review baseline `6a0f2dea2f62b1819a4a0fcec17d376942d1ca67` and CLI baseline
+`1ad5e57b79ecb5916ab1c089c0b40515d549fc41` receive uncommitted changes for
+producer TODO P0-01 / Tranche 6.4 and consumer correctness P1-01. No schema, ABI,
+command, public release or pin adoption changes. The
+[producer record](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#linux-pure-c-shared-provider-correction-2026-11-20)
+owns the old public SDK failure, exact archive/policy pins and corrected Linux
+C runtime/search policy. The old Nov18 public SDK remains selected in CI;
+it must not be described as C-shared-qualified by these new results.
+
+The consumed Dev SDK is local `v0.0.1-cshared.20261120.1`, content SHA-256
+`5a87ccbb9999b0afd5f15f83302d515a32a17f9bf9cd5aaf1b9e2b2e63752bf5`, portable
+contract SHA-256 `7450128c825a409d24582c0fe9270239059681091778e10449256024aa5dac78`.
+This is a dirty packaging overlay on the signed Nov18 SDK from CRT
+`21ef266080760216f525c3725a652b5f1af4741c`; runtime/port binaries and their clean
+compile provenance are unchanged. The producer identity is **not** relabeled
+as current review HEAD. `--allow-dirty-sdk true` is explicit and required.
+
+The first fresh SDK-only CLI self-build is 21 executed / 0 reused, executable
+SHA-256 `9bc17e365ca45309a3808b2fa5275419131ac6984546f045408d1deef81d91ba`,
+from CLI baseline `1ad5e57` plus product/native-test diff SHA-256
+`0d337842281692802fbcd6b629ffb53c838c4b01b09f1987fd61c6a298c367df`.
+Native suite **949** and isolated consumer replay **23** pass. The final fresh
+port replay also includes the strengthened SDK-control assertion in
+`src/test/port_project_test.cpp`; its driver source digest is
+`b599c406bdc9e403c757d955c7c1af28f0bbeb6a2e2922ab883f335653d152de`, rebuilt
+CLI SHA-256 `2edd236f7c2df10a62c6d621d4c9e62ba95edfde9b66839a56537c14d28e666b`.
+Actual zlib source-port suite **82** and adapter **17/17** pass.
+[Consumer acceptance](acceptance/sdk_install_acceptance.md#linux-c-shared-candidate-consumer-replay-2026-11-20)
+owns argv, isolation, refusal and loaded-image evidence.
+
+The CLI uses only SDK-declared compiler policy; its generic preflight now refuses
+static-runtime executables with shared SDK/port libraries, including transitive
+selections. This is an exercised local Linux/x86_64 combination with Clang/LLD
+21.1.8 and 2.43/2.39 loader probes on one host. It is not native Ubuntu 24.04,
+Linux/aarch64, macOS or Windows qualification. Clean candidate production and
+affected native replay precede promotion; producer artifacts must be promoted
+before consumer locks change. Windows C++ correctness and signing remain open.
+
 ## Windows/x64 private-DLL local host-tools qualification (2026-11-20)
 
 Producer-owned assembly/PE validation at immutable CRT

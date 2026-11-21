@@ -497,6 +497,41 @@ int main(int argc, char** argv) {
         });
         if (selected_case.empty()) {
         NativePhase phase("selection");
+        for (const std::string language : {"c", "cxx"}) {
+            for (const std::string shape : {"sdk", "transitive-sdk", "port"}) {
+                auto rejected_root = hostile / ("mixed-runtime-" + language + "-" + shape);
+                invoke(cli, {"new", rejected_root.string(), "--language", language});
+                auto declaration = read_json(rejected_root / "crt.json");
+                declaration.erase("tests");
+                auto& target = declaration["targets"][0];
+                target["runtime_linkage"] = "static";
+                if (shape == "transitive-sdk") {
+                    Json archive{{"name", "dependency"}, {"kind", "static-library"},
+                        {"sources", target.at("sources")}, {"sdk_libraries", Json::array({"z"})},
+                        {"sdk_library_linkage", "shared"}};
+                    target["dependencies"] = Json::array({"dependency"});
+                    declaration["targets"].push_back(archive);
+                } else {
+                    target["sdk_library_linkage"] = "shared";
+                    if (shape == "sdk") target["sdk_libraries"] = Json::array({"z"});
+                    else target["ports"] = Json::array({{{"name", "zlib"}, {"provider", "port"}, {"build_key", std::string(64, 'a')}}});
+                }
+                write_text(rejected_root / "crt.json", declaration.dump());
+                std::vector<std::string> configure{"configure", "--project", rejected_root.string(),
+                    "--sdk-root", local.at("sdk_root"), "--sdk-contract", local.at("sdk_contract"),
+                    "--contract-sha256", lock.at("selection").at("contract_sha256"),
+                    "--cc", local.at("cc"), "--cxx", local.at("cxx"), "--linker", local.at("linker"), "--ar", local.at("ar")};
+                if (local.contains("os_sdk")) configure.insert(configure.end(), {"--os-sdk", local.at("os_sdk")});
+                if (lock.at("selection").value("allow_dirty_sdk", false)) configure.insert(configure.end(), {"--allow-dirty-sdk", "true"});
+                const auto before_lock = read_text(rejected_root / "crt.lock");
+                auto refusal = invoke(cli, configure, false);
+                check(refusal.value("message", "").find("shared SDK/port libraries require shared runtime linkage") != std::string::npos,
+                      "mixed runtime is rejected by policy, not by a later compiler failure");
+                check(!fs::exists(rejected_root / ".crt/local.json") && !fs::exists(rejected_root / "out") &&
+                      read_text(rejected_root / "crt.lock") == before_lock,
+                      "invalid shared SDK/port closure publishes no binding or artifact and preserves the lock");
+            }
+        }
         // The local, uncommitted .sdk.json supplies configure defaults; explicit flags override it per key.
         Json sdk_config{{"format", 0}, {"origin", "native test"}, {"seed", "/not/used/by/configure"}, {"sdk_root", local.at("sdk_root")}, {"sdk_contract", local.at("sdk_contract")},
             {"contract_sha256", lock.at("selection").at("contract_sha256")}, {"cc", local.at("cc")}, {"cxx", local.at("cxx")}, {"linker", local.at("linker")}, {"ar", local.at("ar")},

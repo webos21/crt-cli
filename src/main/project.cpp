@@ -108,6 +108,27 @@ struct Builder {
             }
         }
         read_ports();
+        for (const auto& entry : targets) {
+            if (kind(entry.second) != "executable") continue;
+            std::set<std::string> checked;
+            check_runtime_closure(entry.first, linkage(entry.second), checked);
+        }
+    }
+
+    void check_runtime_closure(const std::string& name, const std::string& runtime,
+                               std::set<std::string>& checked) const {
+        if (!checked.insert(name).second) return;
+        const auto& target = targets.at(name);
+        require(runtime == "shared" || kind(target) != "shared-library",
+                "a shared-library consumer must select shared runtime linkage");
+        const bool has_libraries = !target.value("sdk_libraries", Json::array()).empty() || target_ports.count(name);
+        // SDK/port DSOs use the same CRT domain as project DSOs. Check the
+        // entire closure before configure publishes a binding or build writes
+        // objects; a static archive can carry an explicit shared SDK choice.
+        require(runtime == "shared" || !has_libraries || target.value("sdk_library_linkage", runtime) != "shared",
+                "shared SDK/port libraries require shared runtime linkage");
+        for (const auto& dependency : target.value("dependencies", Json::array()))
+            check_runtime_closure(dependency.get<std::string>(), runtime, checked);
     }
 
     // `ports`: [{"name":"zlib","provider":"sdk"}] or [{"name":"zlib","provider":"port","build_key":"<64 hex>"}]. The choice is

@@ -11,6 +11,18 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-20
 
+### Validate the corrected Linux C provider and reject mixed runtime closures
+
+Consume the separately identified, unpromoted CRT packaging candidate without
+CLI compiler-policy overrides. Reject static-runtime executables with shared
+SDK/port/project libraries across the full dependency closure before configure
+publishes a binding or build writes outputs. Fresh SDK-only self-build, 949 native
+checks, 23 isolated consumer checks and the 82-check actual source-port suite
+(17 adapter gates) pass. The SDK control maps SDK libz; the selected source port
+wins against the same SDK SONAME. Keep public pins and the old failing provider
+record intact. [Adoption and limits](docs/compatibility.md#linux-c-shared-local-candidate-handoff-2026-11-20)
+leave clean SDK adoption, affected native hosts and Windows C++ qualification open.
+
 ### Retire the completed CI expansion and Windows/x64 private-DLL queues
 
 Remove both completed TODO sections. The five-host hosted integration, signed Windows/arm64 Preview and bounded Windows/x64
