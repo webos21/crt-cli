@@ -10,7 +10,7 @@
 //   <root>/
 //     <version>-<content12>/       published SDK (read-only by convention, never modified)
 //     .staging/<txn>/              extraction in progress; txn.json records the owner process
-//     .locks/<content12>.lock/     per-identity lock (a directory: creation is atomic on every host)
+//     .locks/<content12>.lock      per-identity lock (an OS-held file lock, see store_lock.h; the file stays on disk)
 //     .receipts/<directory>.json installation-time SDK/contract pin (outside the SDK identity)
 #include "crtcli/archive.h"
 #include "crtcli/core.h"

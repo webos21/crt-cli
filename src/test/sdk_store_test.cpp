@@ -39,6 +39,13 @@ size_t directories_in(const fs::path& path) {
     if (fs::is_directory(path)) for (const auto& entry : fs::directory_iterator(path)) { (void)entry; ++count; }
     return count;
 }
+
+// A lock is an OS-held file that stays on disk (store_lock.h); only a directory is a leftover or held directory lock.
+size_t lock_directories_in(const fs::path& path) {
+    size_t count = 0;
+    if (fs::is_directory(path)) for (const auto& entry : fs::directory_iterator(path)) if (entry.is_directory()) ++count;
+    return count;
+}
 }  // namespace
 
 int main() {
@@ -69,7 +76,7 @@ int main() {
         check(plain_receipt.at("contract").is_null() && plain_receipt.at("sdk") == first.identity.to_json(), "plain install records explicit absence of a contract");
         check(first.receipt_stored, "first install reports the published receipt");
         check(directories_in(store.root() / ".staging") == 0, "staging is empty after success");
-        check(directories_in(store.root() / ".locks") == 0, "locks are released after success");
+        check(lock_directories_in(store.root() / ".locks") == 0, "locks are released after success");
 
         // Same content again, including inside a wrapper directory: nothing changes.
         auto again = store.install(request_for(flat));
@@ -108,7 +115,7 @@ int main() {
         check(failure(store, InstallRequest{work.root / "absent.tar.xz", std::string(64, '0'), "", {}}).find("not found") != std::string::npos, "missing archive refused");
         check(store.list().size() == 1, "failed installs published nothing");
         check(directories_in(store.root() / ".staging") == 0, "failed installs leave no staging");
-        check(directories_in(store.root() / ".locks") == 0, "failed installs leave no locks");
+        check(lock_directories_in(store.root() / ".locks") == 0, "failed installs leave no locks");
 
         // A second, different SDK coexists.
         auto changed = store.install(request_for(bytes_of(sdk_entries("", "02-cxx", native_target(), "z"))));
@@ -189,7 +196,7 @@ int main() {
         write_text(lock / "owner", dead + "\n");
         auto stolen = store.install(fresh_archive);
         check(!stolen.already_installed && store.list().size() == 3, "a dead owner's lock is taken over");
-        check(directories_in(store.root() / ".locks") == 0, "the lock is released");
+        check(lock_directories_in(store.root() / ".locks") == 0, "the lock is released");
 
         // A release's toolchain contract is kept beside the SDK it belongs to and is as immutable as that SDK.
         {

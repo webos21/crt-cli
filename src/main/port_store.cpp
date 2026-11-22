@@ -621,6 +621,9 @@ std::vector<std::string> PortStore::recover() {
         auto directory = root_ / area;
         if (!fs::is_directory(directory)) continue;
         for (const auto& entry : fs::directory_iterator(directory, error)) {
+            // A lock file is an OS lock (store_lock.h): it is never stale and never removed. Only a directory is a
+            // leftover of the earlier directory-lock layout.
+            if (std::string(area) == ".locks" && !entry.is_directory()) continue;
             long owner = 0;
             // A staging directory is named <pid>-<tick>, so its owner is known from the moment it exists (txn.json is
             // written a moment later and must not decide whether a live publication is removed).

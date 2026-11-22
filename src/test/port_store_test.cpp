@@ -683,7 +683,10 @@ int main(int argc, char** argv) {
               ", exit " + std::to_string(codes[0]) + "/" + std::to_string(codes[1]) + ")");
         check(codes[0] != codes[1], "exactly one of two concurrent publications created the item");
         check(other.list() == std::vector<std::string>{key} && other.verify(key, toolchain.sdk) > 0, "the concurrently published item verifies");
-        check(fs::is_empty(other.root() / ".staging") && fs::is_empty(other.root() / ".locks"), "no staging or lock is left behind");
+        // A lock is an OS-held file that stays on disk (store_lock.h); only a leftover directory lock would be stale.
+        size_t lock_directories = 0;
+        for (const auto& entry : fs::directory_iterator(other.root() / ".locks")) if (entry.is_directory()) ++lock_directories;
+        check(fs::is_empty(other.root() / ".staging") && lock_directories == 0, "no staging or lock directory is left behind");
     }
 
     // ---- verification catches changes ---------------------------------------------------------------------------------
