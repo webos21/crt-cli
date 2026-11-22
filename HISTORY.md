@@ -15,7 +15,7 @@ inventing commits or test results. Older months may later be summarized under
 
 CRT `5325cea`'s CI-built Windows/arm64 SDK (not a release) with CLI `44fbf24`: independent SDK verification `OK`, native 1,041 checks, and a new `tools/replay_c_shared_windows.py` passes 36/36 (static control, shared runtime,
 shared runtime + project DLL with the loaded `libc.dll` equal to the installed SDK's, a mixed-runtime refusal with no output); the published `20261118` SDK fails six of the same cases and is kept as the baseline. The manual
-Integration run at `44fbf24` passes all 15 jobs, including `ports (win-arm64)`. The first scheduled run after the lock fixes is still pending. No promotion or pin change.
+Integration run at `44fbf24` passes all 15 jobs, including `ports (win-arm64)`. The first scheduled run after the lock fixes (45018368929, 11:39-11:54 GMT) also passed all 15 jobs. No promotion or pin change.
 [Acceptance](docs/acceptance/sdk_install_acceptance.md#windowsarm64-pure-c-shared-sdk-replay-and-integration-at-44fbf24-2026-11-22).
 
 ### Close the legacy lock-directory takeover race
