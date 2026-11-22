@@ -11,6 +11,10 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-22
 
+### Close the legacy lock-directory takeover race
+
+Review of the file-lock change found that `Lock` removed a stale legacy lock directory with `remove_all`, which could delete a lock *file* another process had created at that path in the meantime and let two processes hold the lock. The takeover now removes only the legacy `owner` file and then calls `rmdir`, which refuses a regular file; if the directory holds anything else it is left alone and the caller keeps waiting until the deadline. Verified on Windows x64 only: `store-lock-test` (9 checks) and `sdk-store-test` (113 checks) pass. The race has no deterministic test; it is closed by construction. The review also recorded two open limits in [TODO](TODO.md) (no in-process exclusion, lock files never removed). CI and other hosts are pending.
+
 ### Replace the store directory lock with an OS file lock
 
 `Lock` in `include/crtcli/store_lock.h` is now an exclusive `flock` on a small file that the operating system

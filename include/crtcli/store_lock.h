@@ -15,6 +15,7 @@
 #include <thread>
 #include <fcntl.h>
 #include <sys/file.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 namespace crtcli {
@@ -93,9 +94,14 @@ private:
             auto age = fs::file_time_type::clock::now() - fs::last_write_time(path_, error);
             if (error || age < std::chrono::seconds(10)) return false;
         }
+        // Remove only what the earlier layout created: its owner file, then the directory itself. rmdir refuses a
+        // regular file, so a lock file that another process created at this path after the checks above survives
+        // (remove_all would have deleted it and let two processes hold the lock). Anything else in the directory
+        // is not ours to delete: leave it and keep waiting until the deadline.
         std::error_code ignored;
-        fs::remove_all(path_, ignored);
-        return true;
+        fs::remove(path_ / "owner", ignored);
+        if (rmdir(path_.string().c_str()) == 0) return true;
+        return errno == ENOENT || errno == ENOTDIR;  // the path changed under us: re-examine it at once
     }
     fs::path path_;
     int fd_ = -1;
