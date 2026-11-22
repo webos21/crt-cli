@@ -2287,3 +2287,34 @@ this is one scheduled run, not a proof that the failure cannot recur.
 **Not covered.** Any release or promotion of the SDK and any pin change (the artifact is a CI build); the restricted-token adapter for the C replay (it uses a cleared environment, a private HOME and explicit LLVM tools; nothing is hidden and
 no network is denied; the contract replay above does use the adapter); Windows/x64 and macOS CLI replays of this correction; Windows C++ `<filesystem>` and the curl compile options (separate CRT items); a Windows zlib or same-name provider
 case (loader search differs from ELF); a second maintainer or independent review. Receipts are in the ignored local directories `cw/n1` (SDK verification, contract replay), `cw/n3` (36/36) and `cw/n4` (30/36).
+
+## Windows/x64 pure C shared SDK replay on a hosted runner (2026-11-22)
+
+The Windows/x64 counterpart of the [Windows/arm64 replay](#windowsarm64-pure-c-shared-sdk-replay-and-integration-at-44fbf24-2026-11-22), for CRT Tranche 6.4
+([producer record](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#windowsx64-consumer-replay-of-the-ci-sdk-for-the-pure-c-shared-provider-2026-11-22)). **It ran on a GitHub-hosted `windows-2022` runner, not on a physical x64 machine** (the machine used for the arm64 record is ARM64, and an emulated run would not be native evidence).
+The SDK is the x64 artifact of the same CI build, **not a release**: nothing is promoted, signed or pinned.
+
+**Run.** [Run 45032947370](https://github.com/webos21/crt-cli/actions/runs/45032947370), a temporary workflow on a throwaway branch (since deleted; the workflow is disabled), 2026-11-22 14:27:52-14:48:37 GMT, image `windows-2022` 20261111.635 (runner 20261116.370.1),
+LLVM 22.1.8 x64 (Chocolatey, as in `ci.yml`), Windows SDK `um\x64` 10.0.26100.0. Inputs: CLI `6f7f8b96fd603da127908053c88e2bce719f8b1e`, checked out into its own path (the branch workflow file is not in the source); its `src/` is identical to `44fbf24`
+(the only non-documentation difference is `tools/replay_c_shared_windows.py`). CRT `5325cea0dc0428bc79ac8a40c852a514265bf726` supplied only the replay tool and the two producer test sources. SDK: artifact `sdk-windows-x86_64-5325cea...` of
+[SDK integration run 45002729132](https://github.com/webos21/crt/actions/runs/45002729132), label `v0.0.1-ci.45002729132`, manifest SHA-256 `e835d22d2081fd04039bfdd56a3c9b7f31d5fd2b259bfcceac1397115a9a9d4a`, installed content
+`6efb616707f4a4b1387d8cf26f2f24e97d4792b46d538bdfef6242a0a32c96cb`, `bin\libc.dll` `2c02d41cea556b8ece5f00d0b03f1893ddc6ca779bf6615d02d5f2505b9301d0`; `ci_sdk_release.py verify` reports `OK` on the downloaded bytes (also run on this machine from the same artifact).
+
+**Native CLI replay (CRT's `replay_cli_contract_windows.py`): passed.** A hosted C++ seed built the CLI, which self-built (cold 21 executed / 0 reused, warm 0 / 21) and ran its suites under the per-run restricted token with an empty `PATH` and job-object accounting
+(583 recorded processes). The executable (46,030,848 bytes, SHA-256 `d63fbf45b2316d7a296283ca9d7ddfcbc07aafe3ef1bfa949ccd31feecb3522d`) imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`. All ten suites exited 0
+(`native-test`, `archive-test`, `sdk-store-test`, `port-recipe-test`, `store-lock-test` and five input-gated `port-*` suites). **The check counts were not captured** (the uploaded receipt holds exit codes, not each suite's output), and the
+five `port-*` suites print "skipped" and exit 0 without their host-tool inputs, which this replay does not provide: only the first five suites are substantive evidence here. Result SHA-256 `2e30f0c8...ec41d`.
+
+**C static and shared runtime modes (`tools/replay_c_shared_windows.py`): 36/36** with that CLI and the SDK above; result SHA-256 `528fb7b3...307b`. Same cases and outcomes as arm64: the static control imports no `libc.dll` and loads none; the shared-runtime executable imports `libc.dll`
+and the process loads the installed SDK's `bin\libc.dll` (the store copy), and it exits with `STATUS_DLL_NOT_FOUND` (0xC0000135) without the SDK `bin` on `PATH`; shared runtime + project DLL has one libc and one `errno` and the same start failure; a static executable depending
+on a shared library is refused with no output artifact and an untouched lock.
+
+**Contrast with the published SDK.** The same driver and the same CLI against the published `v0.0.1-preview.20261110.windows.1` (manifest `b0fca4c8...6976`, content `5bb55372...c7ef`) pass **30/36**; the failures are the same six as on arm64 (the shared executable has no `libc.dll`
+import and loads none, so it also starts without the SDK `bin`; the shared runtime + project DLL executable does not import `libc.dll` while its DLL does, and does not run). Result SHA-256 `ac0e8bc8...5c62`. The old behavior stays as a failing baseline.
+
+**First attempt, kept: failed at `build-visibility`.** [Run 45032665028](https://github.com/webos21/crt-cli/actions/runs/45032665028) stopped in the contract replay's visibility probe (exit 10): the restricted token could still read the CLI and producer checkouts because the hosted workspace (`D:\a`)
+and `D:\r` inherit broad read grants. It is a workflow fault, not a product result. The retry adds the preparation CRT's `sdk-integration.yml` uses for the same proof (this user, SYSTEM and Administrators get access, `Users`, `Authenticated Users` and `Everyone` are removed) and leaves the
+probe's denial check unchanged.
+
+**Not covered.** A physical x64 machine; the per-suite check counts and the port suites' substantive runs; macOS; release, signing or pin adoption of any SDK carrying the correction; Windows C++ `<filesystem>` and the curl compile options (separate CRT items); a Windows zlib or same-name provider case. The receipts
+(`win-x64-ci-sdk-replay-receipts`) expire 14 days after the run; the hashes above identify them, and copies are in the ignored local directory `cw/x2`.

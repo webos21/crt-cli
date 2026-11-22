@@ -102,7 +102,9 @@ and
   SDK promotion and pin adoption, affected native hosts and Windows C++ remain open.
 - [x] Windows/arm64: the CI-built SDK of CRT `5325cea` with CLI `44fbf24`: native 1,041 checks, and the pure C static, shared and shared + project DLL modes 36/36 with the loaded `libc.dll` equal to the installed SDK's
   (the published `20261118` SDK fails six of the same 36 cases)
-  ([record](docs/acceptance/sdk_install_acceptance.md#windowsarm64-pure-c-shared-sdk-replay-and-integration-at-44fbf24-2026-11-22)). A CI artifact is not a release: promotion, pin adoption, Windows/x64 and macOS remain open.
+  ([record](docs/acceptance/sdk_install_acceptance.md#windowsarm64-pure-c-shared-sdk-replay-and-integration-at-44fbf24-2026-11-22)). A CI artifact is not a release: promotion, pin adoption and macOS remain open.
+- [x] Windows/x64 (hosted `windows-2022`, not a physical machine): the x64 CI artifact of the same build with the same CLI sources: native replay passed and the same driver passes 36/36; the published `20261110` SDK fails the same six cases
+  ([record](docs/acceptance/sdk_install_acceptance.md#windowsx64-pure-c-shared-sdk-replay-on-a-hosted-runner-2026-11-22)). Per-suite check counts were not captured; a physical x64 machine is not covered.
 - [x] Store `Lock` replaced by an OS file lock with a multi-process regression; verified on Windows/x64 only
   ([HISTORY](HISTORY.md), 2026-11-22). Rerun the scheduled Integration job and Linux/macOS/arm64 before closing:
   both conditions are met at `44fbf24` (the sub-items below; the `CI` run passed all six native legs, which run `store-lock-test`).
