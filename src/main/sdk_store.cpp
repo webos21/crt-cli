@@ -116,6 +116,9 @@ std::vector<std::string> SdkStore::recover() {
         auto directory = root_ / area;
         if (!fs::is_directory(directory)) continue;
         for (const auto& entry : fs::directory_iterator(directory, error)) {
+            // A lock file is an OS lock (store_lock.h): it is never stale and never removed. Only a directory is a
+            // leftover of the earlier directory-lock layout.
+            if (std::string(area) == ".locks" && !entry.is_directory()) continue;
             long owner = 0;
             auto record = std::string(area) == ".staging" ? entry.path() / "txn.json" : entry.path() / "owner";
             try {

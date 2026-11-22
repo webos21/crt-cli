@@ -11,6 +11,25 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-22
 
+### Replace the store directory lock with an OS file lock
+
+`Lock` in `include/crtcli/store_lock.h` is now an exclusive `flock` on a small file that the operating system
+releases when the process exits, so nothing is stolen or treated as stale. This removes the two defects traced
+below (fatal `create_directory` contention errors; stealing a live lock whose owner was not yet written). A
+directory at the lock path is read as the earlier layout: waited on while its owner may be alive, taken over when
+the owner is gone or its owner record stays unreadable for 10 s. `recover()` in both stores now skips lock files.
+The new `store-lock-test` runs 4 processes x 150 acquisitions with an exclusive marker (also 8 x 300, passing) plus
+single-process and legacy-directory cases (9 checks). Against the previous `Lock` the same worker run fails: 2 of 4
+workers report exclusion violations, 2 fatal lock errors. `sdk-store-test` passes (113 checks) and
+`tools/ci_integration.py ports --host win-x64` on this Windows 11 x64 host passes all five suites (36/97/21/33/83,
+exit 0; CLI working tree on top of `e7f0300`, pinned SDK `v0.0.1-preview.20261110.windows.1`, LLVM 22.1.8, Python
+3.11.9). `port-store-test` and `sdk-store-test` were adjusted to allow lock files to remain.
+
+Limits: Windows/x64 only, one run; Linux, macOS and Windows/arm64 and the scheduled CI job were not run. CRT maps
+`flock` to `fcntl` record locks, so two `Lock` objects in one process do not exclude each other (the stores lock
+per process); Windows locks are mandatory, so the holder's PID cannot be read while locked. Mixed old/new CLI
+versions do not exclude each other on a lock. Evidence: `C:\crt-replay\x64-lockfix-20261122`, `C:\crt-replay\lockwork`.
+
 ### Replay Windows/arm64 port integration and trace the concurrent lock race
 
 The scheduled `Integration` run
