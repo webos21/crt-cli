@@ -102,6 +102,13 @@ and
   SDK promotion and pin adoption, affected native hosts and Windows C++ remain open.
 - [x] Store `Lock` replaced by an OS file lock with a multi-process regression; verified on Windows/x64 only
   ([HISTORY](HISTORY.md), 2026-11-22). Rerun the scheduled Integration job and Linux/macOS/arm64 before closing.
+- [ ] No in-process exclusion in `Lock`: CRT `flock` is built on `fcntl` record locks, so two `Lock` objects in one process do not
+  exclude each other. Today's stores never publish the same key from two threads of one process. Before adding
+  threaded publication, add an in-process mutex per lock path (or a CRT per-open-file-description `flock`) and a
+  thread-level regression.
+- [ ] Lock files are never removed, so `.locks` gains one empty file per SDK content or port build key (`recover()` skips them).
+  Decide whether a bounded cleanup is worth the risk of racing a live holder; removing a lock file under a holder
+  breaks exclusion, so any cleanup must hold the lock first.
 - [ ] **P1-02** Improve the documented new/install/build/run path with scoped SDK/LLVM/OS
   SDK diagnosis and concrete missing-input guidance. Reuse explicit pinned SDK
   acquisition and declared tool paths; official defaults/trust/channels require
