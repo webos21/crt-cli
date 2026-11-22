@@ -9,6 +9,52 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-22
+
+### Replay Windows/arm64 port integration and trace the concurrent lock race
+
+The scheduled `Integration` run
+[44898897532](https://github.com/webos21/crt-cli/actions/runs/44898897532) on CLI `8374470`
+failed only in `ports (win-arm64)`: `port-store-test` reported `cannot create lock ... Cannot
+create a file when that file already exists` and exit codes 0/1 for two concurrent
+publications of one key. The other 14 jobs passed.
+
+A native Windows/arm64 replay with the same driver
+(`tools/ci_integration.py ports --host win-arm64`) from a clean `git archive` of `8374470`
+passes all five port suites (build 36, store 97, oracle 21, command 33, project 83 checks, no
+skips) with the pinned SDK `v0.0.1-preview.20261118.windows.arm64.1`, host-tools
+`v0.1.0-hosttools.20261119.windows-aarch64.1`, native ARM64 LLVM 22.1.8 and Python 3.11.9
+(CI uses 3.12). The CI failure did not reproduce; `port-store-test` also passed 10 of 10
+standalone repeats. A first attempt failed `original-inputs-hidden` only because the source
+copy lacked the workflow's protected checkout ACL; that was a setup error, not a CLI result.
+
+Because the failure is rare, the unmodified `Lock` in `include/crtcli/store_lock.h` was built
+into a scratch stress program (outside this repository, same SDK) and driven by 2 and 4
+processes with an independent two-holder marker and a merged per-process event log. In the
+traced run (2 processes, 1500 acquisitions each, 1 ms hold) it produced 18 `create_directory`
+errors, 5 owner-write failures, 473 steals and 119 exclusion violations:
+
+- `create_directory` errors (Win32 183 and 5) are treated as fatal. 15 of 18 occurred while the
+  other process was inside its release `remove_all`.
+- `steal_if_dead` steals live locks. All 473 steals read `owner` as unreadable or empty
+  (pid 0); none was a dead owner. The creator's `create_directory` to `owner` write window had
+  median 3.6 ms, p95 23 ms, max 79 ms, and 284 steals landed inside it. 103 of the 119
+  violations followed the violator's own pid-0 steal; 16 were not classified.
+- `release()` removes the directory without checking ownership. This is from reading the code
+  and was not isolated in the trace.
+
+A scratch patch removed all errors and violations at 2 processes (0 of 6000) but still showed
+1 violation in 1600 at 4 processes and was up to 7x slower, so it is not a fix. **No CLI change
+was made; the lock defects remain open** and the CI failure is attributed to them by
+reproduction, not by the failing run's own trace.
+
+Limits: one machine and one run; the stress loop is far harsher than real use, so it does not
+estimate how often CI hits the race; the replay ran with an ordinary token, not the isolated
+adapter, for the repeats; POSIX behavior and the SDK store's use of the same `Lock` were not
+tested; the Windows/arm64 replay exercises `f1977a2` and `d729d29` against the existing SDK and
+is not C shared qualification. Evidence (logs, merged event trace, analysis script) is local
+and unpublished; the failed run's artifact remains in the CI run above.
+
 ## 2026-11-21
 
 ### Replay the clean Linux C shared SDK and its updated zlib recipe
