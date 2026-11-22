@@ -2240,3 +2240,49 @@ Local evidence in `/home/syszone/GitLocal/crt-p0-clean-20261121` includes
 initial CLI commit. `port-project-report` retains the first refusal.
 `port-project-report-r2` retains the corrected CLI's inputs, exact argv,
 runtime output, traces and result. Both runs use the same clean SDK artifact.
+
+## Windows/arm64 pure C shared SDK replay and Integration at `44fbf24` (2026-11-22)
+
+Windows/arm64 consumer replay of CRT Tranche 6.4 ([producer record](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#windowsarm64-consumer-replay-of-the-ci-sdk-for-the-pure-c-shared-provider-2026-11-22)),
+and the hosted Integration result for the lock fixes. **The SDK is a CI build, not a release:** nothing is promoted, no pin changes, no signature is claimed.
+
+**Inputs.** SDK: CRT `5325cea0dc0428bc79ac8a40c852a514265bf726`, artifact `sdk-windows-aarch64-5325cea...` of
+[SDK integration run 45002729132](https://github.com/webos21/crt/actions/runs/45002729132) (all five hosts succeeded), label `v0.0.1-ci.45002729132`; manifest 1,721 bytes SHA-256
+`bf0942ef634a6afc74d2ed8563e518ebb692c6a6eeaf4e839223d76643c31205`, archive 69,784,515 bytes, installed content `12d7d2c82039e8a42463745a551f606b8197d420fc1e8a744b940f500f178cf8`, `bin\libc.dll` SHA-256
+`76db2c708f8b59dec8c47bee22fbf73e4eb0c7fde3bd4cad5a411411217840c5`; CRT's independent `ci_sdk_release.py verify` reports `OK` on the downloaded bytes. CLI: `44fbf24048d9c9159bedf9fe7d5fc816c87af5ea`. Windows 11 arm64, LLVM 22.1.8
+(`woa64`), roots with spaces and Hangul. Work roots were kept short: the first replays in this series failed on the 260-character path limit.
+
+**Native CLI replay against the new SDK (CRT's `replay_cli_contract_windows.py`).** A hosted C++ seed built the CLI, which self-built (cold 21 executed / 0 reused, warm 0 / 21) and ran its own suites under the per-run
+restricted token with an empty `PATH`, hidden producer and CLI trees and job-object accounting: native **1,041** checks, archive 214, SDK store 113, port recipe 147 and store-lock 9; 625 recorded processes; the executable
+(46,039,552 bytes, SHA-256 `5b932e71864e2044978670bafe3514374a67954e4b6d344987b4a91099a19bfb`) imports only `kernel32.dll` and `api-ms-win-core-synch-l1-2-0.dll`. The C variants (static library 27, shared library 25,
+executable 25 checks) pass. Result SHA-256 `3302c02b...6787`.
+
+**C static and shared runtime modes (new `tools/replay_c_shared_windows.py`): 36/36.** The CLI above installs the SDK from its manifest pin into a private store and builds C projects with `build --sdk`, no configure step, in a cleared
+environment. Result SHA-256 `a0749e62...d504`.
+
+| Case | Direct imports | Loaded `libc.dll` | Other |
+| --- | --- | --- | --- |
+| static runtime (control) | `kernel32`, `api-ms-win-core-synch` | none | warm build executes nothing, lock unchanged |
+| shared runtime | `kernel32`, `libc.dll` | the installed SDK's `bin\libc.dll` | exits with `STATUS_DLL_NOT_FOUND` (0xC0000135) when the SDK `bin` is not on `PATH` |
+| shared runtime + project DLL | executable: `kernel32`, `libc.dll`, `libcrt_provider.dll`; DLL: `kernel32`, `libc.dll` | the installed SDK's `bin\libc.dll`, one libc and one `errno` (checked by the program) | same start failure without the SDK `bin` |
+| static executable depending on a shared library | | | refused ("a shared-library consumer must select shared runtime linkage"), no output artifact, lock untouched |
+
+The loaded-image path is reported by the process itself (the producer's `sdk_c_provider_windows_test.c`, SHA-256 `1ae97a42...b9bd`, and `sdk_c_provider_dso.c`, `61d36186...2a42`: identified test inputs, not CLI build inputs) and is the
+installed store copy, whose bytes equal the archive's `libc.dll`.
+
+**Contrast with the published SDK.** The same driver and CLI against the published `v0.0.1-preview.20261118.windows.arm64.1` (manifest `354ab45f...eecc`) pass **30/36**; the six failures are the finding that the
+correction fixes: the shared-runtime executable has no `libc.dll` import and loads none (it is linked like the static one), and the shared runtime + project DLL executable does not import `libc.dll` while its DLL does (two runtimes), so
+it fails to run. Result SHA-256 `4ef3d82f...6561`. This preserves the old behavior as a failing baseline instead of overwriting it.
+
+**Integration at the lock fixes.** [Run 45009815964](https://github.com/webos21/crt-cli/actions/runs/45009815964) (`workflow_dispatch`, scope `all`, `main` at `44fbf24`, 09:54:37-10:11:14 GMT): all 15 jobs succeeded: `pins`
+and `redirect` on every host and `ports` on `linux-x64`, `linux-arm64`, `macos-arm64`, `win-x64` and **`win-arm64`**. The earlier manual run [45002751384](https://github.com/webos21/crt-cli/actions/runs/45002751384) (at `753c597`) was the
+last ARM64 port pass before the final lock fix. `store-lock-test` is a PR test in `.github/ci/pins.json`, and the `CI` run [45008041906](https://github.com/webos21/crt-cli/actions/runs/45008041906) at `44fbf24` passed all six native legs
+(per-leg check counts were not extracted from the logs).
+
+**Scheduled run.** The last scheduled run, [44898897532](https://github.com/webos21/crt-cli/actions/runs/44898897532) (2026-11-21 11:23 GMT, at `8374470`), failed only in `ports (win-arm64)`;
+the two before it passed. No scheduled run since the lock fixes had started when this was written (11:23 GMT on 2026-11-22; the scheduled runs have started between 11:23 and 11:54 GMT, not at the 03:23 GMT slot).
+Its result is the remaining condition of the TODO item below; it is not inferred from the manual run.
+
+**Not covered.** Any release or promotion of the SDK and any pin change (the artifact is a CI build); the restricted-token adapter for the C replay (it uses a cleared environment, a private HOME and explicit LLVM tools; nothing is hidden and
+no network is denied; the contract replay above does use the adapter); Windows/x64 and macOS CLI replays of this correction; Windows C++ `<filesystem>` and the curl compile options (separate CRT items); a Windows zlib or same-name provider
+case (loader search differs from ELF); a second maintainer or independent review. Receipts are in the ignored local directories `cw/n1` (SDK verification, contract replay), `cw/n3` (36/36) and `cw/n4` (30/36).
