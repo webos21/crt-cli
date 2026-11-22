@@ -11,6 +11,13 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-22
 
+### Replay the Windows/x64 CI SDK for pure C static and shared modes on a hosted runner
+
+The x64 artifact of the same CI build (not a release) was consumed by the same CLI sources on a `windows-2022` runner (a temporary workflow, since removed and disabled): the CRT contract replay passed and `replay_c_shared_windows.py` passes 36/36; the published
+`20261110` SDK fails the same six cases and stays as the baseline. A first run failed in the visibility probe because the hosted workspace's inherited read grants were not removed; the retry prepares the roots as CRT's own workflow does. Hosted, not a physical x64 machine; the per-suite
+check counts were not captured; macOS, promotion and pin adoption remain open.
+[Acceptance](docs/acceptance/sdk_install_acceptance.md#windowsx64-pure-c-shared-sdk-replay-on-a-hosted-runner-2026-11-22).
+
 ### Replay the Windows/arm64 CI SDK for pure C static and shared modes and the Integration at the lock fixes
 
 CRT `5325cea`'s CI-built Windows/arm64 SDK (not a release) with CLI `44fbf24`: independent SDK verification `OK`, native 1,041 checks, and a new `tools/replay_c_shared_windows.py` passes 36/36 (static control, shared runtime,
