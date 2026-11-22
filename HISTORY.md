@@ -11,6 +11,13 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-22
 
+### Replay the Windows/arm64 CI SDK for pure C static and shared modes and the Integration at the lock fixes
+
+CRT `5325cea`'s CI-built Windows/arm64 SDK (not a release) with CLI `44fbf24`: independent SDK verification `OK`, native 1,041 checks, and a new `tools/replay_c_shared_windows.py` passes 36/36 (static control, shared runtime,
+shared runtime + project DLL with the loaded `libc.dll` equal to the installed SDK's, a mixed-runtime refusal with no output); the published `20261118` SDK fails six of the same cases and is kept as the baseline. The manual
+Integration run at `44fbf24` passes all 15 jobs, including `ports (win-arm64)`. The first scheduled run after the lock fixes is still pending. No promotion or pin change.
+[Acceptance](docs/acceptance/sdk_install_acceptance.md#windowsarm64-pure-c-shared-sdk-replay-and-integration-at-44fbf24-2026-11-22).
+
 ### Close the legacy lock-directory takeover race
 
 Review of the file-lock change found that `Lock` removed a stale legacy lock directory with `remove_all`, which could delete a lock *file* another process had created at that path in the meantime and let two processes hold the lock. The takeover now removes only the legacy `owner` file and then calls `rmdir`, which refuses a regular file; if the directory holds anything else it is left alone and the caller keeps waiting until the deadline. Verified on Windows x64 only: `store-lock-test` (9 checks) and `sdk-store-test` (113 checks) pass. The race has no deterministic test; it is closed by construction. The review also recorded two open limits in [TODO](TODO.md) (no in-process exclusion, lock files never removed). CI and other hosts are pending.
