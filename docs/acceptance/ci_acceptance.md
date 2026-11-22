@@ -593,7 +593,7 @@ and the explicit local-test pin file/command, copied `native-result.json`,
 Full logs and traces remain at
 `/home/syszone/crt-cli-ci-integration-20261116/native-r1/`, with native scratch
 `native-work/d3-linux-jecfcxuc/`. Reproduction and ownership:
-[Linux integration driver](../guides/development.md#linux-integration-driver).
+[native integration driver](../guides/development.md#native-integration-driver).
 
 **Still required for D1:** publish/promote acceptable producer bundles for both
 Linux hosts, review/pin those public bytes, add the hosted invocation arguments
