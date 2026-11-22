@@ -2279,9 +2279,10 @@ and `redirect` on every host and `ports` on `linux-x64`, `linux-arm64`, `macos-a
 last ARM64 port pass before the final lock fix. `store-lock-test` is a PR test in `.github/ci/pins.json`, and the `CI` run [45008041906](https://github.com/webos21/crt-cli/actions/runs/45008041906) at `44fbf24` passed all six native legs
 (per-leg check counts were not extracted from the logs).
 
-**Scheduled run.** The last scheduled run, [44898897532](https://github.com/webos21/crt-cli/actions/runs/44898897532) (2026-11-21 11:23 GMT, at `8374470`), failed only in `ports (win-arm64)`;
-the two before it passed. No scheduled run since the lock fixes had started when this was written (11:23 GMT on 2026-11-22; the scheduled runs have started between 11:23 and 11:54 GMT, not at the 03:23 GMT slot).
-Its result is the remaining condition of the TODO item below; it is not inferred from the manual run.
+**Scheduled run.** The last scheduled run before the fixes, [44898897532](https://github.com/webos21/crt-cli/actions/runs/44898897532) (2026-11-21 11:23 GMT, at `8374470`), failed only in `ports (win-arm64)`; the two before it passed.
+The first scheduled run after the fixes, [45018368929](https://github.com/webos21/crt-cli/actions/runs/45018368929) (`schedule`, `main` at `44fbf24`, 2026-11-22 11:39:10-11:54:51 GMT), **passed all 15 jobs**, including `ports (win-arm64)` and the
+other four `ports` jobs. Added after the rest of this record was merged: it started after the manual run above and was not known when that was written. Scheduled runs start between 11:23 and 11:54 GMT, not at the 03:23 GMT slot;
+this is one scheduled run, not a proof that the failure cannot recur.
 
 **Not covered.** Any release or promotion of the SDK and any pin change (the artifact is a CI build); the restricted-token adapter for the C replay (it uses a cleared environment, a private HOME and explicit LLVM tools; nothing is hidden and
 no network is denied; the contract replay above does use the adapter); Windows/x64 and macOS CLI replays of this correction; Windows C++ `<filesystem>` and the curl compile options (separate CRT items); a Windows zlib or same-name provider

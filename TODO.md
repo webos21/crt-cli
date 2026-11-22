@@ -104,11 +104,13 @@ and
   (the published `20261118` SDK fails six of the same 36 cases)
   ([record](docs/acceptance/sdk_install_acceptance.md#windowsarm64-pure-c-shared-sdk-replay-and-integration-at-44fbf24-2026-11-22)). A CI artifact is not a release: promotion, pin adoption, Windows/x64 and macOS remain open.
 - [x] Store `Lock` replaced by an OS file lock with a multi-process regression; verified on Windows/x64 only
-  ([HISTORY](HISTORY.md), 2026-11-22). Rerun the scheduled Integration job and Linux/macOS/arm64 before closing.
+  ([HISTORY](HISTORY.md), 2026-11-22). Rerun the scheduled Integration job and Linux/macOS/arm64 before closing:
+  both conditions are met at `44fbf24` (the sub-items below; the `CI` run passed all six native legs, which run `store-lock-test`).
   - [x] Windows/arm64: the manual Integration run at `44fbf24` passed all 15 jobs including `ports (win-arm64)`, and the native replay passes the 9-check `store-lock-test`; the `CI` run at `44fbf24` passed
     all six native legs, which run `store-lock-test` as a PR test
     ([record](docs/acceptance/sdk_install_acceptance.md#windowsarm64-pure-c-shared-sdk-replay-and-integration-at-44fbf24-2026-11-22)).
-  - [ ] The first scheduled Integration run after the lock fixes (the last one, at `8374470`, failed in `ports (win-arm64)`); it starts between 11:23 and 11:54 GMT, not at the 03:23 GMT slot.
+  - [x] The first scheduled Integration run after the lock fixes passed all 15 jobs, including `ports (win-arm64)` (the one before, at `8374470`, failed there)
+    ([record](docs/acceptance/sdk_install_acceptance.md#windowsarm64-pure-c-shared-sdk-replay-and-integration-at-44fbf24-2026-11-22)). Scheduled runs start between 11:23 and 11:54 GMT, not at the 03:23 GMT slot.
 - [ ] No in-process exclusion in `Lock`: CRT `flock` is built on `fcntl` record locks, so two `Lock` objects in one process do not
   exclude each other. Today's stores never publish the same key from two threads of one process. Before adding
   threaded publication, add an in-process mutex per lock path (or a CRT per-open-file-description `flock`) and a
