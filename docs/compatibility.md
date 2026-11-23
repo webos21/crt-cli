@@ -11,6 +11,25 @@ the [request/handoff record](crt_host_tools_publication_request.md#macoswindows-
 prerequisite from consumer adoption. The per-host records below retain their exact scope: closing the request neither promotes integration
 pins nor closes hosted jobs, Windows/arm64 D1 (31/32), or private-DLL qualification. No format or runtime contract changes here.
 
+## macOS/arm64 C shared CI SDK qualification (2026-11-23)
+
+Consumer product/test sources at CLI `01d25328137b6382612d1900884453faecefc625` are freshly built against the clean macOS artifact of
+CRT `5325cea0dc0428bc79ac8a40c852a514265bf726`, CI label `v0.0.1-ci.45002729132`. Installed SDK content is
+`8c5c68594c5845c1f343e8fa452bf0dd4800eb857d3dd20643bb45726ac981b6`, portable contract
+`456c37bcdef1de93a07517321a98e80cc982c16f3f44f84a9bb5defacfa389ee`. Producer artifacts and clean byte verification belong to
+[CRT acceptance](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#macosarm64-pure-c-shared-provider-replay-2026-11-23).
+
+The rebuilt CLI SHA-256 is `c712e5e2c1e61558bc5624e559301b8952c1336d3fe327a3907e09f2f0cd0a06`. macOS/arm64 with Xcode 27.2 passes
+the native and C-provider gates, exact SDK libc/libz mapping, same-install-name search precedence, early shared/static closure refusals
+and actual static/shared source-port consumers. The existing public Mac SDK passes the same C-provider matrix; this does not retroactively
+qualify the failing Linux/Windows public baselines. [Consumer acceptance](acceptance/sdk_install_acceptance.md#macosarm64-pure-c-shared-sdk-replay-2026-11-23)
+owns measurements and retained failures. The independent signed Mac host-tools bundle stays `20261119.macos-aarch64.1`.
+
+This is an exercised CI-artifact combination, **not release/pin adoption**: no schema, ABI, product command, compiler-policy override or
+default/project/root lock changes. The new replay-only tooling and identified producer C fixture are working-tree additions; they are not
+SDK runtime or CLI product patches. The SDK does not contain the later Windows persona fix at CRT `3c8c712`; Windows C++ and editor
+acceptance remain separate. Producer promotion must precede a consumer pin change.
+
 ## Clean Linux/x86_64 C shared SDK candidate (2026-11-21)
 
 CRT `19bdf3670549b2ac222ba43d632056e364fbec5c` produced the clean Dev SDK

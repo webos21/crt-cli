@@ -2318,3 +2318,124 @@ probe's denial check unchanged.
 
 **Not covered.** A physical x64 machine; the per-suite check counts and the port suites' substantive runs; macOS; release, signing or pin adoption of any SDK carrying the correction; Windows C++ `<filesystem>` and the curl compile options (separate CRT items); a Windows zlib or same-name provider case. The receipts
 (`win-x64-ci-sdk-replay-receipts`) expire 14 days after the run; the hashes above identify them, and copies are in the ignored local directory `cw/x2`.
+
+## macOS/arm64 pure C shared SDK replay (2026-11-23)
+
+Native consumer replay for CRT **P0-01 / Tranche 6.4** and CLI correctness **P1-01**. CRT `3c8c712`, CLI
+`01d25328137b6382612d1900884453faecefc625` and extension `8c13564` were synchronized with clean main branches. The CLI's product and
+`src/test` remain unchanged; only replay tooling and documentation are added. No extension process was launched.
+[CRT acceptance](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#macosarm64-pure-c-shared-provider-replay-2026-11-23)
+owns the producer artifact, manifest/archive/source-asset hashes and independent verification; [compatibility](../compatibility.md#macosarm64-c-shared-ci-sdk-qualification-2026-11-23)
+owns the exercised combination, not a new default pin.
+
+### Inputs and isolation
+
+SDK: macOS artifact ID **14746818377** from [SDK integration 45002729132](https://github.com/webos21/crt/actions/runs/45002729132),
+producer `5325cea0dc0428bc79ac8a40c852a514265bf726`, version `v0.0.1-ci.45002729132`. This is the same clean build consumed by Windows,
+not a release. Manifest SHA-256 `3ed66f8eb02ef1a2ab6674d7808a74ca632a819d045e2e3a3f3e1369932610c8`, content
+`8c5c68594c5845c1f343e8fa452bf0dd4800eb857d3dd20643bb45726ac981b6`, portable contract
+`456c37bcdef1de93a07517321a98e80cc982c16f3f44f84a9bb5defacfa389ee`. The SDK verifier reports OK, producer/compile provenance is clean,
+and SDK selection uses `allow_dirty_sdk: false`. The producer's macOS contract driver previously hard-coded dirty opt-in; it now has an
+explicit `--allow-dirty-sdk` option, default false, checks the selected flag and records it. No SDK bytes are patched.
+
+Host: macOS 27.2.1 (`26B131`), arm64, Xcode 27.2 (`27B52`), Apple Clang 21; explicitly declared Xcode clang/clang++/ld/ar and OS SDK.
+The SDK-only CLI executable is **4,427,208 bytes**, SHA-256 `c712e5e2c1e61558bc5624e559301b8952c1336d3fe327a3907e09f2f0cd0a06`.
+It imports only `/usr/lib/libSystem.B.dylib`; bare help/version/doctor and the build/bare source/SDK denial probes pass.
+The self-build executes **21** commands / reuses **0** cold, then executes **0** / reuses **21** warm. Contract replay result SHA-256
+`5d8135597ce7bb94d0e0e4a2deeb2d3237bf424f059b9567640f93c58ee3aa2b`.
+
+The separate C replay installs the archive with its independent manifest pin into a private store, builds through `build --sdk` without
+a configure step, and runs under Seatbelt: original CRT/CLI/extension roots and original SDK/CLI inputs are unreadable, network is denied,
+only declared build executables and scratch consumers can execute, HOME/temp/PATH are controlled. It is a native C workflow, not a host
+compiler/runtime substitute. SDK inventories are compared before/after; this does not claim separate write-denial of the SDK installed
+inside the writable scratch area. The orchestrator and `otool`/binding auditor are test-host tools only.
+
+### Results
+
+| Check | Outcome |
+| --- | --- |
+| Native suite | **984** checks |
+| Archive / SDK-store / recipe / store-lock | **221 / 114 / 147 / 9** checks |
+| C provider replay on the clean CI SDK | **76/76** gates |
+| Same C replay on the existing published Mac SDK | **76/76** gates |
+| Actual source-port provider replay | **20/20** gates; recipe **147**, project **81** checks |
+| Binding/mixed-runtime audits | **8 + 7** images, no issues/new exceptions |
+| Host-neutral replay/parser fixtures + Seatbelt fixtures | **5 + 6**, no skips |
+
+The generic CLI test invocation also runs five input-gated port executables without their input environment; those explicitly print
+skipped and exit 0. They are **not** five additional port passes. The separate recipe/project replay supplies the affected source-port
+evidence; the other three port suites are not rerun in this bounded pass.
+
+`replay_c_shared_macos.py` covers these cases with captured compiler argv, map-producing relinks, `LC_LOAD_DYLIB` dependencies and
+the process's public PAL image report (`crt_dl_iterate_images`, not direct dyld declarations):
+
+- Static runtime / SDK static zlib: SDK libc/zlib archives appear in the map, no CRT libc/libz dylib is mapped.
+- Shared runtime / SDK static zlib: SDK libc is mapped exactly once, no libz dylib is mapped, no static CRT is in the map.
+- Shared runtime / SDK shared zlib: only the selected installed SDK libc/libz are mapped, not Apple's libz.
+- Shared runtime / project dylib / SDK shared zlib: executable and dylib depend on shared CRT, both constructors run, one `errno`,
+  and allocation from the dylib is freed by the executable. Exactly one project dylib is mapped.
+- Explicit same-install-name provider: a byte-identical copy of SDK zlib in an explicit directory is selected by a controlled relink with
+  that RPATH before the SDK fallback. The actual mapped libz is the explicit copy. This is a loader-search control, not a new source port
+  or a CLI feature for arbitrary link flags.
+- Denying the installed SDK libc makes each shared executable fail to start without the success marker and with a libc loader error.
+- Static executables reaching a shared project library, a shared SDK library, or the latter through a static project library are refused
+  before binding/output creation; unresolved locks are untouched. Successful cold/warm/run cycles preserve their exact locks.
+
+The C fixture is CRT-owned `libc/tests/sdk_c_provider_images_test.c`, SHA-256
+`719999d2e32050f82219fd413e1d6a77cffb216b55bf8b35b7cce0351141082d`; the DSO fixture is unchanged `sdk_c_provider_dso.c`,
+SHA-256 `61d361869db2ad18a9529a2a2ca1c0bbc8f4eeb5fdabc0f8d341e9839e4ada42`. They are copied as identified test inputs; the CLI
+product never includes producer-private headers or build files. The driver SHA-256 is
+`cfb87ae6378262e2ee633b998da821f398ec52959909aae561f4221869d21827`.
+
+### Published baseline and real port
+
+The same rebuilt CLI and final driver on cached `v0.0.1-preview.20261110.macos.1` also pass **76/76**. Manifest/archive/contract pins
+were rechecked against unchanged `pins.json`; prior public signature verification is linked from the earlier Mac public-bundle record,
+not rerun or claimed as new signature proof. Its manifest is `0981110c...83de`, content `e3dc7fb1...bac8`, contract `d5a100fd...e464`.
+Unlike the Windows/Linux baseline, Mac's exported C shared mode already uses CRT dylibs and its SDK RPATH. Neither baseline is overwritten.
+Qualification here is of the native exported argv; a raw wrapper invocation setting only the neutral linkage hint is outside this matrix.
+
+The existing `replay_port_macos.py`, with only `--cases port-recipe-test port-project-test`, rebuilds the same CLI product in fresh scratch,
+uses the clean CI SDK, the unchanged signed `20261119.macos-aarch64.1` host tools (manifest `27fac5ef...e07b8`) and pristine zlib 1.3.1
+(`9a93b2b7...2df23`). It configures/builds/installs both static/shared forms and runs C/C++ consumers with source inputs hidden. A second
+direct run under its retained Seatbelt policy verifies the project suite's actual selected paths:
+
+```text
+port consumer: .../crt-port-project-DmM3ga/home/.crt/ports/store/4bdfadb269f5eabb97561f67279a5852c4e991daf19dec09927a6ea66244a81f/lib/libz.1.3.1.dylib
+SDK control:   /private/tmp/d3-macos-tzsiw8az/sdk/lib/libz.1.3.1.dylib
+```
+
+The real JSON `port build` publishes key `5a3ae0a17f64da82240888310be7d8b4526632e5ff49ada548bdb761e62e5c8d`, then reuses exactly that
+key and `port verify` passes. The separate project suite uses its own store/key above; those are not conflated. Fresh port-replay CLI
+SHA-256 `5575babbab9a77a8ae7ae7c77051994caec20c099916265ef8d2c049dfc4523f` differs by path/build inputs, not a product source change.
+Binding audits cover the C/CLI/SDK images and actual port C/C++ consumers/provider, with no unexpected CRT-owned host binding or mixed
+allocator registry. No upstream source or compiler-policy override was used to obtain the passes.
+
+### Reproduction and retained failures
+
+Use the producer's `replay_cli_contract_macos.py` with an extracted clean SDK and explicit Xcode tools, **without** `--allow-dirty-sdk`.
+Then use the rebuilt `bare/crt-cli` and the manifest-pinned release asset directory:
+
+```sh
+python3 -B tools/replay_c_shared_macos.py --cli /absolute/rebuilt/crt-cli \
+  --release-dir /absolute/release-assets --manifest-name release-manifest-dev-macos-aarch64.json \
+  --manifest-sha256 <independent-manifest-pin> \
+  --c-test-source /absolute/sdk_c_provider_images_test.c --c-dso-source /absolute/sdk_c_provider_dso.c \
+  --output /absolute/new-evidence --work /private/tmp/new-c-provider-work \
+  --cc /absolute/clang --cxx /absolute/clang++ --linker /absolute/ld --ar /absolute/ar \
+  --os-sdk /absolute/MacOSX.sdk --hide /absolute/crt --hide /absolute/crt-cli --hide /absolute/crt-vscode
+```
+
+Evidence root in CRT's ignored `out/p0-c-shared-macos-20261123/`: C result `c-provider-r3/result.json` SHA-256
+`ca747badc9187df0b567374bea75c6836890e6f53e7c659c2e98f8fdc9b176af`, baseline `published-baseline-final/result.json`
+`193e5ea9bcfa488b9d23b7f13114b2a10d007c800f63258636f2d81bd38125e1`, port `port-project-replay/result.json`
+`a5add0c57871cf768afee0bac9a287e2aa3a18a8ae0e7f42be8b24dab9f4a424`. Full per-call output, commands and maps are retained, as are
+`binding-audit.json`, `port-binding-audit.json` and `provider-observations.json`.
+The first artifact-root verifier attempt, C replay r1 (alias versus canonical library argv), r2 and first baseline (`sdk verify` needs the
+installed directory name, not content hash) are retained as harness failures. Final fresh runs fix the call sites; no product failure,
+integrity check, skip or output gate was waived. Source/SDK/bundle inventories are unchanged.
+
+**Limits.** No release/signature/pin promotion, current Windows persona/`<filesystem>` replay, raw neutral-only C wrapper hint test,
+extension-host/clangd/debugger execution, other-host rerun, full five-suite port replay, GPU/Web rebuild or STATUS update. This SDK predates
+CRT `3c8c712`'s Windows header persona fix. Producer promotion and coordinated consumer adoption remain open; this closes the native Mac
+P0 replay slice, not all of consumer P1-01 or producer Tranche 6.4.

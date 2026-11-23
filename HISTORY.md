@@ -9,6 +9,20 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-23
+
+### Replay the pure C shared SDK provider on native macOS/arm64
+
+CLI product `01d2532` consumes the clean macOS SDK from CRT `5325cea` / CI run `45002729132`, the build used by the Windows replays.
+SDK-only cold 21/0 and warm 0/21 self-build, native 984, archive 221, SDK-store 114, recipe 147 and store-lock 9 pass with no dirty-SDK
+opt-in. Generic test's five input-gated skips are not counted as passes. The new macOS C driver passes 76/76 in Seatbelt: static/shared
+SDK zlib, project dylib constructor/allocator/errno sharing, exact mapped providers, explicit same-install-name precedence, missing libc
+and three pre-output mixed-runtime refusals. The unchanged published Mac SDK also passes 76/76; Windows's six baseline failures do not
+apply to Mac. Actual upstream zlib static/shared/provider replay passes 20/20 gates (recipe 147, project 81), and two binding audits pass
+on 8 + 7 images. Keep both harness setup failures and the first failed baseline invocation. Five new host-only fixtures and six existing
+Seatbelt fixtures pass. No CLI product/compiler-policy override, upstream patch, SDK promotion, pin/lock or STATUS change; editor execution
+is not covered. [Inputs, commands, receipts and limits](docs/acceptance/sdk_install_acceptance.md#macosarm64-pure-c-shared-sdk-replay-2026-11-23).
+
 ## 2026-11-22
 
 ### Replay the Windows/x64 CI SDK for pure C static and shared modes on a hosted runner
