@@ -11,6 +11,20 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-23
 
+### Complete the physical Windows/x64 PAL Unicode replay
+
+CLI `6704aa8` replay drivers consume the post-PAL CRT `52881f08` CI Dev SDK
+with the retained public x64 Preview. Both Unicode-root C++ runs pass 22/22,
+the C static/shared/DLL replay passes 36/36, and the host-tools replay passes
+18/18. CLI shell preserves the exact Hangul/accent/emoji filename and bytes.
+[Acceptance](docs/acceptance/sdk_install_acceptance.md#native-windowsx64-unicode-and-provider-replay-2026-11-23)
+owns inputs, commands and isolation limits;
+[compatibility](docs/compatibility.md#native-windowsx64-pal-consumer-combination-2026-11-23)
+records this exercised pair. This closes the physical x64 follow-up of the
+ARM64/emulated replay; it changes no product, public API, lock or release pin.
+The macOS records at CRT `cb3e0145` / CLI `76a0f1a` are merged and retained
+with their distinct SDK/CLI artifact identities and isolation results.
+
 ### Replay the Windows PAL follow-up SDK on macOS/arm64
 
 Synchronize CLI `6704aa8`, CRT `52881f0` and crt-vscode `119e894`. Consume the

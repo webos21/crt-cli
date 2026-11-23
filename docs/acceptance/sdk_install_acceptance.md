@@ -2647,3 +2647,76 @@ failure is not claimed reproduced on Mac. No CLI product, upstream source,
 SDK payload, default/project pin or STATUS change, and no Extension Development
 Host/clangd/debugger acceptance. Windows physical x64 and Linux PAL gates stay
 with their recorded owners.
+
+## Native Windows/x64 Unicode and provider replay (2026-11-23)
+
+Physical Windows/x86_64 build 26100, LLVM 22.1.8, Windows SDK
+`10.0.28000.0`, Python 3.11.9. Replay drivers are from CLI
+`6704aa8b82f22590700ca85d73f526c79eea6fd9`; producer is CRT
+`52881f086c44ae22ea257e3d22839ff3b71e1ce7`. This completes the physical
+x64 follow-up of the PAL-02 ARM64/emulation record above. The retained
+published CLI executable, `v0.1.0-preview.20261117.windows-x86_64.1`, matches
+SHA-256 `feb9779109892cf73235307617398e8dfe70bdadcc86d3dff22ba04642c84df1`.
+It is not rebuilt or republished in this replay.
+
+The CI SDK is the newer post-descriptor/stdio x64 Dev artifact of
+[CRT SDK Integration 45159161995](https://github.com/webos21/crt/actions/runs/45159161995),
+label `v0.0.1-ci.45159161995`, release manifest
+`b7eeda14c3b857564ebfc2042ed33fdd9fa0f9e23a6270ae8402c99b297f2be0`,
+installed content
+`408024fb52a6904c53c0082a093e8765cfe3968eca506b481f616c2c2293cab9`.
+Original release assets pass producer verification before extraction.
+[Producer acceptance](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#native-windowsx64-pal-replay-2026-11-23)
+owns archive identities, source-hidden SDK execution, descriptor correctness
+and stdio measurements. This CI SDK remains unsigned and unpromoted.
+
+`replay_cpp17_consumer_windows.py` passes **22/22 in each of two fresh roots**,
+`u 한글 é` and `u 한글 😀`. Each holds the CLI, archive, private HOME/store,
+sources and outputs. Static/shared-runtime consumers build cold, execute no
+commands on warm build, open `fstream(path)` directly, exercise filesystem,
+curl and Mbed TLS, and run through the CLI. The existing shared-libcurl limit
+is unchanged: SDK curl dependencies remain static in this C++ probe.
+`replay_c_shared_windows.py` separately passes **36/36**: static, shared,
+project DLL, exact installed `libc.dll` mapping, missing-DLL startup failure,
+warm lock stability and early mixed-linkage refusal. Both drivers use cleared
+environments, private HOME and explicit native x64 LLVM tools. They do not
+claim restricted-token isolation; the separate producer test does.
+
+The retained public x64 host-tools bundle
+`v0.1.0-hosttools.20261119.windows-x86_64.1` has manifest SHA-256
+`cd6cb75e91b8f9202cda82876de9898e19fb4aeb01be981ebcfde9eabb7b7e00`.
+Producer `replay_host_tools_windows.py` passes **18/18** from
+`host replay 한글 😀/space 한글 bundle`. The same public CLI's `shell`
+command takes a Unicode script and working directory, validates that bundle
+pin, builds a new job rootfs, runs awk (42) and GNU make, and creates
+`한글 é 😀.txt`. Host Python confirms that exact name and `b'unicode-ok\n'`
+contents. Inherited PATH is empty; the job receives the bundle's declared
+tool path. The producer's native narrow-string and spawn tests additionally
+pass exact child argument/environment checks. No changes to PAL-03's narrow
+foreign-child hint, Windows 10 1903 minimum or foreign-host DLL manifest policy.
+
+Reproduce with the existing driver, repeating `--work` under both Unicode
+roots and passing native x64 paths for `--cc`, `--cxx`, `--linker`, `--ar`
+and `--readobj`:
+
+```text
+python tools/replay_cpp17_consumer_windows.py --cli <published-x64-exe> --release-dir <ci-assets> --manifest-name release-manifest-dev-windows-x86_64.json --manifest-sha256 b7eeda14c3b857564ebfc2042ed33fdd9fa0f9e23a6270ae8402c99b297f2be0 --host-arch x86_64 --output <fresh-evidence> --work <fresh-unicode-work> --cc <clang.exe> --cxx <clang++.exe> --linker <ld.lld.exe> --ar <llvm-ar.exe> --readobj <llvm-readobj.exe>
+```
+
+For the C driver use the same artifact/tool arguments (without `--host-arch`),
+plus explicit producer-owned `--c-test-source libc/tests/sdk_c_provider_windows_test.c`
+and `--c-dso-source libc/tests/sdk_c_provider_dso.c` from the pinned CRT checkout.
+Host-tools command: `python tools/replay_host_tools_windows.py --bundle <bundle> --output <fresh-unicode-output>`
+from CRT; shell uses explicit `--host-tools`, `--host-tools-sha256`,
+`--work-root`, `--script`, `--directory` and `--json`.
+
+Ignored evidence is retained in CRT's `out/pal-native-x64-20261123/`
+(`unicode-bmp`, `unicode-supplementary`, `c-shared`, their logs, and
+`shell-unicode-result.json`); private jobs and `host-tools-replay.json` are
+under `C:\Users\Lee\s16`. No product, schema, command, lock, default pin,
+SDK promotion or editor/debugger acceptance changes. The ARM64 and older
+macOS/Linux records retain their own tested combinations. The macOS
+follow-up from CLI `76a0f1a` / CRT `cb3e0145` is merged above: it uses the
+same producer source/run but different per-host SDK bytes and a freshly built
+Mac CLI. Its earlier physical-x64 pending statement is superseded by this
+section, without relabeling Mac execution as a Windows test.

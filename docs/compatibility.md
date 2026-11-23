@@ -11,6 +11,30 @@ the [request/handoff record](crt_host_tools_publication_request.md#macoswindows-
 prerequisite from consumer adoption. The per-host records below retain their exact scope: closing the request neither promotes integration
 pins nor closes hosted jobs, Windows/arm64 D1 (31/32), or private-DLL qualification. No format or runtime contract changes here.
 
+## Native Windows/x64 PAL consumer combination (2026-11-23)
+
+Exercised on physical Windows/x86_64 build 26100 with native LLVM 22.1.8:
+CRT `52881f086c44ae22ea257e3d22839ff3b71e1ce7`, CI Dev SDK
+`v0.0.1-ci.45159161995` (content
+`408024fb52a6904c53c0082a093e8765cfe3968eca506b481f616c2c2293cab9`),
+with public CLI Preview `v0.1.0-preview.20261117.windows-x86_64.1`
+(executable `feb9779109892cf73235307617398e8dfe70bdadcc86d3dff22ba04642c84df1`).
+Replay driver sources are CLI `6704aa8b82f22590700ca85d73f526c79eea6fd9`.
+The independent host-tools Preview stays
+`v0.1.0-hosttools.20261119.windows-x86_64.1`, manifest
+`cd6cb75e91b8f9202cda82876de9898e19fb4aeb01be981ebcfde9eabb7b7e00`.
+[Consumer acceptance](acceptance/sdk_install_acceptance.md#native-windowsx64-unicode-and-provider-replay-2026-11-23)
+owns the two Unicode C++ runs, C provider matrix and host-tools/shell evidence;
+[producer acceptance](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#native-windowsx64-pal-replay-2026-11-23)
+owns the corrected PAL and restricted-token SDK checks.
+
+This closes the physical x64 follow-up of the ARM64/emulation evidence for
+PAL-02/PAL-05/PAL-06. It is an unpromoted CI-artifact combination: existing SDK,
+native-policy, project/lock and final-JSON formats are unchanged. No new
+command, extension capability, pin adoption or publication is implied;
+producer promotion still precedes consumer pins. Historical Mac/Linux/ARM64
+records retain their original identities and limits.
+
 ## macOS/arm64 PAL follow-up SDK combination (2026-11-23)
 
 CLI sources `6704aa8b82f22590700ca85d73f526c79eea6fd9` consume the clean CRT
