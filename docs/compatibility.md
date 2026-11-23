@@ -11,6 +11,29 @@ the [request/handoff record](crt_host_tools_publication_request.md#macoswindows-
 prerequisite from consumer adoption. The per-host records below retain their exact scope: closing the request neither promotes integration
 pins nor closes hosted jobs, Windows/arm64 D1 (31/32), or private-DLL qualification. No format or runtime contract changes here.
 
+## macOS/arm64 PAL follow-up SDK combination (2026-11-23)
+
+CLI sources `6704aa8b82f22590700ca85d73f526c79eea6fd9` consume the clean CRT
+`52881f086c44ae22ea257e3d22839ff3b71e1ce7` macOS SDK of integration run
+`45159161995`, label `v0.0.1-ci.45159161995`. Installed content is
+`2ff2debd24be8a08fe6695af3b401e9e3afbd77abd4b2468f660462a4556534a`;
+portable contract is
+`5f99c145e15c3805df4310178ed80baa74289e42dbd43af72d6714f257675ed1`.
+On physical macOS/arm64 with Xcode 27.2, SDK-only self-build is cold 21/0 and
+warm 0/21. The fresh SDK-built seed
+`111b2a725998336bc89571f12c21bc40af0e7eea2524e11c77e9d6402cac1a52`
+installs the same SDK by its exact manifest pin, builds and runs static/shared
+path-taking stream and supplementary-plane filesystem consumers under Seatbelt
+in Unicode project paths, with no consumer policy override. Actual CRT binding
+audits pass. [Consumer acceptance](acceptance/sdk_install_acceptance.md#macosarm64-pal-follow-up-sdk-consumer-replay-2026-11-23)
+owns detailed evidence and limitations; the producer owns core/SDK qualification.
+The final self-built CLI
+`903a4704bd8314ceb015bd6bd945e54403df5a5fbc1df3cbb1a5486b5d99f5df`
+passes the five substantive suites and SDK-hidden bare execution; input-gated
+port suites remain skips.
+This is an exercised, unsigned CI-artifact combination, **not release or pin
+adoption**, Windows native qualification or editor/debugger acceptance.
+
 ## Windows/arm64 direct path stream open combination (2026-11-23)
 
 Exercised, unpromoted combination for CRT PAL-05 on a physical Windows 11 arm64 host: the CI-built CRT `111c351` Dev SDK `v0.0.1-ci.45131205714` (hosted `sdk-integration` run 45131205714; manifest `6be77df8bd10b72fd18219f94e33aa253a62137416df10d93d9cee2c764d7945`,

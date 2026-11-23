@@ -2557,3 +2557,93 @@ Evidence is in CRT's ignored `out/pal-followup/` under `unicode-bmp`,
 `unicode-supplementary`, `unicode-x64-emulated`, `unicode-x64-llvm`,
 `host-replay supplementary 😀` and `x64-host-tools.stdout`. Native x64
 end-to-end replay is still open. The CI SDK artifacts remain unpromoted.
+
+## macOS/arm64 PAL follow-up SDK consumer replay (2026-11-23)
+
+Synchronize CLI `6704aa8`, CRT `52881f0` and crt-vscode `119e894`. Native
+host: macOS 27.2.1 (`26B131`), arm64, Xcode 27.2 (`27B52`), Apple Clang 21.
+The Windows/arm64 work includes common stdio block transfers and the Windows
+filesystem/stream boundary fixes. The Windows descriptor-table lock does not
+run on this host. CRT owns the fresh core tests, performance comparison and
+source-hidden SDK consumer evidence in
+[producer acceptance](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#macosarm64-pal-follow-up-replay-2026-11-23).
+
+### Exact consumer inputs
+
+Use the unmodified macOS artifact of CRT `52881f086c44ae22ea257e3d22839ff3b71e1ce7`
+from SDK integration run `45159161995`, label `v0.0.1-ci.45159161995`.
+Release-manifest SHA-256:
+`827aec91e4dea6ad357d0c5e6b573b800d10d45c8a2f548e180c59c8c02bb31d`;
+installed SDK content:
+`2ff2debd24be8a08fe6695af3b401e9e3afbd77abd4b2468f660462a4556534a`;
+portable contract:
+`5f99c145e15c3805df4310178ed80baa74289e42dbd43af72d6714f257675ed1`.
+Producer and compile provenance are clean, and consumer compile options are
+empty. Archive, sources and contract are independently verified by CRT's
+`ci_sdk_release.py verify` before replay; these CI assets are unsigned and
+unpromoted, not new public releases.
+
+CRT's `tools/replay_cli_contract_macos.py` builds this CLI from SDK-only inputs
+in a fresh external source export, with empty tool discovery, explicit Xcode
+clang/clang++/ld/ar paths and Seatbelt denying the original CRT/CLI trees.
+The selected SDK is copied to `SDK space 한글/dev`; no dirty-SDK opt-in is used.
+The SDK-built CLI self-build is cold **21 executed / 0 reused**, warm
+**0 executed / 21 reused**.
+
+The complete contract replay passes: native **984**, archive **221**,
+SDK-store **114**, port-recipe **147** and store-lock **9** checks. The five
+input-gated port-build/store/oracle/command/project suites skip because their
+artifact environment is absent; their zero exit codes are not counted as new
+port passes. Bare help/version/doctor work with the source, SDK, provider and
+build tools inaccessible. The final self-built CLI is 4,427,272 bytes,
+SHA-256 `903a4704bd8314ceb015bd6bd945e54403df5a5fbc1df3cbb1a5486b5d99f5df`;
+it imports only `/usr/lib/libSystem.B.dylib`, has no runtime RPATH and passes
+the CRT binding/mixed-allocator audit. Both SDK inventories are unchanged.
+Its actual source export digest is
+`a9b6167e0a24d151fb456fa6c10f49718fd7f12f321d652f8f50a303c5dab747`;
+the exported local provider digest is
+`8305659900ace9c9fb8da4c704520f30b02aee68d73c30c247a99287d8a89dc4`
+(distinct from the packaged portable contract).
+
+### CLI-built path and Unicode consumers
+
+A second, retained driver uses the existing `MacSandbox` adapter and a fresh
+private HOME to install the same archive through `sdk install` with the exact
+release-manifest pin. It creates projects under `projects space 한글 😀` and
+uses CLI `build --sdk` without a configure step, compiler-policy reconstruction
+or corrective consumer options. Nine CLI invocations (installation, then
+new/cold build/warm build/run for each linkage) and the hidden-input/undeclared-
+executable denial probe all pass. Network is denied during this replay.
+
+The identified consumer fixture is CRT's
+`libstdc++/tests/development_sdk_consumer.cc` at `52881f0`, SHA-256
+`6a3343eadac350f28eaae295b0cf5765a0d2805a3c8ea1992c9756a963f26a4f`.
+It is copied into the project as `sdk_fixture.inc`, not read from the hidden
+producer tree by the compiler. A small generated entry point renames its HTTPS
+`main` and calls `utilities(argv[0])`: this exercises its header-persona,
+direct-path stream, U+1F600/U+20000 filesystem, JSON, SHA-2, xz and public PAL
+checks without doing HTTPS in this CLI run. The independent producer SDK
+consumer runs the full HTTPS/trust cases.
+
+Both the runtime and SDK libraries are static in the static project and shared
+in the shared project; declared libraries are curl, mbedtls, mbedx509,
+mbedcrypto, z, cjson and lzma. Cold builds execute commands, warm builds execute
+none, and both `crt-cli run` calls pass. Binding audits confirm the static app
+imports only libSystem and owns its allocator; the shared app uses the selected
+CRT and port dylibs without owning a second allocator. The CLI seed used here
+is SHA-256 `111b2a725998336bc89571f12c21bc40af0e7eea2524e11c77e9d6402cac1a52`,
+freshly built from the synchronized CLI sources with this SDK.
+
+### Evidence and scope
+
+CRT's ignored `out/pal-replay-macos-20261123/` retains `cli-contract/`,
+`replay_cli_cpp.py`, `cli-cpp-consumer/{commands,result}.json`, per-call logs and
+`cli-cpp-binding-audit.json`. The contract workspace is in its `inputs.json`;
+the project/store workspace is `/private/var/folders/p3/z_1_279n4bq6kgrrs25d8bdc0000gn/T/crt-pal-cli-unicode-jnd1ffid`.
+The reusable contract replay takes `--cli-source`, `--sdk-root`, `--output`
+and explicit `--clang`, `--clangxx`, `--linker`, `--ar`; no bootstrap loop with
+`--previous-cli` is requested in this pass. The original Windows-only P1/PAL
+failure is not claimed reproduced on Mac. No CLI product, upstream source,
+SDK payload, default/project pin or STATUS change, and no Extension Development
+Host/clangd/debugger acceptance. Windows physical x64 and Linux PAL gates stay
+with their recorded owners.

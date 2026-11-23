@@ -11,6 +11,23 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-23
 
+### Replay the Windows PAL follow-up SDK on macOS/arm64
+
+Synchronize CLI `6704aa8`, CRT `52881f0` and crt-vscode `119e894`. Consume the
+clean macOS CI SDK `v0.0.1-ci.45159161995` without a product patch, dirty opt-in
+or pin change. SDK-only self-build passes cold 21/0 and warm 0/21. The SDK-built
+seed installs the pinned archive and builds/runs static/shared C++ projects in
+space/Hangul/U+1F600 paths with the original producer/source hidden: the copied
+CRT utilities fixture exercises direct-path streams, supplementary-plane
+filesystem operations, curl/mbedTLS header compatibility and JSON/SHA-2/xz.
+Nine CLI calls and the Seatbelt denial probe pass, as do the consumer binding
+audits. The complete contract replay passes native 984, archive 221, SDK-store
+114, recipe 147 and store-lock 9, plus SDK-hidden bare execution; the five
+input-gated port suites remain skips. The exercised pair is in [compatibility](docs/compatibility.md#macosarm64-pal-follow-up-sdk-combination-2026-11-23);
+[acceptance](docs/acceptance/sdk_install_acceptance.md#macosarm64-pal-follow-up-sdk-consumer-replay-2026-11-23)
+owns the exact inputs, commands and limits. This is not SDK promotion, Windows
+native replay, host-tools publication or extension execution. STATUS is unchanged.
+
 ### Replay the direct path stream open on Windows/arm64 after the CRT PAL-05 fix
 
 `tools/replay_cpp17_consumer_windows.py` no longer opens its file through `path::string()`: it uses `ofstream(path)`, `ifstream(path)`, `open(path, app)` and `trunc`. On this physical arm64 machine, with the unchanged CLI `02decf65...e46c`, the CRT `111c351` CI artifact
