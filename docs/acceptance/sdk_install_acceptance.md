@@ -2517,3 +2517,43 @@ both builds fail at `std::ofstream out(root / "inner" / "data.bin", ...)` with `
 (CRT PAL-06), and the stream open of such names is covered by CRT's shared SDK consumer. **Windows/x64 is not run here** (this machine is arm64): the hosted `windows-x86_64` job of the same CRT run passes the shared consumer test, and the physical x64 replay is one command
 on that machine with the x64 artifact of run 45131205714: `python tools/replay_cpp17_consumer_windows.py --cli <x64 crt-cli.exe> --release-dir <artifact dir> --manifest-name release-manifest-dev-windows-x86_64.json --manifest-sha256 <manifest pin> --output <new> --work <new> --host-arch x86_64 --cc ... --cxx ... --linker ... --ar ... --readobj ...`.
 Evidence is under the ignored local `C:\Users\cmjo\r1\` (`artifact2`, `cpp2-new-out`, `cpp2-old-out`), outside both repositories.
+
+### Windows Unicode SDK installation and external C++ consumers (PAL-02, 2026-11-23)
+
+The published signed Windows/ARM64 CLI Preview `v0.1.0-preview.20261118.windows-arm64.1`
+(executable SHA-256 `132c8b5ae15f66ed9dd82fcb5a425160e4d682c008ab218353b7eed30f6d3db8`)
+installs the PAL-06 Dev SDK from CRT `a149bfe126194e84942e8c24163a759085559b34`,
+CI run `45142915867`. Its ARM64 release manifest SHA-256 is
+`9040e946abf43a404c3f78ee980285cbc9619f39426b930dd47761a4e627f084`, content
+`6fc5c4bc20a57edb6f8e345a24e509361c9c5983eb27c7fb1259e10516a5478c`.
+With LLVM 22.1.8, `replay_cpp17_consumer_windows.py` passes 22/22 on native
+Windows ARM64 in each of two roots: `u 한글 é` and `u 한글 😀`. The root contains
+the CLI, input archive, private SDK store, project sources and generated
+outputs. Both static and shared projects build cold, reuse the warm cache, and
+run through the CLI with the same paths. The probe opens a path directly with
+`std::fstream` and exercises the packaged curl and Mbed TLS interfaces.
+
+The signed x64 CLI Preview `v0.1.0-preview.20261117.windows-x86_64.1`
+(executable `feb9779109892cf73235307617398e8dfe70bdadcc86d3dff22ba04642c84df1`)
+passes 22/22 in `ux2 한글 😀` under Windows x64 emulation on the ARM64 host.
+The SDK is the x64 artifact of the same run, manifest
+`32ff64edc91a8e0b1d31ea6982fe042f0e454ea87b4089a0bb4ba366e4f33471`, content
+`9aed6f935f8d22c925fd91ed420fe6e978ff27c9c5c3feeecfe505d80936225f`. The first
+x64 attempt installed the SDK but stopped at tool selection because its LLVM
+executables were ARM64. A verified x64 LLVM 22.1.8 distribution satisfies the
+existing tool architecture check. The failed and successful receipts are retained.
+
+The published x64 host-tools Preview `v0.1.0-hosttools.20261119.windows-x86_64.1`
+(manifest `cd6cb75e91b8f9202cda82876de9898e19fb4aeb01be981ebcfde9eabb7b7e00`)
+also runs through the x64 Preview's `shell` command under emulation, with a
+signed archive, empty inherited PATH, awk and GNU make, and a shell-created
+`한글 é 😀.txt` checked by its exact host name and bytes. The producer's separate
+ARM64 bundle replay passes 18/18 from an emoji and Hangul path. The ARM64
+`windows_utf8_narrow_test` checks UTF-8 argument and environment bytes in the
+spawned child. These runs preserve the existing Windows 10 1903 minimum and
+the process-manifest requirement for hosts that load CRT DLLs.
+
+Evidence is in CRT's ignored `out/pal-followup/` under `unicode-bmp`,
+`unicode-supplementary`, `unicode-x64-emulated`, `unicode-x64-llvm`,
+`host-replay supplementary 😀` and `x64-host-tools.stdout`. Native x64
+end-to-end replay is still open. The CI SDK artifacts remain unpromoted.
