@@ -2439,3 +2439,14 @@ integrity check, skip or output gate was waived. Source/SDK/bundle inventories a
 extension-host/clangd/debugger execution, other-host rerun, full five-suite port replay, GPU/Web rebuild or STATUS update. This SDK predates
 CRT `3c8c712`'s Windows header persona fix. Producer promotion and coordinated consumer adoption remain open; this closes the native Mac
 P0 replay slice, not all of consumer P1-01 or producer Tranche 6.4.
+
+## Windows/x64 pure C shared SDK replay on a physical machine (2026-11-23)
+
+The physical counterpart of the [hosted Windows/x64 replay](#windowsx64-pure-c-shared-sdk-replay-on-a-hosted-runner-2026-11-22) ([producer record](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#windowsx64-physical-machine-pure-c-shared-provider-replay-2026-11-23)). Windows 11 Pro 10.0.26100 x64, LLVM 22.1.8. The SDK is a locally built, unpromoted candidate of CRT `770ed07b`
+(`v0.0.1-rehearsal.11`, manifest `92f844b3...57b5`, content `eb41ca93...aeec`); CLI `c297a65`. Nothing is released, signed or pinned.
+
+**Native CLI replay: passed.** The SDK alone built the CLI (`2543b1da...e877`, 46,048,256 bytes), which self-built cold 21 / 0 and warm 0 / 21 under the restricted token with 736 recorded processes; native 1028, archive 214, SDK-store 113, recipe 147 and store-lock 9 checks pass.
+**C static/shared modes (`tools/replay_c_shared_windows.py`): 36/36**, result SHA-256 `a695516627fdc3016453f0dc89b74c2772b1038715312a61f29e1f12fa74d5d7`: the loaded `libc.dll` equals the installed SDK's. The published `20261110` SDK passes 30/36 with the same six failures
+(result `e8bcd602...8293`), kept as the failing baseline.
+
+**Not covered.** Promotion, signing and pin adoption; the port suites' substantive runs; Windows C++ `<filesystem>` and curl options. Evidence: `C:\Users\Lee\s13\`.

@@ -85,7 +85,7 @@ Acceptance baselines:
 and
 [project lifecycle PR-03 through PR-05](docs/acceptance/lifecycle_acceptance.md#d2d5---project-sdk-and-creation)
 . P1-01 consumes
-[crt P0-01 / Tranche 6.4](https://github.com/webos21/crt/blob/main/TODO.md#p0---pure-c-shared-provider-policy-tranche-64--d5)
+[crt P0-01 / Tranche 6.4](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#windowsx64-physical-machine-pure-c-shared-provider-replay-2026-11-23)
 and
 [crt Windows C++ P1-01](https://github.com/webos21/crt/blob/main/TODO.md#p1---windows-c-public-compile-options-d5)
 . P1-02 supplies setup and diagnosis for
@@ -104,7 +104,7 @@ and
   (the published `20261118` SDK fails six of the same 36 cases)
   ([record](docs/acceptance/sdk_install_acceptance.md#windowsarm64-pure-c-shared-sdk-replay-and-integration-at-44fbf24-2026-11-22)). A CI artifact is not a release: promotion and pin adoption remain open; macOS evidence is below.
 - [x] Windows/x64 (hosted `windows-2022`, not a physical machine): the x64 CI artifact of the same build with the same CLI sources: native replay passed and the same driver passes 36/36; the published `20261110` SDK fails the same six cases
-  ([record](docs/acceptance/sdk_install_acceptance.md#windowsx64-pure-c-shared-sdk-replay-on-a-hosted-runner-2026-11-22)). Per-suite check counts were not captured; a physical x64 machine is not covered.
+  ([record](docs/acceptance/sdk_install_acceptance.md#windowsx64-pure-c-shared-sdk-replay-on-a-hosted-runner-2026-11-22)). Per-suite check counts were not captured; the physical x64 machine is recorded [separately](docs/acceptance/sdk_install_acceptance.md#windowsx64-pure-c-shared-sdk-replay-on-a-physical-machine-2026-11-23).
 - [x] macOS/arm64: current CLI `01d2532` with the same clean CI build's SDK, C provider **76/76**, native **984**,
   actual static/shared zlib/provider replay **20/20** gates and binding audits. The public Mac SDK also passes the same C matrix;
   promotion, pin adoption and Windows C++ remain separate ([record](docs/acceptance/sdk_install_acceptance.md#macosarm64-pure-c-shared-sdk-replay-2026-11-23)).

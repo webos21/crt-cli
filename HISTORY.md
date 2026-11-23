@@ -11,6 +11,11 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-23
 
+### Replay the pure C shared SDK provider on a physical Windows/x64 machine
+
+CLI `c297a65` consumed a locally built, unpromoted candidate of CRT `770ed07b`: SDK-only self-build cold 21/0 and warm 0/21, native 1028, archive 214, SDK-store 113, recipe 147 and store-lock 9 pass, and the C driver passes 36/36 with the loaded `libc.dll` equal to the installed SDK's; the published `20261110` SDK fails the same six.
+No CLI product change, promotion, pin or STATUS change. [Record](docs/acceptance/sdk_install_acceptance.md#windowsx64-pure-c-shared-sdk-replay-on-a-physical-machine-2026-11-23).
+
 ### Replay the pure C shared SDK provider on native macOS/arm64
 
 CLI product `01d2532` consumes the clean macOS SDK from CRT `5325cea` / CI run `45002729132`, the build used by the Windows replays.
