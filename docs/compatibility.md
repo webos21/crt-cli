@@ -11,6 +11,13 @@ the [request/handoff record](crt_host_tools_publication_request.md#macoswindows-
 prerequisite from consumer adoption. The per-host records below retain their exact scope: closing the request neither promotes integration
 pins nor closes hosted jobs, Windows/arm64 D1 (31/32), or private-DLL qualification. No format or runtime contract changes here.
 
+## Windows/arm64 direct path stream open combination (2026-11-23)
+
+Exercised, unpromoted combination for CRT PAL-05 on a physical Windows 11 arm64 host: the CI-built CRT `111c351` Dev SDK `v0.0.1-ci.45131205714` (hosted `sdk-integration` run 45131205714; manifest `6be77df8bd10b72fd18219f94e33aa253a62137416df10d93d9cee2c764d7945`,
+content `4a22ccd56e04bb3fccc3860636926468b7cdb5bb55381ef05216f7ef17104b43`) with the CLI executable `02decf655be45388615dcd70e05d58ec3ff4a2f475125fc15a8618e994b3e46c` (built from `6e484cc` by the earlier `v0.0.1-ci.45099082349` SDK; not rebuilt by this one): the C++17 replay, now opening its file with
+the path itself, passes 22/22, and the SDK before the fix fails it (8/16) with the same CLI. [Consumer acceptance](acceptance/sdk_install_acceptance.md#windowsarm64-direct-path-stream-open-replay-of-the-pal-05-fix-2026-11-23) owns measurements and limits; Windows/x64 is not run for this item.
+**Not release or pin adoption**, no schema, ABI, command or lock change.
+
 ## Windows/arm64 C++17 persona consumer combination (2026-11-23)
 
 Exercised, unpromoted combination for CRT Windows C++ P1-01 on a physical Windows 11 arm64 host: the CI-built CRT `770ed07b` Dev SDK `v0.0.1-ci.45099082349` (hosted `sdk-integration` run 45099082349; manifest

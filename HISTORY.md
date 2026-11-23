@@ -11,6 +11,12 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-23
 
+### Replay the direct path stream open on Windows/arm64 after the CRT PAL-05 fix
+
+`tools/replay_cpp17_consumer_windows.py` no longer opens its file through `path::string()`: it uses `ofstream(path)`, `ifstream(path)`, `open(path, app)` and `trunc`. On this physical arm64 machine, with the unchanged CLI `02decf65...e46c`, the CRT `111c351` CI artifact
+(`v0.0.1-ci.45131205714`, content `4a22ccd5...7b43`) passes 22/22 and the SDK before the fix (`v0.0.1-ci.45099082349`) fails at the `ofstream` constructor (8/16). The pair is in [compatibility](docs/compatibility.md#windowsarm64-direct-path-stream-open-combination-2026-11-23) and measurements in
+[the acceptance record](docs/acceptance/sdk_install_acceptance.md#windowsarm64-direct-path-stream-open-replay-of-the-pal-05-fix-2026-11-23). Windows/x64 is not run here (arm64 machine); the hosted `windows-x86_64` job passes CRT's shared consumer test and the physical x64 replay is the same command on that machine. Not release or pin adoption.
+
 ### Replay the external C++17 persona consumer on Windows/arm64 and close P1-01
 
 The new `replay_cpp17_consumer_windows.py` consumes the corrected CRT `770ed07b` CI artifact (`v0.0.1-ci.45099082349`, content `b592e3cc...d617`) on this physical Windows/arm64 machine with CLI `6e484cc` self-built by that SDK

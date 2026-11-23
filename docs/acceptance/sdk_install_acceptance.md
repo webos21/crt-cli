@@ -2496,3 +2496,24 @@ the consumer does not compile. Same CLI, same driver, same consumer source: the 
 packaged libc++ (a producer follow-up, now CRT PAL-05) and the SDK has no shared libcurl, so the "shared" consumer links the SDK libraries statically. No product, schema, command, lock or compiler-policy change, and no CLI or extension flag compensates for the producer.
 **Not covered:** a release, signing or pin adoption (CI-01 owns promotion; a Windows SDK carrying the correction is not published), macOS and Linux (no shims there; the hosted jobs of the same run pass), and a restricted-token variant of this driver.
 Evidence is under the ignored local `C:\Users\cmjo\r1\` (`artifact`, `contract`, `cpp-new-out`, `cpp-pub-out`), outside both repositories.
+
+## Windows/arm64 direct path stream open replay of the PAL-05 fix (2026-11-23)
+
+CRT PAL-05 (`std::ifstream`, `std::ofstream`, `std::fstream` and `std::filebuf` path constructors and `open()` did not compile on Windows against the packaged libc++) is fixed by CRT `111c351`: a private UTF-32 to UTF-8
+conversion inside `<fstream>` and the ordinary narrow open, no libc ABI or libc++ export. The [Windows C++17 persona replays](#windowsarm64-external-c17-persona-consumer-replay-2026-11-23) opened their file through
+`path::string()` because of this finding; `tools/replay_cpp17_consumer_windows.py` now opens it with the path itself (`ofstream(path)`, `ifstream(path)`, `open(path, app)` and `trunc`), keeping the 22-case structure.
+Windows 11 Pro 10.0.26100 arm64 (physical), LLVM 22.1.8, Windows SDK `10.0.28000.0`; CLI sources `183178d`, the CLI executable is unchanged: `02decf65...e46c`, built from `6e484cc` by the earlier SDK (it is not rebuilt by this SDK, and the CLI source did not change).
+
+**SDK.** The `sdk (windows-aarch64)` artifact of the hosted [`sdk-integration` run 45131205714](https://github.com/webos21/crt/actions/runs/45131205714) at CRT `111c351ab7e6c886f33d48619b5591214a53115b` (six jobs pass), CI label `v0.0.1-ci.45131205714`, checked from its bytes: release manifest
+`6be77df8bd10b72fd18219f94e33aa253a62137416df10d93d9cee2c764d7945`, archive `165ba38e...9e6b43` (69,795,213 bytes, equal to the manifest), installed content `4a22ccd56e04bb3fccc3860636926468b7cdb5bb55381ef05216f7ef17104b43`; the installed `fstream` carries
+`__crt_wide_path_to_utf8` and `_LIBCPP_HAS_OPEN_WITH_WCHAR` is 1 for the Windows persona. A CI artifact, not a release: unsigned, unpromoted, no pin.
+
+**Fixed SDK: 22/22** (result SHA-256 `0233a6d0f11c2e1827f3cf1b19855aa88dea8ddf14d016f05c4ca7f512fcf396`, consumer source `e8f70c8c...b55b`): static and shared runtime, cold build executes and warm build executes nothing, every `std::filesystem`, `curl_socket_t`, libcurl, mbedtls and direct
+path-open check passes, and `crt-cli run` works.
+**The SDK before the fix is the baseline: 8/16** (CRT `770ed07b`, `v0.0.1-ci.45099082349`, manifest `84c90909...0675a`, result SHA-256 `2a8b71aa6743ab6ada4ead752c67da3659bae7539ddbac3109b102c604f1b817`): same CLI, same driver, same consumer; the persona cases pass and
+both builds fail at `std::ofstream out(root / "inner" / "data.bin", ...)` with `no matching constructor for initialization of 'std::ofstream'` in `<fstream>`. The difference is the SDK.
+
+**Limits.** Cleared environment, private HOME and explicit LLVM tools, as before. Not release or pin adoption (CI-01), no CLI, schema, command or lock change. The file name used here is ASCII: names above U+FFFF are a separate libc++ filesystem defect
+(CRT PAL-06), and the stream open of such names is covered by CRT's shared SDK consumer. **Windows/x64 is not run here** (this machine is arm64): the hosted `windows-x86_64` job of the same CRT run passes the shared consumer test, and the physical x64 replay is one command
+on that machine with the x64 artifact of run 45131205714: `python tools/replay_cpp17_consumer_windows.py --cli <x64 crt-cli.exe> --release-dir <artifact dir> --manifest-name release-manifest-dev-windows-x86_64.json --manifest-sha256 <manifest pin> --output <new> --work <new> --host-arch x86_64 --cc ... --cxx ... --linker ... --ar ... --readobj ...`.
+Evidence is under the ignored local `C:\Users\cmjo\r1\` (`artifact2`, `cpp2-new-out`, `cpp2-old-out`), outside both repositories.

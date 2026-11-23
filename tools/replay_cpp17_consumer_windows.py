@@ -54,8 +54,13 @@ int main() {
   std::error_code ec;
   fs::remove_all(root, ec);
   check(fs::create_directories(root / "inner" / "leaf", ec) && !ec, "create_directories");
-  // Opened through path::string(): std::ofstream(const std::filesystem::path&) does not compile against the packaged libc++ in this persona (recorded finding).
-  { std::ofstream out((root / "inner" / "data.bin").string(), std::ios::binary); out << "0123456789"; }
+  // Opened with the path itself: the std::fstream family's path constructors and open() compile and work in this persona since CRT PAL-05
+  // (an SDK without that fix does not compile this line, which is the baseline for it).
+  { std::ofstream out(root / "inner" / "data.bin", std::ios::binary); out << "0123456789"; }
+  { std::ifstream in(root / "inner" / "data.bin", std::ios::binary); std::string text; in >> text; check(in.eof() && text == "0123456789", "ifstream(path) reads what ofstream(path) wrote"); }
+  { std::ofstream more; more.open(root / "inner" / "data.bin", std::ios::binary | std::ios::app); more << "ab"; }
+  check(fs::file_size(root / "inner" / "data.bin", ec) == 12, "ofstream::open(path, app) appends");
+  { std::ofstream out(root / "inner" / "data.bin", std::ios::binary | std::ios::trunc); out << "0123456789"; }
   check(fs::exists(root / "inner" / "data.bin", ec) && fs::file_size(root / "inner" / "data.bin", ec) == 10, "exists and file_size");
   std::set<std::string> names;
   for (const auto& entry : fs::directory_iterator(root / "inner", ec)) names.insert(entry.path().filename().string());
