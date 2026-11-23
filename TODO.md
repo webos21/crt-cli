@@ -84,47 +84,10 @@ Acceptance baselines:
 [Windows filesystem reproduction](docs/acceptance/bootstrap_acceptance.md#findings-fixed-in-this-pass)
 and
 [project lifecycle PR-03 through PR-05](docs/acceptance/lifecycle_acceptance.md#d2d5---project-sdk-and-creation)
-. P1-01 consumes
-[crt P0-01 / Tranche 6.4](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#windowsx64-physical-machine-pure-c-shared-provider-replay-2026-11-23)
-and
-[crt Windows C++ P1-01](https://github.com/webos21/crt/blob/main/TODO.md#p1---windows-c-public-compile-options-d5)
-. P1-02 supplies setup and diagnosis for
+P1-01, the C shared provider and Windows C++ persona replays, is closed ([HISTORY](HISTORY.md), 2026-11-23). P1-02 supplies setup and diagnosis for
 [crt-vscode V1-03 and V1-06](https://github.com/webos21/crt-vscode/blob/main/TODO.md#v1---extension-mvp)
 .
 
-- [ ] **P1-01** Coordinate CRT Tranche **6.4** C shared provider/runtime-search review and
-  Windows Dev-profile `<filesystem>` compile-option replay. After producer
-  qualification, consume an immutable SDK candidate, replay external C/C++
-  build/run and provider/load checks, then adopt exact pins. Preserve failed
-  identities; do not compensate with CLI/extension compiler-policy overrides.
-- [x] Linux/x86_64 clean C-provider candidate replay and early mixed-runtime refusal
-  ([evidence](docs/acceptance/sdk_install_acceptance.md#clean-linux-c-shared-candidate-replay-2026-11-21)).
-  SDK promotion/pin adoption and Windows C++ remain open; native-host evidence is recorded below.
-- [x] Windows/arm64: the CI-built SDK of CRT `5325cea` with CLI `44fbf24`: native 1,041 checks, and the pure C static, shared and shared + project DLL modes 36/36 with the loaded `libc.dll` equal to the installed SDK's
-  (the published `20261118` SDK fails six of the same 36 cases)
-  ([record](docs/acceptance/sdk_install_acceptance.md#windowsarm64-pure-c-shared-sdk-replay-and-integration-at-44fbf24-2026-11-22)). A CI artifact is not a release: promotion and pin adoption remain open; macOS evidence is below.
-- [x] Windows/x64 (hosted `windows-2022`, not a physical machine): the x64 CI artifact of the same build with the same CLI sources: native replay passed and the same driver passes 36/36; the published `20261110` SDK fails the same six cases
-  ([record](docs/acceptance/sdk_install_acceptance.md#windowsx64-pure-c-shared-sdk-replay-on-a-hosted-runner-2026-11-22)). Per-suite check counts were not captured; the physical x64 machine is recorded [separately](docs/acceptance/sdk_install_acceptance.md#windowsx64-pure-c-shared-sdk-replay-on-a-physical-machine-2026-11-23).
-- [x] Windows/x64 (physical) external C++17 persona consumer: the corrected CRT `770ed07b` candidate passes the new `replay_cpp17_consumer_windows.py` 22/22 and the published `20261110` SDK fails; Windows/arm64 and pin adoption remain open
-  ([record](docs/acceptance/sdk_install_acceptance.md#windowsx64-external-c17-persona-consumer-replay-on-a-physical-machine-2026-11-23)).
-- [x] macOS/arm64: current CLI `01d2532` with the same clean CI build's SDK, C provider **76/76**, native **984**,
-  actual static/shared zlib/provider replay **20/20** gates and binding audits. The public Mac SDK also passes the same C matrix;
-  promotion, pin adoption and Windows C++ remain separate ([record](docs/acceptance/sdk_install_acceptance.md#macosarm64-pure-c-shared-sdk-replay-2026-11-23)).
-- [x] Store `Lock` replaced by an OS file lock with a multi-process regression; verified on Windows/x64 only
-  ([HISTORY](HISTORY.md), 2026-11-22). Rerun the scheduled Integration job and Linux/macOS/arm64 before closing:
-  both conditions are met at `44fbf24` (the sub-items below; the `CI` run passed all six native legs, which run `store-lock-test`).
-  - [x] Windows/arm64: the manual Integration run at `44fbf24` passed all 15 jobs including `ports (win-arm64)`, and the native replay passes the 9-check `store-lock-test`; the `CI` run at `44fbf24` passed
-    all six native legs, which run `store-lock-test` as a PR test
-    ([record](docs/acceptance/sdk_install_acceptance.md#windowsarm64-pure-c-shared-sdk-replay-and-integration-at-44fbf24-2026-11-22)).
-  - [x] The first scheduled Integration run after the lock fixes passed all 15 jobs, including `ports (win-arm64)` (the one before, at `8374470`, failed there)
-    ([record](docs/acceptance/sdk_install_acceptance.md#windowsarm64-pure-c-shared-sdk-replay-and-integration-at-44fbf24-2026-11-22)). Scheduled runs start between 11:23 and 11:54 GMT, not at the 03:23 GMT slot.
-- [ ] No in-process exclusion in `Lock`: CRT `flock` is built on `fcntl` record locks, so two `Lock` objects in one process do not
-  exclude each other. Today's stores never publish the same key from two threads of one process. Before adding
-  threaded publication, add an in-process mutex per lock path (or a CRT per-open-file-description `flock`) and a
-  thread-level regression.
-- [ ] Lock files are never removed, so `.locks` gains one empty file per SDK content or port build key (`recover()` skips them).
-  Decide whether a bounded cleanup is worth the risk of racing a live holder; removing a lock file under a holder
-  breaks exclusion, so any cleanup must hold the lock first.
 - [ ] **P1-02** Improve the documented new/install/build/run path with scoped SDK/LLVM/OS
   SDK diagnosis and concrete missing-input guidance. Reuse explicit pinned SDK
   acquisition and declared tool paths; official defaults/trust/channels require
@@ -205,6 +168,13 @@ and
   interruption/rollback and unchanged SDK/port pins
   ([lifecycle gates](docs/acceptance/lifecycle_acceptance.md)). This is outside
   the first preview's critical path and does not block D3.
+- [ ] **D2-04** No in-process exclusion in `Lock`: CRT `flock` is built on `fcntl` record locks, so two `Lock` objects in one process do not
+  exclude each other. Today's stores never publish the same key from two threads of one process. Before adding
+  threaded publication, add an in-process mutex per lock path (or a CRT per-open-file-description `flock`) and a
+  thread-level regression.
+- [ ] **D2-05** Lock files are never removed, so `.locks` gains one empty file per SDK content or port build key (`recover()` skips them).
+  Decide whether a bounded cleanup is worth the risk of racing a live holder; removing a lock file under a holder
+  breaks exclusion, so any cleanup must hold the lock first.
 
 ### D4 - Dependencies, Variants, Locks, and Local Cache
 

@@ -2471,3 +2471,28 @@ has no wide open. The consumer therefore opens the file through `path::string()`
 (`sdk_library_linkage: static`), which the contract allows. (3) The second attempt asserted a 2-byte `value_type` and failed; the assertion was wrong for this persona and now states the type, not a size guess. Retained outputs are in the evidence directory.
 
 **Not covered.** Windows/arm64 (a separate replay on an ARM64 machine), a release, signing or pin adoption, and the hosted x64 artifact. Evidence (outside the repositories): `C:\Users\Lee\s13\` (`cpp17-new-out`, `cpp17-new-out2`, `cpp17-new-out3` and `cpp17-new-final-out`; `cpp17-pub-out` and `cpp17-pub-final-out` for the baseline).
+
+## Windows/arm64 external C++17 persona consumer replay (2026-11-23)
+
+The Windows/arm64 half of CRT Windows C++ **P1-01**: the corrected Dev profile (`consumer_compile_options` empty, CRT-owned `curl/curl.h` and `mbedtls/platform.h` shims; CRT `3c8c712`) consumed from outside the
+producer tree by the CLI, with the same new driver and consumer source as the [Windows/x64 replay](#windowsx64-external-c17-persona-consumer-replay-on-a-physical-machine-2026-11-23). A single-CLI smoke or the C shared
+replays do not exercise this. Windows 11 Pro 10.0.26100 arm64 (physical), LLVM 22.1.8 (`woa64`), Windows SDK `10.0.28000.0` `um/arm64`; CRT `2136293` (docs only), CLI `6e484cc`.
+
+**SDK.** The `sdk (windows-aarch64)` artifact of the hosted [`sdk-integration` run 45099082349](https://github.com/webos21/crt/actions/runs/45099082349) at CRT `770ed07b65102529fbeeeedebd8753f6497f48d8` (the same commit as the x64 record), CI label
+`v0.0.1-ci.45099082349`, downloaded and checked from its bytes: release manifest `84c90909b5341e7a9eaf150e30a2a745ee4ff15642b9c28822f8de606310675a`, archive `f98077fd...273f` (69,787,626 bytes, equal to the manifest), installed content
+`b592e3cc13545c0bb3a86f4c5f7222d62b551a5e2a4c634f61a87caa70b4d617`; the profile lists capability `public-header-persona-1`, an empty `consumer_compile_options` and the two shims, with a clean producer tree. A CI artifact, not a release: unsigned, unpromoted, no pin.
+
+**CLI.** CLI `6e484cc` built from a fresh local clone by that SDK alone through CRT's native contract replay (`replay_cli_contract_windows.py`; both checkouts hidden, restricted token, empty `PATH`): cold self-build **21 executed / 0 reused**, warm **0 / 21**,
+626 recorded processes, the native suite and the cached-build and bare help/version/doctor steps pass (result SHA-256 `9d5c65809e3ba460b66f242288306da78d4501a96c945cdfa347cb1a2fe5206a`); executable
+`02decf655be45388615dcd70e05d58ec3ff4a2f475125fc15a8618e994b3e46c` (46,030,848 bytes). The per-suite check totals were not extracted for this record.
+
+**Corrected SDK: 22/22** (`replay_cpp17_consumer_windows.py --host-arch aarch64`, result SHA-256 `0f62da2552ca7159244633139a955160e0fbb219c2ebef4049dd994ae25dd6ac`, consumer source `57c82096...7635`): the SDK installs from the pinned manifest, declares no consumer
+option and ships both shims; for a static and a shared runtime the cold build executes and the warm build executes nothing, every `std::filesystem` (lexical and real file system), `curl_socket_t`, libcurl and mbedtls check passes, `path::value_type` is the packaged
+libc++'s `wchar_t` (4 bytes in CRT) and `crt-cli run` works.
+**The published `v0.0.1-preview.20261118.windows.arm64.1` SDK is the failing baseline: 5/16** (result SHA-256 `4aaf8f1f58dda802f8318acd44a3a1fc486df9d55f170cb72ae26f9f695c8aaa`, manifest `354ab45f...cecc`, content `3b251637...621f`): its contract still lists `-U_WIN32 ...`, it has no shims and
+the consumer does not compile. Same CLI, same driver, same consumer source: the difference is the SDK.
+
+**Isolation and limits.** Cleared environment, private HOME and explicit LLVM tools; not the restricted-token adapter, nothing hidden from the consumer and no network denial (as in the x64 record). The findings of the x64 record stand unchanged on arm64: `std::ofstream(const std::filesystem::path&)` does not compile against the
+packaged libc++ (a producer follow-up, now CRT PAL-05) and the SDK has no shared libcurl, so the "shared" consumer links the SDK libraries statically. No product, schema, command, lock or compiler-policy change, and no CLI or extension flag compensates for the producer.
+**Not covered:** a release, signing or pin adoption (CI-01 owns promotion; a Windows SDK carrying the correction is not published), macOS and Linux (no shims there; the hosted jobs of the same run pass), and a restricted-token variant of this driver.
+Evidence is under the ignored local `C:\Users\cmjo\r1\` (`artifact`, `contract`, `cpp-new-out`, `cpp-pub-out`), outside both repositories.

@@ -11,6 +11,14 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-23
 
+### Replay the external C++17 persona consumer on Windows/arm64 and close P1-01
+
+The new `replay_cpp17_consumer_windows.py` consumes the corrected CRT `770ed07b` CI artifact (`v0.0.1-ci.45099082349`, content `b592e3cc...d617`) on this physical Windows/arm64 machine with CLI `6e484cc` self-built by that SDK
+(cold 21 / 0, warm 0 / 21, executable `02decf65...e46c`) and passes 22/22, while the published `20261118` Windows/arm64 SDK fails the same driver (5/16) as the baseline. With the x64 result this exercises both Windows architectures
+against the corrected persona contract (empty `consumer_compile_options`, CRT-owned `curl/curl.h` and `mbedtls/platform.h` shims). The exact pair is in [compatibility](docs/compatibility.md#windowsarm64-c17-persona-consumer-combination-2026-11-23); measurements and limits are in
+[the acceptance record](docs/acceptance/sdk_install_acceptance.md#windowsarm64-external-c17-persona-consumer-replay-2026-11-23). **Not release or pin adoption**: the SDK is an unpromoted CI artifact and promotion stays with CI-01.
+P1-01 (the C shared provider and Windows C++ replays) leaves In Progress; its two open store-lock follow-ups moved to Planned as D2-04 and D2-05.
+
 ### Replay the external C++17 persona consumer on a physical Windows/x64 machine
 
 New `tools/replay_cpp17_consumer_windows.py` builds a C++17 consumer that includes curl and mbedtls first and exercises `std::filesystem`, libcurl and mbedtls for a static and a shared runtime. The corrected CRT `770ed07b` candidate passes 22/22 with CLI `2543b1da...`; the published `20261110` SDK fails (5/16).

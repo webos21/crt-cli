@@ -11,6 +11,14 @@ the [request/handoff record](crt_host_tools_publication_request.md#macoswindows-
 prerequisite from consumer adoption. The per-host records below retain their exact scope: closing the request neither promotes integration
 pins nor closes hosted jobs, Windows/arm64 D1 (31/32), or private-DLL qualification. No format or runtime contract changes here.
 
+## Windows/arm64 C++17 persona consumer combination (2026-11-23)
+
+Exercised, unpromoted combination for CRT Windows C++ P1-01 on a physical Windows 11 arm64 host: the CI-built CRT `770ed07b` Dev SDK `v0.0.1-ci.45099082349` (hosted `sdk-integration` run 45099082349; manifest
+`84c90909b5341e7a9eaf150e30a2a745ee4ff15642b9c28822f8de606310675a`, content `b592e3cc13545c0bb3a86f4c5f7222d62b551a5e2a4c634f61a87caa70b4d617`) with the CLI built from `6e484cc` by that SDK
+(`02decf655be45388615dcd70e05d58ec3ff4a2f475125fc15a8618e994b3e46c`): the C++17 replay passes 22/22, and the published `20261118` Windows/arm64 SDK fails it (5/16) as the baseline, with the same CLI.
+[Consumer acceptance](acceptance/sdk_install_acceptance.md#windowsarm64-external-c17-persona-consumer-replay-2026-11-23) owns measurements and limits. This and the
+[Windows/x64 combination](#windowsx64-c17-persona-consumer-combination-2026-11-23) are the two exercised Windows architectures. **Not release or pin adoption**, no schema, ABI, command or lock change; promotion of an SDK that carries the correction precedes any pin change (CI-01).
+
 ## Windows/x64 C++17 persona consumer combination (2026-11-23)
 
 Exercised, unpromoted combination for CRT Windows C++ P1-01: the locally built CRT `770ed07b` Dev SDK `v0.0.1-rehearsal.11` (manifest `92f844b3649aae7b59628f33bc59a4f450b50394fa49239b3f417a75e09d57b5`, content `eb41ca930c9e7ed2dd8e972fa48a3c520380b9c95d2560db7d1fc1956162aeec`)
