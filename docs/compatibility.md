@@ -11,6 +11,12 @@ the [request/handoff record](crt_host_tools_publication_request.md#macoswindows-
 prerequisite from consumer adoption. The per-host records below retain their exact scope: closing the request neither promotes integration
 pins nor closes hosted jobs, Windows/arm64 D1 (31/32), or private-DLL qualification. No format or runtime contract changes here.
 
+## Windows/x64 C++17 persona consumer combination (2026-11-23)
+
+Exercised, unpromoted combination for CRT Windows C++ P1-01: the locally built CRT `770ed07b` Dev SDK `v0.0.1-rehearsal.11` (manifest `92f844b3649aae7b59628f33bc59a4f450b50394fa49239b3f417a75e09d57b5`, content `eb41ca930c9e7ed2dd8e972fa48a3c520380b9c95d2560db7d1fc1956162aeec`)
+with the CLI built from `c297a65` by that SDK (`2543b1daaa6c471e2a9364d7625cb207e433235cd3b8841085c6297d9150e877`) on a physical Windows 11 x64 host: the new C++17 replay passes 22/22; the published `20261110` SDK fails (5/16) as the baseline.
+[Consumer acceptance](acceptance/sdk_install_acceptance.md#windowsx64-external-c17-persona-consumer-replay-on-a-physical-machine-2026-11-23) owns measurements and findings. **Not release or pin adoption**, no schema, ABI, command or lock change, and Windows/arm64 is not yet exercised.
+
 ## macOS/arm64 C shared CI SDK qualification (2026-11-23)
 
 Consumer product/test sources at CLI `01d25328137b6382612d1900884453faecefc625` are freshly built against the clean macOS artifact of

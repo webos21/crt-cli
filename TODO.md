@@ -105,6 +105,8 @@ and
   ([record](docs/acceptance/sdk_install_acceptance.md#windowsarm64-pure-c-shared-sdk-replay-and-integration-at-44fbf24-2026-11-22)). A CI artifact is not a release: promotion and pin adoption remain open; macOS evidence is below.
 - [x] Windows/x64 (hosted `windows-2022`, not a physical machine): the x64 CI artifact of the same build with the same CLI sources: native replay passed and the same driver passes 36/36; the published `20261110` SDK fails the same six cases
   ([record](docs/acceptance/sdk_install_acceptance.md#windowsx64-pure-c-shared-sdk-replay-on-a-hosted-runner-2026-11-22)). Per-suite check counts were not captured; the physical x64 machine is recorded [separately](docs/acceptance/sdk_install_acceptance.md#windowsx64-pure-c-shared-sdk-replay-on-a-physical-machine-2026-11-23).
+- [x] Windows/x64 (physical) external C++17 persona consumer: the corrected CRT `770ed07b` candidate passes the new `replay_cpp17_consumer_windows.py` 22/22 and the published `20261110` SDK fails; Windows/arm64 and pin adoption remain open
+  ([record](docs/acceptance/sdk_install_acceptance.md#windowsx64-external-c17-persona-consumer-replay-on-a-physical-machine-2026-11-23)).
 - [x] macOS/arm64: current CLI `01d2532` with the same clean CI build's SDK, C provider **76/76**, native **984**,
   actual static/shared zlib/provider replay **20/20** gates and binding audits. The public Mac SDK also passes the same C matrix;
   promotion, pin adoption and Windows C++ remain separate ([record](docs/acceptance/sdk_install_acceptance.md#macosarm64-pure-c-shared-sdk-replay-2026-11-23)).

@@ -2450,3 +2450,24 @@ The physical counterpart of the [hosted Windows/x64 replay](#windowsx64-pure-c-s
 (result `e8bcd602...8293`), kept as the failing baseline.
 
 **Not covered.** Promotion, signing and pin adoption; the port suites' substantive runs; Windows C++ `<filesystem>` and curl options. Evidence: `C:\Users\Lee\s13\`.
+
+## Windows/x64 external C++17 persona consumer replay on a physical machine (2026-11-23)
+
+Consumer replay of CRT Windows C++ **P1-01**, the Dev profile's `consumer_compile_options` (`-U_WIN32 ...`) that made a consumer's `std::filesystem::path` a `char` string against the packaged
+`wchar_t` libc++, fixed by CRT `3c8c712` (CRT-owned `curl/curl.h` and `mbedtls/platform.h` shims, empty `consumer_compile_options`). A single-CLI smoke or the C shared replays do not exercise this. Windows 11 Pro 10.0.26100 x64
+(physical), LLVM 22.1.8, Windows SDK `10.0.28000.0`. The SDK is the locally built, unpromoted candidate of CRT `770ed07b` (`v0.0.1-rehearsal.11`, manifest `92f844b3649aae7b59628f33bc59a4f450b50394fa49239b3f417a75e09d57b5`, content
+`eb41ca930c9e7ed2dd8e972fa48a3c520380b9c95d2560db7d1fc1956162aeec`) that the [C shared record](https://github.com/webos21/crt/blob/main/docs/acceptance/sdk_split_acceptance.md#windowsx64-physical-machine-pure-c-shared-provider-replay-2026-11-23) used; the hosted
+`sdk-integration` run [45099082349](https://github.com/webos21/crt/actions/runs/45099082349) of the same commit passes all six jobs. CLI: the executable `2543b1da...e877` that this SDK built from `c297a65`. Nothing is released, signed or pinned.
+
+**Driver.** New `tools/replay_cpp17_consumer_windows.py` (cleared environment, private HOME, explicit LLVM tools, SDK installed from the manifest pin, `build --sdk` and no configure step). The C++17 project includes `<curl/curl.h>` and `<mbedtls/platform.h>`
+first, the order that exposed the defect, then checks `std::filesystem` lexically and on the real file system (create, size, directory iteration, `weakly_canonical`, removal), `curl_socket_t`, libcurl and mbedtls linkage, for a static and a shared runtime; the first cases read the SDK's own
+`development.json` and require an empty `consumer_compile_options` and the two shims.
+
+**Corrected SDK: 22/22** (result SHA-256 `b47dd9eac19cc16f88f0da9ed6d20347bfa58fb0706c25fde0f2a2d58c595598`, consumer source `57c82096...`): no consumer option, both shims, cold build executes and warm build none, every check passes and `crt-cli run` works for static and shared runtime.
+**The published `v0.0.1-preview.20261110.windows.1` SDK is the failing baseline: 5/16** (result SHA-256 `82f16ab704388771382e6db750552cc30dc7f1a27d63b14911f62f8763b8e4e4`): its contract still lists `-U_WIN32 -U_WIN32_WCE -U__WIN32__ -UWIN32 -U__MINGW32__`, it has no shims, and the consumer does not compile (`curl/curl.h` needs `winsock2.h`).
+
+**Findings, kept.** (1) The first attempt failed to compile the corrected SDK's consumer: `std::ofstream(const std::filesystem::path&)` has no matching constructor, because `path::value_type` is the packaged libc++'s `wchar_t` (4 bytes, CRT builds `wchar_t` as `int`) and its `<fstream>`
+has no wide open. The consumer therefore opens the file through `path::string()`; this is a producer follow-up, recorded in CRT TODO, not hidden in the CLI or in a compile option. (2) The SDK declares no shared variant of libcurl, so the shared-runtime consumer links the SDK libraries statically
+(`sdk_library_linkage: static`), which the contract allows. (3) The second attempt asserted a 2-byte `value_type` and failed; the assertion was wrong for this persona and now states the type, not a size guess. Retained outputs are in the evidence directory.
+
+**Not covered.** Windows/arm64 (a separate replay on an ARM64 machine), a release, signing or pin adoption, and the hosted x64 artifact. Evidence (outside the repositories): `C:\Users\Lee\s13\` (`cpp17-new-out`, `cpp17-new-out2`, `cpp17-new-out3` and `cpp17-new-final-out`; `cpp17-pub-out` and `cpp17-pub-final-out` for the baseline).
