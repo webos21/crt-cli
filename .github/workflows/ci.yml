@@ -135,6 +135,12 @@ jobs:
       - name: Check publisher signature verification
         run: python -m unittest discover -s tools -p test_publisher_signature.py
 
+      - name: Check the protected draft and offline signing gate
+        if: matrix.host == 'linux-x64'
+        run: |
+          python -m unittest discover -s tools -p test_ci_release.py
+          python -m unittest discover -s tools -p test_release_signing.py
+
       - name: Check CI pin review
         run: python -m unittest discover -s tools -p test_check_ci_pins.py
 

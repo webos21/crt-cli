@@ -103,18 +103,18 @@ editor acceptance.
 
 ### P1 - Sign Before Publishing
 
-Coordinate release finalization with CRT. The current workflows publish before
-the owner attaches the offline signature.
+Coordinate release finalization with CRT. The staging/finalization code and
+local negative controls are in place; the hosted rehearsal is still pending.
 
 Existing baseline:
 [hosted publication and attached signatures](docs/acceptance/ci_acceptance.md#first-real-publication-and-its-signatures-2026-11-17). Rehearse the new finalization path with
 [crt SDK signing P1-01 and P1-02](https://github.com/webos21/crt/blob/main/TODO.md#p1---sign-before-publishing-sdks-d6).
 
-- [ ] **P1-01** Sign-before-publish: the workflow stops at the verified draft, the owner attaches the offline `.sig` to the draft, and a
-  `finalize` step verifies the signature with the pinned key and the draft's exact asset set before making the release public. This removes the unsigned public window and
-  checks the signature inside the workflow; it needs the same change in `crt`'s `sdk-release.yml`. Open choices before building it: where the `release` approval sits (stage,
-  finalize or both), whether a `dry_run` draft may be finalized (default no), and whether the signature also covers the `SHA256SUMS-*` file. GitHub artifact attestations are a
-  separate, optional addition.
+- [ ] **P1-01** Qualify the hosted gate with CRT: main-only required reviewers
+  on both jobs, non-finalizable rehearsal draft, and one detached signature
+  for each payload (archive and `SHA256SUMS-*`). Exercise refusal and retry
+  cases, then verify public bytes on the first owner-approved release.
+  [Procedure](docs/guides/development.md#publish-a-cli-preview).
 - Acceptance: missing/wrong signatures, changed/extra assets and invalid
   finalization attempts stay non-public; approved signed bytes finalize once and
   independently verify after download. Preserve interrupted/retry safety and

@@ -3,10 +3,10 @@
 
   package  pinned published CLI + pinned public SDK -> build the commit -> bootstrap resources -> deterministic archive
   verify   extract the archive on a fresh runner, check inventory, run the packaged executable and a real SDK acquisition
-  publish  re-check the artifact digests, stage a draft GitHub release, verify it, publish it as a non-latest prerelease
+  stage    re-check the verified artifact digests and stage a GitHub draft; never make it public
 
-Naming and note rules are pure functions so they are unit-tested; publication itself is the only step with write
-permission and it sits behind a protected environment. CI success is not publication authority.
+CI success is not publication authority. A separate approval-gated workflow
+verifies the offline signatures before making the staged draft public.
 """
 import argparse
 import hashlib
@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from ci_bootstrap import CiError, WINDOWS_IMPORT_ARCH, host_key, macos_tool_paths, windows_sdk_path, write_system_roots  # noqa: E402
+import release_signing  # noqa: E402
 
 
 class ReleaseError(Exception):
@@ -221,7 +222,8 @@ def command_verify(args):
     n = names(args.host, args.date, args.serial)
     release = Path(args.release_dir).resolve()
     archive = release / n['archive']
-    digest = require_artifact_match(archive, (release / n['sums']).read_text(encoding='ascii'), n['archive'])
+    sums = release / n['sums']
+    digest = require_artifact_match(archive, sums.read_text(encoding='ascii'), n['archive'])
     work = Path(args.work).resolve()
     work.mkdir(parents=True, exist_ok=False)
     extracted = work / 'extracted'
@@ -320,6 +322,7 @@ def command_verify(args):
                               'lock_sha256': hashlib.sha256(lock).hexdigest()}
     log('archive %s verified: sha256=%s manifest=%s' % (n['archive'], digest, pin))
     (work / 'verify.json').write_text(json.dumps({'host': args.host, 'tag': n['tag'], 'archive_sha256': digest,
+                                                  'sums_sha256': release_signing.sha256(sums),
                                                   'manifest_sha256': pin, 'files': info['files'],
                                                   'executable_version': version.strip(), 'sdk': acquired['data']['identity'],
                                                   'tools': {flag: str(path) for flag, path in tools.items()},
@@ -334,17 +337,17 @@ def gh(*argv, check=True):
     return done
 
 
-def command_publish(args):
-    """Stage a draft from the verified bytes, check it, and publish a non-latest prerelease (or stop at the draft).
-
-    The only step with write permission. It never rebuilds: it uploads the files the verify job saw, after re-checking
-    their digest, and it refuses a tag that already has a release.
-    """
+def command_stage(args):
+    """Create a draft from the independently verified bytes without publishing."""
     commit = require_commit(args.commit)
     n = names(args.host, args.date, args.serial)
     release = Path(args.release_dir).resolve()
     archive, sums = release / n['archive'], release / n['sums']
     digest = require_artifact_match(archive, sums.read_text(encoding='ascii'), n['archive'])
+    verified = json.loads(Path(args.verification).read_text(encoding='utf-8'))
+    if (verified.get('host'), verified.get('tag'), verified.get('archive_sha256'), verified.get('sums_sha256')) != (
+            args.host, n['tag'], digest, release_signing.sha256(sums)):
+        raise ReleaseError('the files do not match the independent verification receipt')
     repo = args.repo
     if gh('release', 'view', n['tag'], '--repo', repo, check=False).returncode == 0:
         raise ReleaseError('a release for %s already exists; releases are never overwritten' % n['tag'])
@@ -352,29 +355,11 @@ def command_publish(args):
     if not template_path.is_file() or not template_path.read_text(encoding='utf-8').strip():
         raise ReleaseError('the release notes template is missing or empty')
     rendered = render_notes(template_path.read_text(encoding='utf-8'), digest=digest, size=archive.stat().st_size, commit=commit, tag=n['tag'])
-    notes = Path(args.work).resolve().parent / (Path(args.work).name + '-notes.md')
+    work = Path(args.work).resolve()
+    notes = work.parent / (work.name + '-notes.md')
     notes.write_text(rendered, encoding='utf-8')
-    gh('release', 'create', n['tag'], '--repo', repo, '--draft', '--prerelease', '--latest=false', '--target', commit,
-       '--title', n['title'], '--notes-file', notes, archive, sums)
-    log('draft %s created' % n['tag'])
-    check = Path(args.work).resolve()
-    check.mkdir(parents=True, exist_ok=False)
-    gh('release', 'download', n['tag'], '--repo', repo, '--dir', check)
-    require_artifact_match(check / n['archive'], (check / n['sums']).read_text(encoding='ascii'), n['archive'])
-    if (check / n['archive']).read_bytes() != archive.read_bytes() or (check / n['sums']).read_bytes() != sums.read_bytes():
-        raise ReleaseError('the draft assets differ from the verified files')
-    view = json.loads(gh('release', 'view', n['tag'], '--repo', repo, '--json', 'isDraft,isPrerelease,targetCommitish,assets').stdout)
-    if not view['isDraft'] or not view['isPrerelease'] or view['targetCommitish'] != commit or len(view['assets']) != 2:
-        raise ReleaseError('the staged draft does not match the request: %s' % json.dumps(view)[:300])
-    log('draft verified byte for byte')
-    if args.draft_only:
-        log('draft-only: stopping before publication')
-        return
-    gh('release', 'edit', n['tag'], '--repo', repo, '--draft=false', '--prerelease', '--latest=false')
-    final = json.loads(gh('release', 'view', n['tag'], '--repo', repo, '--json', 'isDraft,isPrerelease,tagName,url').stdout)
-    if final['isDraft'] or not final['isPrerelease']:
-        raise ReleaseError('the published release is not a non-draft prerelease: %s' % final)
-    log('published %s' % final['url'])
+    release_signing.stage(repo, n['tag'], commit, n['title'], notes, [archive, sums],
+                          work, Path(args.receipt), args.dry_run)
 
 
 def main():
@@ -392,7 +377,7 @@ def main():
         else:
             p.add_argument('--release-dir', required=True)
             p.add_argument('--llvm-bin')
-    p = sub.add_parser('publish')
+    p = sub.add_parser('stage')
     p.add_argument('--host', choices=sorted(HOSTS), required=True)
     p.add_argument('--commit', required=True)
     p.add_argument('--date', required=True)
@@ -401,16 +386,18 @@ def main():
     p.add_argument('--notes-file', required=True)
     p.add_argument('--repo', required=True)
     p.add_argument('--work', required=True)
-    p.add_argument('--draft-only', action='store_true', help='stage and verify the draft but do not publish')
+    p.add_argument('--verification', required=True)
+    p.add_argument('--receipt', required=True)
+    p.add_argument('--dry-run', action='store_true')
     args = parser.parse_args()
     try:
         if args.command == 'package':
             command_package(args)
         elif args.command == 'verify':
             command_verify(args)
-        elif args.command == 'publish':
-            command_publish(args)
-    except (ReleaseError, CiError) as error:
+        elif args.command == 'stage':
+            command_stage(args)
+    except (ReleaseError, CiError, release_signing.SigningError, OSError, ValueError, KeyError, TypeError) as error:
         log('RELEASE FAIL: %s' % error)
         return 1
     return 0

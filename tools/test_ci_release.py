@@ -1,13 +1,51 @@
 """Release naming, checksum and commit rules: a mistake here would publish the wrong bytes under the wrong name."""
 import hashlib
+import json
 import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from ci_release import (ReleaseError, command_package, command_verify, locate_executable, locate_sdk, names, parse_sums,
+from ci_release import (ReleaseError, command_package, command_stage, command_verify, locate_executable, locate_sdk, names, parse_sums,
                         render_notes, require_artifact_match, require_commit, sums_line, windows_image_identity)
+
+
+class StageReceiptTest(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        root = Path(tmp.name).resolve()
+        name = names('linux-x64', '20261118', 1)
+        self.archive = root / name['archive']
+        self.archive.write_bytes(b'CLI package')
+        self.sums = root / name['sums']
+        digest = hashlib.sha256(self.archive.read_bytes()).hexdigest()
+        self.sums.write_text(sums_line(self.archive.name, digest), encoding='ascii')
+        self.verification = root / 'verify.json'
+        self.verification.write_text(json.dumps({'host': 'linux-x64', 'tag': name['tag'], 'archive_sha256': digest,
+                                                 'sums_sha256': hashlib.sha256(self.sums.read_bytes()).hexdigest()}))
+        notes = root / 'notes.md'
+        notes.write_text('Preview {{ARCHIVE_SHA256}}\n')
+        self.args = SimpleNamespace(host='linux-x64', date='20261118', serial=1, commit='a' * 40,
+                                    repo='owner/crt-cli', notes_file=notes, release_dir=root, work=root / 'draft',
+                                    verification=self.verification, receipt=root / 'receipt.json', dry_run=True)
+
+    @patch('ci_release.release_signing.stage')
+    @patch('ci_release.gh', return_value=SimpleNamespace(returncode=1))
+    def test_stage_uploads_only_the_independently_verified_public_files(self, _gh, stage):
+        command_stage(self.args)
+        self.assertEqual(stage.call_args.args[5], [self.archive, self.sums])
+        self.assertIs(stage.call_args.args[-1], True)
+
+    @patch('ci_release.release_signing.stage')
+    def test_regenerated_checksum_cannot_substitute_an_unverified_archive(self, stage):
+        self.archive.write_bytes(b'changed CLI package')
+        digest = hashlib.sha256(self.archive.read_bytes()).hexdigest()
+        self.sums.write_text(sums_line(self.archive.name, digest), encoding='ascii')
+        with self.assertRaisesRegex(ReleaseError, 'independent verification receipt'):
+            command_stage(self.args)
+        stage.assert_not_called()
 
 
 class NativeRunnerTest(unittest.TestCase):

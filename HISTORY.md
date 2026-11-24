@@ -11,6 +11,16 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-24
 
+### Stage CLI drafts before offline signing and finalization
+
+The CLI stage job now checks the independent verification receipt for the
+archive and checksum bytes and creates only a draft. A separate approved job
+requires both pinned-key signatures and the exact stage receipt before
+publication. Consumer archive signature names and pins are unchanged. Local
+tests use a GitHub double and disposable keys; no hosted rehearsal or real
+publication is claimed.
+[Release procedure](docs/guides/development.md#publish-a-cli-preview).
+
 ### Record the scheduled Integration history and the 2026-11-23 macOS runner failure
 
 The two red scheduled `Integration` runs were read through the GitHub API. The 2026-11-21 run (44898897532) failed only in `ports (win-arm64)` and is the already fixed store-lock race. The 2026-11-23 run (45181292472,

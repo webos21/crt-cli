@@ -24,15 +24,14 @@ from a source you trust independently of this page.
 
 The `release` workflow built this commit with the pinned published Preview and public SDK, packed the archive twice with identical bytes,
 and, on a separate runner, extracted it and ran the packaged executable: `--version`, self `doctor` with the manifest pin (a wrong pin is
-refused), a real GitHub `sdk acquire`, then C and C++ `new`, `build`, `test`, `run` and a warm rebuild. A reviewer approved the publication.
+refused), a real GitHub `sdk acquire`, then C and C++ `new`, `build`, `test`, `run` and a warm rebuild. Staging and finalization require separate approval.
 
 ## Not claimed
 
-- **Publisher authentication is separate from this build.** The workflow publishes the archive first and holds no signing key. If a
-  `<archive>.sig` asset is attached to this release it is a detached RSA-PSS (SHA-256) signature by the publisher key whose fingerprint
-  (SHA-256 of the DER SubjectPublicKeyInfo) is `59218576956e493476bc36f7385d8e01a03ff9b92946a531b013ad3937d43fa2`; check that fingerprint against
-  copies you trust independently (see `docs/security/publisher_signing.md` and its signed notice in the CRT repository) and verify with
-  `crt-cli fetch --publisher-key <pem> --signature <file>` or `openssl`. Without such an asset the archive is **not signed**: trust comes from
-  digests you pin yourself (`publisher_authentication: not_verified`). Signing is not part of what the workflow checked.
+- **CI does not hold the signing key.** The owner signs the archive and
+  checksum file offline. The finalization workflow verifies both detached
+  RSA-PSS (SHA-256) signatures before publication. Verify each file with
+  the [independently pinned publisher key](https://github.com/webos21/crt/blob/main/docs/security/publisher_signing.md)
+  using `crt-cli fetch --publisher-key <pem> --signature <file>` or OpenSSL.
 - This template does not repeat per-host test counts or toolchain versions; the workflow run that produced this release records them.
   The CLI is experimental and its JSON/command contract may change.
