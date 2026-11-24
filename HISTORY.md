@@ -9,6 +9,16 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-24
+
+### Record the scheduled Integration history and the 2026-11-23 macOS runner failure
+
+The two red scheduled `Integration` runs were read through the GitHub API. The 2026-11-21 run (44898897532) failed only in `ports (win-arm64)` and is the already fixed store-lock race. The 2026-11-23 run (45181292472,
+`1ab78e1`) failed because both `macos-15` jobs (`pins`, `redirect`) never got a runner and were cancelled after 15 minutes ("The job was not acquired by Runner of type hosted even after multiple attempts"); the `ports` jobs of every host were
+skipped because they need the whole `pins` matrix, so no port suite and no macOS check ran, and the eight other `pins`/`redirect` jobs passed. No `src/`, `include/` or `.github/` change lies between the last green scheduled source and that run. All seven scheduled runs started 8 to 10 hours after
+the configured 03:23 UTC. The owner closed the scheduled-cadence observation (CI-03): the trigger is confirmed to run, while start times and hosted-runner allocation are GitHub policy and capacity, outside this repository's control; the item was removed from TODO and STATUS. No re-run was made and no source, workflow or pin changed.
+[Acceptance](docs/acceptance/ci_acceptance.md#scheduled-integration-history-and-the-macos-runner-failure-2026-11-24).
+
 ## 2026-11-23
 
 ### Complete the physical Windows/x64 PAL Unicode replay

@@ -32,7 +32,8 @@ original source revision, SDK pin and host scope.
 
 The required `CI gate` covers six native jobs across five host pairs, with Ubuntu 24.04 and 26.04 on Linux/x86_64. Signed public
 host-tools bundles feed pins, redirects and five port suites in the 15-job daily/manual integration workflow. The full workflow passed
-on the Windows/arm64 expansion branch and the adoption passed main CI. Scheduled cadence is tracked under [CI-03](TODO.md#ci---monitoring-and-pin-promotion).
+on the Windows/arm64 expansion branch and the adoption passed main CI. The scheduled trigger is confirmed (seven runs); its late starts and macOS runner shortage are GitHub-side limits, recorded in the
+[scheduled-run record](docs/acceptance/ci_acceptance.md#scheduled-integration-history-and-the-macos-runner-failure-2026-11-24).
 [Integration and CI evidence](docs/acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20).
 
 The signed Windows/arm64 workflow Preview `v0.1.0-preview.20261120.windows-arm64.1` passes the native C/C++ public package replay
@@ -70,7 +71,7 @@ The Windows port-store publication test uses independent CLI processes. The CRT 
   [Sign Before Publishing](TODO.md#p1---sign-before-publishing).
 - **CI Operations.** CI pins move under the reviewed promotion policy.
   Linux/arm64 CI and native signature replay cover Ubuntu 26.04 with glibc 2.43.
-  Raspberry Pi, additional loader versions, schedule cadence and non-admin
+  Raspberry Pi, additional loader versions and non-admin
   ruleset enforcement have open verification work.
   [CI follow-up](TODO.md#ci---monitoring-and-pin-promotion).
 - **Planned expansion.** SDK installation and selection currently cover native

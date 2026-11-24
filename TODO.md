@@ -131,7 +131,7 @@ for CI-01,
 [crt native compatibility P1-01](https://github.com/webos21/crt/blob/main/TODO.md#p1---native-compatibility-beyond-hosted-runners)
 for CI-02, and
 [ruleset observations](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11-1)
-for CI-04. CI-03 links the scheduled-run evidence below.
+for CI-04.
 
 - [ ] **CI-01** Apply the existing [CI pin-promotion policy](docs/guides/development.md#ci-pin-promotion)
   to qualified signed SDK/CLI candidates. Review the published Windows/arm64
@@ -141,9 +141,6 @@ for CI-04. CI-03 links the scheduled-run evidence below.
 - [ ] **CI-02** Track native distribution/device compatibility separately from CI:
   coordinate CRT's Raspberry Pi/older-glibc qualification before advertising it;
   the ARM64 Ubuntu 26.04/glibc 2.43 record is the current bounded evidence.
-- [ ] **CI-03** Observe the daily cadence of scheduled `integration.yml`: recorded runs pass, including the first Windows run,
-  but observed start times differ from the configured cron ([observations](docs/acceptance/ci_acceptance.md#first-scheduled-windowsx64-integration-run-2026-11-19)).
-  Continue tracking late, skipped or missing runs; timing causes remain unverified and a red run is a regression or a changed external input.
 - [ ] **CI-04** Observe the ruleset rejecting a non-administrator's direct push or failing-check merge: administrator bypass is `always`, so a
   rejection was not seen. This needs a second account; tighten the bypass when a second maintainer exists. The ruleset setting and the
   passing and `BLOCKED` pull-request states are accepted; this is a recorded verification limit, not a verified enforcement.

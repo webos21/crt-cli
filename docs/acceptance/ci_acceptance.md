@@ -1843,3 +1843,35 @@ digests. The `publish` job passed and the prerelease tag resolves to the tested 
 was verified and attached to the published archive. The native CLI verified it against a fresh public download.
 [Public-byte verification](preview_acceptance.md#windowsarm64-workflow-preview-release-2026-11-20).
 
+
+## Scheduled Integration history and the macOS runner failure (2026-11-24)
+
+The complete `schedule` history of `integration.yml` was read through the GitHub API on 2026-11-24: seven runs, all attempt 1 on `main`. Configured cron is `23 3 * * *` (03:23 UTC). Times are UTC.
+
+| Run | Created | Source | Result | Cause |
+| --- | --- | --- | --- | --- |
+| [44079658878](https://github.com/webos21/crt-cli/actions/runs/44079658878) | 11-17 12:04:01 | `d0efcaa` | success | |
+| [44299098232](https://github.com/webos21/crt-cli/actions/runs/44299098232) | 11-18 11:55:40 | `3aa7030` | success | |
+| [44518672154](https://github.com/webos21/crt-cli/actions/runs/44518672154) | 11-19 11:52:24 | `495840f` | success | [Windows record](#first-scheduled-windowsx64-integration-run-2026-11-19) |
+| [44731342833](https://github.com/webos21/crt-cli/actions/runs/44731342833) | 11-20 11:54:07 | `1ad5e57` | success | |
+| [44898897532](https://github.com/webos21/crt-cli/actions/runs/44898897532) | 11-21 11:23:42 | `8374470` | **failure** | `ports (win-arm64)`: concurrent store-lock race in the CLI, fixed ([record](sdk_install_acceptance.md)) |
+| [45018368929](https://github.com/webos21/crt-cli/actions/runs/45018368929) | 11-22 11:39:10 | `44fbf24` | success | first scheduled run after the lock fixes, all 15 jobs |
+| [45181292472](https://github.com/webos21/crt-cli/actions/runs/45181292472) | 11-23 13:10:31 | `1ab78e1` | **failure** | macOS/arm64 runner never assigned (below) |
+
+**2026-11-23 failure: infrastructure, not a CLI result.** The run was created 9h47m after the nominal clock time. `pins (macos-arm64)` and `redirect (macos-arm64)` (label `macos-15`) were created at 13:10:32, never received a runner
+(`runner_name` is empty, zero steps) and were cancelled at 13:25:33, 15 minutes later. The check-run annotation reads "The job was not acquired by Runner of type hosted even after multiple attempts", next to GitHub's notice
+"Due to capacity constraints, jobs targeting macOS arm64 runners may experience longer queue times." Both `ports` job definitions (`ports` and `ports-windows`, each `needs: pins` for the whole `pins` matrix) were skipped, and their names show the unexpanded `${{ matrix.host }}`, so **no port suite ran on any host**: one cancelled
+`pins (macos-arm64)` leg suppresses the port suites of Linux and Windows too. Only `pins` and `redirect` ran, and the other eight jobs passed: `pins` and `redirect` on linux-x64, linux-arm64, win-x64 and win-arm64. No macOS check of any kind ran.
+
+Between the last green scheduled source `44fbf24` and `1ab78e1` no file under `src/`, `include/` or `.github/` changed; four replay scripts under `tools/` were added and none is used by `integration.yml`. That makes a regression in the
+tested inputs unlikely but does not prove it: the macOS result for `1ab78e1` is **unobserved**, not passing. The last macOS scheduled results are the 11-22 pass (all 15 jobs, `44fbf24`) and the 11-21 run in which macOS passed. Whether the
+failure repeats was not tested; no re-run or manual dispatch was started for this record.
+
+**Cadence and closure.** Creation times fall 8h00m to 9h47m after 03:23 UTC on all seven days (11:23 to 13:10 UTC), never near the configured time. The cause was not established. The owner closed the cadence observation on
+this evidence: the scheduled trigger demonstrably fires and runs the workflow (seven runs, five green, two red for stated reasons), while the start time and the allocation of hosted runners are governed by GitHub's scheduling policy and
+runner capacity, which this repository cannot control. A late start or an unassigned macOS runner is therefore not a defect to fix here. It still has a visible cost, recorded so a reader does not misjudge a red run: a run can fail on runner
+availability alone and looks like a regression at the run level; a macOS capacity failure leaves macOS unverified and, through `needs: pins`, every host's port suites unrun for that day. A red scheduled run is triaged by reading the
+job annotations first (a runner that was never assigned is infrastructure; a failed step is a regression or a changed external input). Nothing tracks this item any more: a macOS-only gap is repaired by a manual dispatch, and making
+`ports` wait only for its own host's `pins` would be a separate, reviewed workflow change.
+
+No source, workflow, pin, schedule, release or setting change is made; the TODO cadence item (CI-03) and its pointers in STATUS were removed at the owner's request once this record and HISTORY held the result.
