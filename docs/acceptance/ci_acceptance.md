@@ -1182,7 +1182,7 @@ receipt, and `sdk verify` passes.
 copy of the real signature installs nothing; with the real signature it is `signature_verified`; after the stored contract is damaged, `sdk repair` with the one-bit-changed signature changes nothing (damaged contract and original receipt preserved,
 no staging or locks); `sdk repair` with the real signature restores the original contract and receipt; `sdk verify` passes. A real GitHub `sdk acquire` with the `github-release` redirect policy, the real key and the real signature pin
 (`50ec4f51...cf1c308`, 256 bytes) returned `signature_verified` with key `59218576...3fa2` and content `3b251637...621f` (reply SHA-256 `910aa19c...5e28`). The CI driver's accepting path on this SDK is recorded in the
-[first Preview record](#first-windows-arm64-preview-pins-and-the-ciyml-row-2026-11-18) and the hosted [result](#hosted-windows-11-arm-result-of-the-win-arm64-pins-2026-11-18).
+[first Preview record](#first-windowsarm64-preview-pins-and-the-ciyml-row-2026-11-18) and the hosted [result](#hosted-windows-11-arm-result-of-the-win-arm64-pins-2026-11-18).
 
 **First attempt, kept: 17/26, not evidence.** The driver passed the consumer only `HOME` and `PATH`. On Windows a process without `SystemRoot` cannot resolve `localhost` (shown directly: the same `fetch` reaches a loopback listener once `SystemRoot` is set and
 fails with "Could not connect" before connecting when it is not), so every case that needed the network failed and several refusal cases could have passed for the wrong reason. It is a test-environment fault, not a CLI fault; the driver now adds `SystemRoot`,
