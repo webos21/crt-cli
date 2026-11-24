@@ -87,6 +87,9 @@ and
 P1-01, the C shared provider and Windows C++ persona replays, is closed ([HISTORY](HISTORY.md), 2026-11-23). P1-02 supplies setup and diagnosis for
 [crt-vscode V1-03 and V1-06](https://github.com/webos21/crt-vscode/blob/main/TODO.md#v1---extension-mvp)
 .
+The later PAL consumer replays do not update public SDK pins. Candidate
+promotion remains CI-01; the CRT Media/UI package replays are not CLI or
+editor acceptance.
 
 - [ ] **P1-02** Improve the documented new/install/build/run path with scoped SDK/LLVM/OS
   SDK diagnosis and concrete missing-input guidance. Reuse explicit pinned SDK

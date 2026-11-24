@@ -34,6 +34,9 @@ records this exercised pair. This closes the physical x64 follow-up of the
 ARM64/emulated replay; it changes no product, public API, lock or release pin.
 The macOS records at CRT `cb3e0145` / CLI `76a0f1a` are merged and retained
 with their distinct SDK/CLI artifact identities and isolation results.
+CRT's later PAL-04 Media/UI package replay is
+[producer evidence](https://github.com/webos21/crt/blob/88b172cf153a8b786fc98a8e17872ebce8b0efa2/docs/acceptance/crtui_acceptance.md#windowsx64-shared-runtime-closure-replay-2026-11-24),
+not a new exercised CLI combination.
 
 ### Replay the Windows PAL follow-up SDK on macOS/arm64
 

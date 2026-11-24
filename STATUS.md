@@ -1,7 +1,7 @@
 # Project Status
 
-Reviewed on **2026-11-20** against CLI `e362a51`, CRT `278c5d9` and the
-editor scaffold `b547406`. The snapshot includes the recorded public releases,
+Reviewed on **2026-11-24** against CLI `af849da`, CRT `88b172c` and the
+editor scaffold `e418379`. The snapshot includes the recorded public releases,
 CI pins, completed work and current work queue. Each native result retains its
 original source revision, SDK pin and host scope.
 [TODO](TODO.md) · [HISTORY](HISTORY.md) · [Acceptance](docs/acceptance/sdk_install_acceptance.md).
@@ -45,8 +45,11 @@ payload refusal and same-pin recovery. The public CI bundles use static host too
 [Windows/x64 local qualification](docs/acceptance/host_environment_acceptance.md#windowsx64-private-dll-host-tools-replay-2026-11-20).
 
 Windows/x64's earlier concurrent-install crash was fixed in the producer libunwind recipe and replayed with the fixed SDK.
-The Windows port-store publication test uses independent CLI processes. The CRT in-process concurrent read failure is retained in
-[the producer reproducer record](docs/acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20).
+The Windows port-store publication test uses independent CLI processes. A
+separate in-process descriptor-concurrency failure was fixed in CRT and
+replayed on later unpromoted candidates; that does not update the public pins.
+[Historical reproducer](docs/acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20) ·
+[Producer fix and replay](https://github.com/webos21/crt/blob/88b172cf153a8b786fc98a8e17872ebce8b0efa2/docs/acceptance/release_qualification.md#windows-descriptor-ownership-and-stdio-block-transfers-2026-11-23).
 
 ## Limits and ordered follow-up
 
@@ -57,13 +60,14 @@ The Windows port-store publication test uses independent CLI processes. The CRT 
   SDK/CLI/editor combinations through D7.
   [Editor API queue](TODO.md#p0---minimal-public-editor-api-d7-slice-coordinated-with-d5d6) ·
   [Adoption evidence](docs/compatibility.md#adoption-and-exercised-combinations).
-- **P1 producer handoff and first-user setup.** The retained Linux pure C shared
-  SDK-provider control resolves host libz and remains unqualified. The Linux
-  C++ shared loader repair has its own Ubuntu 24.04 and 26.04 results. Replay
-  CRT's C shared and Windows `<filesystem>` corrections with the exact new SDK
-  candidates. First-user work covers clearer SDK, LLVM and OS SDK guidance.
-  [Linux C control](docs/acceptance/sdk_install_acceptance.md#linux-d3-common-change-replay-and-macos-handoff-2026-11-09) ·
-  [C++ loader evidence](docs/acceptance/ci_acceptance.md#completed-linux-hosted-qualification) ·
+- **P1 producer handoff and first-user setup.** The pure C shared provider
+  and Windows C++ compile-policy replays are closed on the recorded corrected
+  candidates. Later native PAL replays cover direct path-taking streams and
+  supplementary-plane Windows filenames. Earlier failing controls retain
+  their SDK identities; candidate verification is not promotion or public
+  pin adoption. First-user work covers clearer SDK, LLVM and OS SDK guidance.
+  [Completed replays](HISTORY.md#replay-the-external-c17-persona-consumer-on-windowsarm64-and-close-p1-01) ·
+  [Windows PAL combination](docs/compatibility.md#native-windowsx64-pal-consumer-combination-2026-11-23) ·
   [Consumer handoff](TODO.md#p1---producer-correctness-handoff-and-first-user-workflow-d5).
 - **P1 release signing.** The current Preview flow attaches the owner's offline
   signature after publication. Sign-before-publish, official default trust and

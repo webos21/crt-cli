@@ -108,7 +108,9 @@ project's lock. `new` creates sources only. The local example installs an archiv
 before first build; network acquisition requires an explicit pinned source.
 The native builder supports executables, static/shared project libraries and
 static/shared runtime linkage using SDK-owned startup/link/ABI policy.
-The Linux pure C shared SDK-provider path still needs qualification.
+The corrected pure C shared SDK-provider path has native replay evidence;
+use the tested SDK identity rather than assuming every published Preview
+contains the correction.
 [Mode and host limits](STATUS.md#limits-and-ordered-follow-up).
 
 For explicit HTTPS acquisition, supply a trusted format-0 source file with
@@ -147,8 +149,9 @@ from a pinned release.
 The independent CRT host-tools profile supplies mksh, toybox, awk and make for
 explicit shell/port workflows. It is separate from native app builds and target
 SDKs. Windows workflows using real symlinks require Developer Mode; settings
-are not changed automatically. The standalone CRT Studio remains a future
-GUI consumer of the same CLI contracts.
+are not changed automatically. [crt-vscode](https://github.com/webos21/crt-vscode)
+is the first editor consumer of the planned CLI editor API. The standalone
+CRT Studio remains a future consumer of the same contracts.
 
 ## Learn More and Contribute
 
