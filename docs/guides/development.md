@@ -317,9 +317,10 @@ records five-host integration. [CI monitoring and pin promotion](../../TODO.md#c
 Dispatch `release.yml` from `main` with `host` (`linux-x64`, `linux-arm64`,
 `macos-arm64`, `win-x64` or `win-arm64`), the full commit SHA on `main`, a date, a serial and the
 reviewed notes path (`.github/release/preview-notes.md`). The commit must have
-a successful `CI gate` and contain the release driver. Use `dry_run: true`
-to stage a verified draft for rehearsal. Use an unused date/serial for the
-actual Preview.
+a successful `CI gate` and contain the draft staging driver. Use
+`dry_run: true` for a rehearsal that produces no finalization receipt.
+Use an unused date/serial and `dry_run: false` to stage a finalizable draft.
+Neither mode publishes.
 
 The package and verify jobs use separate native runners. `win-arm64` runs on `windows-11-arm`, installs the native ARM64
 LLVM 22.1.8 from the LLVM release (SHA-256 checked; the image's LLVM 20 is not used), uses the `um/arm64` import libraries and
@@ -337,16 +338,21 @@ Verification extracts the package into a new workspace, installs the pinned
 public SDK into a private home and runs C and C++ project workflows. The
 package artifact contains `release.json`, the archive and its checksum file.
 The verification artifact contains `verify.json` with the tag, archive
-digest, SDK identity, tool paths and project results.
+and checksum-file digests, SDK identity, tool paths and project results.
 
 Compare the package and verify digests before approving the `release`
-environment. Put the full commit SHA, tag, archive SHA-256 and reviewer in
-the approval comment. `dry_run: false` publishes the verified draft as a
-prerelease. The owner follows the [CRT offline signing procedure](https://github.com/webos21/crt/blob/main/docs/security/publisher_signing.md#signing-procedure-owner)
-to attach the detached `.sig`; that the owner signs offline and the workflow never signs is a
-[recorded design decision](../design/crt_cli.md#release-signing-decision-2026-11-18). Download the public files into a fresh
-workspace, verify the checksum and signature, and rerun the package verifier
-on the target host against those downloaded bytes. Record the results in
+environment. Record the commit, tag, digest and reviewer. For an eligible
+draft, get the stage receipt from the successful run and follow the
+[CRT offline signing procedure](https://github.com/webos21/crt/blob/main/docs/security/publisher_signing.md#signing-procedure-owner).
+Sign both the CLI archive and its `SHA256SUMS-*` file; attach only their
+`.sig` files. Dispatch `finalize-release.yml` on `main` with the staging
+run ID and approve the separate `release` deployment. The finalizer checks
+both signatures and the exact staged bytes before setting the prerelease
+public, then re-downloads the published assets. The archive signature format
+and name are unchanged. The private key remains offline.
+
+Download the public files into a fresh workspace, verify their digests and
+signatures, and rerun the package verifier on the target host. Record results in
 [CI acceptance](../acceptance/ci_acceptance.md) and
 [Preview acceptance](../acceptance/preview_acceptance.md).
 
