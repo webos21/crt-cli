@@ -149,15 +149,15 @@
     },
     "win-arm64": {
       "bootstrap": {
-        "release": "v0.1.0-preview.20261118.windows-arm64.1",
-        "asset": "crt-cli-0.1.0-dev-windows-aarch64-preview.20261118.1.tar.xz",
-        "sha256": "c5ff710532c0ff9191ae373b48a8f8fe5ceb04bea70647989f9146e255e46e11",
-        "size": 5234024,
+        "release": "v0.1.0-preview.20261120.windows-arm64.1",
+        "asset": "crt-cli-0.1.0-dev-windows-aarch64-preview.20261120.1.tar.xz",
+        "sha256": "de7efa11662833bf3790a23ffa4b24ef4dfe503de2de4cf6e53f87562709d8a0",
+        "size": 5234232,
         "version": "0.1.0-dev",
         "signature": {
-          "name": "crt-cli-0.1.0-dev-windows-aarch64-preview.20261118.1.tar.xz.sig",
+          "name": "crt-cli-0.1.0-dev-windows-aarch64-preview.20261120.1.tar.xz.sig",
           "size": 256,
-          "sha256": "b72eb649d476673d784a6f4f84c090f73da9df505372cfc9005d19fa2a2da5e6"
+          "sha256": "b4b5eab4a7ac9f0315099a8c17091fd331d0958067b319f30f5a397118c80c63"
         },
         "sdk_source_publisher": true
       },
