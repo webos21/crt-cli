@@ -14,7 +14,7 @@ from unittest.mock import patch
 from ci_integration import (IntegrationError, PORT_SUITES, REDIRECT_CASE_COUNT, command_redirect, judge_redirect_result,
                             judge_port_result, load_pins, load_publisher, main,
                             host_key, port_adapter_command, prepare_windows_harness, windows_harness_pins,
-                            prepare_port_inputs, sha256_file, spki_sha256, verify_download, verify_oracle,
+                            prepare_port_inputs, replay_build_cache, sha256_file, spki_sha256, verify_download, verify_oracle,
                             verify_publisher_signature)
 from replay_port_linux import suite_outcome
 
@@ -99,6 +99,36 @@ class PinTest(unittest.TestCase):
                 self.assertTrue(tools['url'].startswith('https://github.com/webos21/crt/releases/download/' + tools['version'] + '/'))
                 self.assertIn(os_name + '-' + arch, tools['version'])
                 self.assertEqual(tools['name'], 'crt-' + tools['version'] + '.tar.xz')
+
+
+class BuildCacheReplayTest(unittest.TestCase):
+    def build_response(self, executed, reused, commands=None):
+        return json.dumps({'ok': True, 'data': {'cache': {'executed': executed, 'reused': reused},
+                                                'commands': [['clang']] * executed if commands is None else commands}})
+
+    def test_prime_may_rebuild_before_a_true_warm_check(self):
+        for executed, reused in ((22, 0), (1, 21), (0, 22)):
+            with self.subTest(executed=executed, reused=reused):
+                responses = iter([self.build_response(executed, reused), self.build_response(0, 22)])
+                calls = []
+
+                def build(label, argv):
+                    calls.append((label, list(argv)))
+                    return next(responses)
+
+                self.assertEqual(replay_build_cache(build, 'retained-cli', 'project')['warm'],
+                                 {'executed': 0, 'reused': 22})
+                argv = ['retained-cli', '--json', 'build', '--project', 'project']
+                self.assertEqual(calls, [('cache-prime', argv), ('warm-build', argv)])
+
+    def test_warm_check_rejects_rebuilds_partial_reuse_and_contradictory_reports(self):
+        for response, message in ((self.build_response(1, 21), 'did not reuse all'),
+                                  (self.build_response(0, 21), 'did not reuse all'),
+                                  (self.build_response(0, 22, [['clang']]), 'consistent build cache'),
+                                  (self.build_response(0, True), 'consistent build cache')):
+            with self.subTest(response=response), self.assertRaisesRegex(IntegrationError, message):
+                replies = iter([self.build_response(22, 0), response])
+                replay_build_cache(lambda *_: next(replies), 'retained-cli', 'project')
 
 
 class NativeAdapterTest(unittest.TestCase):

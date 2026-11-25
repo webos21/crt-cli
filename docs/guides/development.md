@@ -524,6 +524,11 @@ network/executable denial. Only the oracle may execute the copied, digest-checke
 `pins`, `redirect` and `ports` have host-specific jobs on Linux/x64, Linux/arm64, macOS/arm64, Windows/x64 and Windows/arm64. Integration
 remains a read-only daily/manual workflow, not a required PR check or a release
 publisher. Uploads retain per-call commands, input identities, results and logs.
+Port replay keeps a copy of the freshly built CLI outside the build outputs.
+It runs `cache-prime` and `warm-build` with that same executable and project.
+Priming may rebuild outputs produced by the published bootstrap when cache
+keys change. The warm build must execute zero commands and reuse every command
+counted by priming. Both build receipts are included in the artifact.
 See [macOS acceptance](../acceptance/ci_acceptance.md#macosarm64-integration-expansion-2026-11-19)
 for local versus hosted results and pin adoption status, and [Windows acceptance](../acceptance/ci_acceptance.md#windowsx64-hosted-port-integration-2026-11-19)
 for its 270 checks, 29 gates and retained failure. The [ARM64 expansion record](../acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20)

@@ -1880,6 +1880,42 @@ job annotations first (a runner that was never assigned is infrastructure; a fai
 
 No source, workflow, pin, schedule, release or setting change is made; the TODO cadence item (CI-03) and its pointers in STATUS were removed at the owner's request once this record and HISTORY held the result.
 
+## Scheduled port replay cache transition (2026-11-26)
+
+Scheduled run [45620921215](https://github.com/webos21/crt-cli/actions/runs/45620921215)
+at `1eddeb3b2691a23536f3351c5141f77c773aa5fb` passed all five pin and all five
+redirect jobs. All five port suites passed on each host, including 270 checks
+with real symlinks on each Windows runner. Each port job failed only its
+build cache criterion. The nominal warm build executed 22 commands and reused
+zero on every host. The two Windows job artifacts also report a successful
+22-command seed build and passing PE and input inventory checks.
+
+The port adapters built the checkout using a published bootstrap CLI and
+treated the first build by the resulting CLI as a warm build. P0 commit
+`8fcc05ebf629f78a16920fabcaa44f5ea35f44fd` added the build working directory to
+the cache key. A Linux/x86_64 control used the same SDK, lock and compiler argv
+and measured **3 executed / 0 reused** with the published bootstrap, **3 / 0**
+on the first current-CLI build and **0 / 3** on its second build. Both link
+keys were independently recomputed from their respective inputs.
+
+Each adapter now retains a copy of the rebuilt CLI outside its build outputs.
+The same copy primes the cache and immediately builds again. The shared gate
+requires a nonzero command total, an empty warm command list and complete
+reuse. Both receipts are retained. Port suites, isolation and published input
+pins keep their existing checks.
+
+The corrected `ci_integration.py ports --host linux-x64` replay passed all
+25 gates and all five suites (263 checks, zero skipped) with LLVM 21.1.8 and
+the pinned public Linux/x86_64 inputs. The product/source ledger still hashes
+to `59bdf4c360766b288737b0033ddbc27f672e42344bfb82dba35672b153342e8e`, the
+same as the failing scheduled run. The retained builder executed **22 / 0**
+on priming and **0 / 22** on the warm build. The command log confirms both
+calls used the same executable and arguments. The integration and macOS
+adapter unit suites passed 49 tests in total. Native evidence for the adapter
+change covers Linux/x86_64, with the other hosted legs awaiting a new run.
+The local inputs, command logs and build receipts are under
+`/home/syszone/crt-cli-integration-cache-20261126/ports/replay/`.
+
 ## Hosted sign-before-publishing gate (2026-11-25)
 
 The `release` environment permits only `main` and requires an owner

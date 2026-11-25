@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 
+from ci_integration import replay_build_cache
 from replay_macos_sandbox import MacSandbox, linker_helpers
 from replay_port_linux import suite_outcome
 
@@ -173,6 +174,7 @@ def main():
         return proc
 
     completed = False
+    cache = {}
     try:
         argv = [seed, '--json', 'configure', '--project', project, '--sdk-root', sdk, '--sdk-contract', contract,
                 '--contract-sha256', args.contract_sha256]
@@ -193,6 +195,16 @@ def main():
         assert built.returncode == 0
         cli = project / 'out/native/crt-cli'
         sandbox.cli = cli
+        builder = scratch / 'cache-builder'
+        shutil.copy2(cli, builder)
+
+        def build_cache(label, command):
+            proc = run(label, command, timeout=3600)
+            proc.check_returncode()
+            return proc.stdout
+
+        cache = replay_build_cache(build_cache, builder, project)
+        record('the rebuilt CLI reuses every unchanged build command', True, cache)
         bare = work / 'bare-cli'; shutil.copy2(cli, bare)
         sandbox.allowed.append(bare)
         absent = (sdk, contract, project, bundle)
@@ -239,10 +251,6 @@ def main():
                    a['data']['build_key'] == b['data']['build_key'])
             verified = run('port-verify', [cli, '--json', 'port', 'verify', a['data']['build_key'], '--project', project])
             record('actual published port item verifies', verified.returncode == 0, verified.stderr)
-        warm = run('warm-build', [cli, '--json', 'build', '--project', project], timeout=3600)
-        reply = json.loads(warm.stdout)
-        record('the rebuilt CLI reuses every unchanged build command', warm.returncode == 0 and
-               reply.get('data', {}).get('cache', {}).get('executed') == 0)
         sandbox.verify(record)
         record('SDK inventory unchanged', inventory(sdk) == before)
         record('original public SDK inventory unchanged', inventory(args.sdk_root) == before)
@@ -252,7 +260,7 @@ def main():
     except Exception as error:
         record('replay completed without a harness exception', False, repr(error))
     finally:
-        summary = {'passed': completed and all(r['passed'] for r in results), 'cases': results, 'work': str(work),
+        summary = {'passed': completed and all(r['passed'] for r in results), 'cases': results, 'work': str(work), 'cache': cache,
                    'suites': args.cases or list(suites),
                    'suite_results': outcomes, 'source_sha256': inputs['source_sha256'], 'allow_dirty_sdk': False,
                    'contract_sha256': digest(contract), 'host_tools_sha256': args.host_tools_sha256,
