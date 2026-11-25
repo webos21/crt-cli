@@ -25,54 +25,13 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
 Task IDs are scoped to their topic heading. Refer to the repository and topic
 when a prefix such as `P1` or `V1` appears under multiple headings.
 
-## In Progress
-
 <a name="ci-monitoring-and-pin-promotion"></a>
+<a name="ci---monitoring-and-pin-promotion"></a>
+CI monitoring and pin promotion completed on 2026-11-25; see
+[HISTORY](HISTORY.md#close-ci-monitoring-and-pin-promotion) and the linked
+acceptance records. These anchors preserve previous evidence links.
 
-### CI - Monitoring and Pin Promotion
-
-Acceptance records:
-[pin promotion](docs/acceptance/ci_acceptance.md#ci-pin-promotion-2026-11-11) and
-[20261120 Windows/arm64 release](docs/acceptance/preview_acceptance.md#windowsarm64-workflow-preview-release-2026-11-20)
-for CI-01,
-[ARM64 hosted limits](docs/acceptance/ci_acceptance.md#linuxarm64-leg-2026-11-11) and
-[crt native compatibility P1-01](https://github.com/webos21/crt/blob/main/TODO.md#p1---native-compatibility-beyond-hosted-runners)
-for CI-02, and
-[ruleset observations](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11-1)
-for CI-04.
-
-- [ ] **CI-01** Apply the existing [CI pin-promotion policy](docs/guides/development.md#ci-pin-promotion)
-  to qualified signed SDK/CLI candidates. Review the published Windows/arm64
-  20261120 workflow Preview separately from the retained 20261118 bootstrap;
-  promote only with release-record, signature and affected-suite evidence, not
-  because its tag is newer. Keep previous working pins and project locks.
-  - [x] Reuse the accepted promotion procedure and retained-host adoption records;
-    candidate release/signature review is recorded in the
-    [2026-11-25 review](docs/acceptance/ci_acceptance.md#ci-monitoring-and-pin-promotion-review-2026-11-25).
-  - [ ] Adopt the selected new pin tuple through its PR and post-merge CI gates.
-- [ ] **CI-02** Track native distribution/device compatibility separately from CI:
-  coordinate CRT's Raspberry Pi/older-glibc qualification before advertising it;
-  the ARM64 Ubuntu 26.04/glibc 2.43 record is the current bounded evidence.
-  - [x] Link existing x86_64 Ubuntu 24.04/glibc 2.39 and ARM64 Ubuntu 26.04/glibc 2.43
-    records to the [CRT-owned native compatibility handoff](docs/acceptance/ci_acceptance.md#ci-02-native-compatibility-handoff).
-  - [ ] Link new producer/consumer evidence for Raspberry Pi and the selected
-    additional ARM64 distribution/loader combinations.
-- [ ] **CI-04** Observe the ruleset rejecting a non-administrator's direct push or failing-check merge: administrator bypass is `always`, so a
-  rejection was not seen. This needs a second account; tighten the bypass when a second maintainer exists. The ruleset setting and the
-  passing and `BLOCKED` pull-request states are accepted; this is a recorded verification limit, not a verified enforcement.
-  - [x] Reuse the accepted ruleset configuration and passing/`BLOCKED` PR
-    [observations](docs/acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11-1).
-  - [ ] Record an actual rejection using an account without bypass.
-
-Current review and ordered follow-up:
-[CI queue review (2026-11-25)](docs/acceptance/ci_acceptance.md#ci-monitoring-and-pin-promotion-review-2026-11-25).
-
-Queue reviewed on 2026-11-25 against CLI `2c5e2e2`, CRT `9460fc87` and
-extension `6ee57fe`. CI-01, CI-02 and CI-04 are the first work group.
-The review records published inputs, existing native evidence and remaining
-gates. Existing five-host Preview/CI and D3 results retain their exact
-identities in [CI acceptance](docs/acceptance/ci_acceptance.md) and
-[Preview acceptance](docs/acceptance/preview_acceptance.md).
+## In Progress
 
 ### P0 - Minimal Public Editor API (D7 slice, coordinated with D5/D6)
 
@@ -129,7 +88,7 @@ P1-01, the C shared provider and Windows C++ persona replays, is closed ([HISTOR
 [crt-vscode V1-03 and V1-06](https://github.com/webos21/crt-vscode/blob/main/TODO.md#v1---extension-mvp)
 .
 The later PAL consumer replays do not update public SDK pins. Candidate
-promotion remains CI-01; the CRT Media/UI package replays are not CLI or
+promotion follows the [CI pin-promotion policy](docs/guides/development.md#ci-pin-promotion); the CRT Media/UI package replays are not CLI or
 editor acceptance.
 
 - [ ] **P1-02** Improve the documented new/install/build/run path with scoped SDK/LLVM/OS

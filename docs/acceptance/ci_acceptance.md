@@ -1,8 +1,10 @@
 # GitHub CI Acceptance
 
 This record owns what the CI driver and workflow have actually been run against. The design and the
-procedure are in the [development guide](../guides/development.md#continuous-integration); open work is in
-[CI monitoring](../../TODO.md#ci---monitoring-and-pin-promotion).
+procedure are in the [development guide](../guides/development.md#continuous-integration). The November 25
+[pin adoption](#qualified-ci-pin-adoption-ci-01-2026-11-25),
+[native Pi compatibility](#raspberry-pi-arm64-native-compatibility-ci-02-2026-11-25) and
+[non-bypass rejection](#non-bypass-required-check-rejection-ci-04-2026-11-25) close the CI monitoring work group.
 See the [hosted signing gate](#hosted-sign-before-publishing-gate-2026-11-25)
 for the completed release qualification. A passing local rehearsal is not a GitHub-hosted run.
 
@@ -1904,6 +1906,9 @@ this gate for this record.
 
 ## CI monitoring and pin promotion review (2026-11-25)
 
+This section preserves the pre-execution review. Its remaining-gate statements
+are superseded by the completion records linked below.
+
 Review baselines after `git pull --ff-only`: CRT `9460fc87`, CLI `2c5e2e2`
 and extension `6ee57fe`. Each repository matched its remote `main`. The latest
 CRT/CLI records close sign-before-publication qualification on Linux/x86_64.
@@ -2094,6 +2099,36 @@ The driver asserts that source is present in the compiler argv, requires the
 passed build/test/run (cold 3/0) and warm reuse (0/3), with unchanged locks
 SHA-256 `9e0638840466c1d70a6e4c7a70cc647c48ceb2aa67f0a34e83a28e88c00635e3`.
 
+Reproduction: create each project with `new <project> --language cxx
+--runtime-linkage <static|shared>`, replace its manifest-listed `main.cpp`
+with the following bytes (SHA-256
+`b1cafff054ec790c669cbf0790aec9f83096df146e0314d537175d06a23eac58`),
+then invoke `build --project <project> --sdk <content identity> --cc
+/usr/bin/clang --cxx /usr/bin/clang++ --linker /usr/bin/ld.lld --ar
+/usr/bin/llvm-ar`, `test`, `run` and a second `build` for the same project.
+Inspect the executable using `readelf -d`, `-l` and `-V` and compare its
+runtime map paths/hashes with the selected immutable SDK.
+
+```cpp
+#include <greeting.h>
+#include <stdio.h>
+#include <iostream>
+#include <vector>
+#include <stdexcept>
+int main() {
+    std::vector<int> v{1, 2, 3};
+    try { throw std::runtime_error("native CRT exception"); }
+    catch (const std::runtime_error& e) { if (v.size() != 3) return 7; }
+    FILE* maps = fopen("/proc/self/maps", "r");
+    if (!maps) return 8;
+    char line[2048];
+    while (fgets(line, sizeof line, maps)) fputs(line, stderr);
+    if (fclose(maps) != 0) return 9;
+    std::cout << greeting() << " C++ runtime and maps passed" << std::endl;
+    return 0;
+}
+```
+
 | Probe | Executable SHA-256 | Observed runtime |
 | --- | --- | --- |
 | C++ static | `982b69980002e6fbe0ca568b11340f2cb99de7c478e4f952ef3778b9c9c5b23c` | Executable plus declared OS loader only; no `DT_NEEDED` |
@@ -2181,4 +2216,25 @@ byte difference, or that Windows byte reproducibility is achieved. Linux
 stage equality is measured within each runner; cross-runner equality is not
 claimed.
 
-Post-merge verification is in progress; CI-01 and its TODO group remain open until both main gates and their affected receipts are recorded.
+
+Both post-merge main runs passed all six native legs and `CI gate`:
+[Windows promotion main](https://github.com/webos21/crt-cli/actions/runs/45531544073)
+at `39910afe6c670a3edee6314fa380b24f6f864832`, then
+[combined Linux/Windows pins main](https://github.com/webos21/crt-cli/actions/runs/45531812147)
+at `efb8dae777ee83aa13a915deec82b6871f3de1a6`.
+Their affected native artifact receipts are retained under
+`out/ci-monitoring-review-20261125/main49/` and `main50/`.
+
+| Main receipt | Stage 1 SHA-256 | Stage 2 SHA-256 | Native / archive / SDK-store / store-lock / recipe checks |
+| --- | --- | --- | --- |
+| main49: crt-cli-win-arm64 | `ffe11fd9cb4509a11a9c8a4d1971f6171f5f95d872a18417bfb15b0c4b5b365d` | `ebd1d8e4d092ed6d81f9e4c8593ff465002e77c67ac837756f160d0c17414d9a` | 1040 / 214 / 113 / 9 / 147 |
+| main50: crt-cli-linux-x64 | `c3727a08bb343a98875364db5ef9a46d06fecea7e011531a8534c56effd52e47` | `c3727a08bb343a98875364db5ef9a46d06fecea7e011531a8534c56effd52e47` | 949 / 221 / 114 / 9 / 147 |
+| main50: crt-cli-linux-x64-ubuntu2404 | `50f09b644239a7d41b90ebc267b0b4dad946fd8ca6127e45c6de9a35aaa35320` | `50f09b644239a7d41b90ebc267b0b4dad946fd8ca6127e45c6de9a35aaa35320` | 949 / 221 / 114 / 9 / 147 |
+
+The main receipts preserve 21-command cold stages and zero-command warm
+reuse, the signed input pairs above and the same dependency bounds. The
+Linux stages match within each runner; Windows retains the timestamp-bearing
+PE distinction described above. CI-01 is complete. Subsequent candidates
+must follow the existing promotion policy with their own evidence.
+
+Final `.github/ci/pins.json` SHA-256: `28e6f7a9296ff9b081f77321b9bf9e55c6c09d823014420e741548593d0e348b`.

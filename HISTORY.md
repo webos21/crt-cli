@@ -11,6 +11,29 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-25
 
+### Close CI monitoring and pin promotion
+
+CI-01 promoted the signed Windows/arm64 November 20 CLI and Linux/x86_64
+November 25 CLI/SDK through PRs #49 and #50. All-host pin checks, both full
+PR/main CI gates and the affected SDK redirect replay pass. Previous tuples
+remain in history; the unresolved root lock and project locks are preserved.
+[Pin receipts and stage results](docs/acceptance/ci_acceptance.md#qualified-ci-pin-adoption-ci-01-2026-11-25).
+
+CI-02 adds physical Pi 3 B+ native evidence on Debian 13.7/glibc 2.41 with
+LLVM 19.1.7: C/C++ workflows, static/shared C++ exceptions, warm reuse and
+actual mapped-image audits pass. CRT PR #28 records the producer handoff.
+[Exact native bounds](docs/acceptance/ci_acceptance.md#raspberry-pi-arm64-native-compatibility-ci-02-2026-11-25).
+
+CI-04 observed GitHub refusing an unchecked main-ref update by a non-bypass
+Actions app token (HTTP 422, required CI gate), after an unprotected write
+control passed. Main was unchanged; the temporary observation branch was
+removed. This records the app/API operation, without claiming a second human
+account or git transport test. Administrator bypass remains unchanged.
+[Rejection receipt](docs/acceptance/ci_acceptance.md#non-bypass-required-check-rejection-ci-04-2026-11-25).
+
+At the owner's request, the completed CI work group leaves In Progress;
+legacy TODO anchors point here. STATUS is unchanged.
+
 ### Prioritize CI monitoring and review the next pin candidates
 
 Synchronized CRT `9460fc87`, CLI `2c5e2e2` and extension `6ee57fe` with their
