@@ -1909,8 +1909,11 @@ and extension `6ee57fe`. Each repository matched its remote `main`. The latest
 CRT/CLI records close sign-before-publication qualification on Linux/x86_64.
 The CLI and extension records also distinguish completed PAL prerequisite
 replays from the pending editor API and Extension Development Host gates.
-The [CI work group](../../TODO.md#ci-monitoring-and-pin-promotion) now leads
-In Progress.
+The [CI work group](../../TODO.md#ci-monitoring-and-pin-promotion) led
+In Progress at this review. Execution results are recorded below in the
+[pin adoption](#qualified-ci-pin-adoption-ci-01-2026-11-25),
+[Pi compatibility](#raspberry-pi-arm64-native-compatibility-ci-02-2026-11-25) and
+[required-check rejection](#non-bypass-required-check-rejection-ci-04-2026-11-25) records.
 
 ### CI-01 candidate review and promotion order
 
@@ -2035,5 +2038,147 @@ in addition to the earlier `CLEAN`/`BLOCKED` PR observations. Administrator
 bypass remains `always`; a second maintainer's arrival can trigger its policy
 review. The observed actor and API operation are recorded explicitly.
 
-Raw candidate/check/update/result JSON, the workflow source and its run log
-are retained in `out/ci-monitoring-review-20261125/ci04-observation/`.
+Raw candidate/check/update/result JSON and its run log are retained in
+`out/ci-monitoring-review-20261125/ci04-observation/`; the workflow source is
+`out/ci-monitoring-review-20261125/ci04-observation-workflow.yml`. The observation
+branch was deleted after archiving the result. `result.json` SHA-256 is
+`d871785dd1392b4ce9d4e633456080af67699e200cbf216fbb16a0a77a64009c`.
+CI-04 is complete for the observed non-bypass app/API operation.
+
+## Raspberry Pi ARM64 native compatibility (CI-02, 2026-11-25)
+
+A physical Raspberry Pi 3 Model B Plus Rev 1.3 ran the retained public
+Linux/arm64 pair natively. Host: 64-bit Debian 13.7 (trixie), aarch64,
+kernel `6.18.50+rpt-rpi-v8`, glibc 2.41, Debian Clang/LLD 19.1.7 in
+`/usr/lib/llvm-19/bin`. The interpreter `/lib/ld-linux-aarch64.so.1` resolves
+to `/usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1`, SHA-256
+`32f8643735b7bbc6375bdae3198376ef0e130be0006150fb1524f04c3528e07a`.
+This adds an actual device and an older ARM64 host libc to the existing
+Ubuntu 26.04/glibc 2.43 hosted evidence. The [CRT producer handoff](https://github.com/webos21/crt/blob/1bafd9fffccf146e3501f12759b1cc7a73e6cd09/docs/acceptance/release_qualification.md#raspberry-pi-arm64-native-compatibility-2026-11-25)
+closes its bounded native-compatibility task; broader distribution/device
+support still requires its own qualification.
+
+Inputs were downloaded on the Pi using a copy of the public CI tooling at
+CLI `f8f2b3493a95ca779e24202ebca4d6dbb2c6975f` (its ARM64 tuple is unchanged).
+No producer source/build tree was used. Each archive passed size, digest and
+publisher signature checks under SPKI SHA-256
+`59218576956e493476bc36f7385d8e01a03ff9b92946a531b013ad3937d43fa2`.
+
+| Input | Exact public identity |
+| --- | --- |
+| CLI | `v0.1.0-preview.20261116.linux-arm64.1`, `crt-cli-0.1.0-dev-linux-aarch64-preview.20261116.1.tar.xz`, 5,063,404 bytes, SHA-256 `311bc451b0c20402f6298ba469e596326bef2c5ae526333ef861edff860e77aa` |
+| CLI executable | `4b5109e99568fcf0f80d62f5e496748aec471d31dd8ea7ddc5e6235e339b3d3b` |
+| SDK | `v0.0.1-preview.20261110.linux.arm64.2`, producer `e6a94ab9e69b05497b3804328971d24d6071a53d`, 7,632,648-byte archive SHA-256 `5c99dc59b747cb31cb623fa057264c3a4e7d5715f960203073dc1b34f664a1c4` |
+| SDK manifest | `ba77b26edfa0413df5e8c17309506d7ae6ecf134ae7e9908e3742bc562067be3` |
+| SDK content / policy | `cd2ab657615c0fa52a1804f301a57dfa21b1067e3e5ed5a9f9a07d86ae050cc6` / `a3df2fbd6b4d14d316b691a1d2831d0692aaba133e3b168076ee0ec7cb6434d4` |
+
+The existing package verifier was invoked with the following argv, using a
+fresh work directory and the downloaded archive/checksum files:
+
+```text
+python3 tools/ci_release.py verify --host linux-arm64 --date 20261116 --serial 1 --release-dir /home/pi/crt-ci02-20261125.BRxhDLr6/public --work "/home/pi/crt-ci02-20261125.BRxhDLr6/native space 한글/verify" --llvm-bin /usr/lib/llvm-19/bin
+```
+
+Its 30-file package verification, initial SDK-free version/doctor, SDK
+acquisition and doctor/wrong-pin rejection passed. Generated C and C++
+projects each passed cold build (3 commands), test, run and warm build
+(0 commands), preserving the exact project lock. Project child environments
+used a private HOME/TMPDIR and `PATH=/nonexistent`; external tool paths were
+explicit. Python, curl and readelf are test-host tools, not CLI prerequisites.
+
+Two additional fresh C++17 projects selected `--runtime-linkage static` and
+`shared`. Their actual manifest `main.cpp` was replaced with a probe using
+vector, iostream, `std::runtime_error` throw/catch and `/proc/self/maps` output.
+The driver asserts that source is present in the compiler argv, requires the
+`C++ runtime and maps passed` marker, and hashes every mapped file. Both
+passed build/test/run (cold 3/0) and warm reuse (0/3), with unchanged locks
+SHA-256 `9e0638840466c1d70a6e4c7a70cc647c48ceb2aa67f0a34e83a28e88c00635e3`.
+
+| Probe | Executable SHA-256 | Observed runtime |
+| --- | --- | --- |
+| C++ static | `982b69980002e6fbe0ca568b11340f2cb99de7c478e4f952ef3778b9c9c5b23c` | Executable plus declared OS loader only; no `DT_NEEDED` |
+| C++ shared | `6bc111553a939c804d7bc3bdf783d5e5d7f3f5014748d3c30e3e1c596ddd1bd2` | Selected SDK libc, libm, libdl, libc++, libc++abi and libunwind plus OS loader; `DT_NEEDED` agrees with maps |
+
+Neither probe mapped host glibc, libstdc++ or libgcc_s. The CLI ELF also has
+no `DT_NEEDED`; its interpreter is the declared OS loader. These results
+qualify this public pair on the identified Pi/OS/LLVM combination. They do
+not claim 32-bit Pi OS, other glibc versions, Full SDK/device/graphics suites,
+the later pure-C shared-provider contract, or current-source acceptance.
+No pin or existing project lock was changed.
+
+The initial extra runtime script wrote an unused `main.cxx`; its additional
+probe results are excluded. The existing package verifier results remain
+valid. Corrected projects were created afresh and checked against their
+manifest/compiler argv and runtime marker as described above.
+
+Artifacts are in `out/ci-monitoring-review-20261125/pi-native/remote-results/`
+and the remote job `/home/pi/crt-ci02-20261125.BRxhDLr6`. `host.json` SHA-256 is
+`7d3576bff46ac9ad982088a9185c13205cf062014745cf9143fabfbd3a652097`;
+`runtime-cpp-verified/result.json` SHA-256 is
+`b0d7538a8b6f235da3e2dedbb9d4f0d0ffecd73d4f86886612d1f351d3c86417`.
+The retained corrected `runtime-probe.py` SHA-256 is
+`687491f63928ac45dfd2f7b5484158dd63df437cda72c4da1c69dcc8e05a7cbf`.
+These receipts include tool hashes, all commands, outputs, source/executable
+hashes, ELF audits and mapped-image hashes. CI-02 is complete for the
+explicit native compatibility scope.
+
+## Qualified CI pin adoption (CI-01, 2026-11-25)
+
+The preceding candidate review was executed as two host-specific promotion
+PRs with no product source or project-lock changes. Final public pin checking
+passes for all five hosts after combining the changes. The previous working
+pairs remain in Git history; the root `crt.lock` remains unresolved.
+
+| Promotion | PR gate and merge | Consumed public pair |
+| --- | --- | --- |
+| Windows/arm64 | [PR #49](https://github.com/webos21/crt-cli/pull/49), [six-leg PR CI](https://github.com/webos21/crt-cli/actions/runs/45529621118) passed; merge `39910afe6c670a3edee6314fa380b24f6f864832` | CLI `v0.1.0-preview.20261120.windows-arm64.1`; retained SDK `v0.0.1-preview.20261118.windows.arm64.1`, content `3b251637845621ba28d6ba1d9c2f6a5e097f6b328f57054f7e7cb5c5eb52621f` |
+| Linux/x86_64 | [PR #50](https://github.com/webos21/crt-cli/pull/50), [six-leg PR CI](https://github.com/webos21/crt-cli/actions/runs/45529997970) passed; merge `efb8dae777ee83aa13a915deec82b6871f3de1a6` | CLI `v0.1.0-preview.20261125.linux-x86_64.1`; SDK `v0.0.1-preview.20261125.linux.x64.1`, content `d2edb36c64f8f7c6d67603763e07a83d0cb4c2858c99e7957e00dde2d54dc921` |
+
+The Windows CLI archive/signature digests are recorded in the proposal above.
+The Linux CLI archive is 5,295,152 bytes, SHA-256
+`942a45365cb3906754e5663a1c401ba223201cab9f025aa23d30e2b285a42289`,
+with signature SHA-256
+`63e482b7fea39e5be10824a032d153f4600a455918ef65065821298b666a3131`.
+The new Linux SDK manifest SHA-256 is
+`6adfa744c4739f25b5c7275316913081a644b3bfc6a185dc8ac2a8f774f2cbbe`;
+archive SHA-256 is
+`e455d08c31d1bf5d3cb470c4b28f09fffa228545350dc04ed099e132da85744b`;
+policy SHA-256 is
+`54bb35e014c59af90c1e2b73c3f544ebc7815edc958e704e15bef097dbedd2d1`.
+All bootstrap and SDK authentication receipts say `signature_verified`.
+
+The SDK change also passed [Integration redirect replay](https://github.com/webos21/crt-cli/actions/runs/45529992501)
+on the PR head `f8f2b3493a95ca779e24202ebca4d6dbb2c6975f`. All five pin and
+redirect jobs passed; the affected Linux/x64 result contains 54 distinct
+passing cases and the selected CLI executable SHA-256
+`827d974bfcb399254efcd9325fcf7df99cebc69b9a6ada7f335f777fc5ad01d5`.
+Port suites were intentionally outside this redirect-only dispatch, with no
+new port-suite acceptance claimed.
+
+PR native receipts:
+
+| Affected leg | Native / archive / SDK-store / store-lock / recipe checks | Stage 1 / stage 2 SHA-256 |
+| --- | --- | --- |
+| Windows/arm64 | 1040 / 214 / 113 / 9 / 147 | `b75a31c55398ac2ef7860eb5f0a9b3ca523dab2cbf128acfaf7a91b5e24ada44` / `664035c234eb2134488418da69474c39c7b497c2bf2b2ee03ee02f6a48f603c9` |
+| Linux/x64 Ubuntu 26.04 | 949 / 221 / 114 / 9 / 147 | both `c3727a08bb343a98875364db5ef9a46d06fecea7e011531a8534c56effd52e47` |
+| Linux/x64 Ubuntu 24.04 | 949 / 221 / 114 / 9 / 147 | both `50f09b644239a7d41b90ebc267b0b4dad946fd8ca6127e45c6de9a35aaa35320` |
+
+Every affected stage executes 21 cold commands; stage 2 warm executes zero
+and reuses 21. Windows imports only kernel32 and the declared synchronization
+API-set DLL; Linux has no `DT_NEEDED` and uses `/lib64/ld-linux-x86-64.so.2`.
+Bare version/help/doctor checks pass for both stages.
+
+The Windows stage compiler/linker argv arrays are identical, but the PE
+contains a wall-clock timestamp: stage 2 has `1795572678` (02:11:18 UTC),
+within its 02:10:09-started build and long after stage 1 started at 02:00:53.
+The selected LLVM 22.1.8 [MinGW driver](https://github.com/llvm/llvm-project/blob/ca7933e47d3a3451d81e72ac174dcb5aa28b59d1/lld/MinGW/Driver.cpp#L396)
+only forces zero for `--no-insert-timestamp`; the [COFF default](https://github.com/llvm/llvm-project/blob/ca7933e47d3a3451d81e72ac174dcb5aa28b59d1/lld/COFF/Driver.cpp#L1959)
+uses the current time when no timestamp/reproducibility setting is supplied.
+The recorded link argv has no such override. This identifies a source of
+byte differences across sequential Windows links, while both stages pass
+functional and dependency gates. No claim is made that timestamp is the only
+byte difference, or that Windows byte reproducibility is achieved. Linux
+stage equality is measured within each runner; cross-runner equality is not
+claimed.
+
+Post-merge verification is in progress; CI-01 and its TODO group remain open until both main gates and their affected receipts are recorded.
