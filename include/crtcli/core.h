@@ -43,6 +43,7 @@ ProcessResult execute(const std::vector<std::string>& argv, unsigned timeout_sec
 int print_reply(const Reply& reply, bool json);
 Reply workflow(const std::vector<std::string>& args);
 Reply environment_report(const std::vector<std::string>& args);
+Reply project_doctor(const fs::path& root);
 Reply fetch(const std::vector<std::string>& args);
 Reply bootstrap_doctor();
 }

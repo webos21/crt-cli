@@ -134,19 +134,25 @@ the [macOS replay](docs/acceptance/sdk_install_acceptance.md#selection-first-bui
 and [Windows replay](docs/acceptance/sdk_install_acceptance.md#selection-first-build-and-pinned-https-replay-windowsx64-2026-11-06)
 also exercise this workflow at their recorded baselines.
 
+Current source builds support `crt-cli doctor --scope project --project hello`
+before the first build when tool paths are declared in `.sdk.json`. See the
+[first-build diagnosis guide](docs/guides/development.md#diagnose-a-first-build)
+for missing SDK, LLVM and vendor SDK inputs.
+
 
 ## Next User Workflow
 
 The next editor workflow connects [crt-vscode](https://github.com/webos21/crt-vscode)
-to the CLI's actual build plan and resolved project state. The proposed
-`export compile-commands` and `project info --json` commands and structured
-capability discovery are in the editor API queue.
-[Editor API work](TODO.md#p0---minimal-public-editor-api-d7-slice-coordinated-with-d5d6).
+to the CLI's actual build plan and resolved project state. The CLI implements
+editor API version 1 through `capabilities --json`, `project info --json` and
+`export compile-commands`. Extension adoption is the next editor step.
+[Public editor API](docs/reference/bootstrap_contract.md#public-editor-api-version-1) ·
+[Native acceptance](docs/acceptance/editor_api_acceptance.md#hosted-p0-acceptance-2026-11-25).
 
-The current queue also covers the first-user SDK and LLVM setup experience,
-replay of CRT's SDK corrections and publisher verification before release
-finalization. SQLite/libpng, broader SDK profiles and self-upgrade are later
-work. [Active work](TODO.md#in-progress) · [Planned work](TODO.md#planned).
+The bounded first-user CLI workflow and its setup diagnosis have native
+Linux/x86_64 coverage. SQLite/libpng, broader SDK profiles and self-upgrade
+are later work. [First-user acceptance](docs/acceptance/lifecycle_acceptance.md#p1-02-first-build-diagnosis-on-linuxx86_64-2026-11-25) ·
+[Planned work](TODO.md#planned).
 
 ## Platforms and Requirements
 

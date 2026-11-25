@@ -93,3 +93,57 @@ self-build/template parity. Those results supply partial PR-04/PR-07 evidence;
 they do not close template-versioning, installer, multi-SDK or three-host gates.
 No production combination or public release is approved here.
 Fixture/compile-only/skipped cases cannot close native lifecycle gates.
+
+## P1-02 First-build diagnosis on Linux/x86_64 (2026-11-25)
+
+The [first-build guide](../guides/development.md#diagnose-a-first-build)
+reuses the existing `new`, pinned SDK acquisition and `build` workflow. Project
+doctor checks `.sdk.json` and installed inputs ahead of the first build, and
+uses the exact existing binding on an already configured project.
+
+The isolated replay used a CLI built from a source export based on
+`3733aeb108bcad5ba45f9feec234330d5c4ddbc4` plus the P1-02 changes. The final
+consumer SHA-256 is `21593a77c6f0f321d9befa86e22cdea0052b2dc134c3ee3b616f014d6d9c80da`.
+The native tools are Ubuntu LLVM 21.1.8 with explicitly declared absolute paths.
+The public SDK is `v0.0.1-preview.20261125.linux.x64.1`, content
+`d2edb36c64f8f7c6d67603763e07a83d0cb4c2858c99e7957e00dde2d54dc921`, policy
+`54bb35e014c59af90c1e2b73c3f544ebc7815edc958e704e15bef097dbedd2d1`.
+`sdk acquire --source` reports `signature_verified` with the independently
+pinned public producer key and manifest from the Linux host CI input set.
+
+The replay passed **28 CLI calls**. Bubblewrap used a private empty home,
+read-only host filesystem outside the writable replay directory, a cleared
+environment, empty `PATH` and hidden source checkouts and bootstrap workspace.
+Only the explicit public SDK acquisition ran with networking. The two source-only
+projects used a workspace path containing spaces and Hangul. Before SDK
+installation, doctor explained missing LLVM, no installed CRT SDK and the
+need to act explicitly when `.sdk.json` requested HTTPS. After installation,
+doctor refused a missing `clang++` path and accepted a linker path after native
+normalization preserved its driver name.
+The unresolved lock remained byte-identical and diagnosis created neither
+binding nor build outputs.
+
+Both generated C and C++ projects passed build, test and run. The first build
+recorded the exact SDK selection in each lock. Bound doctor and the workflow
+ignored a changed `.sdk.json`. Doctor and build refused a missing locked tool,
+preserved the lock and local binding bytes, and resumed zero-execution warm
+builds when the exact binding was restored.
+
+Test-only copies of the portable policy exercised the missing and invalid
+OS SDK paths for macOS and Windows on Linux. The public policy remained intact.
+The native suite also includes a host-conditional invalid OS SDK directory
+case for the actual vendor SDK on future macOS and Windows runs. Those hosts
+did not run this revision here. The P1-02 result covers the bounded first-user
+workflow and leaves the full PR/PK lifecycle gates and editor-host runs open.
+
+The initial fresh Linux two-stage bootstrap passed native **981**, editor
+**389**, archive **221**, SDK store **114**, store locks **9** and recipe **147**.
+After aligning tool validation with the exact paths the workflow passes to
+LLVM, the CLI rebuilt and the final consumer passed all 389 editor checks and
+the isolated workflow above. The build records are in `native/artifact/` and
+`final-tool-validation/` under the same external work root.
+
+The replay helper and initial harness assertion failure are retained under
+ignored `out/p1-02-20261125/`. Successful raw envelopes, local config inputs,
+public SDK source pins and `result.json` are under
+`/home/syszone/crt-cli-p1-02-20261125/first-user-r3/`.

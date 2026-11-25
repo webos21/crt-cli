@@ -233,12 +233,37 @@ The [PR checks](https://github.com/webos21/crt-cli/pull/53/checks) retain native
 Windows x64/arm64 and the full required matrix; no SDK/artifact pins, native
 compiler policy, runtime linkage or public schema changes are involved.
 
+## Hosted P0 acceptance (2026-11-25)
+
+[CI run 45596263040](https://github.com/webos21/crt-cli/actions/runs/45596263040)
+passed all six native jobs and `CI gate`. The tested PR head was
+`52603fbfa00b5856926d95c3de48084f0e8dda0a`, and each `ci-summary.json` records
+the tested PR merge `49e34645f39d7eafc528a439625d32219a7b4d4c`. Its source tree
+matches the tree of the [PR #53 merge commit](https://github.com/webos21/crt-cli/commit/3733aeb108bcad5ba45f9feec234330d5c4ddbc4)
+on `main`. The workflow used the [per-host CLI and SDK pins at that revision](https://github.com/webos21/crt-cli/blob/3733aeb108bcad5ba45f9feec234330d5c4ddbc4/.github/ci/pins.json).
+
+| Native runner | Editor checks passed |
+| --- | ---: |
+| Linux/x86_64, Ubuntu 26.04 | 389 |
+| Linux/x86_64, Ubuntu 24.04 | 389 |
+| Linux/aarch64, Ubuntu 26.04 | 389 |
+| macOS/arm64 | 413 |
+| Windows/x64 | 424 |
+| Windows/arm64 | 432 |
+
+The six downloaded `artifact/editor-api-result.json` files match their
+summary counts. In each receipt, all eight exported C/C++ argv arrays match
+actual cold compiler invocations exactly, with both static and shared CRT
+runtime coverage. Both Windows receipts include refusal of the unsupported
+shared-zlib request. The native regression suites and import audits also passed.
+The downloaded artifacts and `canonical-hosted-verification.json` are retained
+under ignored `out/editor-api-ci-fix-20261125/`.
+
 ## Limits and downstream handoff
 
 The standalone source-hidden/read-only consumer workflow is qualified on
-Linux/x86_64. Hosted native P0 suite results belong to the PR checks and their
-per-host source/artifact identities; earlier native PAL/SDK records are not
-current P0 replay. No clangd binary or Extension
+Linux/x86_64. The hosted matrix above exercises the CLI contract with the
+recorded PR source and per-host pins. No clangd binary or Extension
 Development Host was run. `crt-vscode` must adopt API/version discovery and
 these final-envelope fixtures through its V0 queue, then exercise V1-08/09/10.
 The existing help-substring guard is still provisional extension code.

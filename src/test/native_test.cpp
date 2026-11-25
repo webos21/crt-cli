@@ -368,6 +368,50 @@ int main(int argc, char** argv) {
             invoke(cli, {"new", root.string()}, false);
             invoke(cli, {"build", "--project", root.string()}, false);
             invoke(cli, {"env", "--profile", "app-run", "--project", root.string()}, false);
+            const std::vector<std::string> doctor_args{"doctor", "--scope", "project", "--project", root.string()};
+            const auto unresolved = read_text(root / "crt.lock");
+            const auto config = root / ".sdk.json";
+            auto doctor_refuses = [&](const std::string& message) {
+                auto error = invoke(cli, doctor_args, false);
+                check(error.at("code") == "failure" && error.at("message").get<std::string>().find(message) != std::string::npos,
+                      "doctor explains the missing first-build input: " + error.dump());
+            };
+            doctor_refuses("first build requires explicit --cc");
+            Json setup{{"format", 0}, {"cc", local.at("cc")}, {"cxx", local.at("cxx")}, {"linker", local.at("linker")}, {"ar", local.at("ar")}};
+            auto unavailable = setup;
+            unavailable["sdk"] = "first-build-sdk-not-installed";
+            write_text(config, unavailable.dump());
+            doctor_refuses("no installed SDK matches");
+            unavailable.erase("sdk");
+            unavailable["sdk_source"] = (root / "absent-source.json").string();
+            write_text(config, unavailable.dump());
+            doctor_refuses("run `crt-cli build` explicitly");
+            setup["sdk_root"] = local.at("sdk_root");
+            setup["sdk_contract"] = local.at("sdk_contract");
+            setup["contract_sha256"] = lock.at("selection").at("contract_sha256");
+            if (local.contains("os_sdk")) setup["os_sdk"] = local.at("os_sdk");
+            if (lock.at("selection").value("allow_dirty_sdk", false)) setup["allow_dirty_sdk"] = true;
+            unavailable = setup;
+            unavailable["cxx"] = (root / "missing-clang++").string();
+            write_text(config, unavailable.dump());
+            doctor_refuses("invalid LLVM tool for --cxx");
+            if (local.contains("os_sdk")) {
+                auto empty = hostile / (std::string("empty-os-sdk-") + language);
+                fs::create_directory(empty);
+                unavailable = setup;
+                unavailable["os_sdk"] = empty.string();
+                write_text(config, unavailable.dump());
+                doctor_refuses(native_target().at("os") == "windows" ? "lacks kernel32.lib" : "lacks usr/lib/libSystem.tbd");
+            }
+            write_text(config, setup.dump());
+            const auto checked = invoke(cli, doctor_args);
+            check(checked.at("checks").at("first_build_inputs") == "pass" &&
+                  checked.at("checks").at("manifest_sdk_tool_binding") == "not_bound" &&
+                  checked.at("checks").at("compile_link_run") == "not_run" && checked.at("selection") == lock.at("selection"),
+                  "unbound doctor checks the same SDK/tool inputs without binding or compiling");
+            check(read_text(root / "crt.lock") == unresolved && !fs::exists(root / ".crt") && !fs::exists(root / "out"),
+                  "first-build diagnosis does not bind or create outputs");
+            fs::remove(config);
             std::vector<std::string> configure{"configure", "--project", root.string(), "--sdk-root", local.at("sdk_root"), "--sdk-contract", local.at("sdk_contract"), "--contract-sha256", lock.at("selection").at("contract_sha256"), "--cc", local.at("cc"), "--cxx", local.at("cxx"), "--linker", local.at("linker")};
             configure.insert(configure.end(), {"--ar", local.at("ar")});
             if (local.contains("os_sdk")) configure.insert(configure.end(), {"--os-sdk", local.at("os_sdk")});
