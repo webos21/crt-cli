@@ -27,12 +27,12 @@ use. The per-host artifact/signature/publisher identities are unchanged;
 only `pr_tests` adds `editor-test`. Public Previews do not contain this new
 API until a separately authorized future publication.
 
-## Native results (2026-11-25)
+## Initial Linux native results (2026-11-25)
 
 The final source snapshot (include/src/crt.json file-digest ledger) is
 `860953a4d807f87558859926197a7ebecc5c6c3b0f2e324eba9caafc425db346`.
-It matches both the checkout and final fresh native source export; this
-fingerprint identifies the uncommitted increment without inventing a commit.
+It identifies the initial P0 source later committed as `8fcc05e` and its fresh
+native export. The follow-ups below retain their own changed inputs and evidence.
 
 | Gate | Result |
 | --- | --- |
@@ -199,6 +199,39 @@ The [required PR checks](https://github.com/webos21/crt-cli/pull/53/checks) own
 the corrected native Windows replay and full six-job gate. Production code,
 API/lock formats, SDK/CLI artifact pins, publisher inputs and adjacent sources
 are unchanged by this fixture correction.
+
+## Windows compiler-argv path spelling (2026-11-25)
+
+The static-library fixture correction at `0fff118` reaches cold compilation
+on both Windows hosts, but run
+[`45591705708`](https://github.com/webos21/crt-cli/actions/runs/45591705708)
+then fails the exact exported-versus-executed argv assertion. All Linux/macOS
+jobs pass. The failure is retained in both Windows artifacts, separately from
+the original unsupported-library request.
+
+Inspection constructed `Builder` with a raw `root / "out/native"` path while
+build and port-lock callers supplied `inside(root, "out/native")`. Windows
+therefore allowed different literal separator spelling in compiler object,
+depfile and generated-header arguments. POSIX paths did not expose the split.
+
+`Builder` now owns its canonical native build directory and applies native
+preferred separators once. Callers cannot supply a second spelling. Ready
+project metadata and generated-header paths use the same builder directory.
+The regression still compares literal argv arrays; it does not normalize away
+differences or accept merely equivalent commands. Each compile output must
+also use the reported build-directory spelling. Mismatch diagnostics include
+both actual and exported argv for any future difference.
+
+Fresh Linux source/output validation in
+`/home/syszone/crt-cli-editor-ci-fix-20261125/canonical-build/` passes editor
+**389**, native **949**, archive **221**, SDK store **114**, store locks **9**
+and recipe **147**. `artifact/editor-api-result.json` retains the actual
+eight-entry compiler comparison and the directory assertions. This local
+POSIX result is not substituted for native Windows path validation.
+
+The [PR checks](https://github.com/webos21/crt-cli/pull/53/checks) retain native
+Windows x64/arm64 and the full required matrix; no SDK/artifact pins, native
+compiler policy, runtime linkage or public schema changes are involved.
 
 ## Limits and downstream handoff
 

@@ -101,6 +101,8 @@ int main(int argc, char** argv) {
     check(inventory(project) == snapshot, "queries/export leave project inventory byte-identical");
     for (const auto& entry : entries) {
         check(entry.size() == 4 && entry.at("directory") == project.string() && fs::path(entry.at("file").get<std::string>()).is_absolute(), "standard absolute compile entry");
+        check(fs::path(entry.at("output").get<std::string>()).parent_path().string() == info.at("build_directory"),
+              "compile output uses the reported native build directory");
         bool compile = false, standard = false;
         for (const auto& value : entry.at("arguments")) {
             const std::string arg = value;
@@ -115,7 +117,8 @@ int main(int argc, char** argv) {
     for (const auto& command : cold.at("commands")) {
         if (std::find(command.begin(), command.end(), Json("-c")) == command.end()) continue;
         auto found = std::find_if(entries.begin(), entries.end(), [&](const Json& entry) { return entry.at("arguments") == command; });
-        check(found != entries.end(), "export exactly equals actual SDK-expanded cold compiler argv"); ++compiled;
+        check(found != entries.end(), "export exactly equals actual SDK-expanded cold compiler argv; actual=" +
+              command.dump() + "; exported=" + entries.dump()); ++compiled;
     }
     check(compiled == entries.size(), "every exported entry executed in cold build");
     call(cli, {"run", "--project", project.string(), "--target", "app-static"});

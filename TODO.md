@@ -80,6 +80,9 @@ P0-04 supplies the final-envelope fixtures for V0-04.
   all four runtime/compile modes; validate unavailable-library/variant refusal
   and database preservation ([381/388-check local controls](docs/acceptance/editor_api_acceptance.md#windows-ci-static-only-sdk-library-fixture-2026-11-25)).
   The required PR gate owns the native hosted Windows replay.
+- [x] Share canonical/native build-directory construction across planning and
+  execution; retain literal argv comparison and validate output-directory
+  spelling ([389-check Linux regression](docs/acceptance/editor_api_acceptance.md#windows-compiler-argv-path-spelling-2026-11-25)).
 - Acceptance: exported C/C++ compile entries match actual cold-build compiler
   invocations; queries preserve manifests/locks and report exact selected inputs;
   unsupported commands/versions fail clearly in the extension. The extension

@@ -95,8 +95,12 @@ struct Builder {
     std::map<std::string, bool> cpp;
     std::set<std::string> visiting;
 
-    Builder(fs::path source, fs::path directory, Json declaration, const Toolchain& tools)
-        : root(std::move(source)), build(std::move(directory)), manifest(std::move(declaration)), toolchain(tools) {
+    Builder(fs::path source, Json declaration, const Toolchain& tools)
+        : root(std::move(source)), build(inside(root, "out/native")), manifest(std::move(declaration)), toolchain(tools) {
+        // Planning and execution must share the same canonical, native-spelled
+        // directory. A raw "out/native" join mixes separators on Windows and
+        // produces different literal compiler argv despite naming the same file.
+        build.make_preferred();
         consumer_options = read_json(toolchain.sdk / "share/crt/contracts/development.json").at("consumer_compile_options");
         auto list = manifest.contains("targets") ? manifest.at("targets") : Json::array({manifest.at("application")});
         require(list.is_array() && !list.empty(), "project targets are required");
@@ -426,9 +430,9 @@ Json inspect_project(const fs::path& root) {
     Json data{{"schema", "crt-cli.project-info"}, {"format", 1}, {"api_version", 1},
               {"state", "incompatible"}, {"project", {{"root", root.string()}}},
               {"lock", nullptr}, {"selection", nullptr}, {"sdk", nullptr},
-              {"build_directory", (root / "out/native").string()}, {"executable", nullptr},
-              {"generated_header", {{"path", (root / "out/native/generated/bootstrap_config.h").string()},
-                                    {"exists", fs::is_regular_file(root / "out/native/generated/bootstrap_config.h")}}},
+              {"build_directory", (root / "out" / "native").string()}, {"executable", nullptr},
+              {"generated_header", {{"path", (root / "out" / "native" / "generated" / "bootstrap_config.h").string()},
+                                    {"exists", fs::is_regular_file(root / "out" / "native" / "generated" / "bootstrap_config.h")}}},
               {"targets", Json::array()}, {"diagnostics", Json::array()}};
     try {
         binding_outputs(root);
@@ -455,7 +459,9 @@ Json inspect_project(const fs::path& root) {
         }
         auto tools = Toolchain::load(root);
         match_request(manifest, tools);
-        Builder builder(root, root / "out/native", manifest, tools);
+        Builder builder(root, manifest, tools);
+        data["build_directory"] = builder.build.string();
+        data["generated_header"]["path"] = (builder.build / "generated" / "bootstrap_config.h").string();
         builder.check_pins();
         Json entries = Json::array();
         std::set<std::string> active, complete;
@@ -535,7 +541,7 @@ Reply port_lock(const std::vector<std::string>& args) {
     binding_outputs(root);
     auto toolchain = Toolchain::load(root);
     match_request(manifest, toolchain);
-    Builder builder(root, inside(root, "out/native"), manifest, toolchain);
+    Builder builder(root, manifest, toolchain);
     Json pins = Json::array();
     for (const auto& use : builder.port_uses()) pins.push_back(builder.pin_of(use));
     auto original = read_text(root / "crt.lock");
@@ -607,7 +613,7 @@ Reply workflow(const std::vector<std::string>& args) {
     bool explicit_selection = !requested.empty();
     auto toolchain = explicit_selection ? Toolchain::configure(requested) : Toolchain::load(root);
     match_request(manifest, toolchain);
-    Builder builder(root, inside(root, "out/native"), manifest, toolchain);
+    Builder builder(root, manifest, toolchain);
     if (args[0] == "configure") {
         binding_outputs(root);
         fs::create_directories(inside(root, ".crt"));
