@@ -1519,3 +1519,16 @@ or host-tools artifact is promoted/published. Producer promotion remains require
 before any future production consumer lock. Interactive terminals, source-port
 compiler bridges, installer/upgrade transactions and official release trust
 retain their separate owners/gates. STATUS is untouched.
+
+## Raspberry Pi ARM64 retained Preview combination (2026-11-25)
+
+The signed public SDK `v0.0.1-preview.20261110.linux.arm64.2`
+(producer `e6a94ab9e69b05497b3804328971d24d6071a53d`, content
+`cd2ab657615c0fa52a1804f301a57dfa21b1067e3e5ed5a9f9a07d86ae050cc6`)
+and CLI `v0.1.0-preview.20261116.linux-arm64.1` are qualified together on
+Raspberry Pi 3 B+, 64-bit Debian 13.7/glibc 2.41 and LLVM 19.1.7. Native
+C/C++ workflows, static/shared C++ exceptions and actual mapped-image audits
+pass. This consumes the existing public compiler policy without a format or
+capability change. [Exact inputs, commands and limits](acceptance/ci_acceptance.md#raspberry-pi-arm64-native-compatibility-ci-02-2026-11-25)
+and the linked producer handoff own the evidence. No newer producer artifacts,
+32-bit Pi OS or general distribution range is adopted by this record.

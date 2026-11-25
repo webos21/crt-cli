@@ -1095,3 +1095,14 @@ Each language executed three cold commands and zero warm commands.
 The macOS replay verified public bytes, not a Linux executable run.
 The concurrently published November 25 SDK was not the CLI's tested input.
 There was no pin adoption or change to existing project locks.
+
+## Raspberry Pi ARM64 public Preview replay (2026-11-25)
+
+The retained signed November 16 ARM64 CLI and November 10 ARM64 SDK passed
+public-download verification and native C/C++ workflows on a physical Pi 3 B+
+with Debian 13.7, glibc 2.41 and LLVM 19.1.7. C++ static/shared exception and
+mapped-image probes also passed. The [CI-02 acceptance record](ci_acceptance.md#raspberry-pi-arm64-native-compatibility-ci-02-2026-11-25)
+owns exact input digests, commands, fixture correction and runtime bounds;
+[compatibility](../compatibility.md#raspberry-pi-arm64-retained-preview-combination-2026-11-25)
+records this existing producer/consumer pair. This adds native evidence without
+publishing assets, changing CI pins or migrating project locks.

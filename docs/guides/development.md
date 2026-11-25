@@ -310,7 +310,7 @@ stop later stages, so one run reports everything that is broken.
 distinguishes producer/local/public-byte evidence from completed hosted replay.
 The original `.3` failure remains historical evidence; the producer's TLSDESC
 fix is shipped in `.4`. [CI acceptance](../acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20)
-records five-host integration. [CI monitoring and pin promotion](../../TODO.md#ci---monitoring-and-pin-promotion) tracks operational follow-ups.
+records five-host integration. [CI monitoring and pin promotion](../../HISTORY.md#close-ci-monitoring-and-pin-promotion) records the completed November 25 follow-ups. Future candidates follow the [pin policy](#ci-pin-promotion).
 
 ### Publish a CLI Preview
 
