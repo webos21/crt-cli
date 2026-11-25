@@ -31,8 +31,7 @@ removed. This records the app/API operation, without claiming a second human
 account or git transport test. Administrator bypass remains unchanged.
 [Rejection receipt](docs/acceptance/ci_acceptance.md#non-bypass-required-check-rejection-ci-04-2026-11-25).
 
-At the owner's request, the completed CI work group leaves In Progress;
-legacy TODO anchors point here. STATUS is unchanged.
+At the owner's request, the completed CI work group leaves In Progress.
 
 ### Prioritize CI monitoring and review the next pin candidates
 
@@ -262,7 +261,9 @@ leave clean SDK adoption, affected native hosts and Windows C++ qualification op
 ### Retire the completed CI expansion and Windows/x64 private-DLL queues
 
 Remove both completed TODO sections. The five-host hosted integration, signed Windows/arm64 Preview and bounded Windows/x64
-private-DLL replay retain their dated acceptance records. The remaining CI work is tracked under [CI monitoring](TODO.md#ci---monitoring-and-pin-promotion); the separate signing item later closed in the [hosted gate record](docs/acceptance/ci_acceptance.md#hosted-sign-before-publishing-gate-2026-11-25).
+private-DLL replay retain their dated acceptance records. The remaining CI work
+later closed under [CI monitoring](#close-ci-monitoring-and-pin-promotion).
+The separate signing item closed in the [hosted gate record](docs/acceptance/ci_acceptance.md#hosted-sign-before-publishing-gate-2026-11-25).
 [Hosted integration](docs/acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20) ·
 [Private-DLL evidence](docs/acceptance/host_environment_acceptance.md#windowsx64-private-dll-host-tools-replay-2026-11-20).
 

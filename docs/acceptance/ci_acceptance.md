@@ -1163,7 +1163,7 @@ The daily trigger (`cron: '23 3 * * *'`) has run once. [Run 44079658878](https:/
 `redirect`, `pins` and `ports`, each on `linux-x64` and `linux-arm64`. The workflow is `active` (id 414171448). This is a record of one hosted scheduled run, not of a daily cadence.
 
 **Open observation.** At 2026-11-18 09:44 UTC the workflow's run list holds no scheduled run for the 2026-11-18 03:23 UTC slot. Whether it is late, skipped or missing was not diagnosed. It is tracked in
-[CI-03](../../TODO.md#ci---monitoring-and-pin-promotion) rather than treated as a failure of the first run. A red scheduled run remains a regression or a changed external input, not a known gap.
+[CI-03](../../HISTORY.md#record-the-scheduled-integration-history-and-the-2026-11-23-macos-runner-failure) rather than treated as a failure of the first run. A red scheduled run remains a regression or a changed external input, not a known gap.
 
 ## Windows/arm64 SDK publisher signature replay (2026-11-18)
 
@@ -1914,7 +1914,7 @@ and extension `6ee57fe`. Each repository matched its remote `main`. The latest
 CRT/CLI records close sign-before-publication qualification on Linux/x86_64.
 The CLI and extension records also distinguish completed PAL prerequisite
 replays from the pending editor API and Extension Development Host gates.
-The [CI work group](../../TODO.md#ci-monitoring-and-pin-promotion) led
+The [CI work group](../../HISTORY.md#close-ci-monitoring-and-pin-promotion) led
 In Progress at this review. Execution results are recorded below in the
 [pin adoption](#qualified-ci-pin-adoption-ci-01-2026-11-25),
 [Pi compatibility](#raspberry-pi-arm64-native-compatibility-ci-02-2026-11-25) and
