@@ -2,7 +2,9 @@
 
 This record owns what the CI driver and workflow have actually been run against. The design and the
 procedure are in the [development guide](../guides/development.md#continuous-integration); open work is in
-[CI monitoring](../../TODO.md#ci---monitoring-and-pin-promotion) and [release signing](../../TODO.md#p1---sign-before-publishing). A passing local rehearsal is not a GitHub-hosted run.
+[CI monitoring](../../TODO.md#ci---monitoring-and-pin-promotion).
+See the [hosted signing gate](#hosted-sign-before-publishing-gate-2026-11-25)
+for the completed release qualification. A passing local rehearsal is not a GitHub-hosted run.
 
 ## Current Hosted Coverage (2026-11-11)
 
@@ -1875,3 +1877,27 @@ job annotations first (a runner that was never assigned is infrastructure; a fai
 `ports` wait only for its own host's `pins` would be a separate, reviewed workflow change.
 
 No source, workflow, pin, schedule, release or setting change is made; the TODO cadence item (CI-03) and its pointers in STATUS were removed at the owner's request once this record and HISTORY held the result.
+
+## Hosted sign-before-publishing gate (2026-11-25)
+
+The `release` environment permits only `main` and requires an owner
+approval for each stage and finalization. [PR #47](https://github.com/webos21/crt-cli/pull/47)
+and [post-merge CI](https://github.com/webos21/crt-cli/actions/runs/45510253214)
+passed at the signing workflow change. The hosted Linux/x86_64 runs were:
+
+| Run | Result |
+| --- | --- |
+| [Dry-run stage](https://github.com/webos21/crt-cli/actions/runs/45510380183) | Package, verify and stage passed; no finalization receipt was uploaded. |
+| [Dry-run finalization](https://github.com/webos21/crt-cli/actions/runs/45512751143) | `plan` refused the missing receipt; `finalize` skipped. |
+| [Real stage](https://github.com/webos21/crt-cli/actions/runs/45513708388) | Native package and verification passed; attempt 1 retained a receipt for the exact non-public draft. |
+| [Unsigned finalization](https://github.com/webos21/crt-cli/actions/runs/45518151962) | `plan` passed; the separately approved `finalize` refused the missing signatures and left the draft non-public. |
+| [Signed finalization](https://github.com/webos21/crt-cli/actions/runs/45521362159) | After offline signing of both files, the approved workflow retried with the same stage receipt, published a non-latest prerelease and verified its downloads. |
+
+The CLI's [release evidence](preview_acceptance.md#linuxx86_64-sign-before-publishing-preview-2026-11-25)
+records independent public verification and its SDK input. The
+[CRT producer record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#sign-before-publishing-qualification-2026-11-25)
+covers the SDK and joint gate. Incorrect signatures, changed/extra assets
+and retry safety also have local controls in `tools/test_release_signing.py`;
+these are not additional hosted publication runs. P1-01 is closed. CI pins
+and consumer locks did not change; other hosts were not published through
+this gate for this record.

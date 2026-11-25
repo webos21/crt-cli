@@ -9,6 +9,18 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-25
+
+### Close Sign Before Publishing with CRT (D6)
+
+The main-only hosted gate refused both a rehearsal with no stage receipt
+and a real draft with no signatures. After offline signing and separate
+approval, the same real draft finalized as a non-latest Linux/x86_64
+prerelease. Unauthenticated downloads matched the staged archive and
+checksum file, and both signatures verified. The CI bootstrap and SDK pins
+did not change. [Gate runs](docs/acceptance/ci_acceptance.md#hosted-sign-before-publishing-gate-2026-11-25) ·
+[Release evidence](docs/acceptance/preview_acceptance.md#linuxx86_64-sign-before-publishing-preview-2026-11-25).
+
 ## 2026-11-24
 
 ### Stage CLI drafts before offline signing and finalization
@@ -212,7 +224,7 @@ leave clean SDK adoption, affected native hosts and Windows C++ qualification op
 ### Retire the completed CI expansion and Windows/x64 private-DLL queues
 
 Remove both completed TODO sections. The five-host hosted integration, signed Windows/arm64 Preview and bounded Windows/x64
-private-DLL replay retain their dated acceptance records. Follow-ups are tracked under [CI monitoring](TODO.md#ci---monitoring-and-pin-promotion) and [release signing](TODO.md#p1---sign-before-publishing).
+private-DLL replay retain their dated acceptance records. The remaining CI work is tracked under [CI monitoring](TODO.md#ci---monitoring-and-pin-promotion); the separate signing item later closed in the [hosted gate record](docs/acceptance/ci_acceptance.md#hosted-sign-before-publishing-gate-2026-11-25).
 [Hosted integration](docs/acceptance/ci_acceptance.md#windowsarm64-hosted-integration-expansion-2026-11-20) ·
 [Private-DLL evidence](docs/acceptance/host_environment_acceptance.md#windowsx64-private-dll-host-tools-replay-2026-11-20).
 
