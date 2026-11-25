@@ -708,8 +708,16 @@ integrity `not_verified` and HTTPS `not_run`. Additional scopes are read-only:
 - `doctor --scope environment --host-tools <dir> --host-tools-sha256 <hex>` checks
   the selected tools and aliases, with execution `not_run`; it needs no target SDK.
 - `doctor --scope project [--project <dir>]` validates the current manifest,
-  SDK/provider/tool binding through app-build diagnostics. It does not compile,
-  repair locks, acquire an SDK or diagnose a packaged application's closure.
+  SDK/provider/tool binding through app-build diagnostics. For a new project
+  with an unresolved format-1 lock, it reads the ignored `.sdk.json` and
+  checks first-build inputs with the same SDK selection and LLVM validation
+  as `build`. An installed SDK and valid tools yield `first_build_inputs: pass`,
+  `manifest_sdk_tool_binding: not_bound`, `compile_link_run: not_run` and a
+  `next_step`. A configured `sdk_source` requires an explicit `build` or
+  `sdk acquire` and is never accessed by doctor. Bound projects retain the
+  existing result and ignore first-build defaults. Doctor may query the
+  declared compiler's resource directory. It does not compile, acquire an
+  SDK, write project state or diagnose a packaged application's closure.
 - `doctor --scope self --resources <dir> --resources-sha256 <hex>` validates a
   `crt-cli.bootstrap-resources`, format 1 manifest and its complete regular-file
   inventory, target, executable filename and explicit trust-data declaration.

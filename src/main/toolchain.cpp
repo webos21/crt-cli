@@ -9,7 +9,7 @@ namespace crtcli {
 namespace {
 std::string selected(const std::map<std::string, std::string>& options, const std::string& name) {
     auto found = options.find(name);
-    require(found != options.end(), "missing " + name + "; supply an explicit local SDK/toolchain (automatic SDK acquisition is pending)");
+    require(found != options.end(), "missing " + name + "; supply an explicit local SDK/toolchain input");
     return found->second;
 }
 void replace(std::string& value, const std::string& from, const std::string& to) {
@@ -24,21 +24,47 @@ bool published_name(const StoreEntry& entry) {
     for (unsigned char c : entry.content12) if (!(std::isdigit(c) || (c >= 'a' && c <= 'f'))) return false;
     return entry.content12.size() == 12;
 }
-// Where this host keeps the OS SDK that a portable toolchain contract (@OS_SDK@) refers to.
-fs::path discover_os_sdk(const std::string& kind) {
-    if (kind == "macos-xcode-sdk") {
-        auto query = execute({"/usr/bin/xcrun", "--sdk", "macosx", "--show-sdk-path"}, 10, false, true);
-        require(query.exit_code == 0, "cannot locate the macOS SDK (xcrun --show-sdk-path failed); pass --os-sdk <directory>");
+// A portable policy names the kind of vendor SDK. Validate the minimum link
+// input for the known kinds before recording a location in local state.
+fs::path select_os_sdk(const std::string& kind, const std::map<std::string, std::string>& options) {
+    const bool explicit_path = options.count("--os-sdk") != 0;
+    const bool macos = kind == "macos-xcode-sdk", windows = kind == "windows-um-import-libraries";
+    const std::string guidance = macos ? "install/select Xcode Command Line Tools and use the path from `xcrun --sdk macosx --show-sdk-path` with --os-sdk"
+        : windows ? "install the Windows SDK and pass its Lib/<version>/um/<arch> directory via --os-sdk or CRT_WINDOWS_SDK_LIBPATH"
+        : "pass --os-sdk <directory> for the kind declared by the CRT SDK";
+    fs::path location;
+    if (explicit_path) {
+        location = options.at("--os-sdk");
+    } else if (macos) {
+        ProcessResult query;
+        try { query = execute({"/usr/bin/xcrun", "--sdk", "macosx", "--show-sdk-path"}, 10, false, true); }
+        catch (const Error&) { throw Error("cannot run xcrun to find the macOS SDK; " + guidance); }
+        require(query.exit_code == 0 && !query.timed_out, "cannot locate the macOS SDK; " + guidance);
         while (!query.output.empty() && (query.output.back() == '\n' || query.output.back() == '\r')) query.output.pop_back();
-        return fs::canonical(query.output);
-    }
-    if (kind == "windows-um-import-libraries") {
+        location = query.output;
+    } else if (windows) {
         const char* given = std::getenv("CRT_WINDOWS_SDK_LIBPATH");
-        require(given && *given && fs::is_regular_file(fs::path(given) / "kernel32.lib"),
-                "set CRT_WINDOWS_SDK_LIBPATH to the Windows SDK um/<arch> import-library directory, or pass --os-sdk <directory>");
-        return fs::canonical(given);
+        require(given && *given, "no Windows SDK import-library directory is configured; " + guidance);
+        location = given;
+    } else {
+        throw Error("unsupported OS SDK kind in the toolchain contract: " + kind + "; " + guidance);
     }
-    throw Error("unsupported OS SDK kind in the toolchain contract: " + kind + "; pass --os-sdk <directory>");
+    require(location.is_absolute() && fs::is_directory(location), "the OS SDK must be an absolute directory: " + location.string() + "; " + guidance);
+    if (windows) require(fs::is_regular_file(location / "kernel32.lib"), "Windows SDK directory lacks kernel32.lib: " + location.string() + "; " + guidance);
+    if (macos) require(fs::is_regular_file(location / "usr/lib/libSystem.tbd"), "macOS SDK directory lacks usr/lib/libSystem.tbd: " + location.string() + "; " + guidance);
+    return explicit_path ? location : fs::canonical(location);
+}
+
+fs::path llvm_tool(const std::map<std::string, std::string>& options, const std::string& role, bool canonicalize) {
+    auto path = fs::absolute(selected(options, role));
+    try {
+        // Linkers select their driver from argv[0]; preserve the selected name.
+        path = canonicalize ? fs::canonical(path) : path.lexically_normal();
+        native_executable(path);
+    } catch (const std::exception& error) {
+        throw Error("invalid LLVM tool for " + role + ": " + error.what() + "; install compatible LLVM and correct the tool path in .sdk.json or the command line");
+    }
+    return path;
 }
 std::string describe(const std::vector<StoreEntry>& entries) {
     std::string text;
@@ -62,7 +88,7 @@ fs::path store_sdk(const std::string& reference) {
         }
         matches.push_back(entry);
     }
-    require(!matches.empty(), "no installed SDK matches '" + reference + "'; installed:" + describe(published));
+    require(!matches.empty(), "no installed SDK matches '" + reference + "'; install that exact SDK or use `crt-cli sdk list` to find an installed selection; installed:" + describe(published));
     require(matches.size() == 1, "'" + reference + "' matches several installed SDKs:" + describe(matches));
     return matches.front().path;
 }
@@ -215,19 +241,15 @@ Toolchain Toolchain::configure(const std::map<std::string, std::string>& options
     if (result.contract.contains("os_sdk")) {
         // The contract is host-independent: the OS SDK it refers to is this machine's, found again here and never locked.
         const std::string kind = result.contract.at("os_sdk").at("kind");
-        fs::path location = options.count("--os-sdk") ? fs::path(options.at("--os-sdk")) : discover_os_sdk(kind);
-        require(location.is_absolute() && fs::is_directory(location), "the OS SDK must be an absolute directory: " + location.string());
-        result.os_sdk = location.generic_string();
+        result.os_sdk = select_os_sdk(kind, options).generic_string();
         result.selection["os_sdk"] = Json{{"kind", kind}};
     } else require(!options.count("--os-sdk"), "--os-sdk given, but the toolchain contract needs no OS SDK");
-    result.cc = fs::canonical(selected(options, "--cc"));
-    result.cxx = fs::canonical(selected(options, "--cxx"));
-    // Linkers select their driver from argv[0]; preserve the selected name.
-    result.linker = fs::absolute(selected(options, "--linker")).lexically_normal();
-    result.archiver = fs::absolute(selected(options, "--ar")).lexically_normal();
-    for (const auto& tool : {result.cc, result.cxx, result.linker, result.archiver}) native_executable(tool);
+    result.cc = llvm_tool(options, "--cc", true);
+    result.cxx = llvm_tool(options, "--cxx", true);
+    result.linker = llvm_tool(options, "--linker", false);
+    result.archiver = llvm_tool(options, "--ar", false);
     auto query = execute({result.cxx.string(), "-print-resource-dir"}, 10, false, true);
-    require(query.exit_code == 0, "Clang resource directory query failed");
+    require(query.exit_code == 0 && !query.timed_out, "Clang resource directory query failed; check the LLVM installation selected by --cxx");
     while (!query.output.empty() && (query.output.back() == '\n' || query.output.back() == '\r')) query.output.pop_back();
     result.resource = fs::canonical(query.output);
     result.selection["tools"] = Json{{"cc", file_sha256(result.cc)}, {"cxx", file_sha256(result.cxx)}, {"linker", file_sha256(result.linker)}, {"ar", file_sha256(result.archiver)}, {"resource_content_sha256", sha256(inventory(result.resource).dump())}};
@@ -245,19 +267,22 @@ std::string Toolchain::select_store_sdk(const std::string& version) {
     for (const auto& entry : SdkStore(sdk_store_root()).list()) if (published_name(entry)) published.push_back(entry);
     for (const auto& entry : published)
         if (entry.profile == "dev" && entry.stage == "02-cxx" && entry.target == target && (version == "*" || entry.version == version)) candidates.push_back(entry);
-    require(!candidates.empty(), "no installed SDK for this host (profile dev, version " + version + "); install one with `sdk install` or select with --sdk; installed:" + describe(published));
+    require(!candidates.empty(), "no installed SDK for this host (profile dev, version " + version + "); install the matching public SDK with `crt-cli sdk install` or explicitly acquire a pinned source with `crt-cli sdk acquire --source <pinned-source.json>`; installed:" + describe(published));
     require(candidates.size() == 1, "several installed SDKs fit (version " + version + "); choose one with --sdk:" + describe(candidates));
     return candidates.front().directory;
 }
 Toolchain Toolchain::load(const fs::path& root) {
-    require(fs::exists(root / ".crt/local.json"), "project has no local SDK selection; run configure with explicit local inputs (SDK acquisition is pending)");
+    require(fs::exists(root / ".crt/local.json"), "project has no local SDK selection; run configure with explicit local inputs, or build a new unresolved project with its SDK and LLVM declarations");
     auto local = read_json(root / ".crt/local.json");
     auto lock = read_json(root / "crt.lock");
     require(lock.at("lock_format") != 0, "project lock format 0 is no longer read and is never migrated implicitly; run configure again");
     require(lock.at("lock_format") == 1 && lock.at("state") == "local-experiment", "unsupported/unresolved project lock");
     // Verify selected tool bytes before even a resource-directory query.
-    for (const auto& role : {"cc", "cxx", "linker", "ar"})
-        require(file_sha256(fs::path(local.at(role).get<std::string>())) == lock.at("selection").at("tools").at(role), "locked external tool digest mismatch");
+    for (const std::string role : {"cc", "cxx", "linker", "ar"}) {
+        const auto path = fs::path(local.at(role).get<std::string>());
+        require(fs::is_regular_file(path), "locked LLVM tool is missing for --" + role + ": " + path.string() + "; restore the exact tool or explicitly configure the project with new LLVM paths");
+        require(file_sha256(path) == lock.at("selection").at("tools").at(role), "locked external tool digest mismatch for --" + role + "; restore the exact LLVM tool or explicitly configure a new binding");
+    }
     const auto& locked = lock.at("selection");
     const bool from_store = locked.value("source", "") == "store";
     const bool stored_contract = locked.value("contract_source", "explicit") == "store";

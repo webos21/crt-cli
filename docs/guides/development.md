@@ -16,6 +16,44 @@ The native JSON bootstrap replaces the initial CMake prototype. The
 [implemented contract](../reference/bootstrap_contract.md) owns formats and scope;
 [acceptance](../acceptance/bootstrap_acceptance.md) owns per-host outcomes.
 
+## Diagnose a First Build
+
+Start with the [local workflow](../../README.md#try-the-local-workflow) and a
+CLI built from sources with first-build diagnosis. `crt-cli new` creates an
+unresolved project. To check inputs before building it, put the absolute LLVM
+tool paths in its ignored `.sdk.json` (format 0) and use project doctor.
+
+```json
+{
+  "format": 0,
+  "cc": "/absolute/llvm/bin/clang",
+  "cxx": "/absolute/llvm/bin/clang++",
+  "linker": "/absolute/llvm/bin/ld.lld",
+  "ar": "/absolute/llvm/bin/llvm-ar"
+}
+```
+
+```text
+crt-cli doctor --scope project --project hello
+crt-cli build --project hello
+crt-cli test --project hello
+crt-cli run --project hello
+```
+
+| Diagnostic | Action |
+| --- | --- |
+| No matching CRT Dev SDK | Install the appropriate public SDK with the pinned manifest and compiler policy, or explicitly run `crt-cli sdk acquire --source <pinned-source.json>`. If more than one SDK matches, use `crt-cli sdk list` and put the exact `sdk` selection in `.sdk.json`. |
+| Missing or invalid LLVM tool | Install compatible LLVM, then set absolute `cc`, `cxx`, `linker` and `ar` paths. Use the linker and archiver specified for the selected SDK and host. On macOS, locate the Xcode tools with `xcrun -f clang`, `xcrun -f clang++`, `xcrun -f ld` and `xcrun -f ar`. |
+| Missing or invalid macOS SDK | Install/select Xcode Command Line Tools and use the directory reported by `xcrun --sdk macosx --show-sdk-path`. If discovery is unavailable, set `os_sdk` in `.sdk.json` to the actual SDK directory containing `usr/lib/libSystem.tbd`. |
+| Missing or invalid Windows SDK | Install the Windows SDK and select `Lib/<version>/um/<arch>` containing `kernel32.lib`, through `os_sdk` (or `CRT_WINDOWS_SDK_LIBPATH`). Use the directory for the host architecture. |
+| `.sdk.json` requests HTTPS acquisition | Run `build` explicitly to consent to the pinned download. To acquire separately, run `sdk acquire` with the same source and replace the `sdk_source` selector with the exact installed `sdk` identity. |
+
+The vendor SDK checks confirm the directory and its required link input.
+Successful linking and execution are verified by `build`, `test` and `run`.
+When a project is already bound, doctor checks the locked SDK and tools. If a
+locked input moved, restore the exact input or use explicit `configure` to
+change the binding. Running doctor writes neither `crt.lock` nor build output.
+
 ## Use the Public Editor API
 
 Use a source-built CLI with the P0 implementation; the existing published

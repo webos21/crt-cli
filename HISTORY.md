@@ -11,6 +11,34 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-25
 
+### Close the first-user workflow (P1)
+
+P1-02 adds read-only project doctor checks for a first build and actionable
+guidance for missing CRT SDK, LLVM and vendor SDK inputs. A clean Linux/x86_64
+environment passed 28 CLI calls with explicit signed public SDK acquisition,
+C/C++ build/test/run, and byte-identical lock and binding preservation on
+diagnostic failures. macOS and Windows SDK error branches were exercised as
+Linux policy controls. [Guide](docs/guides/development.md#diagnose-a-first-build) ·
+[Exact inputs and native replay](docs/acceptance/lifecycle_acceptance.md#p1-02-first-build-diagnosis-on-linuxx86_64-2026-11-25).
+
+With the [P1-01 provider handoff](#replay-the-external-c17-persona-consumer-on-windowsarm64-and-close-p1-01)
+already recorded, the completed P1 section leaves In Progress. The setup and
+diagnostic contract is available to [crt-vscode](https://github.com/webos21/crt-vscode/blob/main/TODO.md#v1---extension-mvp).
+
+### Close the minimal public editor API (P0)
+
+Completed P0-01 compile-command export, P0-02 read-only project inspection,
+P0-03 versioned capability discovery and P0-04 final-envelope fixtures and
+native evidence. PR [#53](https://github.com/webos21/crt-cli/pull/53) merged
+as `3733aeb` after all six native jobs and `CI gate` passed. Every host matched
+all eight exported C/C++ command lines to the actual compiler argv. Both
+Windows runs also verified rejection of the unsupported shared-zlib request.
+[Hosted results and exact inputs](docs/acceptance/editor_api_acceptance.md#hosted-p0-acceptance-2026-11-25).
+
+The completed P0 section leaves In Progress. The API and fixtures supply the
+[crt-vscode V0 handoff](https://github.com/webos21/crt-vscode/blob/main/TODO.md#v0---crt-cli-contract-owned-by-crt-cli-requirements-only-here).
+Extension adoption, clangd and editor workflow runs remain under V0/V1.
+
 ### Unify editor-plan and build directory spelling
 
 After the static-only SDK fixture fix, both Windows jobs reached actual

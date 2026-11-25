@@ -62,14 +62,7 @@ Reply doctor(const std::vector<std::string>& args) {
     for (const auto& key : {"--resources", "--resources-sha256", "--publisher-key", "--signature"}) require(!opts.count(key), "resource pins belong to self doctor");
     if (scope == "project") {
         require(!opts.count("--host-tools") && !opts.count("--host-tools-sha256"), "project doctor does not select host tools");
-        std::vector<std::string> request{"env", "--profile", "app-build"};
-        if (opts.count("--project")) { request.push_back("--project"); request.push_back(opts.at("--project")); }
-        auto result = environment_report(request);
-        result.command = "doctor";
-        result.data["scope"] = "project";
-        result.data["checks"] = {{"manifest_sdk_tool_binding", "pass"}, {"compile_link_run", "not_run"}};
-        result.message = result.data.dump(2);
-        return result;
+        return project_doctor(opts.count("--project") ? fs::path(opts.at("--project")) : fs::current_path());
     }
     require(scope == "environment", "unsupported doctor scope");
     require(opts.count("--host-tools") && opts.count("--host-tools-sha256"), "environment doctor requires an explicit host-tools selection");

@@ -39,6 +39,37 @@ void binding_outputs(const fs::path& root) {
             "project binding outputs must not be symlinks");
 }
 
+bool first_build_binding(const fs::path& root, const Json& lock) {
+    return lock.contains("lock_format") && lock.at("lock_format") == 1 && lock.value("state", "") == "unresolved" &&
+           !lock.contains("selection") && !fs::exists(root / ".crt/local.json");
+}
+
+std::map<std::string, std::string> configure_inputs(const fs::path& root, const std::map<std::string, std::string>& options) {
+    std::map<std::string, std::string> requested;
+    const auto config = options.count("--sdk-config") ? fs::path(options.at("--sdk-config")) : root / ".sdk.json";
+    if (options.count("--sdk-config") || fs::exists(config)) requested = Toolchain::read_sdk_config(config);
+    // An explicit selector replaces any selector inherited from local config.
+    if (options.count("--sdk") || options.count("--sdk-root") || options.count("--sdk-id") || options.count("--sdk-source"))
+        for (auto selector : {"--sdk", "--sdk-root", "--sdk-id", "--sdk-source"}) requested.erase(selector);
+    for (const auto& option : options)
+        if (option.first != "--project" && option.first != "--sdk-config" && option.first != "--target") requested[option.first] = option.second;
+    return requested;
+}
+
+void require_first_build_tools(const std::map<std::string, std::string>& options) {
+    for (const auto& role : {"--cc", "--cxx", "--linker", "--ar"}) {
+        require(options.count(role), std::string("first build requires explicit ") + role +
+                " or its declaration in .sdk.json; install compatible LLVM tools and specify absolute paths for --cc, --cxx, --linker and --ar");
+        require(fs::path(options.at(role)).is_absolute(), std::string("first-build tool must be an absolute path: ") + role +
+                "; correct the path in .sdk.json or pass the absolute path to build");
+    }
+}
+
+void select_installed_sdk(std::map<std::string, std::string>& options, const Json& manifest) {
+    if (!options.empty() && !options.count("--sdk") && !options.count("--sdk-root") && !options.count("--sdk-id"))
+        options["--sdk"] = Toolchain::select_store_sdk(manifest.at("sdk").at("version").get<std::string>());
+}
+
 Json binding_lock(const Toolchain& toolchain) {
     return {{"lock_format", 1}, {"state", "local-experiment"}, {"selection", toolchain.selection}};
 }
@@ -534,6 +565,30 @@ Reply environment_report(const std::vector<std::string>& args) {
     return {0, "env", data, data.dump(2)};
 }
 
+Reply project_doctor(const fs::path& path) {
+    const auto root = fs::canonical(path);
+    binding_outputs(root);
+    if (fs::is_regular_file(root / "crt.lock") && first_build_binding(root, read_json(root / "crt.lock"))) {
+        const auto manifest = project(root);
+        auto options = configure_inputs(root, {});
+        require_first_build_tools(options);
+        require(!options.count("--sdk-source"), "first build requests HTTPS SDK acquisition; run `crt-cli build` explicitly with this .sdk.json, or run `crt-cli sdk acquire --source <pinned-source.json>` and select the installed SDK in .sdk.json");
+        select_installed_sdk(options, manifest);
+        const auto toolchain = Toolchain::configure(options);
+        match_request(manifest, toolchain);
+        Json data{{"scope", "project"}, {"project", root.string()}, {"build_host", native_target()}, {"selection", toolchain.selection},
+                  {"checks", {{"first_build_inputs", "pass"}, {"manifest_sdk_tool_binding", "not_bound"}, {"compile_link_run", "not_run"}}},
+                  {"next_step", "Run `crt-cli build` with this project to create its binding."}};
+        return {0, "doctor", data, data.dump(2)};
+    }
+    auto result = environment_report({"env", "--profile", "app-build", "--project", root.string()});
+    result.command = "doctor";
+    result.data["scope"] = "project";
+    result.data["checks"] = {{"manifest_sdk_tool_binding", "pass"}, {"compile_link_run", "not_run"}};
+    result.message = result.data.dump(2);
+    return result;
+}
+
 Reply port_lock(const std::vector<std::string>& args) {
     require(args.size() == 2 || (args.size() == 4 && args[2] == "--project"), "usage: port lock [--project <dir>]");
     auto root = fs::canonical(args.size() == 4 ? fs::path(args[3]) : fs::current_path());
@@ -576,25 +631,15 @@ Reply workflow(const std::vector<std::string>& args) {
         binding_outputs(root);
         original_lock = read_text(root / "crt.lock");
         const auto lock = read_json(root / "crt.lock");
-        first_build = lock.contains("lock_format") && lock.at("lock_format") == 1 && lock.value("state", "") == "unresolved" &&
-                      !lock.contains("selection") && !fs::exists(root / ".crt/local.json");
+        first_build = first_build_binding(root, lock);
         if (!first_build)
             for (const auto& option : options)
                 require(!configure_options.count(option.first), "build cannot replace an existing or incomplete binding; use configure explicitly");
     }
-    // Configure inputs: the local `.sdk.json` (or --sdk-config) supplies defaults, explicit flags override per key.
     std::map<std::string, std::string> requested;
     if (args[0] == "configure" || first_build) {
-        fs::path config = options.count("--sdk-config") ? fs::path(options.at("--sdk-config")) : root / ".sdk.json";
-        if (options.count("--sdk-config") || fs::exists(config)) requested = Toolchain::read_sdk_config(config);
-        if (options.count("--sdk") || options.count("--sdk-root") || options.count("--sdk-id") || options.count("--sdk-source"))
-            for (auto selector : {"--sdk", "--sdk-root", "--sdk-id", "--sdk-source"}) requested.erase(selector);
-        for (const auto& option : options) if (option.first != "--project" && option.first != "--sdk-config" && option.first != "--target") requested[option.first] = option.second;
-        if (first_build)
-            for (const auto& role : {"--cc", "--cxx", "--linker", "--ar"}) {
-                require(requested.count(role), std::string("first build requires explicit ") + role + " or its declaration in .sdk.json; external LLVM is not bundled");
-                require(fs::path(requested.at(role)).is_absolute(), std::string("first-build tool must be an absolute path: ") + role);
-            }
+        requested = configure_inputs(root, options);
+        if (first_build) require_first_build_tools(requested);
         if (requested.count("--sdk-source")) {
             for (auto selector : {"--sdk", "--sdk-root", "--sdk-id", "--sdk-contract", "--contract-sha256"})
                 require(!requested.count(selector), "--sdk-source cannot be combined with another SDK/provider selection");
@@ -606,9 +651,7 @@ Reply workflow(const std::vector<std::string>& args) {
             requested.erase("--sdk-source");
             requested["--sdk"] = acquired.at("identity").at("directory");
         }
-        // Without a named SDK the installed one is used only when exactly one fits the project's request.
-        if (!requested.empty() && !requested.count("--sdk") && !requested.count("--sdk-root") && !requested.count("--sdk-id"))
-            requested["--sdk"] = Toolchain::select_store_sdk(manifest.at("sdk").at("version").get<std::string>());
+        select_installed_sdk(requested, manifest);
     }
     bool explicit_selection = !requested.empty();
     auto toolchain = explicit_selection ? Toolchain::configure(requested) : Toolchain::load(root);

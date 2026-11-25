@@ -32,91 +32,17 @@ record of completed work. This section stays empty in `TODO.md` itself. Finished
 top-level work moves to `HISTORY.md`; terse checked prerequisite gates may remain
 under an active tranche only to make its execution order legible.
 
+<a name="p0---minimal-public-editor-api-d7-slice-coordinated-with-d5d6"></a>
+
+See the [P0 editor API completion record](HISTORY.md#close-the-minimal-public-editor-api-p0).
+
+<a name="p1---producer-correctness-handoff-and-first-user-workflow-d5"></a>
+
+See the [P1 first-user workflow completion record](HISTORY.md#close-the-first-user-workflow-p1).
+
 ## In Progress
 
-### P0 - Minimal Public Editor API (D7 slice, coordinated with D5/D6)
-
-Completed bounded increment (2026-11-25): API version 1 on Linux/x86_64 uses
-the installed signed November 25 Dev SDK qualified by CRT P1-01. The exporter
-shares pure compile planning with the builder; native evidence covers read-only
-state/exports, structured negatives and exact cold-build argv. No producer or extension implementation,
-lock migration, release or CI pin promotion is included.
-
-`crt-vscode` is the first editor consumer. Other editors and automation can use
-the same API, and clangd reads the generated database. Start with an installed
-Dev SDK and the bounded project workflow on Linux/x86_64.
-
-Contract baseline:
-[implemented native policy](docs/reference/bootstrap_contract.md#producer-owned-native-policy)
-and [commands and results](docs/reference/bootstrap_contract.md#commands-and-results).
-Validate the SDK policy fixtures with
-[crt P1-01](https://github.com/webos21/crt/blob/main/TODO.md#p1---sdk-support-for-the-first-editor-workflow)
-and review any provider gap there before changing the SDK. P0-01 through P0-03
-supply [crt-vscode V0-01 through V0-03](https://github.com/webos21/crt-vscode/blob/main/TODO.md#v0---crt-cli-contract-owned-by-crt-cli-requirements-only-here).
-P0-04 supplies the final-envelope fixtures for V0-04.
-
-- [x] **P0-01** Specify and implement `export compile-commands --output <file>`
-  from the same SDK-expanded per-source argv used by the native builder.
-  Include working directory, absolute source, target/sysroot, standard-library
-  headers, macros and language options; exclude link/startup inputs. Handle
-  spaces/Unicode and stale SDK/lock inputs without silently changing project
-  pins or downloading/building ports for an export.
-- [x] **P0-02** Specify and implement `project info --json` for project,
-  SDK/profile/target, lock identity, build output/executable and unresolved or
-  incompatible state. Queries must be read-only and report missing prerequisites.
-- [x] **P0-03** Define versioned capability discovery and command/error compatibility
-  for editor consumers; current help text is not a structured capability API.
-  Document existing `sdk list` and `port list` JSON before adding another list
-  command or schema.
-- [x] **P0-04** Add focused contract fixtures and native consumer evidence to
-  [the implemented reference](docs/reference/bootstrap_contract.md) and
-  [compatibility](docs/compatibility.md). Keep proposed commands and fields
-  separate from implemented contracts and record the exact inputs exercised.
-- Result: [374 native P0 checks and exact eight-entry C/C++ argv evidence](docs/acceptance/editor_api_acceptance.md),
-  source-hidden/read-only Linux replay and the complete local fast suite pass.
-  CLI-owned P0 is complete; extension V0/V1 adoption and other-host editor replay
-  remain separate. Keep this checked section until the owner asks to retire it.
-- [x] CI fixture follow-up: explicitly select static SDK zlib while retaining
-  all four runtime/compile modes; validate unavailable-library/variant refusal
-  and database preservation ([381/388-check local controls](docs/acceptance/editor_api_acceptance.md#windows-ci-static-only-sdk-library-fixture-2026-11-25)).
-  The required PR gate owns the native hosted Windows replay.
-- [x] Share canonical/native build-directory construction across planning and
-  execution; retain literal argv comparison and validate output-directory
-  spelling ([389-check Linux regression](docs/acceptance/editor_api_acceptance.md#windows-compiler-argv-path-spelling-2026-11-25)).
-- Acceptance: exported C/C++ compile entries match actual cold-build compiler
-  invocations; queries preserve manifests/locks and report exact selected inputs;
-  unsupported commands/versions fail clearly in the extension. The extension
-  owns the [Linux/x86_64 V1-10 workflow check](https://github.com/webos21/crt-vscode/blob/main/TODO.md#v1---extension-mvp)
-  and the later macOS/arm64 and Windows/x64 replays.
-
-Global `--json`, including `build --json`, already returns one
-`crt-cli.bootstrap-result`, format 1 envelope; child output is relayed to stderr
-([dispatch](src/main/main.cpp), [reply](src/main/core.cpp), [process](src/main/process.cpp)).
-Stabilize those existing results/errors; streaming progress/job events need a
-separate opt-in stream/file protocol under D6, not JSON mixed into stdout.
-
-### P1 - Producer Correctness Handoff and First-user Workflow (D5)
-
-Acceptance baselines:
-[Linux shared-provider control](docs/acceptance/sdk_install_acceptance.md#linux-d3-common-change-replay-and-macos-handoff-2026-11-09)
-,
-[Windows filesystem reproduction](docs/acceptance/bootstrap_acceptance.md#findings-fixed-in-this-pass)
-and
-[project lifecycle PR-03 through PR-05](docs/acceptance/lifecycle_acceptance.md#d2d5---project-sdk-and-creation)
-P1-01, the C shared provider and Windows C++ persona replays, is closed ([HISTORY](HISTORY.md), 2026-11-23). P1-02 supplies setup and diagnosis for
-[crt-vscode V1-03 and V1-06](https://github.com/webos21/crt-vscode/blob/main/TODO.md#v1---extension-mvp)
-.
-The later PAL consumer replays do not update public SDK pins. Candidate
-promotion follows the [CI pin-promotion policy](docs/guides/development.md#ci-pin-promotion); the CRT Media/UI package replays are not CLI or
-editor acceptance.
-
-- [ ] **P1-02** Improve the documented new/install/build/run path with scoped SDK/LLVM/OS
-  SDK diagnosis and concrete missing-input guidance. Reuse explicit pinned SDK
-  acquisition and declared tool paths; official defaults/trust/channels require
-  their own reviewed contract, not implicit downloads on workspace open.
-- Acceptance: a clean user environment reaches C/C++ build/test/run using only
-  public SDK inputs and declared host tools, with explicit acquisition consent,
-  accurate failures and unchanged existing project locks on failure.
+The editor handoff is tracked in the [crt-vscode work queue](https://github.com/webos21/crt-vscode/blob/main/TODO.md#in-progress).
 
 ## Planned
 
