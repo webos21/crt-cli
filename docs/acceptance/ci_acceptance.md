@@ -2004,3 +2004,36 @@ The paired SDK is the retained `v0.0.1-preview.20261118.windows.arm64.1`.
 The all-host public pin checker passes on this proposal, and the 11 pin-review
 and 17 bootstrap-driver tests pass. The PR `CI gate` and main adoption receipts
 are the remaining gates for this proposal.
+
+## Non-bypass required-check rejection (CI-04, 2026-11-25)
+
+The [observation run](https://github.com/webos21/crt-cli/actions/runs/45530662933)
+passed on the isolated test branch at `03e132d`. It used only the job's
+repository `GITHUB_TOKEN` with `contents: write`. This is a GitHub App
+installation token, the documented [Actions authentication model](https://docs.github.com/en/actions/concepts/security/github_token).
+The workflow initiator was `webos21`; the authenticated write principal was
+the Actions app, outside the ruleset's administrator-role bypass. The test
+commit is attributed to `github-actions[bot]`.
+
+The app created an unprotected control reference successfully, proving its
+repository write permission. It then attempted a fast-forward update of
+`refs/heads/main` through the Git references API to commit
+`e59dc1b9a3b4ccac24b13fbdc1a3e09f5e0572f6`, whose file tree equals its
+parent on main. That commit had zero checks. GitHub refused the update with
+HTTP 422 and the exact reason:
+
+```text
+Repository rule violations found
+
+Required status check "CI gate" is expected.
+```
+
+Main stayed at `2c5e2e24f767ba9d2e4da686837a4f09eaa970bd` before and after
+the request. The test removed its control reference. The temporary workflow
+was confined to its test branch. This supplies actual non-bypass rejection
+in addition to the earlier `CLEAN`/`BLOCKED` PR observations. Administrator
+bypass remains `always`; a second maintainer's arrival can trigger its policy
+review. The observed actor and API operation are recorded explicitly.
+
+Raw candidate/check/update/result JSON, the workflow source and its run log
+are retained in `out/ci-monitoring-review-20261125/ci04-observation/`.
