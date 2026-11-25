@@ -11,6 +11,21 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-25
 
+### Prioritize CI monitoring and review the next pin candidates
+
+Synchronized CRT `9460fc87`, CLI `2c5e2e2` and extension `6ee57fe` with their
+remote main branches and reviewed the recent signing and PAL records. Moved
+CI-01, CI-02 and CI-04 to the first In Progress group. All five retained
+host pin sets match their public bytes and signatures. The Windows/arm64
+20261120 CLI and Linux/x86_64 20261125 CLI and SDK archive/policy signatures
+also verify. The review records the promotion PR gates, CRT's pending native
+device compatibility work and the second-account ruleset observation.
+Marked the existing policy/adoption records, bounded loader coverage and
+ruleset/PR observations as completed reusable evidence in TODO. New pin
+adoption, additional ARM64 devices/loaders and a non-bypass rejection retain
+their own pending execution gates.
+[Review and execution order](docs/acceptance/ci_acceptance.md#ci-monitoring-and-pin-promotion-review-2026-11-25).
+
 ### Close Sign Before Publishing with CRT (D6)
 
 The main-only hosted gate refused both a rehearsal with no stage receipt

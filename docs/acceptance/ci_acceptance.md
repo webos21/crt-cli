@@ -1901,3 +1901,106 @@ and retry safety also have local controls in `tools/test_release_signing.py`;
 these are not additional hosted publication runs. P1-01 is closed. CI pins
 and consumer locks did not change; other hosts were not published through
 this gate for this record.
+
+## CI monitoring and pin promotion review (2026-11-25)
+
+Review baselines after `git pull --ff-only`: CRT `9460fc87`, CLI `2c5e2e2`
+and extension `6ee57fe`. Each repository matched its remote `main`. The latest
+CRT/CLI records close sign-before-publication qualification on Linux/x86_64.
+The CLI and extension records also distinguish completed PAL prerequisite
+replays from the pending editor API and Extension Development Host gates.
+The [CI work group](../../TODO.md#ci-monitoring-and-pin-promotion) now leads
+In Progress.
+
+### CI-01 candidate review and promotion order
+
+`python3 tools/check_ci_pins.py` passed for `linux-arm64`, `linux-x64`,
+`macos-arm64`, `win-arm64` and `win-x64`, including archive signatures under
+the committed publisher key. The reviewed `.github/ci/pins.json` SHA-256 is
+`02b15b9f5fcc8004ac9cab2ff6239465ee221055b152bea483753ddcf0a52078`.
+The comparison below uses the [existing promotion policy](../guides/development.md#ci-pin-promotion).
+
+| Host/input | Retained pin | Reviewed signed candidate | Evidence and next gate |
+| --- | --- | --- | --- |
+| Windows/arm64 CLI | `v0.1.0-preview.20261118.windows-arm64.1` | `v0.1.0-preview.20261120.windows-arm64.1` | The [public release record](preview_acceptance.md#windowsarm64-workflow-preview-release-2026-11-20) includes native package and D1 replay. The release's `CI gate` and package/verify/publish run passed. Prepare a Windows/arm64 bootstrap promotion PR with the retained SDK combination and require the affected native leg plus the complete PR `CI gate`. |
+| Linux/x86_64 CLI | `v0.1.0-preview.20261116.linux-x86_64.1` | `v0.1.0-preview.20261125.linux-x86_64.1` | The [new release](preview_acceptance.md#linuxx86_64-sign-before-publishing-preview-2026-11-25) was packaged and verified natively with the retained November 18 SDK. A separate CLI promotion PR must exercise both x86_64 Ubuntu legs, the complete gate and stage receipts with that exact combination. |
+| Linux/x86_64 SDK | `v0.0.1-preview.20261118.linux.x64.1` | `v0.0.1-preview.20261125.linux.x64.1` | The [producer qualification](https://github.com/webos21/crt/blob/9460fc87/docs/acceptance/release_qualification.md#sign-before-publishing-qualification-2026-11-25) includes native C/C++ smoke with the November 16 CLI. A new SDK promotion PR needs the full CLI bootstrap/test receipts and affected integration redirect replay. The November 25 CLI release consumed the November 18 SDK, so the two November 25 artifacts still need their own combination run. |
+
+This review independently downloaded the two candidate CLI archives and
+their signatures, checked their release-record sizes and SHA-256 values,
+and verified both signatures. It also checked the November 25 SDK manifest
+against its producer-record pin and verified the manifest-listed archive
+and policy digests and their detached signatures. The publisher SPKI SHA-256
+is `59218576956e493476bc36f7385d8e01a03ff9b92946a531b013ad3937d43fa2`.
+Existing macOS, Windows/x64 and Linux/arm64 input pairs retain their accepted
+records. Later unsigned PAL/CI SDK artifacts keep their producer-owned release
+and signature prerequisites.
+
+Execute Windows/arm64 CLI promotion first, then the Linux/x86_64 CLI review,
+then the Linux SDK combination gate. A Linux host-specific PR may adopt the
+CLI and SDK together when its complete input tuple has the required evidence.
+Each promotion PR quotes a fresh
+all-host pin check, the exact archive/signature and SDK identities, the
+release evidence and its affected CI results. After merge, record the `main`
+run and stage-1/stage-2 outcome. Preserve the preceding pin tuple in Git
+history and use it if promotion fails. CI-01 remains open for these adoption
+steps.
+
+Existing work supplies the [promotion procedure](#ci-pin-promotion-2026-11-11),
+the [Linux bootstrap adoption](#linux-bootstrap-pin-moved-to-the-20261116-preview-2026-11-17),
+[macOS/Windows bootstrap adoption](#macos-and-windows-bootstrap-pins-moved-to-the-20261117-preview-2026-11-17)
+and [Linux SDK adoption](#linuxx86_64-sdk-pin-moved-to-the-first-automated-preview-2026-11-18).
+Reuse those records and the candidate release checks above. The remaining
+adoption evidence must come from runs that actually consume the selected new
+pin tuple. Candidate publication tests remain valid for their recorded inputs.
+
+### CI-02 native compatibility handoff
+
+CRT's [native compatibility P1-01](https://github.com/webos21/crt/blob/9460fc87/TODO.md#p1---native-compatibility-beyond-hosted-runners)
+still requires a real Raspberry Pi ARM64 device and explicitly identified
+Linux/glibc/loader/LLVM combinations. The retained CLI/SDK ARM64 pair has
+Ubuntu 26.04/glibc 2.43 hosted evidence. The next producer/consumer record
+must identify the device, OS image, loader, tool paths/versions, exact SDK/CLI
+inputs, native C/C++ build/test/run results and actual runtime dependencies.
+Link that record before broadening the advertised platform scope. CI-02
+remains open for native device and distribution evidence.
+
+The existing [Linux/x86_64 SDK adoption](#linuxx86_64-sdk-pin-moved-to-the-first-automated-preview-2026-11-18)
+already records Ubuntu 24.04/glibc 2.39 and Ubuntu 26.04/glibc 2.43. The
+[producer loader-repair closure](https://github.com/webos21/crt/blob/9460fc87/docs/acceptance/sdk_split_acceptance.md#required-hosted-replay-closure)
+links the corresponding full hosted x86_64 runs. These exact x86_64 bounds,
+the ARM64 26.04 bound and the producer ownership link are reusable completed
+evidence. Raspberry Pi and additional ARM64 loader combinations still require
+their own native records.
+
+### CI-04 ruleset observation
+
+A fresh GitHub API read confirms ruleset `27002916` is active and requires
+`CI gate` from GitHub Actions integration `15368`. Repository administrators
+still have bypass mode `always`. The authenticated account is `webos21`,
+the repository owner. The [accepted passing and blocked PR observations](#current-hosted-coverage-2026-11-11-1)
+retain their scope. A second account without bypass must supply the direct
+push or failing-check merge rejection, including its actor, target SHA,
+check state and actual GitHub rejection. Revisit bypass settings with the
+second maintainer. CI-04 remains open for that observation.
+The existing ruleset configuration and `CLEAN`/`BLOCKED` PR observations are
+completed sub-items. Only the actual non-bypass rejection needs a new actor
+and execution record.
+
+Local review artifacts are retained in `out/ci-monitoring-review-20261125/`:
+the current pin-check log, retained pin snapshot, candidate downloads and
+verification JSON, release-run/CI summaries and ruleset snapshot. These are
+read-only input and policy checks. Promotion PRs, native compatibility runs
+and non-administrator enforcement remain the next execution gates.
+
+### Windows/arm64 bootstrap promotion proposal (2026-11-25)
+
+The host-specific proposal updates only the Windows/arm64 bootstrap tuple to
+`v0.1.0-preview.20261120.windows-arm64.1`. The archive is 5,234,232 bytes,
+SHA-256 `de7efa11662833bf3790a23ffa4b24ef4dfe503de2de4cf6e53f87562709d8a0`.
+Its 256-byte signature SHA-256 is
+`b4b5eab4a7ac9f0315099a8c17091fd331d0958067b319f30f5a397118c80c63`.
+The paired SDK is the retained `v0.0.1-preview.20261118.windows.arm64.1`.
+The all-host public pin checker passes on this proposal, and the 11 pin-review
+and 17 bootstrap-driver tests pass. The PR `CI gate` and main adoption receipts
+are the remaining gates for this proposal.
