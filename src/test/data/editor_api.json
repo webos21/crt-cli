@@ -1,0 +1,165 @@
+{
+  "fixture_format": 1,
+  "envelope": {
+    "schema": "crt-cli.bootstrap-result",
+    "format": 1
+  },
+  "capabilities": [
+    "project.info",
+    "export.compile-commands",
+    "sdk.list",
+    "port.list"
+  ],
+  "errors": [
+    {
+      "args": [
+        "capabilities",
+        "--api-version",
+        "99"
+      ],
+      "exit": 2,
+      "code": "unsupported_api_version"
+    },
+    {
+      "args": [
+        "project",
+        "info",
+        "--api-version",
+        "0",
+        "--project",
+        "/absent/editor-project"
+      ],
+      "exit": 2,
+      "code": "unsupported_api_version"
+    },
+    {
+      "args": [
+        "export",
+        "compile-commands"
+      ],
+      "exit": 2,
+      "code": "invalid_arguments"
+    },
+    {
+      "args": [
+        "project",
+        "unknown"
+      ],
+      "exit": 2,
+      "code": "unsupported_command"
+    },
+    {
+      "args": [
+        "capabilities",
+        "--api-version",
+        "1",
+        "--api-version",
+        "1"
+      ],
+      "exit": 2,
+      "code": "invalid_arguments"
+    },
+    {
+      "args": [
+        "project",
+        "info",
+        "--unknown",
+        "value"
+      ],
+      "exit": 2,
+      "code": "invalid_arguments"
+    }
+  ],
+  "final_envelopes": [
+    {
+      "name": "capabilities-success",
+      "exit": 0,
+      "reply": {
+        "command": "capabilities",
+        "data": {
+          "api_versions": [
+            1
+          ],
+          "commands": {
+            "export.compile-commands": {
+              "api_version": 1,
+              "arguments": true,
+              "builds": false,
+              "schema": "crt-cli.compile-commands-export",
+              "format": 1,
+              "database_format": "clang-json-compilation-database"
+            },
+            "port.list": {
+              "collection": "items",
+              "envelope_format": 1
+            },
+            "project.info": {
+              "api_version": 1,
+              "format": 1,
+              "read_only": true,
+              "schema": "crt-cli.project-info"
+            },
+            "sdk.list": {
+              "collection": "sdks",
+              "envelope_format": 1
+            }
+          },
+          "format": 1,
+          "result": {
+            "child_output": "stderr",
+            "format": 1,
+            "job_events": false,
+            "schema": "crt-cli.bootstrap-result",
+            "stdout": "single-final-object"
+          },
+          "schema": "crt-cli.capabilities",
+          "version": "0.1.0-dev"
+        },
+        "format": 1,
+        "ok": true,
+        "schema": "crt-cli.bootstrap-result"
+      }
+    },
+    {
+      "name": "unsupported-api-version",
+      "exit": 2,
+      "reply": {
+        "schema": "crt-cli.bootstrap-result",
+        "format": 1,
+        "command": "capabilities",
+        "ok": false,
+        "data": {
+          "code": "unsupported_api_version",
+          "message": "editor API version is unsupported; discover capabilities and select version 1"
+        }
+      }
+    },
+    {
+      "name": "workflow-child-failure",
+      "exit": 1,
+      "reply": {
+        "schema": "crt-cli.bootstrap-result",
+        "format": 1,
+        "command": "run",
+        "ok": false,
+        "data": {
+          "selection": {},
+          "ports": [],
+          "commands": [],
+          "cache": {
+            "executed": 0,
+            "reused": 2
+          },
+          "artifacts": {},
+          "outcomes": [
+            {
+              "exit_code": 7,
+              "timed_out": false,
+              "stdout_truncated": false
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

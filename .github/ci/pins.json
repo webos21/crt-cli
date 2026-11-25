@@ -2,7 +2,7 @@
   "schema": "crt-cli.ci-pins",
   "format": 0,
   "note": "Exact CI inputs. Each host pins the published CRT-CLI Preview that bootstraps CI and the public Dev SDK it acquires. Change a pin only in a reviewed commit that cites the release record; never use a moving tag or 'latest'.",
-  "pr_tests": ["native-test", "archive-test", "sdk-store-test", "store-lock-test", "port-recipe-test"],
+  "pr_tests": ["native-test", "archive-test", "sdk-store-test", "store-lock-test", "port-recipe-test", "editor-test"],
   "input_gated_tests": {
     "port-build-test": "needs CRT_CLI_TEST_PORT_* host tools, source archive and project; prints 'skipped' and exits 0 without them",
     "port-store-test": "same inputs as port-build-test",

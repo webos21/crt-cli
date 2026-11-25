@@ -11,6 +11,29 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-25
 
+### Implement the minimal public editor API (P0)
+
+Added version-1 capability discovery, read-only project state and native
+compilation-database export. The builder and exporter share per-source flags
+and SDK argv expansion, with explicit project-root compiler working directories.
+Unresolved/stale inputs and invalid output destinations fail without choosing
+SDKs, executing ports, rewriting pins or replacing a previous database.
+Existing final JSON and SDK/port list results retain their contracts; a
+versioned wire fixture distinguishes CLI errors from workflow child failures.
+
+The signed November 25 installed Dev SDK needs no producer change. Native
+Linux/x86_64 P0 checks pass 374/374; all eight C/C++ compile entries match actual
+cold compiler invocations. Network-denied/source-hidden and read-only query
+replay passes, as does SDK/LLVM-free capability discovery. Local self-build and
+native/archive/SDK-store/store-lock/recipe regression gates pass; CI retains
+the editor receipt across its source re-export. No public Preview, artifact
+identity pin, adjacent repository, STATUS or extension adoption is changed.
+
+Checked P0-01 through P0-04 and retained their section. The extension's V0/V1
+and later native-host gates remain separate.
+[Contract and native evidence](docs/acceptance/editor_api_acceptance.md) ·
+[Adoption boundary](docs/compatibility.md#minimal-public-editor-api-1-2026-11-25).
+
 ### Close CI monitoring and pin promotion
 
 CI-01 promoted the signed Windows/arm64 November 20 CLI and Linux/x86_64

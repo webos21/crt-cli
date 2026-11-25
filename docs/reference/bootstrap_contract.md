@@ -397,7 +397,138 @@ On macOS the provider records an explicit external vendor SDK and `-isysroot`
 for libSystem/linker lookup while retaining `-nostdinc`/`-nostdinc++` and CRT
 headers. It is not permission to add host standard headers or a host C++ runtime.
 
+## Public Editor API (version 1)
+
+This bounded CLI-owned API uses an installed native Dev SDK and an existing
+format-1 project binding. It changes neither the producer policy nor the
+project lock format. Initial native qualification is Linux/x86_64; extension
+adoption, clangd and other native hosts retain their own acceptance gates.
+
+```text
+crt-cli capabilities --json
+crt-cli project info --project <directory> --api-version 1 --json
+crt-cli export compile-commands --project <directory> --output <file.json> --api-version 1 --json
+```
+
+`--project` defaults to the current directory. `--api-version` defaults to 1
+on these three commands only; an unsupported version is refused before reading
+project inputs. Consumers must discover `data.api_versions` and the named
+entry in `data.commands`, then validate the returned schema/format. Neither
+help text nor the development version string is a capability check. Additive
+fields may be ignored; unknown required API/schema/format versions must fail
+clearly. A changed required field or semantic contract needs another version.
+
+### Capability discovery
+
+`capabilities --json` returns `data.schema: crt-cli.capabilities`, `format: 1`,
+`api_versions: [1]` and the CLI version. `commands` advertises
+`project.info`, `export.compile-commands`, `sdk.list` and `port.list`, with
+their API/envelope or payload formats. `result` identifies the existing
+`crt-cli.bootstrap-result`, format 1 envelope, `single-final-object` stdout,
+child/log `stderr` and `job_events: false`. This works without a project, SDK,
+external compiler or network. Streaming events remain a separate future D6
+protocol, never interleaved with final JSON.
+For export, `schema`/`format` identify the final response data;
+`database_format: clang-json-compilation-database` identifies the separate
+standard array file, which has no invented top-level schema/version fields.
+
+### Read-only project information
+
+`project info` returns `data.schema: crt-cli.project-info`, `format: 1`,
+`api_version: 1`. A successful query describes the state; callers must inspect
+`data.state`, even when the envelope has `ok: true`.
+
+| Field | Contract |
+| --- | --- |
+| `state` | `unresolved` (no binding yet), `ready` (exact inputs and compile plan validated), or `incompatible` (missing/stale/unsupported bound inputs) |
+| `project` | Canonical root, package, manifest format and byte SHA-256, SDK request |
+| `lock` | Null when missing; otherwise path, exact byte SHA-256, recorded format/state |
+| `selection` | Full verified existing lock selection when ready, otherwise null; includes SDK content, producer provenance, policy and external-tool digests |
+| `sdk` | Selected installed/handoff root, stored/explicit contract path, profile and target when ready; otherwise null |
+| `tools` | Ready-state declared native compiler/linker/archiver and resource paths; identities are in `selection.tools` |
+| `build_directory`, `executable` | Absolute native output directory and first non-test executable path; executable null until a ready plan exists |
+| `targets` | Validated targets/tests with name, kind, runtime linkage, output path and file existence; not a claim that an existing artifact is current or runnable |
+| `generated_header` | Native bootstrap header path and existence; queries do not generate it |
+| `diagnostics` | Array of `{code,message}` explaining unresolved/incompatible prerequisites |
+
+An incompatible response may retain partial project/target metadata; only a
+ready response supplies a verified selection. Ready means planning is possible,
+not that outputs or generated headers exist. Missing generated includes still
+need the ordinary explicit build before parsing sources that include them.
+No query chooses another SDK, installs/downloads anything, builds a port,
+migrates a lock, creates a binding or writes project/cache files. SDK policy,
+inventory, tool and port verification is the builder's existing validation;
+the declared compiler may be queried for its resource directory. Changed local
+defaults cannot override a bound lock.
+
+### Compilation database export
+
+The file is the [Clang JSON compilation database](https://clang.llvm.org/docs/JSONCompilationDatabase.html)
+array, using `directory`, absolute `file`, absolute object `output` and
+unescaped string-array `arguments`. Multiple entries for a source compiled
+in different targets/modes are retained. All declared targets and tests are
+included, in deterministic dependency order. There is no shell `command`
+string, linker invocation, startup object or editor-side flag reconstruction.
+
+The native builder and export share per-source flags and SDK placeholder
+expansion, including the real driver, dependency-file flags, language standard,
+SDK/resource/OS include paths, target macros and declared consumer options.
+Target and sysroot policy comes from that SDK, not a guessed additional flag.
+Compiler/archive/link children now explicitly use the project root as working
+directory; `directory` records that same root. The exact execution argv and
+directory participate in the cache key; older cache entries can rebuild once
+without changing a project lock. Export does not execute the compile argv.
+
+Only the explicitly requested database is written. Its parent must already
+exist; the output needs a `.json` suffix and cannot replace project sources,
+bindings, SDK/store/resource inputs or native outputs. Symlink destinations
+and existing unrelated files are refused. An existing compilation database
+can be atomically replaced through a unique sibling staging file, after the
+entire plan and manifest/lock identities are rechecked. Failure preserves the
+previous database and removes staging; no directories, generated headers,
+SDKs or ports are created. There is no concurrent same-project editing or
+power-loss durability guarantee; refresh after manifest/lock changes.
+
+The normal final envelope reports `data.schema: crt-cli.compile-commands-export`,
+`format: 1`, `api_version: 1`, `output`, entry count `entries`, manifest/lock byte
+digests and the verified `selection`. Re-export after an explicit SDK/lock
+change; stale inputs fail rather than silently refreshing pins.
+
+### Errors and existing list results
+
+New API usage errors exit 2 with `data.code` `invalid_arguments`,
+`unsupported_command` (new subcommands) or `unsupported_api_version`.
+Operational export errors exit 1 with `project_not_found`, `project_unresolved`,
+`project_incompatible`, `output_conflict` or `output_error`. A missing project
+directory/manifest is `project_not_found`; malformed or stale project contents
+are described as incompatible by `project info`. Legacy/unexpected errors keep
+their existing `failure`/`invalid_input` codes and nonzero status; diagnostic
+message text is not a machine compatibility key.
+
+All JSON commands, including successful/failed `build`, still emit exactly one
+`{schema,format,command,ok,data}` envelope on stdout. Build compiler output and
+application stdout are relayed to stderr. CLI errors have `data.code/message`;
+workflow child failures retain `data.outcomes` with child exit/timeout status,
+and CLI workflow exit 1. Do not interpret either a child failure or an
+unresolved-state query as a JSON transport error. The payload fixtures in
+`src/test/data/editor_api.json` and native `editor-test` exercise these distinctions.
+
+No extra list API or payload version is introduced:
+
+| Existing command | Format-1 final envelope `data` |
+| --- | --- |
+| `sdk list [--store <dir>]` | `store`, `sdks` array of directory/version/content12/path/has_contract/target/stage/profile records; listing metadata is not full identity verification |
+| `port list` | `store`, `items` array of immutable build-key strings; no recipe execution or resolution |
+
+Use the ready project query for exact selected identities; `sdk verify` and
+`port verify` retain their own verification semantics. P0's native evidence and
+editor adoption boundaries are recorded in [compatibility](../compatibility.md).
+
 ## Commands and Results
+
+The [public editor API](#public-editor-api-version-1) adds `capabilities`,
+`project info` and `export compile-commands`. These commands use the same
+format-1 final envelope as the existing commands below.
 
 `new <dir> [--language c|cxx] [--kind executable|static-library|shared-library]
 [--runtime-linkage static|shared]` creates sources only. Existing commands are

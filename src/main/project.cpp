@@ -1,4 +1,5 @@
 #include <crtcli/toolchain.h>
+#include <crtcli/editor.h>
 #include <crtcli/host_tools.h>
 #include <crtcli/environment.h>
 #include <crtcli/sdk_acquire.h>
@@ -7,6 +8,7 @@
 #include <map>
 #include <cctype>
 #include <chrono>
+#include <functional>
 #include <unistd.h>
 
 namespace crtcli {
@@ -311,20 +313,10 @@ struct Builder {
         }
     }
 
-    fs::path build_one(const std::string& name) {
-        require(targets.count(name), "unknown target: " + name);
-        if (outputs.count(name)) return outputs.at(name);
-        require(visiting.insert(name).second, "target dependency cycle: " + name);
+    struct CompileUnit { fs::path file, object; bool cpp; std::vector<std::string> flags; };
+    std::vector<CompileUnit> compile_units(const std::string& name) {
         const auto& target = targets.at(name);
-        bool uses_cpp = false;
-        for (const auto& value : target.value("dependencies", Json::array())) {
-            std::string dependency = value;
-            build_one(dependency);
-            uses_cpp |= cpp.at(dependency);
-        }
-        auto destination = output(name);
-        require(!fs::is_symlink(build / destination.filename()), "build output must not be a symlink");
-        std::vector<std::string> objects, libraries;
+        std::vector<CompileUnit> units;
         std::set<std::string> seen;
         for (const auto& source : target.at("sources")) {
             auto file = inside(root, source.get<std::string>());
@@ -333,7 +325,6 @@ struct Builder {
             auto extension = file.extension().string();
             bool is_cpp = extension == ".cpp" || extension == ".cc" || extension == ".cxx";
             require(is_cpp || extension == ".c", "unsupported C/C++ source extension");
-            uses_cpp |= is_cpp;
             auto object = build / (name + "-" + sha256(file.string()).substr(0, 16) + ".o");
             require(!fs::is_symlink(object), "object output must not be a symlink");
             std::vector<std::string> flags{is_cpp ? "-std=c++17" : "-std=c99", "-O1", "-g", "-I" + (build / "generated").string()};
@@ -352,8 +343,29 @@ struct Builder {
                 require(text.rfind("-U", 0) == 0, "unsupported SDK consumer option");
                 flags.push_back(text);
             }
-            (toolchain.invoke("compile", is_cpp, {file.string()}, object, flags, {}, commands, mode(target)) ? executed : reused)++;
-            objects.push_back(object.string());
+            units.push_back({file, object, is_cpp, std::move(flags)});
+        }
+        return units;
+    }
+
+    fs::path build_one(const std::string& name) {
+        require(targets.count(name), "unknown target: " + name);
+        if (outputs.count(name)) return outputs.at(name);
+        require(visiting.insert(name).second, "target dependency cycle: " + name);
+        const auto& target = targets.at(name);
+        bool uses_cpp = false;
+        for (const auto& value : target.value("dependencies", Json::array())) {
+            std::string dependency = value;
+            build_one(dependency);
+            uses_cpp |= cpp.at(dependency);
+        }
+        auto destination = output(name);
+        require(!fs::is_symlink(build / destination.filename()), "build output must not be a symlink");
+        std::vector<std::string> objects, libraries;
+        for (const auto& unit : compile_units(name)) {
+            uses_cpp |= unit.cpp;
+            (toolchain.invoke("compile", unit.cpp, {unit.file.string()}, unit.object, unit.flags, {}, commands, mode(target), root) ? executed : reused)++;
+            objects.push_back(unit.object.string());
         }
         std::set<std::string> linked;
         rpaths.clear();
@@ -362,7 +374,7 @@ struct Builder {
         // The SDK's link recipes have no extra-argument slot; the run-time search path for a shared port library travels in
         // the library list (flags there are part of the command key and are not hashed as files).
         if (kind(target) != "static-library") libraries.insert(libraries.end(), rpaths.begin(), rpaths.end());
-        (toolchain.invoke(kind(target) == "static-library" ? "archive" : "link", uses_cpp, objects, destination, {}, libraries, commands, mode(target)) ? executed : reused)++;
+        (toolchain.invoke(kind(target) == "static-library" ? "archive" : "link", uses_cpp, objects, destination, {}, libraries, commands, mode(target), root) ? executed : reused)++;
         outputs[name] = destination;
         cpp[name] = uses_cpp;
         visiting.erase(name);
@@ -408,6 +420,79 @@ Reply create(const std::vector<std::string>& args) {
     write_text(root / ("src/test/greeting_test." + suffix), "#include <greeting.h>\n#include <string.h>\nint main(void) { return strcmp(greeting(), \"Hello from CRT\") != 0; }\n");
     return {0, "new", {{"path", root.string()}, {"sdk_acquired", false}}, "created " + root.string()};
 }
+}
+
+Json inspect_project(const fs::path& root) {
+    Json data{{"schema", "crt-cli.project-info"}, {"format", 1}, {"api_version", 1},
+              {"state", "incompatible"}, {"project", {{"root", root.string()}}},
+              {"lock", nullptr}, {"selection", nullptr}, {"sdk", nullptr},
+              {"build_directory", (root / "out/native").string()}, {"executable", nullptr},
+              {"generated_header", {{"path", (root / "out/native/generated/bootstrap_config.h").string()},
+                                    {"exists", fs::is_regular_file(root / "out/native/generated/bootstrap_config.h")}}},
+              {"targets", Json::array()}, {"diagnostics", Json::array()}};
+    try {
+        binding_outputs(root);
+        auto manifest = project(root);
+        const auto manifest_hash = file_sha256(root / "crt.json");
+        data["project"]["package"] = manifest.at("package");
+        data["project"]["manifest_format"] = manifest.at("manifest_format");
+        data["project"]["manifest_sha256"] = manifest_hash;
+        data["project"]["sdk_request"] = manifest.at("sdk");
+        std::string lock_hash;
+        Json lock;
+        if (fs::exists(root / "crt.lock")) {
+            lock_hash = file_sha256(root / "crt.lock");
+            lock = read_json(root / "crt.lock");
+            data["lock"] = {{"path", (root / "crt.lock").string()}, {"sha256", lock_hash},
+                            {"lock_format", lock.value("lock_format", Json())}, {"state", lock.value("state", Json())}};
+        }
+        if ((lock.is_null() || (lock.value("lock_format", 0) == 1 && lock.value("state", "") == "unresolved" && !lock.contains("selection"))) &&
+                !fs::exists(root / ".crt/local.json")) {
+            data["state"] = "unresolved";
+            data["diagnostics"].push_back({{"code", "project_unresolved"},
+                {"message", "configure or first-build this project with an installed SDK and declared LLVM tools"}});
+            return data;
+        }
+        auto tools = Toolchain::load(root);
+        match_request(manifest, tools);
+        Builder builder(root, root / "out/native", manifest, tools);
+        builder.check_pins();
+        Json entries = Json::array();
+        std::set<std::string> active, complete;
+        std::function<void(const std::string&)> plan = [&](const std::string& name) {
+            if (complete.count(name)) return;
+            require(active.insert(name).second, "target dependency cycle: " + name);
+            const auto& target = builder.targets.at(name);
+            for (const auto& dependency : target.value("dependencies", Json::array())) plan(dependency.get<std::string>());
+            std::vector<std::string> libraries;
+            builder.sdk_libraries(name, target, linkage(target), libraries);
+            for (const auto& unit : builder.compile_units(name))
+                entries.push_back({{"directory", root.string()}, {"file", unit.file.string()},
+                    {"output", unit.object.string()}, {"arguments", tools.arguments("compile", unit.cpp,
+                        {unit.file.string()}, unit.object, unit.flags, {}, mode(target))}});
+            auto output = builder.output(name);
+            data["targets"].push_back({{"name", name}, {"kind", kind(target)}, {"runtime_linkage", linkage(target)},
+                {"path", output.string()}, {"exists", fs::is_regular_file(output)}});
+            active.erase(name);
+            complete.insert(name);
+        };
+        for (const auto& target : builder.targets) plan(target.first);
+        auto list = manifest.contains("targets") ? manifest.at("targets") : Json::array({manifest.at("application")});
+        for (const auto& target : list)
+            if (kind(target) == "executable") { data["executable"] = builder.output(target.at("name")).string(); break; }
+        require(file_sha256(root / "crt.json") == manifest_hash && file_sha256(root / "crt.lock") == lock_hash,
+                "project manifest/lock changed during inspection; retry the query");
+        data["selection"] = tools.selection;
+        data["sdk"] = {{"root", tools.sdk.string()}, {"contract_path", tools.contract_path.string()},
+                       {"profile", tools.selection.at("profile")}, {"target", tools.selection.at("target")}};
+        data["tools"] = {{"cc", tools.cc.string()}, {"cxx", tools.cxx.string()}, {"linker", tools.linker.string()},
+                         {"ar", tools.archiver.string()}, {"resource", tools.resource.string()}};
+        data["compile_commands"] = std::move(entries);
+        data["state"] = "ready";
+    } catch (const std::exception& error) {
+        data["diagnostics"].push_back({{"code", "project_incompatible"}, {"message", error.what()}});
+    }
+    return data;
 }
 
 Reply environment_report(const std::vector<std::string>& args) {

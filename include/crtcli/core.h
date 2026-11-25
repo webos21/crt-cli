@@ -8,7 +8,9 @@ using Json = nlohmann::json;
 namespace fs = std::filesystem;
 struct Error : std::runtime_error {
     int code;
-    explicit Error(const std::string& message, int status = 1) : std::runtime_error(message), code(status) {}
+    std::string category;
+    explicit Error(const std::string& message, int status = 1, std::string kind = "failure")
+        : std::runtime_error(message), code(status), category(std::move(kind)) {}
 };
 struct ProcessResult { int exit_code; bool timed_out; std::string output; bool output_truncated; };
 struct Reply { int code; std::string command; Json data; std::string message; };

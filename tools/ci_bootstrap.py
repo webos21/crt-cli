@@ -368,6 +368,16 @@ class Ci:
                 passed = int(counted[-1])
                 if name == 'native-test':
                     self.summary['native_phases'] = native_phase_report(err, passed)
+                if name == 'editor-test':
+                    receipt = project / 'out/editor-test/result.json'
+                    try:
+                        report = json.loads(receipt.read_text(encoding='utf-8'))
+                        if (not isinstance(report, dict) or report.get('passed') is not True or
+                                type(report.get('checks')) is not int or report['checks'] != passed or passed <= 0):
+                            raise ValueError('editor receipt does not match the passed-check count')
+                        shutil.copyfile(receipt, self.work / 'artifact/editor-api-result.json')
+                    except (OSError, ValueError) as error:
+                        raise CiError('missing or invalid editor contract evidence: %s' % error) from error
                 results[name] = passed
             except CiError as error:
                 # Later suites and stages still run, so one CI pass reports everything that is broken.

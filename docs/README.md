@@ -41,6 +41,10 @@ from the SDK build baseline:
 
 ## Acceptance Contracts and Evidence
 
+- [Public editor API](reference/bootstrap_contract.md#public-editor-api-version-1):
+  versioned capabilities, read-only project state, native compile-plan export
+  and final-envelope/error fixtures. [Native P0 evidence](acceptance/editor_api_acceptance.md)
+  records the bounded Linux/x86_64 consumer and separate extension/other-host gates.
 - [GitHub CI](acceptance/ci_acceptance.md#current-hosted-coverage-2026-11-11):
   six required hosted jobs, full integration across five host pairs, release workflows and retained failed runs.
 - [Dev SDK / CLI Preview](acceptance/preview_acceptance.md): bounded local candidate,
