@@ -57,6 +57,13 @@ Other recipes and general dependency resolution remain planned.
 
 ## Download the Previews
 
+Source builds also provide the [versioned public editor API](docs/reference/bootstrap_contract.md#public-editor-api-version-1):
+`capabilities --json`, read-only `project info --json`, and
+`export compile-commands --output <file.json>` from the native build plan.
+The first native evidence is Linux/x86_64. These commands are not in the
+published Previews below; consumers must discover capabilities in the exact
+CLI they select. VS Code/clangd adoption retains its own validation.
+
 Each host prerelease carries one CLI executable with statically linked CRT libraries, notices and a pinned inventory.
 Verify the archive using an independently trusted digest, its detached `.sig` and the
 independently verified [publisher key](https://github.com/webos21/crt/blob/main/docs/security/publisher_signing.md).

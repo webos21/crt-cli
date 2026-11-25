@@ -15,9 +15,14 @@ struct Toolchain {
     // any). Throws, listing the candidates, when there are none or several: a project never follows a moving default.
     static std::string select_store_sdk(const std::string& version);
     static Toolchain load(const fs::path& root);
+    // Pure SDK expansion shared by execution and editor export; includes compile depfile argv.
+    std::vector<std::string> arguments(const std::string& operation, bool cpp,
+                const std::vector<std::string>& inputs, const fs::path& output,
+                const std::vector<std::string>& extra, const std::vector<std::string>& libraries,
+                const std::string& mode = "executable-static") const;
     // Returns false when the up-to-date output of an identical earlier command was reused.
     bool invoke(const std::string& operation, bool cpp, const std::vector<std::string>& inputs,
                 const fs::path& output, const std::vector<std::string>& extra, const std::vector<std::string>& libraries,
-                Json& commands, const std::string& mode = "executable-static") const;
+                Json& commands, const std::string& mode = "executable-static", const fs::path& directory = {}) const;
 };
 }

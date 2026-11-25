@@ -11,6 +11,59 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-25
 
+### Unify editor-plan and build directory spelling
+
+After the static-only SDK fixture fix, both Windows jobs reached actual
+compilation but failed literal exported/executed argv comparison. Inspection
+used a raw `out/native` join while execution used the canonical path helper.
+`Builder` now owns one canonical, native-preferred directory for every caller;
+ready project metadata and generated-header paths use it too.
+
+The exact comparison stays strict and reports both sides on failure. Eight
+additional directory-spelling assertions bring focused Linux checks to 389;
+native 949, archive 221, SDK store 114, store locks 9 and recipe 147 also pass
+from a fresh source/output. The required PR gate owns hosted Windows replay.
+SDK identities, compiler policy, API/lock formats and adjacent sources remain
+unchanged. [Failure and validation](docs/acceptance/editor_api_acceptance.md#windows-compiler-argv-path-spelling-2026-11-25).
+
+### Correct the editor fixture's SDK library linkage for Windows CI
+
+PR #53's first CI failed only in the Windows x64/arm64 editor suite. The fixture
+implicitly requested shared zlib with a shared CRT runtime, while both pinned
+SDKs declare static zlib only. Project inspection correctly refused the
+unsupported library variant. The fixture now declares static SDK linkage and
+continues all four static/shared runtime/compile modes on every host.
+
+Added unavailable-library and absent-shared-variant refusal/database-preservation
+checks, with the full query response in ready-state failures. Fresh Linux
+controls pass 381 checks with the public policy and 388 with an explicit
+test-only static-zlib policy copy. The actual hosted replay is owned by the PR's
+required checks. No production source, artifact pin or producer contract changed.
+[Failure, controls and hosted gate](docs/acceptance/editor_api_acceptance.md#windows-ci-static-only-sdk-library-fixture-2026-11-25).
+
+### Implement the minimal public editor API (P0)
+
+Added version-1 capability discovery, read-only project state and native
+compilation-database export. The builder and exporter share per-source flags
+and SDK argv expansion, with explicit project-root compiler working directories.
+Unresolved/stale inputs and invalid output destinations fail without choosing
+SDKs, executing ports, rewriting pins or replacing a previous database.
+Existing final JSON and SDK/port list results retain their contracts; a
+versioned wire fixture distinguishes CLI errors from workflow child failures.
+
+The signed November 25 installed Dev SDK needs no producer change. Native
+Linux/x86_64 P0 checks pass 374/374; all eight C/C++ compile entries match actual
+cold compiler invocations. Network-denied/source-hidden and read-only query
+replay passes, as does SDK/LLVM-free capability discovery. Local self-build and
+native/archive/SDK-store/store-lock/recipe regression gates pass; CI retains
+the editor receipt across its source re-export. No public Preview, artifact
+identity pin, adjacent repository, STATUS or extension adoption is changed.
+
+Checked P0-01 through P0-04 and retained their section. The extension's V0/V1
+and later native-host gates remain separate.
+[Contract and native evidence](docs/acceptance/editor_api_acceptance.md) ·
+[Adoption boundary](docs/compatibility.md#minimal-public-editor-api-1-2026-11-25).
+
 ### Close CI monitoring and pin promotion
 
 CI-01 promoted the signed Windows/arm64 November 20 CLI and Linux/x86_64

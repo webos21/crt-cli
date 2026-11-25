@@ -1,4 +1,5 @@
 #include <crtcli/toolchain.h>
+#include <crtcli/environment.h>
 #include <crtcli/sdk_store.h>
 #include <cctype>
 #include <chrono>
@@ -271,7 +272,7 @@ Toolchain Toolchain::load(const fs::path& root) {
     require(result.selection == lock.at("selection"), "locked SDK/toolchain identity mismatch");
     return result;
 }
-bool Toolchain::invoke(const std::string& operation, bool cpp, const std::vector<std::string>& inputs, const fs::path& output, const std::vector<std::string>& extra, const std::vector<std::string>& libraries, Json& commands, const std::string& mode) const {
+std::vector<std::string> Toolchain::arguments(const std::string& operation, bool cpp, const std::vector<std::string>& inputs, const fs::path& output, const std::vector<std::string>& extra, const std::vector<std::string>& libraries, const std::string& mode) const {
     std::vector<std::string> argv{(operation == "archive" ? archiver : cpp ? cxx : cc).string()};
     const auto& recipe = contract.at("modes").at(mode);
     if (!extra.empty()) {
@@ -300,18 +301,22 @@ bool Toolchain::invoke(const std::string& operation, bool cpp, const std::vector
         }
     }
     if (operation == "link") argv.push_back("--ld-path=" + linker.string());
+    if (operation == "compile") argv.insert(argv.begin() + 1, {"-MD", "-MF", output.string() + ".d"});
+    return argv;
+}
+bool Toolchain::invoke(const std::string& operation, bool cpp, const std::vector<std::string>& inputs, const fs::path& output, const std::vector<std::string>& extra, const std::vector<std::string>& libraries, Json& commands, const std::string& mode, const fs::path& directory) const {
+    auto argv = arguments(operation, cpp, inputs, output, extra, libraries, mode);
     // The reuse key covers the command line, the selected SDK/tool identity and the content of every input outside the SDK.
     auto key_file = fs::path(output.string() + ".key"), depfile = fs::path(output.string() + ".d");
-    std::string command = sha256(selection.dump() + std::string(1, '\0') + [&] { std::string joined; for (const auto& arg : argv) joined += arg + '\0'; return joined; }());
+    std::string command = sha256(selection.dump() + std::string(1, '\0') + directory.string() + std::string(1, '\0') + [&] { std::string joined; for (const auto& arg : argv) joined += arg + '\0'; return joined; }());
     require(!fs::is_symlink(key_file) && !fs::is_symlink(depfile), "build cache files must not be symlinks");
     if (unchanged(key_file, output, command)) return false;
     retire_output(output);
     fs::remove(key_file);
     fs::remove(depfile);
     auto run = argv;
-    if (operation == "compile") run.insert(run.begin() + 1, {"-MD", "-MF", depfile.string()});
     commands.push_back(run);
-    auto child = execute(run, 180, true, true);
+    auto child = execute_child(run, child_environment(true), directory, 180, true);
     require(child.exit_code == 0, "compiler/linker failed (exit " + std::to_string(child.exit_code) + ")");
     require(fs::is_regular_file(output), "compiler did not produce output");
     std::vector<std::string> dependencies = inputs;

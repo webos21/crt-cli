@@ -16,6 +16,41 @@ The native JSON bootstrap replaces the initial CMake prototype. The
 [implemented contract](../reference/bootstrap_contract.md) owns formats and scope;
 [acceptance](../acceptance/bootstrap_acceptance.md) owns per-host outcomes.
 
+## Use the Public Editor API
+
+Use a source-built CLI with the P0 implementation; the existing published
+Previews do not advertise these capabilities. Keep the chosen executable's
+identity with the SDK/project evidence, since `0.1.0-dev` alone is not a
+feature/version check.
+
+```text
+/absolute/crt-cli capabilities --json
+/absolute/crt-cli project info --project /absolute/project --api-version 1 --json
+/absolute/crt-cli export compile-commands --project /absolute/project --output /absolute/project/compile_commands.json --api-version 1 --json
+```
+
+Validate the bootstrap envelope schema/format and the advertised API/command
+payload versions before using data. `project info` can succeed while reporting
+`state: unresolved` or `incompatible`; read its diagnostics. Select/install the
+SDK and declare LLVM through the normal explicit workflow, then build. A query
+or export does not choose a replacement SDK, acquire inputs, run a port build
+or change a lock. `build --json`, test and run retain one final stdout object;
+compiler/application output remains on stderr.
+
+Export accepts an existing output parent and a new `.json` path or a previous
+compilation database. Relative output paths use the caller's current directory,
+independently of `--project`. Keep the file outside protected source, binding,
+SDK/store and native-output areas; the project root's `compile_commands.json`
+is the usual choice. The compile directory in each entry is the project root,
+matching actual compiler execution. Refresh after deliberate manifest/lock
+changes. If a source includes generated headers, an ordinary build must create
+them; export never generates them on behalf of an editor.
+
+The [reference](../reference/bootstrap_contract.md#public-editor-api-version-1)
+owns all fields/errors and existing list JSON. [P0 acceptance](../acceptance/editor_api_acceptance.md)
+owns C/C++ argv equivalence, read-only/negative cases, exact native inputs and
+the Linux replay procedure. Extension/clangd adoption remains separate.
+
 ## Build and Test the Bootstrap
 
 Use native LLVM and a produced Dev SDK plus its separately hashed experimental

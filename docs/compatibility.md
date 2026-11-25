@@ -11,6 +11,33 @@ the [request/handoff record](crt_host_tools_publication_request.md#macoswindows-
 prerequisite from consumer adoption. The per-host records below retain their exact scope: closing the request neither promotes integration
 pins nor closes hosted jobs, Windows/arm64 D1 (31/32), or private-DLL qualification. No format or runtime contract changes here.
 
+## Minimal public editor API 1 (2026-11-25)
+
+CLI source baseline `6cabc72e940bca7e2a50b266888a9c784b0e7d6a` plus the
+bounded P0 increment implements capability discovery, read-only project state
+and compile-plan export. The [public contract](reference/bootstrap_contract.md#public-editor-api-version-1)
+assigns CLI-owned editor API/payload version 1 while preserving the existing
+bootstrap final envelope, native provider and project lock at format 1.
+No producer or extension format is assigned by inference.
+
+The consumer uses signed Linux/x86_64 Dev SDK
+`v0.0.1-preview.20261125.linux.x64.1` from clean producer
+`c89ae1ac720b258e7ee0e52829f900636283cb67`, content
+`d2edb36c64f8f7c6d67603763e07a83d0cb4c2858c99e7957e00dde2d54dc921`,
+native policy
+`54bb35e014c59af90c1e2b73c3f544ebc7815edc958e704e15bef097dbedd2d1`.
+CRT's reviewed P1-01 at `208b1c213d85a0651986f0c4824de272925e4eed`
+qualifies these producer inputs; the CLI owns actual export/readonly/error
+fixtures and [native consumer evidence](acceptance/editor_api_acceptance.md).
+
+`crt-vscode` requirements were reviewed at
+`5f468d11dcb57db8350b0abf7d04f35a2def95c6`. This is not an exercised editor
+combination: V0 must adopt discovery/envelope fixtures and V1 must run its
+Linux workflow, clangd and later native-host gates. Other editors can use the
+same versioned CLI contract; no help-string, release-version or documented
+field agreement substitutes for runtime adoption. No SDK/CLI artifact pin,
+publisher key, root/project lock, public release or adjacent source changes.
+
 ## Native Windows/x64 PAL consumer combination (2026-11-23)
 
 Exercised on physical Windows/x86_64 build 26100 with native LLVM 22.1.8:
@@ -1074,7 +1101,7 @@ schema, compatibility guarantee, or public release.
 | Port recipe and executor | CRT technical policy; CLI adapter / CLI | Existing JSON `schema_version: 1`; adapter/registry version not assigned | Pinned installed driver/recipe/tests/shims and actual zlib static/shared build/run |
 | SDK development contract | CRT / CLI, Studio | Proposed v1 sidecar/extension; schema/path not implemented | Schema/negative fixtures plus SDK-only consumer compile/link/run and runtime audit |
 | Independent Host Tools Bundle | CRT / CLI | Proposed; independent contract version not assigned | Native tool/alias/rootfs/DLL execution; reject incompatible target tools on the build host |
-| CLI command/final JSON/job events | CLI / Studio, automation | Draft; implemented wire versions/capabilities not assigned | Versioned fixtures, actual commands, errors/cancellation and separate output streams |
+| CLI command/final JSON/job events | CLI / editors, Studio, automation | Bootstrap final envelope 1; bounded editor API 1; job events remain unavailable | [P0 contract](reference/bootstrap_contract.md#public-editor-api-version-1), versioned fixtures and native consumer evidence; separate future event stream |
 | Public UI capabilities for Studio | CRT / Studio | Existing public APIs; no separate versioned "Studio UI Profile v1" | Exact SDK capabilities and native GUI/input/IME evidence in Studio |
 
 Source observations are pinned to the reviewed CRT revision:

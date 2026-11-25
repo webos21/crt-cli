@@ -12,6 +12,47 @@ from unittest.mock import patch
 from ci_bootstrap import Ci, CiError, ROOT as ROOT_FOR_TESTS, host_key, native_phase_report, windows_sdk_path
 
 
+class EditorReceiptTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        (self.root / 'artifact').mkdir()
+        (self.root / 'project/out/editor-test').mkdir(parents=True)
+        self.receipt = self.root / 'project/out/editor-test/result.json'
+        self.ci = Ci.__new__(Ci)
+        self.ci.args = SimpleNamespace(tests=['editor-test'])
+        self.ci.work, self.ci.summary = self.root, {}
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def run_report(self):
+        with patch.object(self.ci, 'cli', return_value=({'outcomes': [{'exit_code': 0, 'timed_out': False}]},
+                                                      'editor-test: 3 checks passed\n')):
+            return self.ci.run_tests('unused-cli', self.root / 'project')
+
+    def test_passing_receipt_survives_the_stage_source_reexport(self):
+        self.receipt.write_text(json.dumps({'passed': True, 'checks': 3, 'calls': []}))
+        self.assertEqual(self.run_report(), {})
+        saved = self.root / 'artifact/editor-api-result.json'
+        self.assertEqual(saved.read_bytes(), self.receipt.read_bytes())
+        shutil.rmtree(self.root / 'project')
+        self.assertTrue(saved.is_file())
+
+    def test_missing_receipt_is_not_a_pass(self):
+        self.assertIn('editor-test', self.run_report())
+        self.assertEqual(self.ci.summary['tests'], {})
+        self.assertFalse((self.root / 'artifact/editor-api-result.json').exists())
+
+    def test_bad_or_mismatched_receipts_are_not_published(self):
+        for report in ('not JSON', '[]', '{"passed":false,"checks":3}', '{"passed":true,"checks":2}',
+                       '{"passed":true,"checks":true}'):
+            with self.subTest(report=report):
+                self.receipt.write_text(report)
+                self.assertIn('editor-test', self.run_report())
+                self.assertFalse((self.root / 'artifact/editor-api-result.json').exists())
+
+
 class NativePhaseReportTest(unittest.TestCase):
     def setUp(self):
         names = ['startup', 'process', 'selection', 'projects/c', 'projects/cxx'] + [
