@@ -1063,3 +1063,35 @@ A fresh unauthenticated download of all three assets also verified against the s
 change to the signature produced `publisher_signature_invalid` and published no output. Receipts are in
 `C:\Users\cmjo\w\ar20\signed-public\download.json` and `C:\Users\cmjo\w\ar20\signed-public\native-fetch.json`.
 The full native package verifier passed again in `C:\Users\cmjo\w\ar20\signed-verify\`, with an identical `verify.json` receipt.
+
+## Linux/x86_64 sign-before-publishing Preview (2026-11-25)
+
+[`v0.1.0-preview.20261125.linux-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261125.linux-x86_64.1)
+was published at `2026-11-25T00:53:21Z` as a non-latest prerelease, release
+ID `457496851`. The tag points directly to
+`20ee7e6c7b4a645a795b3db32cab101afef5078c`. The separately approved
+[finalizer](https://github.com/webos21/crt-cli/actions/runs/45521362159)
+verified both offline signatures against the [stage receipt](https://github.com/webos21/crt-cli/actions/runs/45513708388)
+before publication and checked the downloaded assets afterwards.
+[Hosted control runs](ci_acceptance.md#hosted-sign-before-publishing-gate-2026-11-25).
+
+| Payload | Bytes | SHA-256 | Detached signature SHA-256 |
+| --- | ---: | --- | --- |
+| `crt-cli-0.1.0-dev-linux-x86_64-preview.20261125.1.tar.xz` | 5295152 | `942a45365cb3906754e5663a1c401ba223201cab9f025aa23d30e2b285a42289` | `63e482b7fea39e5be10824a032d153f4600a455918ef65065821298b666a3131` |
+| `SHA256SUMS-linux-x86_64` | 123 | `50a811cbf1a65f61bdd07c0fe55a0c2d9101cac478e19561b0a7dd54bae47da8` | `d7c6885c855d163fed8c3a1333cca1407517f10e9c08fea15adc0ec011188572` |
+
+A fresh macOS workspace obtained all four files over unauthenticated HTTPS.
+It confirmed the tag, release identity, exact inventory, staged payload
+sizes and digests, and the checksum-file entry for the archive. Both
+256-byte RSA-PSS signatures verified against the independently pinned
+[publisher key](https://github.com/webos21/crt/blob/main/docs/security/publisher_signing.md)
+(SPKI SHA-256 `59218576956e493476bc36f7385d8e01a03ff9b92946a531b013ad3937d43fa2`).
+
+Native Linux C/C++ package verification ran before staging, with the
+signature-checked November 16 bootstrap CLI and the pinned November 18 SDK
+`v0.0.1-preview.20261118.linux.x64.1` (content SHA-256
+`3008315d40f5785226ecb26aee9a746ddc7fe8513d1ac895e7f4ce77eb057a79`).
+Each language executed three cold commands and zero warm commands.
+The macOS replay verified public bytes, not a Linux executable run.
+The concurrently published November 25 SDK was not the CLI's tested input.
+There was no pin adoption or change to existing project locks.

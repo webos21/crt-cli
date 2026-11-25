@@ -60,17 +60,21 @@ Other recipes and general dependency resolution remain planned.
 Each host prerelease carries one CLI executable with statically linked CRT libraries, notices and a pinned inventory.
 Verify the archive using an independently trusted digest, its detached `.sig` and the
 independently verified [publisher key](https://github.com/webos21/crt/blob/main/docs/security/publisher_signing.md).
+The November 25 Linux/x86_64 Preview also signs its checksum file before
+publication. Verify that file's own signature before relying on it.
 Install the Dev SDK and LLVM-compatible tools separately. Supply a CA bundle
 when using HTTPS acquisition.
 
 | Host | Signed CLI Preview | Explicit SDK input |
 | --- | --- | --- |
-| Linux/x86_64 | [`v0.1.0-preview.20261116.linux-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261116.linux-x86_64.1) | [`v0.0.1-preview.20261118.linux.x64.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261118.linux.x64.1), LLVM 21 |
+| Linux/x86_64 | [`v0.1.0-preview.20261125.linux-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261125.linux-x86_64.1) | [`v0.0.1-preview.20261118.linux.x64.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261118.linux.x64.1), LLVM 21 |
 | Linux/aarch64 | [`v0.1.0-preview.20261116.linux-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261116.linux-arm64.1) | [`v0.0.1-preview.20261110.linux.arm64.2`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.linux.arm64.2), LLVM 21 |
 | macOS/arm64 | [`v0.1.0-preview.20261117.macos-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261117.macos-arm64.1) | [`v0.0.1-preview.20261110.macos.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.macos.1), macOS 15.0 or later and Xcode command-line tools |
 | Windows/x64 | [`v0.1.0-preview.20261117.windows-x86_64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261117.windows-x86_64.1) | [`v0.0.1-preview.20261110.windows.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261110.windows.1), LLVM and Windows SDK |
 | Windows/arm64 | [`v0.1.0-preview.20261120.windows-arm64.1`](https://github.com/webos21/crt-cli/releases/tag/v0.1.0-preview.20261120.windows-arm64.1) | [`v0.0.1-preview.20261118.windows.arm64.1`](https://github.com/webos21/crt/releases/tag/v0.0.1-preview.20261118.windows.arm64.1), native ARM64 LLVM and Windows SDK |
 
+The November 25 Linux/x86_64 CLI was exercised with the November 18 SDK
+shown above, not the separately published November 25 SDK.
 SDK acquisition uses the caller's pinned source file and preserves existing project locks. The Windows/arm64 release above includes
 the large-output fix. See [STATUS](STATUS.md#implemented-and-exercised-scope) for CI bootstrap pins and the [release records](docs/acceptance/preview_acceptance.md)
 for exact build and replay inputs.

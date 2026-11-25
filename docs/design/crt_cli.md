@@ -549,7 +549,7 @@ Consumers must verify the signature of each asset whose authenticity they
 require and independently pin published bytes. Older releases keep their
 recorded signature coverage. A KMS or workflow-held key would require a new
 custody decision and rotation; GitHub attestations are separate.
-[Hosted acceptance queue](../../TODO.md#p1---sign-before-publishing).
+[Hosted acceptance](../acceptance/ci_acceptance.md#hosted-sign-before-publishing-gate-2026-11-25).
 
 ## 9. Joint Development Sequence
 

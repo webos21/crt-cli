@@ -99,27 +99,6 @@ editor acceptance.
   public SDK inputs and declared host tools, with explicit acquisition consent,
   accurate failures and unchanged existing project locks on failure.
 
-<a name="ci-operations"></a>
-
-### P1 - Sign Before Publishing
-
-Coordinate release finalization with CRT. The staging/finalization code and
-local negative controls are in place; the hosted rehearsal is still pending.
-
-Existing baseline:
-[hosted publication and attached signatures](docs/acceptance/ci_acceptance.md#first-real-publication-and-its-signatures-2026-11-17). Rehearse the new finalization path with
-[crt SDK signing P1-01 and P1-02](https://github.com/webos21/crt/blob/main/TODO.md#p1---sign-before-publishing-sdks-d6).
-
-- [ ] **P1-01** Qualify the hosted gate with CRT: main-only required reviewers
-  on both jobs, non-finalizable rehearsal draft, and one detached signature
-  for each payload (archive and `SHA256SUMS-*`). Exercise refusal and retry
-  cases, then verify public bytes on the first owner-approved release.
-  [Procedure](docs/guides/development.md#publish-a-cli-preview).
-- Acceptance: missing/wrong signatures, changed/extra assets and invalid
-  finalization attempts stay non-public; approved signed bytes finalize once and
-  independently verify after download. Preserve interrupted/retry safety and
-  keep key distribution/rotation/revocation and OS code signing separate.
-
 ## Planned
 
 <a name="ci-monitoring-and-pin-promotion"></a>

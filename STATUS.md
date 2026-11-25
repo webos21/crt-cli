@@ -3,7 +3,9 @@
 Reviewed on **2026-11-24** against CLI `af849da`, CRT `88b172c` and the
 editor scaffold `e418379`. The snapshot includes the recorded public releases,
 CI pins, completed work and current work queue. Each native result retains its
-original source revision, SDK pin and host scope.
+original source revision, SDK pin and host scope. The release section was
+refreshed on **2026-11-25** against CLI `20ee7e6` and CRT `c89ae1ac`;
+the other evidence baselines are unchanged.
 [TODO](TODO.md) · [HISTORY](HISTORY.md) · [Acceptance](docs/acceptance/sdk_install_acceptance.md).
 
 ## Implemented and exercised scope
@@ -40,6 +42,14 @@ The signed Windows/arm64 workflow Preview `v0.1.0-preview.20261120.windows-arm64
 and D1 32/32 with the original deadlines. The CI bootstrap row uses the signed hand-built 20261118 release.
 [Publication and public replay](docs/acceptance/preview_acceptance.md#windowsarm64-workflow-preview-release-2026-11-20).
 
+The [November 25 Linux/x86_64 CLI](docs/acceptance/preview_acceptance.md#linuxx86_64-sign-before-publishing-preview-2026-11-25)
+was published only after both payload signatures verified. The
+[hosted signing gate](docs/acceptance/ci_acceptance.md#hosted-sign-before-publishing-gate-2026-11-25)
+also rejected a rehearsal and the unsigned real draft. A fresh public
+download matched the receipt and verified both signatures. The CLI's tested
+SDK remains the November 18 pin in the table; the new SDK and CLI were not
+exercised together, and no CI pin was promoted.
+
 The Windows/x64 private-DLL protocol passed a local 27-case replay with actual shared AWK, app-local DLLs, cwd/PATH collisions,
 payload refusal and same-pin recovery. The public CI bundles use static host tools.
 [Windows/x64 local qualification](docs/acceptance/host_environment_acceptance.md#windowsx64-private-dll-host-tools-replay-2026-11-20).
@@ -69,10 +79,9 @@ replayed on later unpromoted candidates; that does not update the public pins.
   [Completed replays](HISTORY.md#replay-the-external-c17-persona-consumer-on-windowsarm64-and-close-p1-01) ·
   [Windows PAL combination](docs/compatibility.md#native-windowsx64-pal-consumer-combination-2026-11-23) ·
   [Consumer handoff](TODO.md#p1---producer-correctness-handoff-and-first-user-workflow-d5).
-- **P1 release signing.** The current Preview flow attaches the owner's offline
-  signature after publication. Sign-before-publish, official default trust and
-  URLs, key lifecycle and platform code signing have separate gates.
-  [Sign Before Publishing](TODO.md#p1---sign-before-publishing).
+- **Trust scope.** Publisher signatures cover individual files. Official
+  default trust and URLs, key lifecycle and platform code signing are outside
+  the completed [publication gate](docs/acceptance/ci_acceptance.md#hosted-sign-before-publishing-gate-2026-11-25).
 - **CI Operations.** CI pins move under the reviewed promotion policy.
   Linux/arm64 CI and native signature replay cover Ubuntu 26.04 with glibc 2.43.
   Raspberry Pi, additional loader versions and non-admin
