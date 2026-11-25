@@ -11,6 +11,21 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-25
 
+### Correct the editor fixture's SDK library linkage for Windows CI
+
+PR #53's first CI failed only in the Windows x64/arm64 editor suite. The fixture
+implicitly requested shared zlib with a shared CRT runtime, while both pinned
+SDKs declare static zlib only. Project inspection correctly refused the
+unsupported library variant. The fixture now declares static SDK linkage and
+continues all four static/shared runtime/compile modes on every host.
+
+Added unavailable-library and absent-shared-variant refusal/database-preservation
+checks, with the full query response in ready-state failures. Fresh Linux
+controls pass 381 checks with the public policy and 388 with an explicit
+test-only static-zlib policy copy. The actual hosted replay is owned by the PR's
+required checks. No production source, artifact pin or producer contract changed.
+[Failure, controls and hosted gate](docs/acceptance/editor_api_acceptance.md#windows-ci-static-only-sdk-library-fixture-2026-11-25).
+
 ### Implement the minimal public editor API (P0)
 
 Added version-1 capability discovery, read-only project state and native

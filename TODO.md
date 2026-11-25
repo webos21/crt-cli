@@ -76,6 +76,10 @@ P0-04 supplies the final-envelope fixtures for V0-04.
   source-hidden/read-only Linux replay and the complete local fast suite pass.
   CLI-owned P0 is complete; extension V0/V1 adoption and other-host editor replay
   remain separate. Keep this checked section until the owner asks to retire it.
+- [x] CI fixture follow-up: explicitly select static SDK zlib while retaining
+  all four runtime/compile modes; validate unavailable-library/variant refusal
+  and database preservation ([381/388-check local controls](docs/acceptance/editor_api_acceptance.md#windows-ci-static-only-sdk-library-fixture-2026-11-25)).
+  The required PR gate owns the native hosted Windows replay.
 - Acceptance: exported C/C++ compile entries match actual cold-build compiler
   invocations; queries preserve manifests/locks and report exact selected inputs;
   unsupported commands/versions fail clearly in the extension. The extension

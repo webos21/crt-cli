@@ -143,11 +143,69 @@ checks all eight objects' actual debug compilation directories against the DB.
 Python, Bubblewrap, strace and readelf are test-host orchestrators/auditors,
 never CLI/app prerequisites.
 
+## Windows CI static-only SDK library fixture (2026-11-25)
+
+PR [#53](https://github.com/webos21/crt-cli/pull/53), source `8fcc05e`, failed in
+`editor-test` on both Windows hosts in run
+[`45579708676`](https://github.com/webos21/crt-cli/actions/runs/45579708676).
+All four Linux/macOS jobs passed; the Windows native/archive/SDK-store/store-lock/
+recipe suites and remaining bootstrap/audit stages passed. The shared failure
+was the fixture's `ready before build` assertion, before compile export began.
+
+Both public Windows policies were downloaded and checked against their
+unchanged CI contract pins:
+
+| Host | SDK policy SHA-256 | Declared zlib artifacts |
+| --- | --- | --- |
+| Windows/x64 | `7762f572b4614b3068e1ea99694ce19360e213d31c5bd01019e4ad6ce005b726` | `static: lib/libz.a`; no shared variant |
+| Windows/arm64 | `7c7027800b5099454ca1d67847943459064362fa65204d5ca17d6a3c8e1b721b` | `static: lib/libz.a`; no shared variant |
+
+The original fixture declared zlib on all targets but left `sdk_library_linkage`
+implicit. Its shared-runtime executable/library therefore asked for shared
+zlib, which those SDKs do not declare. The read-only planner correctly refused
+that request. SDK library linkage and CRT runtime linkage are independent,
+already implemented contracts; this was not a missing Windows export feature
+or permission to invent an SDK variant.
+
+The fixture now explicitly selects static SDK zlib. Static/shared CRT runtime
+and all four C/C++ compile modes remain exercised; no host, target or suite is
+skipped. A missing SDK library must report an actionable incompatible-state
+diagnostic and leave project/database bytes unchanged. A policy declaring no
+shared zlib also exercises an explicit shared request and requires its refusal,
+with no fallback or database replacement. Ready-state assertion failures now
+include the actual query response so future provider mismatches are visible
+in job logs.
+
+Fresh focused Linux validation passes **381/381** against the original public
+SDK. An explicitly test-only policy copy removes the Linux provider's shared
+zlib entry to reproduce the Windows declaration, keeping the public SDK and
+original policy untouched. The implicit shared request reports
+`the SDK contract declares no shared variant of library 'z' for this target`,
+and export fails with `project_incompatible` before writing a database.
+Explicit static selection restores a ready plan, and the complete corrected
+fixture passes **388/388**, including the extra absent-variant negatives.
+This constrained copy is a local failure control, not a producer policy
+promotion or a replacement for native Windows CI.
+
+Local work is retained under `/home/syszone/crt-cli-editor-ci-fix-20261125/`:
+`local/` has the fresh source/test export and 381-check receipt;
+`static-only-control-r2/` has the restricted policy, request/refusal logs and
+388-check receipt. The first control setup assumed legacy `application`
+instead of `new`'s current `targets` manifest and stopped before configure;
+that setup failure remains separate. Initial hosted logs/artifacts and both
+verified Windows policies are under ignored `out/editor-api-ci-fix-20261125/`.
+
+The [required PR checks](https://github.com/webos21/crt-cli/pull/53/checks) own
+the corrected native Windows replay and full six-job gate. Production code,
+API/lock formats, SDK/CLI artifact pins, publisher inputs and adjacent sources
+are unchanged by this fixture correction.
+
 ## Limits and downstream handoff
 
-Only Linux/x86_64 is qualified here. Other architectures/hosts and hosted
-feature-matrix runs need their own source/artifact identities; earlier native
-PAL/SDK records are not current P0 replay. No clangd binary or Extension
+The standalone source-hidden/read-only consumer workflow is qualified on
+Linux/x86_64. Hosted native P0 suite results belong to the PR checks and their
+per-host source/artifact identities; earlier native PAL/SDK records are not
+current P0 replay. No clangd binary or Extension
 Development Host was run. `crt-vscode` must adopt API/version discovery and
 these final-envelope fixtures through its V0 queue, then exercise V1-08/09/10.
 The existing help-substring guard is still provisional extension code.

@@ -80,14 +80,18 @@ int main(int argc, char** argv) {
         const bool app = std::string(name).find("app-") == 0;
         const std::string kind = app ? "executable" : std::string(name) == "archive" ? "static-library" : "shared-library";
         targets.push_back({{"name", name}, {"kind", kind}, {"runtime_linkage", std::string(name) == "app-static" || kind == "static-library" ? "static" : "shared"},
-            {"sources", {"src/main/probe.c", app ? "src/main/main.cpp" : "src/main/probe.cpp"}}, {"sdk_libraries", {"z"}}});
+            {"sources", {"src/main/probe.c", app ? "src/main/main.cpp" : "src/main/probe.cpp"}}, {"sdk_libraries", {"z"}},
+            // SDK library artifacts and CRT runtime linkage are independent. The
+            // pinned Windows SDKs declare static zlib only; all four compile
+            // modes still run with their requested static/shared CRT runtime.
+            {"sdk_library_linkage", "static"}});
     }
     manifest["targets"] = targets;
     write_text(project / "crt.json", manifest.dump(2) + "\n");
     call(cli, binding(project, parent));
     snapshot = inventory(project);
     info = call(cli, {"project", "info", "--project", project.string()});
-    check(info.at("state") == "ready" && info.at("targets").size() == 4, "ready before build");
+    check(info.at("state") == "ready" && info.at("targets").size() == 4, "ready before build: " + info.dump());
     check(info.at("lock").at("sha256") == file_sha256(project / "crt.lock") &&
           info.at("selection") == read_json(project / "crt.lock").at("selection"), "exact selected lock identity");
     for (const auto& target : info.at("targets")) check(target.at("exists") == false, "query does not build targets");
@@ -122,6 +126,31 @@ int main(int argc, char** argv) {
     const auto saved_database = read_text(database);
     call(cli, {"export", "compile-commands", "--project", project.string(), "--output", database.string()});
     check(read_text(database) == saved_database && inventory(project) == snapshot, "stable atomic re-export");
+    // A missing SDK library is an incompatible plan, never permission to pick
+    // another variant, rewrite a pin or replace the previous database.
+    auto unavailable = manifest;
+    unavailable["targets"][0]["sdk_libraries"] = Json::array({"editor-missing-sdk-library"});
+    write_text(project / "crt.json", unavailable.dump()); snapshot = inventory(project);
+    auto unsupported_library = call(cli, {"project", "info", "--project", project.string()});
+    check(unsupported_library.at("state") == "incompatible" &&
+          unsupported_library.at("diagnostics").at(0).at("message").get<std::string>().find("declares no library") != std::string::npos,
+          "unavailable SDK library has an actionable diagnostic");
+    call(cli, {"export", "compile-commands", "--project", project.string(), "--output", database.string()}, 1, "project_incompatible");
+    check(inventory(project) == snapshot && read_text(database) == saved_database, "unavailable SDK library preserves project and database");
+    write_text(project / "crt.json", manifest.dump(2) + "\n");
+    auto policy = read_json(info.at("sdk").at("contract_path").get<std::string>());
+    if (!policy.at("libraries").at("z").contains("shared")) {
+        auto unsupported_variant = manifest;
+        unsupported_variant["targets"][1]["sdk_library_linkage"] = "shared";
+        write_text(project / "crt.json", unsupported_variant.dump()); snapshot = inventory(project);
+        auto rejected = call(cli, {"project", "info", "--project", project.string()});
+        check(rejected.at("state") == "incompatible" &&
+              rejected.at("diagnostics").at(0).at("message").get<std::string>().find("no shared variant") != std::string::npos,
+              "SDK without shared zlib refuses an explicit shared request");
+        call(cli, {"export", "compile-commands", "--project", project.string(), "--output", database.string()}, 1, "project_incompatible");
+        check(inventory(project) == snapshot && read_text(database) == saved_database, "unsupported variant does not fall back or rewrite");
+        write_text(project / "crt.json", manifest.dump(2) + "\n");
+    }
     const auto lock_bytes = read_text(project / "crt.lock");
     for (const auto& field : {"sdk_content_sha256", "contract_sha256"}) {
         auto lock = Json::parse(lock_bytes); lock["selection"][field] = std::string(64, '0');
