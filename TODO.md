@@ -25,28 +25,29 @@ work is checked off here and recorded in [HISTORY](HISTORY.md).
 Task IDs are scoped to their topic heading. Refer to the repository and topic
 when a prefix such as `P1` or `V1` appears under multiple headings.
 
-<a name="ci-monitoring-and-pin-promotion"></a>
-<a name="ci---monitoring-and-pin-promotion"></a>
-CI monitoring and pin promotion completed on 2026-11-25; see
-[HISTORY](HISTORY.md#close-ci-monitoring-and-pin-promotion) and the linked
-acceptance records. These anchors preserve previous evidence links.
+## Done
+
+See [`HISTORY.md`](HISTORY.md) for the full, dated, reverse-chronological
+record of completed work. This section stays empty in `TODO.md` itself. Finished
+top-level work moves to `HISTORY.md`; terse checked prerequisite gates may remain
+under an active tranche only to make its execution order legible.
 
 ## In Progress
 
 ### P0 - Minimal Public Editor API (D7 slice, coordinated with D5/D6)
 
 `crt-vscode` is the first editor consumer. Other editors and automation can use
-the same API, and clangd reads the generated database. This D7 slice can use
-the existing Dev SDK and bounded project workflow.
+the same API, and clangd reads the generated database. Start with an installed
+Dev SDK and the bounded project workflow on Linux/x86_64.
 
 Contract baseline:
 [implemented native policy](docs/reference/bootstrap_contract.md#producer-owned-native-policy)
-and [commands and results](docs/reference/bootstrap_contract.md#commands-and-results) .
-The proposed API gates below are pending. Coordinate SDK fixtures with
-[crt SDK support P1-01](https://github.com/webos21/crt/blob/main/TODO.md#p1---sdk-support-for-the-first-editor-workflow)
-. P0-01 through P0-03 supply
-[crt-vscode V0-01 through V0-03](https://github.com/webos21/crt-vscode/blob/main/TODO.md#v0---crt-cli-contract-owned-by-crt-cli-requirements-only-here)
-. Include final-envelope fixtures for V0-04 under P0-04.
+and [commands and results](docs/reference/bootstrap_contract.md#commands-and-results).
+Validate the SDK policy fixtures with
+[crt P1-01](https://github.com/webos21/crt/blob/main/TODO.md#p1---sdk-support-for-the-first-editor-workflow)
+and review any provider gap there before changing the SDK. P0-01 through P0-03
+supply [crt-vscode V0-01 through V0-03](https://github.com/webos21/crt-vscode/blob/main/TODO.md#v0---crt-cli-contract-owned-by-crt-cli-requirements-only-here).
+P0-04 supplies the final-envelope fixtures for V0-04.
 
 - [ ] **P0-01** Specify and implement proposed `export compile-commands --output <file>`
   from the same SDK-expanded per-source argv used by the native builder.
@@ -63,12 +64,13 @@ The proposed API gates below are pending. Coordinate SDK fixtures with
   command or schema.
 - [ ] **P0-04** Add focused contract fixtures and native consumer evidence to
   [the implemented reference](docs/reference/bootstrap_contract.md) and
-  [compatibility](docs/compatibility.md). Proposed command spellings/fields above
-  remain unimplemented until adopted and exercised.
+  [compatibility](docs/compatibility.md). Keep proposed commands and fields
+  separate from implemented contracts and record the exact inputs exercised.
 - Acceptance: exported C/C++ compile entries match actual cold-build compiler
   invocations; queries preserve manifests/locks and report exact selected inputs;
-  unsupported commands/versions fail clearly in the extension. Start with the
-  Linux/x86_64 editor workflow, then qualify macOS/arm64 and Windows/x64.
+  unsupported commands/versions fail clearly in the extension. The extension
+  owns the [Linux/x86_64 V1-10 workflow check](https://github.com/webos21/crt-vscode/blob/main/TODO.md#v1---extension-mvp)
+  and the later macOS/arm64 and Windows/x64 replays.
 
 Global `--json`, including `build --json`, already returns one
 `crt-cli.bootstrap-result`, format 1 envelope; child output is relayed to stderr
