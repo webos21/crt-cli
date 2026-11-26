@@ -123,7 +123,11 @@ def main():
                  '--release-manifest-sha256', args.manifest_sha256, '--store', str(store)],
                  check=lambda r: r['data']['identity']['content_sha256'] == args.content_sha256 and not r['data']['already_installed'])
     directory = sorted(p.name for p in store.iterdir() if not p.name.startswith('.'))
-    record('exactly one installed SDK and empty bookkeeping', len(directory) == 1 and not list((store / '.staging').glob('*')) and not list((store / '.locks').glob('*')), directory)
+    # The CLI keeps its per-content lock file by design; nothing else may remain.
+    leftovers = sorted(p.name for p in (store / '.locks').glob('*'))
+    record('exactly one installed SDK, empty staging and no lock beyond its content key',
+           len(directory) == 1 and not list((store / '.staging').glob('*')) and
+           set(leftovers) <= {args.content_sha256[:12] + '.lock'}, [directory, leftovers])
     sdk_dir = directory[0] if directory else ''
     call('sdk verify', ['sdk', 'verify', sdk_dir, '--store', str(store)], check=lambda r: r['data']['verified'])
     call('reinstall is idempotent', ['sdk', 'install', '--archive', str(inputs / archive['name']), '--release-manifest', str(manifest_path),
