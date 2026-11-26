@@ -64,13 +64,23 @@ cover the follow-up scope. R05 numbers link the release work across repositories
   Dev SDK, build, test and run fresh C and C++ projects, and verify warm reuse.
   Replay the existing D3 port path with the selected Host Tools. See
   [project lifecycle acceptance](docs/acceptance/lifecycle_acceptance.md#d2d5---project-sdk-and-creation).
+  Linux/x86_64: the local RC1 CLI passes the D3 zlib project and port command
+  replay (17/17 adapter gates), including port reuse and a warm build with
+  22 reused steps ([record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#linuxx86_64-dev-sdk-050-rc1-2026-11-26)).
   Linux/aarch64: with a CLI built from the local RC1 candidate the D3 port path passes (25/25), and the editor policy replay (8 compile commands, C/C++ build, run,
   warm reuse) passes with the signed Preview CLI ([record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#linuxaarch64-dev-sdk-050-rc1-2026-11-26));
   acquiring the signed candidate with the candidate CLI remains, because it is not signed or published yet.
   macOS/arm64: the local candidate handoff passes C/C++ first build, test, run and warm reuse (54/54), C provider 76/76 and D3 28/28
   ([record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#macosarm64-dev-sdk-050-rc1-2026-11-26)); signed acquisition remains.
+  [macOS/arm64 RC2](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#macos-150-deployment-target-2026-11-26)
+  repeats the handoff, C provider and editor policy with the RC1 CLI. Its D3
+  replay remains open.
   Windows/x64: with the CLI built from the local RC1 candidate the D3 port suites and a real zlib port build pass with the signed Host Tools, and the editor-policy
   replay (8 compile commands, C/C++ build, run, warm reuse), C 36/36 and C++17 22/22 pass ([record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#windowsx64-dev-sdk-050-rc1-2026-11-26)).
+  Windows/arm64: local RC1 passes C 36/36, C++17 22/22, the editor-policy
+  replay with warm reuse, and D3 with the signed Host Tools and a fresh zlib
+  build. Signed candidate acquisition remains open
+  ([record](docs/compatibility.md#windowsarm64-dev-sdk-050-rc1-combination-2026-11-26)).
 
 #### D6 - Standalone CLI packaging and promotion
 
@@ -81,6 +91,11 @@ to the standalone release and record the applicable
 - [ ] **D6-01** (R05-03) Verify project Doctor and the handling of failed or
   canceled operations in the supported workflow. Verify recovery without
   changing existing locks.
+  Windows/arm64 RC1 passes project Doctor in the
+  [VS Code replay](https://github.com/webos21/crt-vscode/blob/main/HISTORY.md#run-the-native-windowsarm64-extension-development-host).
+  The [C provider replay](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#windowsarm64-dev-sdk-050-rc1-2026-11-26)
+  keeps the lock and outputs intact on mixed-linkage refusal. Canceled
+  operations and recovery remain open.
 - [ ] **D6-02** (R05-03) Verify that the standalone release archive contains
   the intended executable and notices, and that the executable runs on clean
   hosts without development SDK, build or store roots. Linux/aarch64: a local package of the candidate CLI extracts to one
@@ -89,9 +104,15 @@ to the standalone release and record the applicable
   version, self and pinned-resource Doctor and missing-tool diagnostics for D6-03 ([record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#macosarm64-dev-sdk-050-rc1-2026-11-26)).
   Windows/x64: the local candidate package passes 12/12 from a restricted token with the producer, CLI and SDK trees unreadable, including `--version`, self Doctor
   before SDK setup and pin/tamper refusals ([record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#windowsx64-dev-sdk-050-rc1-2026-11-26)).
+  Windows/arm64: the local candidate package passes 12/12 with the producer,
+  CLI and SDK trees unreadable, including pin, notice and extra-file refusals
+  ([record](docs/compatibility.md#windowsarm64-dev-sdk-050-rc1-combination-2026-11-26)).
 - [ ] **D6-03** (R05-03) Verify the candidate's `--version` and self Doctor on
   each qualified host before SDK setup. Check actionable diagnostics when a
   required input is missing.
+  Both the [Linux/x86_64 RC1 adapter](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#linuxx86_64-dev-sdk-050-rc1-2026-11-26)
+  and the [Windows/arm64 RC1 package replay](docs/compatibility.md#windowsarm64-dev-sdk-050-rc1-combination-2026-11-26)
+  pass SDK-free version and self Doctor on the local candidates.
 - [ ] **D6-04** (R05-04) Define the 0.5.0 version, tag and archive rules.
   Review the candidates, then adopt the exact pins from the verified signed
   Dev SDK in the
