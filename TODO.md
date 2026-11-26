@@ -64,6 +64,9 @@ cover the follow-up scope. R05 numbers link the release work across repositories
   Dev SDK, build, test and run fresh C and C++ projects, and verify warm reuse.
   Replay the existing D3 port path with the selected Host Tools. See
   [project lifecycle acceptance](docs/acceptance/lifecycle_acceptance.md#d2d5---project-sdk-and-creation).
+  Linux/aarch64: with a CLI built from the local RC1 candidate the D3 port path passes (25/25), and the editor policy replay (8 compile commands, C/C++ build, run,
+  warm reuse) passes with the signed Preview CLI ([record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#linuxaarch64-dev-sdk-050-rc1-2026-11-26));
+  acquiring the signed candidate with the candidate CLI remains, because it is not signed or published yet.
 
 #### D6 - Standalone CLI packaging and promotion
 
@@ -76,7 +79,8 @@ to the standalone release and record the applicable
   changing existing locks.
 - [ ] **D6-02** (R05-03) Verify that the standalone release archive contains
   the intended executable and notices, and that the executable runs on clean
-  hosts without development SDK, build or store roots.
+  hosts without development SDK, build or store roots. Linux/aarch64: a local package of the candidate CLI extracts to one
+  executable with notices and runs SDK-free ([record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#linuxaarch64-dev-sdk-050-rc1-2026-11-26)).
 - [ ] **D6-03** (R05-03) Verify the candidate's `--version` and self Doctor on
   each qualified host before SDK setup. Check actionable diagnostics when a
   required input is missing.
