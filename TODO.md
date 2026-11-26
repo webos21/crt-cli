@@ -32,17 +32,14 @@ record of completed work. This section stays empty in `TODO.md` itself. Finished
 top-level work moves to `HISTORY.md`; terse checked prerequisite gates may remain
 under an active tranche only to make its execution order legible.
 
+<!-- Keep the anchors used by existing documentation links. -->
 <a name="p0---minimal-public-editor-api-d7-slice-coordinated-with-d5d6"></a>
-
-See the [P0 editor API completion record](HISTORY.md#close-the-minimal-public-editor-api-p0).
-
 <a name="p1---producer-correctness-handoff-and-first-user-workflow-d5"></a>
 
-See the [P1 first-user workflow completion record](HISTORY.md#close-the-first-user-workflow-p1).
+[P0 editor API](HISTORY.md#close-the-minimal-public-editor-api-p0) ·
+[P1 first-user workflow](HISTORY.md#close-the-first-user-workflow-p1).
 
 ## In Progress
-
-The editor handoff is tracked in the [crt-vscode work queue](https://github.com/webos21/crt-vscode/blob/main/TODO.md#in-progress).
 
 ## Planned
 
