@@ -11,6 +11,12 @@ the [request/handoff record](crt_host_tools_publication_request.md#macoswindows-
 prerequisite from consumer adoption. The per-host records below retain their exact scope: closing the request neither promotes integration
 pins nor closes hosted jobs, Windows/arm64 D1 (31/32), or private-DLL qualification. No format or runtime contract changes here.
 
+## Windows/x64 Dev SDK 0.5.0 RC1 combination (2026-11-26)
+
+Exercised, unpromoted combination: local CRT `8689b4c8` `v0.5.0-rc.1` (manifest `cbe5630d858e15d199754e1829ab81ecf0187d1718d0144508da7b0400f03cdd`, content `07e901ab0439d324702b298b51ff2946a3c4557976a3fc2121af367d30332831`), CLI `2644716` built by that SDK (`95b6f99a355709d7d62f65575afdc59f106b4e782b5df235a5cded0008683d18`), signed Host Tools
+`v0.1.0-hosttools.20261119.windows-x86_64.1` (manifest `cd6cb75e91b8f9202cda82876de9898e19fb4aeb01be981ebcfde9eabb7b7e00`), LLVM 22.1.8, Windows SDK `10.0.28000.0`, physical Windows 11 x64. C 36/36, C++17 22/22, editor policy 8/8, D3 port suites and zlib port build, packaged CLI 12/12.
+[VS Code Development Host replay](https://github.com/webos21/crt-vscode/blob/main/HISTORY.md#replay-the-editor-workflow-on-windowsx64-v1-01) 47/47 from the source checkout; no VSIX. **Not release or pin adoption.** [Producer record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#windowsx64-dev-sdk-050-rc1-2026-11-26).
+
 ## Minimal public editor API 1 (2026-11-25)
 
 CLI source baseline `6cabc72e940bca7e2a50b266888a9c784b0e7d6a` plus the
