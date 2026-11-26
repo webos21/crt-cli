@@ -11,6 +11,40 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-26
 
+### Record the completed 0.5.0 standalone CLI candidate checks
+
+R05-03 has local RC1 C/C++ compile-policy and native run/reuse evidence and
+a signed Host Tools/zlib D3 replay for each host pair. The producer records
+own the exact SDK and CLI inputs for each check:
+[Linux/x86_64](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#linuxx86_64-dev-sdk-050-rc1-2026-11-26),
+[Linux/aarch64](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#linuxaarch64-dev-sdk-050-rc1-2026-11-26),
+[macOS/arm64](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#macosarm64-dev-sdk-050-rc1-2026-11-26),
+[Windows/x64](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#windowsx64-dev-sdk-050-rc1-2026-11-26)
+and
+[Windows/arm64](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#windowsarm64-dev-sdk-050-rc1-2026-11-26).
+The [macOS RC2 record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#macos-150-deployment-target-2026-11-26)
+adds the local C/C++ handoff, C provider and compile-policy replay using the
+RC1 CLI. Linux/aarch64 also records signature verification and explicit SDK
+acquisition against the previous signed Preview.
+
+All five local RC1 CLI builds pass SDK-free version and self Doctor. Four
+record SDK-free archive execution with notices. Linux/x86_64 exercises its
+standalone executable in the port adapter. The macOS archive replay also
+records missing LLVM diagnostics. The two Windows Development Host records
+cover project Doctor and the recorded failure controls in
+[D6-01](TODO.md#d6---standalone-cli-packaging-and-promotion).
+The
+[Windows/x64](docs/compatibility.md#windowsx64-dev-sdk-050-rc1-combination-2026-11-26)
+and
+[Windows/arm64](docs/compatibility.md#windowsarm64-dev-sdk-050-rc1-combination-2026-11-26)
+ledger entries cover the local R05-06 combinations using the source extension.
+
+This update checks the completed substeps in the
+[0.5.0 release queue](TODO.md#release-050---standalone-cli) from existing
+evidence. Remaining gates include signed release SDK acquisition, macOS RC2
+D3, release archive and diagnostics verification, canceled-operation recovery,
+versioning and publication, and the installed VSIX compatibility rows.
+
 ### Qualify the standalone CLI against the Windows/arm64 Dev SDK 0.5.0 RC1
 
 CRT `e1e379c` builds CLI `4e4c96c` from the extracted local SDK. The cold
