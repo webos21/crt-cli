@@ -147,3 +147,67 @@ The replay helper and initial harness assertion failure are retained under
 ignored `out/p1-02-20261125/`. Successful raw envelopes, local config inputs,
 public SDK source pins and `result.json` are under
 `/home/syszone/crt-cli-p1-02-20261125/first-user-r3/`.
+
+## D6-01 cancellation, recovery and diagnostics on macOS/arm64 (2026-11-26)
+
+Host: macOS 27.2.1 (26B131), arm64, Xcode 27.2. Inputs: CRT SDK `v0.5.0-rc.2` (content
+`9e35624a8bf568e86b076efba23d60b63057d1ac0fd6561972e4e4131ffb507b`, CRT `ce1808cd`) and the CLI built from
+`8942a35` by RC1 (`4e4b0ac317de4e9d4bd64e0017697493049fafd7562fa092a33b3ea0d9306a24`), then the corrected build below.
+
+### Defect: canceling the CLI left its children running
+
+Every child runs in its own process group and the CLI handled no signal. With the RC1-built CLI:
+
+- `run`: SIGINT or SIGHUP to the CLI's process group, and SIGTERM or SIGKILL to the CLI, end the CLI while the user's
+  program keeps running.
+- `build`: after Ctrl-C-style SIGINT to the group, the Clang driver and `-cc1` stay alive (3 of 3 first builds, 1 of 1
+  bound rebuild). When the blocked compiler was released after the CLI had exited, it wrote the object and
+  dependency file.
+
+Lock and local binding bytes were preserved in every case and the next build recovered. A first measurement that
+reported no first-build orphan was a probe error: it matched the CLI's own argument list before any compile started.
+
+### Correction and regression
+
+`src/main/process.cpp` follows the [cancellation contract](../reference/bootstrap_contract.md): forward SIGINT, SIGTERM,
+SIGHUP or SIGQUIT to each owned group, SIGKILL after the grace period, then exit 128 + signal. The native `process`
+phase gains four cancellations (a descendant tree with SIGINT, SIGTERM and SIGHUP, and a child that ignores them).
+With only the test added, the contract replay fails (`cancellation stops owned descendants before delayed writes`).
+A first correction that raised the signal again also failed: CRT's `raise()` and `kill()` of the calling process only
+emulate the default action (measured with the RC2 SDK: SIGHUP and SIGQUIT return, SIGINT and SIGTERM exit 134). That
+is a CRT libc deviation tracked outside this change.
+
+`replay_cli_contract_macos.py` with the corrected source and RC2 passes: self-build 22 executed / 0 reused, warm 0 / 22,
+bootstrap loop code and data identical, native **1040**, archive 221, SDK store 114, port recipe 147, store lock 9 and
+editor 425 checks, only `libSystem` imported. Executable
+`9d0eae29478b2075140c898497456a74b42fc5e8f90c7e68099813c0d52450f0` (4,542,824 bytes). With that executable the same
+probes give: `run` canceled by SIGINT, SIGTERM and SIGHUP exits 130, 143 and 129 with the program stopped (SIGKILL
+still leaves it, as documented); canceled first builds (3 of 3) and a canceled rebuild leave no process and write
+nothing; binding bytes are preserved and the next build succeeds. A real zlib `port build` canceled during configure
+and twice during make (up to 23 descendant processes) exits 130, 143 and 129, leaves no process, publishes nothing and
+succeeds when rerun. Cancellations that arrive while the CLI owns no child keep the host's default action.
+
+### Other recovery cases and diagnostics
+
+- Compile and link failures keep the lock and binding, project Doctor passes afterwards and the restored source builds
+  (RC1-built CLI).
+- `sdk install` interrupted during extraction by SIGINT, SIGTERM and SIGKILL publishes nothing; a rerun removes the
+  staging directory, installs and passes `sdk verify` (RC1-built CLI).
+- `replay_sdk_selection_macos.py` passes first-build **86/86** and selection **66/66** with the RC1-built and with the
+  corrected CLI.
+- macOS OS SDK diagnostics pass for `build` and project Doctor (8 cases): a directory without
+  `usr/lib/libSystem.tbd`, a missing directory, a relative `os_sdk`, and `xcrun` denied; each names the corrective
+  input and writes nothing. Project Doctor with `sdk_source`, network denied, does not acquire and names the two
+  explicit commands (RC1-built CLI).
+- With the corrected CLI, the RC2 handoff replay passes **54/54** and `replay_port_macos.py` **28/28** (six port suites,
+  447 checks). The RC1-built CLI also passes 28/28 with RC2.
+
+### Limits
+
+macOS/arm64 only. Linux has the same code path and runs the new native cases in CI but its interactive probes were not
+repeated. Windows is **not** corrected or verified: the CRT PAL does not deliver process-directed signals or Ctrl-C
+there, and the new native cases are skipped. No interactive terminal or editor task cancellation was driven; the
+probes send the signals those paths use. The VS Code task terminate action was not exercised. The C provider replay was
+not repeated with the corrected CLI. Evidence is retained outside the checkouts in
+`crt-release-050-macos-arm64-20261126/rc2-followup/` (`contract-red/`, `contract-green/`, `cancel*/`, `diag/`,
+`first-build*/`, `selection*/`, `handoff-fixed/`, `d3*/`).

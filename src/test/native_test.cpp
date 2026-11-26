@@ -189,8 +189,20 @@ int main(int argc, char** argv) {
         char* child_args[] = {argv[0], const_cast<char*>("--tree-child"), argv[2], nullptr};
         pid_t child;
         if (posix_spawn(&child, argv[0], nullptr, nullptr, child_args, environ) != 0) return 17;
+        write_text(std::string(argv[2]) + ".started", "descendant spawned\n");
         if (std::string(argv[1]) == "--tree-parent") sleep(10);
         return 0;
+    }
+    // A child that ignores every cancellation signal and would write its marker after the grace period.
+    if (argc == 3 && std::string(argv[1]) == "--stubborn") {
+        signal(SIGINT, SIG_IGN); signal(SIGTERM, SIG_IGN); signal(SIGHUP, SIG_IGN);
+        write_text(std::string(argv[2]) + ".started", "stubborn child running\n");
+        sleep(5); write_text(argv[2], "stubborn child survived\n"); return 0;
+    }
+    // Stands for the CLI: owns one child through execute(). It must not return from execute() when it is canceled.
+    if (argc == 4 && std::string(argv[1]) == "--cancel-owner") {
+        try { execute({fs::canonical(argv[0]).string(), argv[2], argv[3]}, 30, false); } catch (const Error&) { return 21; }
+        return 20;
     }
     if (argc == 2 && std::string(argv[1]) == "--cwd-probe") { std::printf("%s", fs::current_path().string().c_str()); return 0; }
     if (argc == 2 && std::string(argv[1]) == "--sleeper") { sleep(10); return 0; }
@@ -348,6 +360,29 @@ int main(int argc, char** argv) {
         auto completed = execute({fs::canonical(argv[0]).string(), "--tree-exit", marker.string()}, 10, false);
         sleep(3);
         check(completed.exit_code == 0 && !completed.timed_out && !fs::exists(marker), "normal completion also stops owned background descendants");
+        // Cancellation of the CLI itself. Its children have their own process groups, so only the CLI can reach them.
+        // The Windows PAL does not deliver process-directed signals yet, so this is checked on the other hosts.
+        if (!windows_host) {
+            const std::vector<std::pair<std::string, int>> cancellations{
+                {"--tree-parent", SIGINT}, {"--tree-parent", SIGTERM}, {"--tree-parent", SIGHUP}, {"--stubborn", SIGINT}};
+            for (const auto& item : cancellations) {
+                const std::string label = item.first + " signal " + std::to_string(item.second);
+                fs::remove(marker); fs::remove(marker.string() + ".started");
+                std::string self = fs::canonical(argv[0]).string(), mode = item.first, target = marker.string(), owner_mode = "--cancel-owner";
+                char* owner_args[] = {self.data(), owner_mode.data(), mode.data(), target.data(), nullptr};
+                pid_t owner = -1;
+                require(posix_spawn(&owner, self.c_str(), nullptr, nullptr, owner_args, environ) == 0, "start the cancellation owner");
+                for (int i = 0; i < 100 && !fs::exists(target + ".started"); ++i) usleep(100000);
+                check(fs::exists(target + ".started"), "canceled work actually runs: " + label);
+                require(kill(owner, item.second) == 0, "send the cancellation signal");
+                int status = 0;
+                require(waitpid(owner, &status, 0) == owner, "wait for the canceled owner");
+                check(WIFEXITED(status) && WEXITSTATUS(status) == 128 + item.second, "the owner ends with 128 + the signal it received: " + label);
+                sleep(6);
+                check(!fs::exists(marker), "cancellation stops owned descendants before delayed writes: " + label);
+            }
+            fs::remove(marker.string() + ".started");
+        }
         auto parent_cwd = fs::current_path();
         auto changed_cwd = execute_child({fs::canonical(argv[0]).string(), "--cwd-probe"}, child_environment(), hostile, 30, false);
         check(changed_cwd.exit_code == 0 && changed_cwd.output == fs::canonical(hostile).string() && fs::current_path() == parent_cwd,
