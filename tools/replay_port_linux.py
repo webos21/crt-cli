@@ -15,6 +15,8 @@ import subprocess
 import sys
 import tempfile
 
+from ci_integration import replay_build_cache
+
 
 def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
@@ -117,6 +119,7 @@ def main():
         return proc
 
     complete = False
+    cache = {}
     try:
         argv = [seed, '--json', 'configure', '--project', project, '--sdk-root', sdk, '--sdk-contract', provider,
                 '--contract-sha256', args.contract_sha256]
@@ -129,6 +132,18 @@ def main():
         record('fresh SDK-only CLI build', built.returncode == 0, built.stderr)
         assert built.returncode == 0
         cli = project / 'out/native/crt-cli'
+        # The published seed and the rebuilt CLI may use different cache keys.
+        # Keep the builder outside the outputs that it may replace.
+        builder = scratch / 'cache-builder'
+        shutil.copy2(cli, builder)
+
+        def build_cache(label, command):
+            proc = run(label, command)
+            proc.check_returncode()
+            return proc.stdout
+
+        cache = replay_build_cache(build_cache, builder, project)
+        record('unchanged CLI build executes no commands', True, cache)
         bare = work / 'bare-cli'; shutil.copy2(cli, bare)
         for label, tail in [('version', ['--version']), ('doctor', ['doctor', '--bootstrap'])]:
             proc = run('bare-' + label, [bare, '--json', *tail], hidden_extra=(sdk, provider, project))
@@ -176,8 +191,6 @@ def main():
                a['data']['already_published'] is False and b['data']['already_published'] is True and a['data']['build_key'] == b['data']['build_key'])
         proc = run('port-verify', [cli, '--json', 'port', 'verify', a['data']['build_key'], '--project', project])
         record('actual published port item verifies', proc.returncode == 0, proc.stderr)
-        proc = run('warm-build', [cli, '--json', 'build', '--project', project]); reply = json.loads(proc.stdout)
-        record('unchanged CLI build executes no commands', proc.returncode == 0 and reply['data']['cache']['executed'] == 0)
         complete = True
     except Exception as error:
         record('replay completed without a harness exception', False, repr(error))
@@ -192,7 +205,7 @@ def main():
             for line in trace.read_text().splitlines():
                 if re.search(r'execve\("/(?:usr/)?bin/(?:sh|dash|bash|python[^"/]*|perl|ruby)"', line): bad.append(line)
         record('native jobs execute no host shell/interpreter', not bad, bad[:8])
-        result = {'passed': complete and all(case['passed'] for case in results), 'cases': results, 'suites': outcomes, 'work': str(work),
+        result = {'passed': complete and all(case['passed'] for case in results), 'cases': results, 'suites': outcomes, 'work': str(work), 'cache': cache,
                   'source_sha256': inputs['source_sha256'], 'contract_sha256': digest(provider), 'host_tools_sha256': args.host_tools_sha256,
                   'archive_sha256': digest(archive), 'allow_dirty_sdk': args.allow_dirty_sdk,
                   'isolation': 'bwrap: network denied, read-only root/SDK/bundle, hidden original trees, private HOME/tmp, shared PID namespace; execve trace'}

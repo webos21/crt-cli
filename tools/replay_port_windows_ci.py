@@ -14,7 +14,7 @@ import subprocess
 import sys
 
 from ci_bootstrap import WINDOWS_IMPORT_ARCH
-from ci_integration import host_key, verify_download, verify_oracle, windows_harness_pins
+from ci_integration import host_key, replay_build_cache, verify_download, verify_oracle, windows_harness_pins
 from replay_port_linux import digest, inventory, source_inputs, suite_outcome
 
 
@@ -185,9 +185,12 @@ def main():
         if cold['data']['cache']['executed'] <= 0 or cold['data']['cache']['reused'] != 0:
             raise ValueError('CLI build did not execute a fresh source export')
         cli = project / 'out/native/crt-cli.exe'; declared.add(cli)
-        warm = json.loads(require_run('warm-build', [cli, '--json', 'build', '--project', project]))
-        record('warm build reuses every source', warm['data']['cache']['executed'] == 0 and
-               warm['data']['cache']['reused'] == cold['data']['cache']['executed'])
+        builder = work / 'cache-builder.exe'
+        shutil.copy2(cli, builder)
+        declared.add(builder.resolve())
+        cache = replay_build_cache(require_run, builder, project)
+        result['cache'] = {'cold': cold['data']['cache'], **cache}
+        record('warm build reuses every source', True, cache)
         bare, bare_sid = sandbox.create_work(args.work_parent / 'bare')
         for name in ('home', 'tmp'): (bare / name).mkdir()
         shutil.copy2(cli, bare / 'crt-cli.exe'); shutil.copy2(probe_exe, bare / 'probe.exe')
@@ -218,7 +221,6 @@ def main():
         imports = re.findall(r'^\s*Name: (\S+\.dll)\s*$', audit.stdout, re.M | re.I)
         record('PE %s and only declared OS imports' % arch, pe_machine in audit.stdout and bool(imports) and
                set(name.lower() for name in imports) <= {'kernel32.dll', 'api-ms-win-core-synch-l1-2-0.dll'}, imports)
-        result['cache'] = {'cold': cold['data']['cache'], 'warm': warm['data']['cache']}
         result['cli_sha256'] = digest(cli)
     except Exception as error:
         record('complete native replay', False, str(error))

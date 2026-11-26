@@ -58,6 +58,25 @@ def sha256_file(path):
     return digest.hexdigest()
 
 
+def replay_build_cache(build, builder, project):
+    """Prime and check the cache using the same retained CLI executable."""
+    argv = [builder, '--json', 'build', '--project', project]
+    cache = {}
+    for phase, label in (('prime', 'cache-prime'), ('warm', 'warm-build')):
+        reply = json.loads(build(label, argv))
+        data = reply.get('data') if isinstance(reply, dict) and reply.get('ok') is True else None
+        counts = data.get('cache') if isinstance(data, dict) else None
+        if (not isinstance(counts, dict) or any(type(counts.get(key)) is not int or counts[key] < 0
+                                               for key in ('executed', 'reused')) or
+                not isinstance(data.get('commands'), list) or len(data['commands']) != counts['executed']):
+            raise IntegrationError('%s did not report consistent build cache counts' % label)
+        cache[phase] = counts
+    total = cache['prime']['executed'] + cache['prime']['reused']
+    if total == 0 or cache['warm']['executed'] != 0 or cache['warm']['reused'] != total:
+        raise IntegrationError('unchanged build did not reuse all commands: %s' % cache)
+    return cache
+
+
 def _require_fields(label, entry, fields):
     if not isinstance(entry, dict):
         raise IntegrationError('%s: pin is not an object' % label)

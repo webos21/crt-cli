@@ -9,6 +9,17 @@ crosses days; include commit/reproduction references when available without
 inventing commits or test results. Older months may later be summarized under
 `docs/history/` with links to their original Git records.
 
+## 2026-11-26
+
+### Fix scheduled port replay cache reuse after a bootstrap change
+
+The first build by the current CLI can replace cache keys written by the
+published bootstrap. All three native adapters now retain the rebuilt CLI
+and use it for both the cache prime and the strict warm check. Linux/x86_64
+passed 25 gates and 263 checks across all five port suites, with zero
+commands executed and 22 reused on the warm build. The other native legs
+await hosted replay. [Failure and validation](docs/acceptance/ci_acceptance.md#scheduled-port-replay-cache-transition-2026-11-26).
+
 ## 2026-11-25
 
 ### Close the first-user workflow (P1)
