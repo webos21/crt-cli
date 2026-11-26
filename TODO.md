@@ -69,6 +69,8 @@ cover the follow-up scope. R05 numbers link the release work across repositories
   acquiring the signed candidate with the candidate CLI remains, because it is not signed or published yet.
   macOS/arm64: the local candidate handoff passes C/C++ first build, test, run and warm reuse (54/54), C provider 76/76 and D3 28/28
   ([record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#macosarm64-dev-sdk-050-rc1-2026-11-26)); signed acquisition remains.
+  Windows/x64: with the CLI built from the local RC1 candidate the D3 port suites and a real zlib port build pass with the signed Host Tools, and the editor-policy
+  replay (8 compile commands, C/C++ build, run, warm reuse), C 36/36 and C++17 22/22 pass ([record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#windowsx64-dev-sdk-050-rc1-2026-11-26)).
 
 #### D6 - Standalone CLI packaging and promotion
 
@@ -85,6 +87,8 @@ to the standalone release and record the applicable
   executable with notices and runs SDK-free ([record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#linuxaarch64-dev-sdk-050-rc1-2026-11-26)).
   macOS/arm64: the local package also runs with the checkouts, SDKs, store, Xcode and Command Line Tools unreadable, and passes
   version, self and pinned-resource Doctor and missing-tool diagnostics for D6-03 ([record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#macosarm64-dev-sdk-050-rc1-2026-11-26)).
+  Windows/x64: the local candidate package passes 12/12 from a restricted token with the producer, CLI and SDK trees unreadable, including `--version`, self Doctor
+  before SDK setup and pin/tamper refusals ([record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#windowsx64-dev-sdk-050-rc1-2026-11-26)).
 - [ ] **D6-03** (R05-03) Verify the candidate's `--version` and self Doctor on
   each qualified host before SDK setup. Check actionable diagnostics when a
   required input is missing.

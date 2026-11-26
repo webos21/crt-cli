@@ -11,6 +11,11 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-26
 
+### Exercise the standalone CLI against the Windows/x64 Dev SDK 0.5.0 RC1
+
+The local CRT `8689b4c8` candidate alone builds CLI `2644716` (cold 22/0, warm 0/22, 11 suites exit 0); C 36/36, C++17 22/22, the Windows editor-policy replay, six D3 port suites plus a real zlib port build with the signed Host Tools, and the 12/12 packaged-CLI clean-token replay pass.
+No product change; signing, publication and pins stay open. [Producer record](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#windowsx64-dev-sdk-050-rc1-2026-11-26).
+
 ### Fix scheduled port replay cache reuse after a bootstrap change
 
 The first build by the current CLI can replace cache keys written by the
