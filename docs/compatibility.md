@@ -11,6 +11,36 @@ the [request/handoff record](crt_host_tools_publication_request.md#macoswindows-
 prerequisite from consumer adoption. The per-host records below retain their exact scope: closing the request neither promotes integration
 pins nor closes hosted jobs, Windows/arm64 D1 (31/32), or private-DLL qualification. No format or runtime contract changes here.
 
+## Windows/arm64 Dev SDK 0.5.0 RC1 combination (2026-11-26)
+
+Physical Windows build 26300, LLVM 22.1.8 and Windows SDK `10.0.28000.0`.
+The local Dev SDK is CRT `e1e379c`, `v0.5.0-rc.1` (manifest
+`927109dc1f44bb006e7a428d50cdc78879428274816ccbb554967319a07fa8d8`, content
+`7ed3afd11b02de097e524d1bb7ac60dacfca2d160bf30ccb90894707ac208b31`). It built
+CLI `4e4c96c` (`0.1.0-dev`, executable SHA-256
+`b982f755d2796cd99d1f35c3fea207eb485bee07c72b69159de2f6b63789f629`). The signed
+Host Tools `v0.1.0-hosttools.20261119.windows-aarch64.1` use manifest
+`6f7225ac4ffafe4c5651bf025b47d7b58df0939c520dbf40b7a029aa2892b6f1`.
+
+The self-build uses 22 cold steps and reuses 22 warm. The restricted-token
+contract passes 11 suites and the SDK-hidden help, version and Doctor checks.
+C passes 36/36,
+C++17 passes 22/22, eight editor-policy compile commands pass, and D1 passes
+32/32. The standalone archive (SHA-256
+`af7f761c6fb5beabe9d6de0a00e9a13c8d5ae6b667603eb0c714ae65c022b4b1`, manifest
+`138f4a950d4492ced4cdd4c2842e4852b570ba327de040682422380b9201a25d`) passes
+12/12 under the restricted token without an accessible producer, CLI or SDK
+tree. D3 passes all six suites and a fresh `port build zlib` with both static
+and shared round trips. The version, archive pin and port key are in the
+producer qualification below.
+
+The [native VS Code replay](https://github.com/webos21/crt-vscode/blob/main/HISTORY.md#run-the-native-windowsarm64-extension-development-host)
+uses source extension `b272297`, native VS Code 1.147.0 and clangd 22.1.8.
+It exercises the candidate CLI and SDK in a trusted C++ workspace and
+records Restricted Mode separately.
+This combination is local and unpromoted. The SDK and CLI package carry no
+publisher signatures. [Producer qualification](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#windowsarm64-dev-sdk-050-rc1-2026-11-26).
+
 ## Windows/x64 Dev SDK 0.5.0 RC1 combination (2026-11-26)
 
 Exercised, unpromoted combination: local CRT `8689b4c8` `v0.5.0-rc.1` (manifest `cbe5630d858e15d199754e1829ab81ecf0187d1718d0144508da7b0400f03cdd`, content `07e901ab0439d324702b298b51ff2946a3c4557976a3fc2121af367d30332831`), CLI `2644716` built by that SDK (`95b6f99a355709d7d62f65575afdc59f106b4e782b5df235a5cded0008683d18`), signed Host Tools

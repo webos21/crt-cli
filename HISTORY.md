@@ -11,6 +11,17 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-26
 
+### Qualify the standalone CLI against the Windows/arm64 Dev SDK 0.5.0 RC1
+
+CRT `e1e379c` builds CLI `4e4c96c` from the extracted local SDK. The cold
+self-build runs 22 steps and the warm build reuses all 22. The native
+contract passes all 11 suites and the SDK-hidden Doctor. C static/shared
+passes 36/36, C++17 passes 22/22, the editor policy checks eight compile
+commands, D1 passes 32/32 with the signed Host Tools, and the standalone
+package passes the isolated replay 12/12. The same CLI and Host Tools pass
+six D3 suites and a real zlib port build with both linkage modes.
+[Exercised combination and limits](docs/compatibility.md#windowsarm64-dev-sdk-050-rc1-combination-2026-11-26).
+
 ### Exercise the standalone CLI against the Windows/x64 Dev SDK 0.5.0 RC1
 
 The local CRT `8689b4c8` candidate alone builds CLI `2644716` (cold 22/0, warm 0/22, 11 suites exit 0); C 36/36, C++17 22/22, the Windows editor-policy replay, six D3 port suites plus a real zlib port build with the signed Host Tools, and the 12/12 packaged-CLI clean-token replay pass.
