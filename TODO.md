@@ -103,7 +103,10 @@ to the standalone release and record the applicable
     installation and recovery with preserved locks.
   - [ ] Repeat the cancellation probes on Linux, implement or state the Windows
     cancellation behaviour (not delivered by the CRT PAL today), and verify the
-    remaining cases against the release candidates.
+    remaining cases against the release candidates. Candidates built with a CRT
+    SDK from 2026-11-27 or later contain
+    [real signal delivery and `fork()` corrections](https://github.com/webos21/crt/pull/38):
+    replay the native suites with them.
 - [ ] **D6-02** (R05-03) Verify that the standalone release archive contains
   the intended executable and notices, and that the executable runs on clean
   hosts without development SDK, build or store roots.

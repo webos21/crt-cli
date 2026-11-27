@@ -175,7 +175,10 @@ phase gains four cancellations (a descendant tree with SIGINT, SIGTERM and SIGHU
 With only the test added, the contract replay fails (`cancellation stops owned descendants before delayed writes`).
 A first correction that raised the signal again also failed: CRT's `raise()` and `kill()` of the calling process only
 emulate the default action (measured with the RC2 SDK: SIGHUP and SIGQUIT return, SIGINT and SIGTERM exit 134). That
-is a CRT libc deviation tracked outside this change.
+is a CRT libc deviation tracked outside this change. CRT corrected it on 2026-11-27
+([crt#38](https://github.com/webos21/crt/pull/38), [design](https://github.com/webos21/crt/blob/main/docs/design/signal_delivery.md#sending-a-signal-and-default-actions-2026-11-27)),
+after RC2. The CLI has not been built or replayed with an SDK that contains the correction. Such an SDK also changes
+`raise()`, `abort()`, wait statuses and `fork()` behaviour, so replay the native suites when the SDK input moves.
 
 `replay_cli_contract_macos.py` with the corrected source and RC2 passes: self-build 22 executed / 0 reused, warm 0 / 22,
 bootstrap loop code and data identical, native **1040**, archive 221, SDK store 114, port recipe 147, store lock 9 and

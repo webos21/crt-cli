@@ -16,9 +16,10 @@ namespace {
 // Cancellation of the CLI itself. Every child runs in a process group of its own, so a signal sent to the CLI (or to the
 // terminal's foreground group by Ctrl-C or a hangup) never reaches it. While any child is owned, these signals are only
 // recorded; each owner forwards the signal to its group and reaps it, and the last one ends the CLI with status
-// 128 + signal. It does not raise the signal again: CRT's raise() and kill() of the calling process only emulate the
-// default action (SIGINT and SIGTERM end through abort(), SIGHUP and SIGQUIT do nothing). Port builds own children on
-// several threads. A signal that was ignored on entry (nohup) stays ignored. SIGKILL cannot be handled and leaves
+// 128 + signal. It does not raise the signal again: in SDKs up to v0.5.0-rc.2, CRT's raise() and kill() of the calling
+// process only emulate the default action (SIGINT and SIGTERM end through abort(), SIGHUP and SIGQUIT do nothing).
+// Later CRT delivers them for real; the documented exit status stays until that is revisited. Port builds own children
+// on several threads. A signal that was ignored on entry (nohup) stays ignored. SIGKILL cannot be handled and leaves
 // children running.
 constexpr int cancel_signals[] = {SIGINT, SIGTERM, SIGHUP, SIGQUIT};
 constexpr size_t cancel_count = sizeof(cancel_signals) / sizeof(cancel_signals[0]);

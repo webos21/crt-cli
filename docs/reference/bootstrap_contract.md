@@ -654,8 +654,11 @@ result is written, and no output of a canceled child is published. With no
 owned child these signals keep their host action. SIGKILL of the CLI cannot be
 handled and leaves its children running. A child that moves itself or its
 descendants to another process group is outside this contract. The status is
-an exit code, not a signal termination, because CRT's `raise()` only emulates
-delivery.
+an exit code, not a signal termination. That choice was made against SDK
+`v0.5.0-rc.2`, whose `raise()` only emulated delivery. CRT
+[delivers it for real](https://github.com/webos21/crt/blob/main/docs/design/signal_delivery.md#sending-a-signal-and-default-actions-2026-11-27)
+since 2026-11-27; ending by the signal instead can be revisited once the pinned
+SDK contains that change.
 
 The Windows CRT PAL does not yet deliver process-directed signals or Ctrl-C,
 so this behaviour is not accepted there. Broader Windows and interactive
