@@ -77,9 +77,11 @@ cover the follow-up scope. R05 numbers link the release work across repositories
   - [x] Exercise HTTPS signature checks and explicit acquisition of the
     previous signed SDK Preview with the
     [packaged Linux/aarch64 RC1 CLI](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#linuxaarch64-dev-sdk-050-rc1-2026-11-26).
+  - [x] Replay macOS D3 with the RC2 SDK, with the RC1-built CLI and with the
+    [cancellation-corrected CLI](docs/acceptance/lifecycle_acceptance.md#d6-01-cancellation-recovery-and-diagnostics-on-macosarm64-2026-11-26) (28/28 each).
   - [ ] Repeat acquisition and the C/C++ project workflow with the exact
-    signed release SDK and candidate CLI. Replay macOS D3 with RC2 or its
-    successor and confirm the D3 evidence for every shipped tuple.
+    signed release SDK and candidate CLI, and confirm the D3 evidence for
+    every shipped tuple.
 
 #### D6 - Standalone CLI packaging and promotion
 
@@ -95,8 +97,16 @@ to the standalone release and record the applicable
     preserves its lock, and the Windows/arm64 C provider refuses mixed linkage
     with the lock and outputs intact.
     [RC evidence index](HISTORY.md#record-the-completed-050-standalone-cli-candidate-checks).
-  - [ ] Verify the remaining project Doctor, failure, cancellation and
-    recovery cases against the release candidates, including lock preservation.
+  - [x] On [macOS/arm64](docs/acceptance/lifecycle_acceptance.md#d6-01-cancellation-recovery-and-diagnostics-on-macosarm64-2026-11-26),
+    correct the defect that left children running after cancellation and verify
+    run, build and port-build cancellation, failed builds, interrupted SDK
+    installation and recovery with preserved locks.
+  - [ ] Repeat the cancellation probes on Linux, implement or state the Windows
+    cancellation behaviour (not delivered by the CRT PAL today), and verify the
+    remaining cases against the release candidates. Candidates built with a CRT
+    SDK from 2026-11-27 or later contain
+    [real signal delivery and `fork()` corrections](https://github.com/webos21/crt/pull/38):
+    replay the native suites with them.
 - [ ] **D6-02** (R05-03) Verify that the standalone release archive contains
   the intended executable and notices, and that the executable runs on clean
   hosts without development SDK, build or store roots.
@@ -115,8 +125,11 @@ to the standalone release and record the applicable
   - [x] Verify that missing LLVM tool declarations produce actionable
     first-build and project Doctor diagnostics on
     [macOS/arm64 RC1](https://github.com/webos21/crt/blob/main/docs/acceptance/release_qualification.md#macosarm64-dev-sdk-050-rc1-2026-11-26).
+  - [x] Verify the first-build, SDK-selection and macOS OS SDK diagnostics and
+    the no-acquisition Doctor on
+    [macOS/arm64 with RC2](docs/acceptance/lifecycle_acceptance.md#d6-01-cancellation-recovery-and-diagnostics-on-macosarm64-2026-11-26).
   - [ ] Verify the final candidates' SDK-free checks and the remaining
-    missing-input diagnostics on the shipped hosts.
+    missing-input diagnostics on the other shipped hosts.
 - [ ] **D6-04** (R05-04) Define the 0.5.0 version, tag and archive rules.
   Review the candidates, then adopt the exact pins from the verified signed
   Dev SDK in the

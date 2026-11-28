@@ -2,13 +2,67 @@
 #include <cerrno>
 #include <cstdio>
 #include <crtcli/environment.h>
+#include <memory>
 #include <spawn.h>
 #include <unistd.h>
 #include <signal.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <fcntl.h>
+#include <atomic>
+#include <mutex>
 namespace crtcli {
+namespace {
+// Cancellation of the CLI itself. Every child runs in a process group of its own, so a signal sent to the CLI (or to the
+// terminal's foreground group by Ctrl-C or a hangup) never reaches it. While any child is owned, these signals are only
+// recorded; each owner forwards the signal to its group and reaps it, and the last one ends the CLI with status
+// 128 + signal. It does not raise the signal again: in SDKs up to v0.5.0-rc.2, CRT's raise() and kill() of the calling
+// process only emulate the default action (SIGINT and SIGTERM end through abort(), SIGHUP and SIGQUIT do nothing).
+// Later CRT delivers them for real; the documented exit status stays until that is revisited. Port builds own children
+// on several threads. A signal that was ignored on entry (nohup) stays ignored. SIGKILL cannot be handled and leaves
+// children running.
+constexpr int cancel_signals[] = {SIGINT, SIGTERM, SIGHUP, SIGQUIT};
+constexpr size_t cancel_count = sizeof(cancel_signals) / sizeof(cancel_signals[0]);
+constexpr unsigned cancel_grace_seconds = 2;
+std::atomic<int> canceled_by{0};
+std::mutex ownership;
+unsigned owners = 0;
+struct sigaction previous_actions[cancel_count];
+bool replaced[cancel_count];
+
+extern "C" void record_cancellation(int number) {
+    int none = 0;
+    canceled_by.compare_exchange_strong(none, number);
+}
+
+class ChildOwnership {
+public:
+    ChildOwnership() {
+        std::lock_guard<std::mutex> guard(ownership);
+        require(canceled_by.load() == 0, "canceled by a signal");
+        if (owners++ != 0) return;
+        for (size_t i = 0; i < cancel_count; ++i) {
+            struct sigaction action {};
+            action.sa_handler = record_cancellation;
+            sigemptyset(&action.sa_mask);
+            replaced[i] = sigaction(cancel_signals[i], nullptr, &previous_actions[i]) == 0 &&
+                          previous_actions[i].sa_handler != SIG_IGN && sigaction(cancel_signals[i], &action, nullptr) == 0;
+        }
+    }
+    ~ChildOwnership() {
+        std::lock_guard<std::mutex> guard(ownership);
+        if (--owners != 0) return;
+        for (size_t i = 0; i < cancel_count; ++i)
+            if (replaced[i]) sigaction(cancel_signals[i], &previous_actions[i], nullptr);
+        if (int number = canceled_by.load()) {
+            std::fflush(nullptr);
+            _exit(128 + number);
+        }
+    }
+    ChildOwnership(const ChildOwnership&) = delete;
+    ChildOwnership& operator=(const ChildOwnership&) = delete;
+};
+}
 ProcessResult execute(const std::vector<std::string>& argv, unsigned timeout_seconds, bool relay, bool host_tool, const std::vector<std::string>& runtime_path) {
     return execute_child(argv, child_environment(host_tool, runtime_path), {}, timeout_seconds, relay);
 }
@@ -38,6 +92,14 @@ ProcessResult execute_child(const std::vector<std::string>& argv, const ChildEnv
     if (!directory.empty()) prepared = prepared && posix_spawn_file_actions_addchdir_np(&actions, directory.string().c_str()) == 0;
     pid_t pid = -1;
     if (relay) std::fflush(stderr);
+    std::unique_ptr<ChildOwnership> owned;
+    try { owned = std::make_unique<ChildOwnership>(); }
+    catch (...) {
+        posix_spawn_file_actions_destroy(&actions);
+        posix_spawnattr_destroy(&attributes);
+        close(descriptors[0]); close(descriptors[1]);
+        throw;
+    }
     int launch = prepared ? posix_spawn(&pid, raw[0], &actions, &attributes, raw.data(), environment.data()) : EINVAL;
     posix_spawn_file_actions_destroy(&actions);
     posix_spawnattr_destroy(&attributes);
@@ -48,6 +110,8 @@ ProcessResult execute_child(const std::vector<std::string>& argv, const ChildEnv
     int status = 0;
     bool timeout = false;
     bool truncated = false;
+    bool forwarded = false, canceled = false;
+    timespec forwarded_at{};
     std::string output;
     auto drain = [&]() -> size_t {
         char buffer[4096]; ssize_t count; size_t total = 0;
@@ -79,10 +143,20 @@ ProcessResult execute_child(const std::vector<std::string>& argv, const ChildEnv
             // A completed owned job must not leave background descendants alive.
             // Each launch owns its own process group; never kill by executable name.
             kill(-pid, SIGKILL);
+            canceled = canceled_by.load() != 0;
             break;
         }
         if (state < 0 && errno != EINTR) { close(descriptors[0]); throw Error("waitpid failed"); }
         clock_gettime(CLOCK_MONOTONIC, &now);
+        if (int number = canceled_by.load()) {
+            // Forward once so the child can end cleanly; kill the whole group if it is still there after the grace period.
+            if (!forwarded) {
+                forwarded = true; forwarded_at = now;
+                kill(-pid, number); kill(pid, number);
+            } else if (now.tv_sec - forwarded_at.tv_sec > static_cast<time_t>(cancel_grace_seconds)) {
+                kill(-pid, SIGKILL); kill(pid, SIGKILL);
+            }
+        }
         if (now.tv_sec - start.tv_sec >= timeout_seconds) {
             timeout = true;
             kill(-pid, SIGKILL);
@@ -95,6 +169,9 @@ ProcessResult execute_child(const std::vector<std::string>& argv, const ChildEnv
     // The child is gone but its pipe may still hold more than one bounded drain (a Windows pipe buffers far more than 64 KiB).
     while (drain() > 0) {}
     close(descriptors[0]);
+    // Releasing the last ownership ends the process by the recorded signal. An owner on another thread only reports it,
+    // so no caller treats the output of a canceled child as a result.
+    if (canceled || canceled_by.load() != 0) { owned.reset(); throw Error("canceled by a signal"); }
     if (truncated && relay) std::fprintf(stderr, "[child stdout truncated at 8 MiB]\n");
     int code = timeout ? 124 : WIFEXITED(status) ? WEXITSTATUS(status) : 128 + WTERMSIG(status);
     return {code, timeout, output, truncated};

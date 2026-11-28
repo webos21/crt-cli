@@ -643,7 +643,26 @@ parseable. Private child environments preserve only explicit user-home/temp/OS
 root variables plus fixed PATH/locale, not loader/compiler injection variables.
 Timeouts own a process group and retain child exit/signal/truncation outcomes.
 Normal completion also kills remaining members of that owned process group.
-Broader Windows and interactive cancellation acceptance remains open.
+
+**Cancellation (POSIX hosts).** Because each child has its own process group,
+a signal to the CLI or to the terminal's foreground group does not reach it.
+While it owns a child, the CLI catches SIGINT, SIGTERM, SIGHUP and SIGQUIT
+(a signal ignored on entry stays ignored), forwards the signal to each owned
+group, sends SIGKILL after a grace period of two to three seconds if a child
+is still there, and then exits with status **128 + signal**. No final JSON
+result is written, and no output of a canceled child is published. With no
+owned child these signals keep their host action. SIGKILL of the CLI cannot be
+handled and leaves its children running. A child that moves itself or its
+descendants to another process group is outside this contract. The status is
+an exit code, not a signal termination. That choice was made against SDK
+`v0.5.0-rc.2`, whose `raise()` only emulated delivery. CRT
+[delivers it for real](https://github.com/webos21/crt/blob/main/docs/design/signal_delivery.md#sending-a-signal-and-default-actions-2026-11-27)
+since 2026-11-27; ending by the signal instead can be revisited once the pinned
+SDK contains that change.
+
+The Windows CRT PAL does not yet deliver process-directed signals or Ctrl-C,
+so this behaviour is not accepted there. Broader Windows and interactive
+cancellation acceptance remains open.
 
 `out/native/last-build.json` records target kinds/linkage, artifact hashes,
 compiler/archive/link argv and outcomes. Bootstrap doctor checks C++ exceptions,

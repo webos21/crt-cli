@@ -11,6 +11,17 @@ inventing commits or test results. Older months may later be summarized under
 
 ## 2026-11-26
 
+### Stop owned processes when the CLI is canceled (D6-01, macOS)
+
+Reproduced that canceling the CLI left the user's program and compilers
+running, the latter still writing outputs. The CLI now forwards SIGINT,
+SIGTERM, SIGHUP and SIGQUIT to each owned process group, kills it after a
+grace period and exits 128 + signal. The new native test fails without the
+change. On macOS/arm64 with the RC2 SDK the contract replay, first-build,
+selection, handoff and D3 replays pass with the corrected CLI. Windows is not
+covered and the Linux probes were not repeated.
+[Reproduction, correction and limits](docs/acceptance/lifecycle_acceptance.md#d6-01-cancellation-recovery-and-diagnostics-on-macosarm64-2026-11-26).
+
 ### Record the completed 0.5.0 standalone CLI candidate checks
 
 R05-03 has local RC1 C/C++ compile-policy and native run/reuse evidence and
